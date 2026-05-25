@@ -9,6 +9,10 @@ export default {
     api.get(`/citations/websites/${websiteId}/source-influence/`, { params }),
   websiteCitations: (websiteId, params = {}) =>
     api.get(`/citations/websites/${websiteId}/citations/`, { params }),
+  websiteUrls: (websiteId, params = {}) =>
+    api.get(`/citations/websites/${websiteId}/urls/`, { params }),
+  websiteUrlDetail: (websiteId, url, params = {}) =>
+    api.get(`/citations/websites/${websiteId}/urls/detail/`, { params: { url, ...params } }),
   globalInfluence: (params = {}) =>
     api.get(`/citations/source-influence/global/`, { params }),
 }

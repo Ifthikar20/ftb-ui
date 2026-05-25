@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -9,9 +10,10 @@ import {
 import {
   Bookmark, Search, ChevronLeft, ChevronRight, MoreHorizontal,
   ArrowUpDown, Upload, Settings2, Maximize2, Info, Flag, Check,
-  ChevronDown, Users,
+  ChevronDown, Users, Loader2,
 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
+import citationsApi from '@/api/citations'
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent,
 } from '@/components/ui/card'
@@ -19,27 +21,33 @@ import {
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
 const appStore = useAppStore()
-const brandLabel = computed(() => appStore.activeWebsite?.name || 'treasury')
+const route = useRoute()
+const router = useRouter()
+const websiteId = computed(() => route.params.websiteId)
+const brandLabel = computed(() => appStore.activeWebsite?.name || 'this brand')
 
 function cssVar(name, fallback) {
   if (typeof window === 'undefined') return fallback
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 }
 
-/* ── Domain palette for the overview chart ── */
-const DOMAIN_SERIES = [
-  { key: 'treasury.ri', label: 'treasury.ripple.com', color: '#475569', data: [76, 6, 5, 4] },
-  { key: 'highradius', label: 'highradius.com', color: '#8b5cf6', data: [68, 6, 4, 3] },
-  { key: 'treasuryvi', label: 'treasuryview.com', color: '#5b8def', data: [51, 5, 6, 5] },
-  { key: 'gartner.co', label: 'gartner.com', color: '#ec4899', data: [65, 2, 2, 2] },
-  { key: 'nomentia.c', label: 'nomentia.com', color: '#f59e0b', data: [62, 2, 1, 1] },
-]
-const CHART_LABELS = ['May 22', 'May 23', 'May 24', 'May 25']
+/* ── Remote state ── */
+const loading = ref(true)
+const error = ref('')
 const resolution = ref('D')
 
+const DOMAIN_PALETTE = [
+  '#475569', '#8b5cf6', '#5b8def', '#ec4899', '#f59e0b',
+  '#22c55e', '#06b6d4', '#f97316', '#14b8a6', '#eab308',
+]
+
+/* Overview chart (populated from the API). */
+const domainSeries = ref([])
+const chartLabels = ref([])
+
 const chartData = computed(() => ({
-  labels: CHART_LABELS,
-  datasets: DOMAIN_SERIES.map(d => ({
+  labels: chartLabels.value,
+  datasets: domainSeries.value.map(d => ({
     label: d.label,
     data: d.data,
     borderColor: d.color,
@@ -100,58 +108,29 @@ const chartOptions = computed(() => {
 /* ── URL movers ── */
 const moverTab = ref('Top')
 const moverTabs = ['Top', 'New', 'Trending', 'Losing']
-
-const MOVERS = {
-  Top: [
-    { title: 'Top 10 Treasury Management Systems for 2026: AI-Powered Intelligence Meets Proven Excellence', retrievals: 91 },
-    { title: 'Best Treasury Management Systems Reviews 2026 | Gartner Peer Insights', retrievals: 73 },
-    { title: '8 best treasury management solutions', retrievals: 67 },
-    { title: 'Best Treasury Management Software for SMBs in 2025: Compare and Choose', retrievals: 65 },
-    { title: '12 Best Treasury Management Software for 2026', retrievals: 62 },
-    { title: 'Best treasury software solutions — Cygnetise', retrievals: 56 },
-    { title: 'The 13 best treasury management software solutions in 2026', retrievals: 52 },
-    { title: 'The 5 Best Treasury Management Software Solutions of 2026', retrievals: 47 },
-  ],
-  New: [
-    { title: 'AI Treasury Automation: The 2026 Buyer\'s Guide', retrievals: 34 },
-    { title: 'Cash Forecasting Tools Compared — Spring 2026', retrievals: 28 },
-    { title: 'How Mid-Market CFOs Pick a TMS', retrievals: 21 },
-    { title: 'Real-Time Liquidity Dashboards: A Primer', retrievals: 14 },
-  ],
-  Trending: [
-    { title: 'Best Treasury Management Software for SMBs in 2025: Compare and Choose', retrievals: 65 },
-    { title: '12 Best Treasury Management Software for 2026', retrievals: 62 },
-    { title: 'AI Treasury Automation: The 2026 Buyer\'s Guide', retrievals: 34 },
-    { title: 'Cash Forecasting Tools Compared — Spring 2026', retrievals: 28 },
-  ],
-  Losing: [
-    { title: 'Best treasury software solutions — Cygnetise', retrievals: 56 },
-    { title: 'The 13 best treasury management software solutions in 2026', retrievals: 52 },
-    { title: 'Legacy ERP Treasury Modules: Still Worth It?', retrievals: 19 },
-    { title: 'Spreadsheet Treasury: When to Move On', retrievals: 11 },
-  ],
-}
-const moverRows = computed(() => MOVERS[moverTab.value] || [])
+const movers = ref({ Top: [], New: [], Trending: [], Losing: [] })
+const moverRows = computed(() => movers.value[moverTab.value] || [])
 const moverMax = computed(() => Math.max(1, ...moverRows.value.map(r => r.retrievals)))
 
-const URL_TYPES = [
-  { type: 'Listicle', pct: 30, color: '#5b8def' },
-  { type: 'Other', pct: 15, color: '#94a3b8' },
-  { type: 'Article', pct: 14, color: '#22c55e' },
-  { type: 'Product Page', pct: 12, color: '#8b5cf6' },
-  { type: 'Comparison', pct: 9, color: '#06b6d4' },
-  { type: 'Homepage', pct: 5, color: '#f97316' },
-  { type: 'How-To Guide', pct: 5, color: '#14b8a6' },
-  { type: 'Category Page', pct: 5, color: '#eab308' },
-]
+const urlTypes = ref([])
+const totalRetrievals = ref(0)
 
-/* ── AI models for the mentions column ── */
+/* ── AI models for the mentions column (with graceful fallback) ── */
 const MODELS = {
   chatgpt: { label: 'ChatGPT', color: '#10a37f', initial: 'C' },
   perplexity: { label: 'Perplexity', color: '#8b5cf6', initial: 'P' },
   gemini: { label: 'Gemini', color: '#5b8def', initial: 'G' },
   claude: { label: 'Claude', color: '#f97316', initial: 'A' },
   copilot: { label: 'Copilot', color: '#06b6d4', initial: 'M' },
+  grok: { label: 'Grok', color: '#0f172a', initial: 'X' },
+  deepseek: { label: 'DeepSeek', color: '#2563eb', initial: 'D' },
+  mistral: { label: 'Mistral', color: '#ef4444', initial: 'M' },
+  cohere: { label: 'Cohere', color: '#d946ef', initial: 'O' },
+  llama: { label: 'Llama', color: '#0ea5e9', initial: 'L' },
+  nova: { label: 'Nova', color: '#64748b', initial: 'N' },
+}
+function modelStyle(key) {
+  return MODELS[key] || { label: key, color: '#94a3b8', initial: (key || '?')[0].toUpperCase() }
 }
 
 const DOMAIN_TYPE_STYLES = {
@@ -160,45 +139,102 @@ const DOMAIN_TYPE_STYLES = {
   Editorial: { bg: 'rgba(91,141,239,0.12)', fg: '#5b8def' },
   UGC: { bg: 'rgba(34,197,94,0.12)', fg: '#22c55e' },
 }
+function domainStyle(type) {
+  return DOMAIN_TYPE_STYLES[type] || { bg: 'rgba(100,116,139,0.12)', fg: '#64748b' }
+}
 
 /* ── URLs table ── */
 const gapAnalysis = ref(true)
 const search = ref('')
-
-const URLS = [
-  { title: 'Random Prompt Generator - (Free, No Signup AI Tool)', path: 'theresanaiforthat.com/@alexisrotem/random-prompt-generator', type: 'Other', domainType: 'Reference', models: ['gemini'], retrievals: 6, citationRate: 0.0, gap: 6, bookmarked: false },
-  { title: '3 Ways to Curb Your Spending Problem | YNAB', path: 'ynab.com/blog/3-ways-to-curb-a-money-spending-problem', type: 'Other', domainType: 'Corporate', models: ['chatgpt'], retrievals: 3, citationRate: 2.3, gap: 3, bookmarked: true, flagged: true },
-  { title: 'Best Budget Apps (2026): YNAB, Monarch, Copilot Compared', path: 'appstested.com/best-budget-apps', type: 'Other', domainType: 'Editorial', models: ['chatgpt', 'perplexity', 'copilot'], extra: 3, retrievals: 2, citationRate: 0.0, gap: 12, bookmarked: true, verified: true },
-  { title: 'Best Apps to Save Money in 2026: Cut Your Bills by $300/Mo...', path: 'blog.iambeezy.app/en/best-apps-to-save-money-2026', type: 'Other', domainType: 'UGC', models: ['gemini', 'chatgpt'], retrievals: 2, citationRate: 4.0, gap: 4 },
-  { title: 'Fix Your Budget: What to Do When Your Budget Isn\'t Working', path: 'believeinabudget.com/fix-your-budget', type: 'Other', domainType: 'Editorial', models: ['gemini', 'perplexity', 'claude'], extra: 1, retrievals: 1, citationRate: 0.0, gap: 4 },
-  { title: 'Go City Chicago Pass: My Top Tips to Save on Attractions!', path: 'lemon8-app.com/heroiisa/7411842242845262342?region=us', type: 'Other', domainType: 'UGC', models: ['gemini', 'perplexity'], extra: 1, retrievals: 1, citationRate: 1.0, gap: 4 },
-  { title: 'How To Automate And Streamline Your Cash Flow Processes - ...', path: 'fastercapital.com/topics/how-to-automate-and-streamline-your-c...', type: 'Other', domainType: 'Corporate', models: ['gemini', 'perplexity', 'copilot'], retrievals: 1, citationRate: 0.0, gap: 3 },
-  { title: 'Why Mellow Finance Believes Curators Will Shape the Future o...', path: 'binance.com/en/square/post/22298800227666', type: 'Other', domainType: 'Corporate', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: 'RFP (Idea): Protocol-Owned Liquidity on Uniswap v3 Utilizing ...', path: 'community.radiant.capital/t/rfp-idea-protocol-owned-liquidity-on-...', type: 'Other', domainType: 'Corporate', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: 'Can Mellow Finance Redefine DeFi Asset Management? A Rev...', path: 'defi-planet.com/2026/04/can-mellow-finance-redefine-defi-asse...', type: 'Other', domainType: 'Editorial', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: 'How to Fix a Failing Budget', path: 'howtomoney.com/fix-a-failing-budget', type: 'Other', domainType: 'Reference', models: ['chatgpt'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: '5 Apps For Money Management', path: 'hydratewithcore.com/blog/5-apps-for-money-management', type: 'Other', domainType: 'Corporate', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: 'This article compares the four LP automation management pro...', path: 'odaily.news/en/post/5181696', type: 'Other', domainType: 'Editorial', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-  { title: 'Uniswap V3: Economic Powerhouse of Modern AMMs | Rango ...', path: 'rango.exchange/learn/market-trends/uniswap-v3-technical-review', type: 'Other', domainType: 'Corporate', models: ['gemini'], retrievals: 1, citationRate: 0.0, gap: 1 },
-]
+const urls = ref([])
 
 const filteredUrls = computed(() => {
   const q = search.value.trim().toLowerCase()
-  if (!q) return URLS
-  return URLS.filter(u =>
-    u.title.toLowerCase().includes(q) || u.path.toLowerCase().includes(q))
+  if (!q) return urls.value
+  return urls.value.filter(u =>
+    (u.title || '').toLowerCase().includes(q) || (u.path || '').toLowerCase().includes(q))
 })
+
+/* ── Data fetch ── */
+function mapRow(r) {
+  const models = Array.isArray(r.models) ? r.models : []
+  return {
+    title: r.title,
+    path: r.path,
+    url: r.url,
+    normalizedUrl: r.normalized_url,
+    type: r.url_type,
+    domainType: r.domain_type,
+    models: models.slice(0, 4),
+    extra: Math.max(0, models.length - 4),
+    retrievals: r.retrievals,
+    citationRate: r.citation_rate ?? 0,
+    gap: r.gap_score ?? 0,
+    isTarget: r.is_target,
+    isCompetitor: r.is_competitor,
+    bookmarked: false,
+    flagged: r.is_competitor,
+    verified: r.is_target,
+  }
+}
+
+async function load() {
+  if (!websiteId.value) return
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await citationsApi.websiteUrls(websiteId.value)
+    const data = res.data?.data || res.data || {}
+    chartLabels.value = data.overview?.labels || []
+    domainSeries.value = (data.overview?.series || []).map((s, i) => ({
+      key: s.label,
+      label: s.label,
+      color: s.color || DOMAIN_PALETTE[i % DOMAIN_PALETTE.length],
+      data: s.data || [],
+    }))
+    movers.value = {
+      Top: data.movers?.Top || [],
+      New: data.movers?.New || [],
+      Trending: data.movers?.Trending || [],
+      Losing: data.movers?.Losing || [],
+    }
+    urlTypes.value = (data.url_types || []).map(t => ({ type: t.type, pct: t.pct, color: t.color }))
+    totalRetrievals.value = data.total_retrievals || 0
+    urls.value = (data.urls || []).map(mapRow)
+  } catch (e) {
+    error.value = e?.displayMessage || 'Failed to load URL analytics.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
+watch(websiteId, load)
+
+function openDetail(row) {
+  router.push({
+    name: 'sources-url-detail',
+    params: { websiteId: websiteId.value },
+    query: { url: row.normalizedUrl || row.url },
+  })
+}
 
 function toggleBookmark(row) {
   row.bookmarked = !row.bookmarked
 }
 
 function faviconFor(path) {
-  const domain = path.split('/')[0]
+  const domain = (path || '').split('/')[0]
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
 }
 function onFaviconError(e) {
   e.target.style.visibility = 'hidden'
+}
+
+function totalRetrievalsLabel() {
+  const n = totalRetrievals.value
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(n)
 }
 </script>
 
@@ -224,6 +260,13 @@ function onFaviconError(e) {
         <span>{{ pill }}</span>
         <ChevronDown class="size-3.5 text-muted-foreground" />
       </button>
+    </div>
+
+    <div v-if="error" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+      {{ error }}
+    </div>
+    <div v-if="loading" class="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 class="size-4 animate-spin" /> Loading URL analytics…
     </div>
 
     <!-- ── Overview ── -->
@@ -254,11 +297,12 @@ function onFaviconError(e) {
           <Line :data="chartData" :options="chartOptions" />
         </div>
         <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span v-for="d in DOMAIN_SERIES" :key="d.key"
+          <span v-for="d in domainSeries" :key="d.key"
             class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <span class="size-2 rounded-full" :style="{ background: d.color }" />
-            {{ d.key }}...
+            {{ d.label }}
           </span>
+          <span v-if="!domainSeries.length && !loading" class="text-xs text-muted-foreground">No retrievals in this period yet.</span>
         </div>
       </CardContent>
     </Card>
@@ -302,10 +346,10 @@ function onFaviconError(e) {
             <CardTitle class="text-base">URL types</CardTitle>
             <Info class="size-3.5 text-muted-foreground" />
           </div>
-          <span class="text-xs text-muted-foreground">Total retrievals: 10.7k</span>
+          <span class="text-xs text-muted-foreground">Total retrievals: {{ totalRetrievalsLabel() }}</span>
         </CardHeader>
         <CardContent class="space-y-3">
-          <div v-for="t in URL_TYPES" :key="t.type"
+          <div v-for="t in urlTypes" :key="t.type"
             class="relative flex items-center justify-between gap-3 overflow-hidden rounded-md px-3 py-2">
             <div class="absolute inset-y-0 left-0 rounded-md bg-secondary"
               :style="{ width: (t.pct * 3) + '%' }" />
@@ -387,6 +431,7 @@ function onFaviconError(e) {
             </thead>
             <tbody>
               <tr v-for="(row, i) in filteredUrls" :key="i"
+                @click="openDetail(row)"
                 class="cursor-pointer border-b border-border/60 transition-colors hover:bg-muted/50">
                 <td class="py-3 pl-1">
                   <button @click.stop="toggleBookmark(row)" class="text-muted-foreground hover:text-foreground">
@@ -409,7 +454,7 @@ function onFaviconError(e) {
                 <td class="py-3 pr-3 text-muted-foreground">{{ row.type }}</td>
                 <td class="py-3 pr-3">
                   <span class="rounded-md px-2 py-0.5 text-xs font-semibold"
-                    :style="{ background: DOMAIN_TYPE_STYLES[row.domainType].bg, color: DOMAIN_TYPE_STYLES[row.domainType].fg }">
+                    :style="{ background: domainStyle(row.domainType).bg, color: domainStyle(row.domainType).fg }">
                     {{ row.domainType }}
                   </span>
                 </td>
@@ -417,8 +462,8 @@ function onFaviconError(e) {
                   <div class="flex items-center -space-x-1.5">
                     <span v-for="m in row.models" :key="m"
                       class="flex size-5 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-card"
-                      :style="{ background: MODELS[m].color }" :title="MODELS[m].label">
-                      {{ MODELS[m].initial }}
+                      :style="{ background: modelStyle(m).color }" :title="modelStyle(m).label">
+                      {{ modelStyle(m).initial }}
                     </span>
                     <span v-if="row.extra"
                       class="flex h-5 items-center justify-center rounded-full bg-secondary px-1.5 text-[10px] font-bold text-muted-foreground ring-2 ring-card">
@@ -434,19 +479,18 @@ function onFaviconError(e) {
                 </td>
                 <td v-if="gapAnalysis" class="py-3 pr-3 text-right tabular-nums font-semibold text-foreground">{{ row.gap }}</td>
               </tr>
+              <tr v-if="!loading && !filteredUrls.length">
+                <td :colspan="gapAnalysis ? 8 : 7" class="py-10 text-center text-sm text-muted-foreground">
+                  No URLs found{{ search ? ' for this search.' : ' yet. Run an LLM ranking audit to start collecting sources.' }}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- pagination -->
-        <div class="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <div class="flex items-center gap-1">
-            <button class="rounded-md border border-border p-1 hover:bg-secondary"><ChevronLeft class="size-4" /></button>
-            <button class="rounded-md bg-secondary px-2.5 py-1 font-semibold text-foreground">1</button>
-            <button class="rounded-md px-2.5 py-1 hover:bg-secondary">2</button>
-            <button class="rounded-md border border-border p-1 hover:bg-secondary"><ChevronRight class="size-4" /></button>
-          </div>
-          <span>15 items</span>
+        <div class="mt-4 flex items-center justify-end text-sm text-muted-foreground">
+          <span>{{ filteredUrls.length }} items</span>
         </div>
       </CardContent>
     </Card>
