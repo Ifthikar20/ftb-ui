@@ -5,8 +5,7 @@ import {
   Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement,
   CategoryScale, LinearScale, Filler,
 } from 'chart.js'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
 import { fallbackBrands } from './placeholders'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
@@ -16,59 +15,92 @@ const props = defineProps({
   activeName: { type: String, default: '' },
 })
 
-const resolution = ref('day')
+const view = ref('both')
+const tabs = [
+  { key: 'brand', label: 'Brand' },
+  { key: 'competitors', label: 'Competitors' },
+  { key: 'both', label: 'Both' },
+]
 
-const POINTS = { day: 7, week: 8, month: 6 }
-const LABELS = {
-  day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  week: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'],
-  month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-}
-const PALETTE = ['--chart-1', '--chart-2', '--chart-4', '--chart-3', '--chart-5']
+const POINTS = 12
+const LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const BRAND_COLOR = '#FF385C'
+const COMP_COLOR = '#00A699'
 
 function cssVar(name, fallback) {
   if (typeof window === 'undefined') return fallback
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 }
+function withAlpha(hex, alpha) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex
+  return hex + Math.round(alpha * 255).toString(16).padStart(2, '0')
+}
+function gradientFor(color) {
+  return (ctx) => {
+    const { chart } = ctx
+    const { ctx: c, chartArea } = chart
+    if (!chartArea) return withAlpha(color, 0.12)
+    const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+    g.addColorStop(0, withAlpha(color, 0.16))
+    g.addColorStop(1, withAlpha(color, 0))
+    return g
+  }
+}
 
-const brandList = computed(() => (props.brands?.length ? props.brands : fallbackBrands(props.activeName)).slice(0, 7))
+const brandList = computed(() => (props.brands?.length ? props.brands : fallbackBrands(props.activeName)))
 
-// Deterministic gentle variation around each brand's baseline visibility.
-function seriesFor(base, n, seed) {
-  return Array.from({ length: n }, (_, i) => {
-    const wobble = Math.sin((i + seed) * 0.9) * Math.min(3, base * 0.08)
-    return Math.max(0, +(base + wobble).toFixed(1))
+function series(base, seed) {
+  return Array.from({ length: POINTS }, (_, i) => {
+    const drift = (i / (POINTS - 1)) * base * 0.18
+    const wobble = Math.sin((i + seed) * 0.8) * Math.min(2.5, base * 0.06)
+    return Math.max(0, +(base - base * 0.1 + drift + wobble).toFixed(1))
   })
 }
 
+const brandSeries = computed(() => series(brandList.value[0]?.visibility ?? 60, 1))
+const compSeries = computed(() => {
+  const rest = brandList.value.slice(1)
+  const avg = rest.length ? rest.reduce((s, b) => s + b.visibility, 0) / rest.length : 4
+  return series(avg, 4)
+})
+
+const avg = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0)
+const brandAvg = computed(() => Math.round(avg(brandSeries.value)))
+const compAvg = computed(() => Math.round(avg(compSeries.value)))
+
+const baseDataset = {
+  fill: true,
+  tension: 0.4,
+  cubicInterpolationMode: 'monotone',
+  borderWidth: 2.5,
+  pointRadius: 0,
+  pointHoverRadius: 5,
+  pointHoverBorderWidth: 2.5,
+  pointHoverBorderColor: '#fff',
+}
+
 const chartData = computed(() => {
-  const n = POINTS[resolution.value]
-  const fg = cssVar('--foreground', '#0f172a')
-  return {
-    labels: LABELS[resolution.value].slice(0, n),
-    datasets: brandList.value.map((b, idx) => {
-      const isTop = idx === 0
-      const color = isTop ? fg : cssVar(PALETTE[(idx - 1) % PALETTE.length], '#5b8def')
-      return {
-        label: b.name,
-        data: seriesFor(b.visibility, n, idx + 1),
-        borderColor: color,
-        backgroundColor: color,
-        borderWidth: isTop ? 2.5 : 1.5,
-        tension: 0.4,
-        cubicInterpolationMode: 'monotone',
-        pointRadius: 0,
-        pointHoverRadius: 4,
-      }
-    }),
+  const datasets = []
+  if (view.value === 'both' || view.value === 'brand') {
+    datasets.push({
+      ...baseDataset, label: 'Your Brand', data: brandSeries.value,
+      borderColor: BRAND_COLOR, backgroundColor: gradientFor(BRAND_COLOR), pointHoverBackgroundColor: BRAND_COLOR,
+    })
   }
+  if (view.value === 'both' || view.value === 'competitors') {
+    datasets.push({
+      ...baseDataset, label: 'Competitor Avg', data: compSeries.value,
+      borderColor: COMP_COLOR, backgroundColor: gradientFor(COMP_COLOR), pointHoverBackgroundColor: COMP_COLOR,
+    })
+  }
+  return { labels: LABELS.slice(0, POINTS), datasets }
 })
 
 const chartOptions = computed(() => {
-  const grid = cssVar('--border', 'rgba(0,0,0,0.08)')
-  const text = cssVar('--muted-foreground', '#64748b')
+  const text = cssVar('--muted-foreground', '#717171')
   const popover = cssVar('--popover', '#ffffff')
-  const popoverFg = cssVar('--popover-foreground', '#0f172a')
+  const popoverFg = cssVar('--popover-foreground', '#222222')
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -78,48 +110,75 @@ const chartOptions = computed(() => {
       tooltip: {
         usePointStyle: true,
         backgroundColor: popover,
-        titleColor: popoverFg,
+        titleColor: text,
         bodyColor: popoverFg,
-        borderColor: grid,
+        borderColor: '#EBEBEB',
         borderWidth: 1,
-        cornerRadius: 8,
-        padding: 10,
+        cornerRadius: 12,
+        padding: 12,
+        boxPadding: 6,
+        titleFont: { weight: '600', size: 12 },
+        bodyFont: { weight: '600', size: 13 },
         callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` },
       },
     },
     scales: {
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: text, font: { size: 12 } } },
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: text, font: { size: 12, weight: '600' }, padding: 8 } },
       y: {
-        grid: { color: grid },
+        grid: { color: '#F0F0F0' },
         border: { display: false },
-        ticks: { color: text, callback: (v) => `${v}%`, maxTicksLimit: 4 },
+        ticks: { color: '#B0B0B0', font: { size: 11 }, callback: (v) => `${v}%`, maxTicksLimit: 5, padding: 6 },
       },
     },
   }
 })
-
-const rangeLabel = computed(() => ({ day: '7 days', week: '8 weeks', month: '6 months' }[resolution.value]))
 </script>
 
 <template>
-  <Card>
-    <CardHeader class="flex-row items-center justify-between space-y-0">
-      <CardTitle class="text-base">Visibility</CardTitle>
-      <Tabs v-model="resolution" default-value="day">
-        <TabsList class="h-8">
-          <TabsTrigger value="day" class="text-xs">D</TabsTrigger>
-          <TabsTrigger value="week" class="text-xs">W</TabsTrigger>
-          <TabsTrigger value="month" class="text-xs">M</TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </CardHeader>
-    <CardContent>
+  <Card class="overflow-hidden rounded-2xl border-border p-0 shadow-none">
+    <div class="px-7 pt-6">
+      <div class="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-[22px] font-extrabold leading-tight tracking-tight text-foreground">Visibility Overview</h2>
+          <p class="mt-1 text-sm text-muted-foreground">Showing brand visibility for the last 12 months</p>
+        </div>
+        <div class="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
+          <button
+            v-for="t in tabs"
+            :key="t.key"
+            type="button"
+            class="rounded-lg px-4 py-1.5 text-[13px] font-bold transition-colors"
+            :class="view === t.key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+            @click="view = t.key"
+          >{{ t.label }}</button>
+        </div>
+      </div>
+
+      <div class="mb-1 flex gap-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brand Visibility</p>
+          <div class="mt-0.5 flex items-baseline gap-2">
+            <span class="text-[28px] font-extrabold text-foreground">{{ brandAvg }}%</span>
+            <span class="rounded-md bg-[#E8F5E9] px-2 py-0.5 text-[13px] font-bold text-[#008A05]">+14.2%</span>
+          </div>
+        </div>
+        <div class="w-px bg-border" />
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Competitor Avg</p>
+          <div class="mt-0.5 flex items-baseline gap-2">
+            <span class="text-[28px] font-extrabold text-foreground">{{ compAvg }}%</span>
+            <span class="rounded-md bg-[#E8F5E9] px-2 py-0.5 text-[13px] font-bold text-[#008A05]">+3.1%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 h-px w-full bg-border" />
+
+    <div class="py-4 pl-0 pr-2">
       <div class="h-[300px]">
         <Line :data="chartData" :options="chartOptions" />
       </div>
-    </CardContent>
-    <CardFooter class="text-sm text-muted-foreground">
-      Showing data for the last {{ rangeLabel }}
-    </CardFooter>
+    </div>
   </Card>
 </template>

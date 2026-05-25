@@ -2,15 +2,17 @@
 // can replace these by passing props into the cards; until then the cards
 // render representative data so the layout is fully populated.
 
+export const AVATAR_COLORS = ['#FF385C', '#00A699', '#FC642D', '#484848', '#767676', '#008489', '#5B8DEF']
+
 export function fallbackBrands(activeName) {
   return [
-    { rank: 1, name: activeName || 'Your Brand', visibility: 65, sov: 95, sentiment: 58, position: 6.7 },
-    { rank: 2, name: 'Northwind', visibility: 6, sov: 2, sentiment: 61, position: 4.1 },
-    { rank: 3, name: 'Acme Corp', visibility: 3, sov: 1, sentiment: 63, position: 4.3 },
-    { rank: 4, name: 'Globex', visibility: 3, sov: 1, sentiment: 62, position: 5.8 },
-    { rank: 5, name: 'Initech', visibility: 3, sov: 1, sentiment: 63, position: 3.6 },
-    { rank: 6, name: 'Umbrella', visibility: 3, sov: 1, sentiment: 62, position: 4.1 },
-    { rank: 7, name: 'Soylent', visibility: 2, sov: 0, sentiment: 60, position: 5.3 },
+    { rank: 1, name: activeName || 'Your Brand', category: 'Your brand', visibility: 65, sov: 95, sentiment: 58, position: 6.7, trend: 14.2, up: true },
+    { rank: 2, name: 'Northwind', category: 'Competitor', visibility: 6, sov: 2, sentiment: 61, position: 4.1, trend: 8.1, up: true },
+    { rank: 3, name: 'Acme Corp', category: 'Competitor', visibility: 3, sov: 1, sentiment: 63, position: 4.3, trend: 5.3, up: true },
+    { rank: 4, name: 'Globex', category: 'Competitor', visibility: 3, sov: 1, sentiment: 62, position: 5.8, trend: 2.6, up: true },
+    { rank: 5, name: 'Initech', category: 'Competitor', visibility: 3, sov: 1, sentiment: 63, position: 3.6, trend: 1.1, up: true },
+    { rank: 6, name: 'Umbrella', category: 'Competitor', visibility: 3, sov: 1, sentiment: 62, position: 4.1, trend: 1.2, up: false },
+    { rank: 7, name: 'Soylent', category: 'Competitor', visibility: 2, sov: 0, sentiment: 60, position: 5.3, trend: 3.4, up: false },
   ]
 }
 

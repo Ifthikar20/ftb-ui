@@ -1,7 +1,7 @@
 <template>
   <template v-if="!sessionNeedsOnboarding">
     <SidebarProvider>
-      <Sidebar collapsible="icon" variant="inset">
+      <Sidebar collapsible="icon" variant="sidebar">
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -108,7 +108,7 @@
       </Sidebar>
 
       <SidebarInset>
-        <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border transition-[width,height] ease-linear">
+        <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/95 backdrop-blur transition-[width,height] ease-linear">
           <div class="flex items-center gap-2 px-4">
             <SidebarTrigger class="-ml-1" />
             <Separator orientation="vertical" class="mr-2 h-4" />
