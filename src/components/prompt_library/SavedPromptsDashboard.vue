@@ -455,6 +455,7 @@ const addTags = ref([])
 const addPending = ref(false)
 
 const TAG_PRESETS = ['branded', 'non-branded', 'informational', 'transactional']
+// Only countries the scan can route web search to (see backend regions).
 const LOCATIONS = [
   { code: 'US', name: 'United States' },
   { code: 'GB', name: 'United Kingdom' },
@@ -462,8 +463,6 @@ const LOCATIONS = [
   { code: 'AU', name: 'Australia' },
   { code: 'IN', name: 'India' },
   { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'SG', name: 'Singapore' },
 ]
 const promptCount = computed(() =>
   addText.value.split('\n').map(l => l.trim()).filter(Boolean).length)
