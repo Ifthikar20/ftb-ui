@@ -79,31 +79,31 @@ const breakdown = computed(() => {
   height: 18px;
   padding: 0;
   border-radius: 9999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
+  border: 1px solid var(--border);
+  background: var(--card);
   overflow: hidden;
   cursor: default;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .em-clickable { cursor: pointer; }
 .em-untested {
   border-style: dashed;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   background: transparent;
 }
 .em-fill {
   position: absolute;
   inset: 0 auto 0 0;
   height: 100%;
-  background: var(--brand-accent);
+  background: var(--primary);
   opacity: 0.18;
   transition: width 200ms ease-out;
 }
-.em-success .em-fill { background: var(--color-success, #16a34a); opacity: 0.22; }
-.em-warning .em-fill { background: var(--color-warning, #f59e0b); opacity: 0.22; }
-.em-danger .em-fill  { background: var(--color-danger, #dc2626); opacity: 0.18; }
+.em-success .em-fill { background: var(--chart-2); opacity: 0.22; }
+.em-warning .em-fill { background: var(--chart-3); opacity: 0.22; }
+.em-danger .em-fill  { background: var(--destructive); opacity: 0.18; }
 .em-label {
   position: relative;
   z-index: 1;
@@ -116,8 +116,8 @@ const breakdown = computed(() => {
   gap: 4px;
   padding: 6px 8px;
   border-radius: 8px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
 }
 .em-row {
   display: grid;
@@ -125,22 +125,22 @@ const breakdown = computed(() => {
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 .em-row-bar {
   height: 4px;
   border-radius: 9999px;
-  background: var(--border-color);
+  background: var(--border);
   overflow: hidden;
 }
 .em-row-fill {
   display: block;
   height: 100%;
-  background: var(--brand-accent);
+  background: var(--primary);
 }
 .em-row-val {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 </style>

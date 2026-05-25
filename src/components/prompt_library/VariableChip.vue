@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import AirChip from '@/components/ui/AirChip.vue'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
   name: { type: String, required: true },
@@ -10,21 +10,21 @@ const props = defineProps({
 defineEmits(['request-edit'])
 
 const resolved = computed(() => props.value !== null && props.value !== undefined && String(props.value).length > 0)
-const variant = computed(() => (resolved.value ? 'info' : 'warning'))
+const variant = computed(() => (resolved.value ? 'secondary' : 'warning'))
 const tooltip = computed(() =>
   resolved.value ? `{{ ${props.name} }} = ${props.value}` : `{{ ${props.name} }} not set — click to fill`,
 )
 </script>
 
 <template>
-  <AirChip
+  <Badge
     as="button"
-    size="xs"
     :variant="variant"
     :title="tooltip"
+    class="cursor-pointer"
     @click="$emit('request-edit', name)"
   >
     <span v-if="resolved">{{ value }}</span>
     <span v-else>{{ name }}</span>
-  </AirChip>
+  </Badge>
 </template>

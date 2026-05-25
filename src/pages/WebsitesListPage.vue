@@ -1,62 +1,74 @@
 <template>
-  <div class="websites-page fade-in">
-    <div class="page-header">
+  <div class="websites-page mx-auto max-w-6xl px-6 py-8 sm:px-8">
+    <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 class="page-title">Projects</h1>
-        <p class="page-subtitle">Manage your projects and tracking pixels.</p>
+        <h1 class="text-2xl font-semibold tracking-tight text-foreground">Projects</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage your projects and tracking pixels.</p>
       </div>
-      <button class="btn btn-primary" @click="openWizard" :disabled="!appStore.canCreateProject">
+      <Button @click="openWizard" :disabled="!appStore.canCreateProject">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Project
-      </button>
+      </Button>
     </div>
 
-    <div v-if="websites.length === 0" class="empty-state">
-      <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><circle cx="24" cy="24" r="20"/><line x1="4" y1="24" x2="44" y2="24"/><ellipse cx="24" cy="24" rx="10" ry="20"/></svg></div>
-      <h3 class="empty-state-title">No projects yet</h3>
-      <p class="empty-state-desc">Add your first project to start tracking visitors, generating leads, and getting AI-powered growth strategies.</p>
-      <button class="btn btn-primary" @click="openWizard">Add Your First Project</button>
-    </div>
-
-    <div v-else class="websites-grid">
-      <div v-for="site in websites" :key="site.id" class="card card-hover website-card" @click="$router.push(`/websites/${site.id}`)">
-        <div class="site-header">
-          <div class="site-favicon">{{ site.name?.[0]?.toUpperCase() || '?' }}</div>
-          <div>
-            <h3 class="site-name">{{ site.name }}</h3>
-            <p class="site-url text-muted text-sm truncate">{{ site.url }}</p>
-          </div>
-          <span class="badge" :class="site.pixel_verified ? 'badge-success' : 'badge-warning'">
-            {{ site.pixel_verified ? 'Pixel Active' : 'Pixel Pending' }}
-          </span>
-          <div class="site-actions">
-            <button class="btn-action-project" @click.stop="openRename(site)" title="Rename">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-            </button>
-            <button class="btn-action-project btn-action-danger" @click.stop="confirmDelete(site)" title="Delete">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="site-stats">
-          <div class="site-stat">
-            <span class="text-muted text-xs">Visitors</span>
-            <span class="font-semibold">—</span>
-          </div>
-          <div class="site-stat">
-            <span class="text-muted text-xs">Leads</span>
-            <span class="font-semibold">—</span>
-          </div>
-          <div class="site-stat">
-            <span class="text-muted text-xs">Score</span>
-            <span class="font-semibold">—</span>
-          </div>
-          <div class="site-stat">
-            <span class="text-muted text-xs">Status</span>
-            <span class="badge badge-success badge-sm">Active</span>
-          </div>
-        </div>
+    <div
+      v-if="websites.length === 0"
+      class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card px-8 py-20 text-center"
+    >
+      <div class="mb-5">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><circle cx="24" cy="24" r="20"/><line x1="4" y1="24" x2="44" y2="24"/><ellipse cx="24" cy="24" rx="10" ry="20"/></svg>
       </div>
+      <h3 class="text-lg font-semibold text-foreground">No projects yet</h3>
+      <p class="mt-2 max-w-md text-sm text-muted-foreground">Add your first project to start tracking visitors, generating leads, and getting AI-powered growth strategies.</p>
+      <Button class="mt-6" @click="openWizard">Add Your First Project</Button>
+    </div>
+
+    <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <Card
+        v-for="site in websites"
+        :key="site.id"
+        class="cursor-pointer p-6 transition-shadow hover:shadow-md"
+        @click="$router.push(`/websites/${site.id}`)"
+      >
+        <div class="mb-4 flex items-center gap-3">
+          <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
+            {{ site.name?.[0]?.toUpperCase() || '?' }}
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-base font-semibold text-foreground">{{ site.name }}</h3>
+            <p class="max-w-[200px] truncate text-sm text-muted-foreground">{{ site.url }}</p>
+          </div>
+          <Badge class="ml-auto" :variant="site.pixel_verified ? 'success' : 'warning'">
+            {{ site.pixel_verified ? 'Pixel Active' : 'Pixel Pending' }}
+          </Badge>
+          <div class="flex flex-shrink-0 gap-1">
+            <Button variant="ghost" size="icon" class="size-7" @click.stop="openRename(site)" title="Rename">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </Button>
+            <Button variant="ghost" size="icon" class="size-7 hover:text-destructive" @click.stop="confirmDelete(site)" title="Delete">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </Button>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-3 border-t border-border pt-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">Visitors</span>
+            <span class="font-semibold text-foreground">—</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">Leads</span>
+            <span class="font-semibold text-foreground">—</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">Score</span>
+            <span class="font-semibold text-foreground">—</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">Status</span>
+            <Badge variant="success" class="w-fit">Active</Badge>
+          </div>
+        </div>
+      </Card>
     </div>
 
     <!-- Onboarding Wizard Modal -->
@@ -64,28 +76,28 @@
       <div class="modal-content slide-up wizard-modal">
         <div class="modal-header">
           <div class="wizard-step-label">STEP {{ wizardStep }} OF {{ TOTAL_STEPS }}</div>
-          <button class="btn-icon btn-ghost" @click="showAddModal = false">✕</button>
+          <Button variant="ghost" size="icon" class="size-8" @click="showAddModal = false">✕</Button>
         </div>
 
         <!-- Step 1: Basic Info -->
         <div v-if="wizardStep === 1" class="wizard-body">
           <h2 class="wizard-title">Add your project</h2>
           <p class="wizard-subtitle">Tell us about your site so we can tailor the rest of the setup.</p>
-          <div class="form-group">
-            <label class="form-label">Project Name</label>
-            <input v-model="newSite.name" class="form-input" placeholder="My Awesome Site" required />
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Project Name</label>
+            <input v-model="newSite.name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="My Awesome Site" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Website URL</label>
-            <input v-model="newSite.url" class="form-input" type="url" placeholder="https://example.com" required />
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Website URL</label>
+            <input v-model="newSite.url" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" type="url" placeholder="https://example.com" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Industry <span class="text-muted">(optional)</span></label>
-            <input v-model="newSite.industry" class="form-input" placeholder="SaaS, E-commerce, etc." />
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Industry <span class="text-muted-foreground">(optional)</span></label>
+            <input v-model="newSite.industry" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="SaaS, E-commerce, etc." />
           </div>
-          <button class="btn btn-primary btn-wizard-continue" :disabled="!newSite.name || !newSite.url" @click="wizardStep = 2">
+          <Button class="mt-2 w-full" size="lg" :disabled="!newSite.name || !newSite.url" @click="wizardStep = 2">
             Continue
-          </button>
+          </Button>
         </div>
 
         <!-- Step 2: Topic Source -->
@@ -111,7 +123,7 @@
                     <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                   </svg>
                   <span class="topic-source-title">Google Search Console</span>
-                  <span class="badge-recommended">Recommended</span>
+                  <Badge variant="outline">Recommended</Badge>
                 </div>
                 <p class="topic-source-desc">
                   Use Google Search Console data to find topics based on your site's actual search performance.
@@ -139,8 +151,8 @@
           </div>
 
           <!-- GSC informational note (no fake OAuth) -->
-          <div v-if="topicSource === 'gsc'" class="gsc-info-panel">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--text-muted)">
+          <div v-if="topicSource === 'gsc'" class="flex items-start gap-2.5 rounded-xl border border-border bg-muted px-3.5 py-3 text-sm leading-relaxed text-muted-foreground">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--muted-foreground)">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
             </svg>
             <span>
@@ -148,12 +160,9 @@
             </span>
           </div>
 
-          <button
-            class="btn btn-primary btn-wizard-continue"
-            @click="wizardStep = 3"
-          >
+          <Button class="mt-2 w-full" size="lg" @click="wizardStep = 3">
             Continue
-          </button>
+          </Button>
 
           <p class="wizard-helper">You can switch methods anytime from settings.</p>
 
@@ -179,11 +188,11 @@
               <div class="platform-check" v-if="newSite.platform_type === p.id">✓</div>
             </div>
           </div>
-          <div class="wizard-nav">
-            <button class="btn btn-secondary" @click="wizardStep = 2">Back</button>
-            <button class="btn btn-primary" :disabled="!newSite.platform_type" @click="createAndGoToPixel">
+          <div class="mt-2 flex justify-between gap-3">
+            <Button variant="secondary" @click="wizardStep = 2">Back</Button>
+            <Button :disabled="!newSite.platform_type" @click="createAndGoToPixel">
               {{ adding ? 'Creating...' : 'Continue' }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -215,11 +224,11 @@
             <button class="pixel-copy-btn" @click="copyPixel">{{ copied ? 'Copied!' : 'Copy' }}</button>
           </div>
 
-          <div class="wizard-nav">
-            <button class="btn btn-secondary" @click="showAddModal = false">Done</button>
-            <button class="btn btn-primary" @click="showAddModal = false; $router.push(`/websites/${createdSite?.id}`)">
+          <div class="mt-2 flex justify-between gap-3">
+            <Button variant="secondary" @click="showAddModal = false">Done</Button>
+            <Button @click="showAddModal = false; $router.push(`/websites/${createdSite?.id}`)">
               Go to Project →
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -229,17 +238,17 @@
     <div v-if="renameTarget" class="modal-overlay" @click.self="renameTarget = null">
       <div class="modal-content slide-up">
         <div class="modal-header">
-          <h2 class="modal-title">Rename Project</h2>
-          <button class="btn-icon btn-ghost" @click="renameTarget = null">✕</button>
+          <h2 class="text-lg font-semibold text-foreground">Rename Project</h2>
+          <Button variant="ghost" size="icon" class="size-8" @click="renameTarget = null">✕</Button>
         </div>
-        <form @submit.prevent="renameWebsite" style="display:flex;flex-direction:column;gap:16px">
-          <div class="form-group">
-            <label class="form-label">Project Name</label>
-            <input v-model="renameName" class="form-input" placeholder="Project name" required />
+        <form @submit.prevent="renameWebsite" class="flex flex-col gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Project Name</label>
+            <input v-model="renameName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Project name" required />
           </div>
-          <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button type="button" class="btn btn-secondary" @click="renameTarget = null">Cancel</button>
-            <button type="submit" class="btn btn-primary" :disabled="renaming || !renameName.trim()">{{ renaming ? 'Saving...' : 'Save' }}</button>
+          <div class="flex justify-end gap-2">
+            <Button type="button" variant="secondary" @click="renameTarget = null">Cancel</Button>
+            <Button type="submit" :disabled="renaming || !renameName.trim()">{{ renaming ? 'Saving...' : 'Save' }}</Button>
           </div>
         </form>
       </div>
@@ -249,13 +258,13 @@
     <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
       <div class="modal-content slide-up">
         <div class="modal-header">
-          <h2 class="modal-title">Delete Project</h2>
-          <button class="btn-icon btn-ghost" @click="deleteTarget = null">✕</button>
+          <h2 class="text-lg font-semibold text-foreground">Delete Project</h2>
+          <Button variant="ghost" size="icon" class="size-8" @click="deleteTarget = null">✕</Button>
         </div>
-        <p style="margin: 0 0 16px; color: var(--text-secondary); font-size: 13px;">Are you sure you want to delete <strong>{{ deleteTarget.name }}</strong>? This will remove all tracking data, analytics, keywords, and audit history. This cannot be undone.</p>
-        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-          <button class="btn btn-secondary" @click="deleteTarget = null">Cancel</button>
-          <button class="btn btn-danger" @click="deleteWebsite" :disabled="deleting">{{ deleting ? 'Deleting...' : 'Delete' }}</button>
+        <p class="mb-4 text-sm text-muted-foreground">Are you sure you want to delete <strong>{{ deleteTarget.name }}</strong>? This will remove all tracking data, analytics, keywords, and audit history. This cannot be undone.</p>
+        <div class="flex justify-end gap-2">
+          <Button variant="secondary" @click="deleteTarget = null">Cancel</Button>
+          <Button variant="destructive" @click="deleteWebsite" :disabled="deleting">{{ deleting ? 'Deleting...' : 'Delete' }}</Button>
         </div>
       </div>
     </div>
@@ -266,6 +275,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import websitesApi from '@/api/websites'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 import { useRouter } from 'vue-router'
 
@@ -392,94 +404,39 @@ function openWizard() {
 </script>
 
 <style scoped>
-.websites-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 16px;
-}
-
-.website-card {
-  cursor: pointer;
-}
-
-.site-header {
+/* ── Modal shell (kept; remapped to shadcn tokens) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+.modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
-
-.site-favicon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--brand-gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: var(--font-lg);
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.site-name {
-  font-weight: 600;
-  font-size: var(--font-md);
-}
-
-.site-url {
-  max-width: 200px;
-}
-
-.site-header .badge {
-  margin-left: auto;
-}
-
-.site-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color);
-}
-
-.site-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.site-actions {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.btn-action-project {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.btn-action-project:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-.btn-action-danger:hover {
-  border-color: #ef4444;
-  background: rgba(239,68,68,0.08);
-  color: #ef4444;
+.slide-up { animation: slide-up 0.2s ease both; }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Onboarding Wizard ── */
@@ -487,37 +444,28 @@ function openWizard() {
 .wizard-step-label {
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   letter-spacing: 1.2px;
 }
 .wizard-title {
   font-size: 26px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 4px 0 8px;
   line-height: 1.2;
 }
 .wizard-subtitle {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   line-height: 1.55;
   margin: 0 0 20px;
 }
 .wizard-body { display: flex; flex-direction: column; gap: 14px; }
-.wizard-nav { display: flex; gap: 12px; justify-content: space-between; margin-top: 8px; }
 .wizard-helper {
   text-align: center;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin: 0;
-}
-.btn-wizard-continue {
-  width: 100%;
-  padding: 14px 24px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 10px;
-  margin-top: 8px;
 }
 
 /* Progress dots */
@@ -531,10 +479,10 @@ function openWizard() {
   width: 28px;
   height: 4px;
   border-radius: 2px;
-  background: var(--border-color);
+  background: var(--border);
   transition: background 0.2s;
 }
-.wizard-dots .dot.active { background: var(--brand-accent, #4F46E5); }
+.wizard-dots .dot.active { background: var(--primary); }
 
 /* Topic Source */
 .topic-source-list {
@@ -546,34 +494,34 @@ function openWizard() {
   display: flex;
   gap: 14px;
   padding: 16px 18px;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
   transition: all 0.15s;
-  background: var(--bg-base, #fff);
+  background: var(--background);
 }
-.topic-source-card:hover { border-color: var(--text-muted); }
+.topic-source-card:hover { border-color: var(--muted-foreground); }
 .topic-source-card.selected {
-  border-color: var(--brand-accent, #4F46E5);
-  background: rgba(79, 70, 229, 0.04);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 .topic-radio {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border);
   flex-shrink: 0;
   margin-top: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.topic-source-card.selected .topic-radio { border-color: var(--brand-accent, #4F46E5); }
+.topic-source-card.selected .topic-radio { border-color: var(--primary); }
 .topic-radio-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--brand-accent, #4F46E5);
+  background: var(--primary);
 }
 .topic-source-body { flex: 1; }
 .topic-source-title-row {
@@ -586,50 +534,27 @@ function openWizard() {
 .topic-source-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .topic-source-desc {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin: 0;
 }
-.badge-recommended {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--brand-accent, #4F46E5);
-  color: var(--brand-accent, #4F46E5);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* GSC informational note (real OAuth flow lives in Settings -> Integrations) */
-.gsc-info-panel {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-surface);
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
 
 .platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.platform-card { position: relative; padding: 16px; border-radius: 14px; border: 2px solid var(--border-color); cursor: pointer; text-align: center; transition: all 0.2s; background: var(--bg-surface); }
-.platform-card:hover { border-color: var(--text-muted); transform: translateY(-1px); }
-.platform-card.selected { border-color: var(--brand-accent, #6366f1); background: rgba(99, 102, 241, 0.04); }
+.platform-card { position: relative; padding: 16px; border-radius: 14px; border: 2px solid var(--border); cursor: pointer; text-align: center; transition: all 0.2s; background: var(--muted); }
+.platform-card:hover { border-color: var(--muted-foreground); transform: translateY(-1px); }
+.platform-card.selected { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 4%, transparent); }
 .platform-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 22px; }
-.platform-name { font-weight: 600; font-size: var(--font-sm); margin-bottom: 2px; }
-.platform-desc { font-size: var(--font-xs); color: var(--text-muted); }
-.platform-check { position: absolute; top: 8px; right: 10px; color: var(--brand-accent, #6366f1); font-weight: 700; font-size: 14px; }
+.platform-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; color: var(--foreground); }
+.platform-desc { font-size: 12px; color: var(--muted-foreground); }
+.platform-check { position: absolute; top: 8px; right: 10px; color: var(--primary); font-weight: 700; font-size: 14px; }
 
 .pixel-instructions { text-align: center; padding: 8px 0; }
-.pixel-instructions h4 { margin: 8px 0 4px; font-weight: 700; }
-.pixel-instructions p { font-size: var(--font-sm); color: var(--text-secondary); margin: 0; line-height: 1.5; }
+.pixel-instructions h4 { margin: 8px 0 4px; font-weight: 700; color: var(--foreground); }
+.pixel-instructions p { font-size: 14px; color: var(--muted-foreground); margin: 0; line-height: 1.5; }
 .pixel-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 24px; }
 .pixel-snippet-box { position: relative; background: #1a1a2e; border-radius: 10px; padding: 16px; margin: 4px 0; }
 .pixel-code { display: block; color: #9effa3; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; word-break: break-all; line-height: 1.6; white-space: pre-wrap; }

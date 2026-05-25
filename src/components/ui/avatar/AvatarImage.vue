@@ -1,0 +1,12 @@
+<script setup>
+import { AvatarImage } from 'reka-ui'
+
+const props = defineProps({
+  src: { type: String, required: true },
+  alt: { type: String, default: '' },
+})
+</script>
+
+<template>
+  <AvatarImage :src="src" :alt="alt" class="aspect-square size-full" />
+</template>

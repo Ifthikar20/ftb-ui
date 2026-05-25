@@ -1,180 +1,200 @@
 <template>
-  <div
-    class="app-layout"
-    :class="{
-      'sidebar-collapsed': appStore.sidebarCollapsed,
-      'is-onboarding': sessionNeedsOnboarding,
-    }"
-  >
-    <!-- Sidebar (hidden while first-run onboarding is required) -->
-    <aside v-if="!sessionNeedsOnboarding" class="sidebar">
-      <div class="sidebar-brand">
-        <img src="/images/fb-logo.png" alt="FetchBot" class="brand-logo" />
-        <span v-if="!appStore.sidebarCollapsed" class="brand-name">FetchBot</span>
-      </div>
+  <template v-if="!sessionNeedsOnboarding">
+    <SidebarProvider>
+      <Sidebar collapsible="icon" variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                    </div>
+                    <div class="grid flex-1 text-left text-sm leading-tight">
+                      <span class="truncate font-semibold">{{ appStore.activeWebsite?.name || 'FetchBot' }}</span>
+                      <span class="truncate text-xs text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
+                    </div>
+                    <ChevronsUpDown class="ml-auto size-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="bottom" :side-offset="4" class="min-w-56 rounded-lg">
+                  <DropdownMenuLabel class="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
+                  <DropdownMenuItem v-for="w in appStore.websites" :key="w.id" @select="switchWebsite(w.id)">
+                    <Globe class="size-4" />
+                    <span class="truncate">{{ w.name }}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem :disabled="!appStore.canCreateProject" @select="showAddProject = true">
+                    <Plus class="size-4" />
+                    <span>Add project</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-      <!-- Project Selector -->
-      <div v-if="!appStore.sidebarCollapsed" class="project-select">
-        <select class="form-input" @change="switchWebsite($event.target.value)" style="font-size:var(--font-sm);padding:8px 12px">
-          <option v-for="w in appStore.websites" :key="w.id" :value="w.id" :selected="w.id === appStore.activeWebsite?.id">
-            {{ w.name }}
-          </option>
-        </select>
-        <div class="project-limit-row">
-          <span class="project-limit-badge">{{ appStore.projectLimitLabel }}</span>
-          <button class="btn-add-project" :disabled="!appStore.canCreateProject" @click="showAddProject = true" :title="appStore.canCreateProject ? 'Add a new project' : 'Upgrade your plan to add more'">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
-          </button>
-        </div>
-      </div>
+        <SidebarContent>
+          <SidebarGroup v-for="group in navMain" :key="group.group">
+            <SidebarGroupLabel>{{ group.group }}</SidebarGroupLabel>
+            <SidebarMenu>
+              <template v-for="item in group.items" :key="item.title">
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child :is-active="isActive(item)" :tooltip="item.title">
+                    <router-link :to="item.to">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                    </router-link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuSub v-if="item.children && isActive(item)">
+                  <SidebarMenuSubItem v-for="child in item.children" :key="child.title">
+                    <SidebarMenuSubButton as-child :is-active="isChildActive(child)">
+                      <router-link :to="child.to">
+                        <span>{{ child.title }}</span>
+                      </router-link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </template>
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
 
-      <!-- Nav -->
-      <nav class="sidebar-nav">
-        <div class="nav-section-label">Overview</div>
-        <router-link to="/dashboard" class="nav-link" exact-active-class="active" style="--nav-color: #5B8DEF">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Dashboard</span>
-        </router-link>
-        <router-link to="/websites" class="nav-link" exact-active-class="active" style="--nav-color: #8b5cf6">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.5"/><ellipse cx="8" cy="8" rx="3" ry="7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Projects</span>
-        </router-link>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <Avatar class="size-8 rounded-lg">
+                      <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
+                    </Avatar>
+                    <div class="grid flex-1 text-left text-sm leading-tight">
+                      <span class="truncate font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="truncate text-xs text-muted-foreground">{{ authStore.user?.email || '' }}</span>
+                    </div>
+                    <ChevronsUpDown class="ml-auto size-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="bottom" :side-offset="4" class="min-w-56 rounded-lg">
+                  <DropdownMenuLabel class="font-normal">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }} plan</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @select="router.push('/settings')">
+                    <Settings class="size-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @select="router.push('/billing')">
+                    <CreditCard class="size-4" />
+                    <span>Billing</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @select="handleLogout">
+                    <LogOut class="size-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
 
-        <div class="nav-section-label">Intelligence</div>
-        <router-link :to="analyticsRoute" class="nav-link" exact-active-class="active" style="--nav-color: #f97316">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 14V6l4-4 4 4 4-4v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Analytics</span>
-        </router-link>
-        <router-link :to="llmRankingRoute" class="nav-link" exact-active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/><path d="M5 2l6 0" stroke-linecap="round"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">LLM Dashboard</span>
-        </router-link>
-        <router-link :to="promptLibraryRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"/><path d="M5 6h6M5 9h4"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Prompts</span>
-        </router-link>
-        <router-link :to="sourceInfluenceRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13h12"/><rect x="3" y="8" width="2" height="5"/><rect x="7" y="5" width="2" height="8"/><rect x="11" y="2" width="2" height="11"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Model Test</span>
-        </router-link>
-        <router-link :to="brandVaultRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4l5-2 5 2v5c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10 7"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Brand Vault</span>
-        </router-link>
-        <router-link :to="contentStudioRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #FF385C">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/><path d="M5 8h6M5 11h4"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Content</span>
-        </router-link>
-
-        <router-link to="/app/integrations" class="nav-link" exact-active-class="active" style="--nav-color: #22c55e">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.5-1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Integrations</span>
-        </router-link>
-
-        <div class="nav-section-label">Account</div>
-        <router-link to="/billing" class="nav-link" exact-active-class="active" style="--nav-color: #64748b">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Billing</span>
-        </router-link>
-        <router-link to="/settings" class="nav-link" exact-active-class="active" style="--nav-color: #78716c">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Settings</span>
-        </router-link>
-      </nav>
-
-      <!-- User Footer -->
-      <div class="sidebar-footer" v-if="!appStore.sidebarCollapsed">
-        <div class="user-block">
-          <div class="avatar avatar-sm">{{ userInitials }}</div>
-          <div class="user-info">
-            <div class="user-name">{{ authStore.user?.full_name || 'User' }}</div>
-            <div class="user-plan">{{ authStore.user?.plan || 'Free' }}</div>
+      <SidebarInset class="md:m-2 md:min-h-[calc(100svh-1rem)] md:overflow-hidden md:rounded-xl md:border md:border-border md:shadow-sm">
+        <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-card transition-[width,height] ease-linear">
+          <div class="flex items-center gap-2 px-4 md:px-6">
+            <SidebarTrigger class="-ml-1" />
+            <Separator orientation="vertical" class="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem class="hidden md:block">
+                  <BreadcrumbLink as="router-link" to="/dashboard">FetchBot</BreadcrumbLink>
+                </BreadcrumbItem>
+                <template v-for="(crumb, i) in breadcrumbs" :key="i">
+                  <BreadcrumbSeparator class="hidden md:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage v-if="i === breadcrumbs.length - 1">{{ crumb.label }}</BreadcrumbPage>
+                    <BreadcrumbLink v-else as="router-link" :to="crumb.to">{{ crumb.label }}</BreadcrumbLink>
+                  </BreadcrumbItem>
+                </template>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-        </div>
-        <button class="btn-ghost btn-icon" @click="handleLogout" title="Logout" style="color:var(--text-muted)">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3v12h3M11 4l4 4-4 4M7 8h8"/></svg>
-        </button>
-      </div>
-    </aside>
 
-    <!-- Main Content -->
-    <div class="main-wrapper">
-      <header v-if="!sessionNeedsOnboarding" class="topbar">
-        <button class="btn-icon sidebar-toggle" @click="appStore.toggleSidebar" :title="appStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <!-- Collapse: panel + left arrow. Expand: panel + right arrow. -->
-          <svg v-if="!appStore.sidebarCollapsed" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75">
-            <rect x="1" y="1" width="16" height="16" rx="2.5" />
-            <line x1="6" y1="1" x2="6" y2="17" />
-            <polyline points="10,6 8,9 10,12" />
-          </svg>
-          <svg v-else width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75">
-            <rect x="1" y="1" width="16" height="16" rx="2.5" />
-            <line x1="6" y1="1" x2="6" y2="17" />
-            <polyline points="8,6 10,9 8,12" />
-          </svg>
-        </button>
-
-        <div class="topbar-search" @click="openSearch">
-          <div class="search-trigger">
-            <Search :size="14" :stroke-width="1.8"/>
-            <span class="search-placeholder">Search pages...</span>
-            <span class="search-shortcut">{{ isMac ? '⌘' : 'Ctrl' }}+K</span>
+          <div class="ml-auto flex items-center gap-2 px-4 md:px-6">
+            <button
+              class="flex items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-background"
+              @click="openSearch"
+            >
+              <Search :size="14" :stroke-width="1.8" />
+              <span class="hidden sm:inline">Search...</span>
+              <span class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+                {{ isMac ? '⌘' : 'Ctrl' }}+K
+              </span>
+            </button>
+            <HelpButton />
           </div>
+        </header>
+
+        <div class="flex w-full min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
+          <router-view v-slot="{ Component }">
+            <transition name="page-fade" mode="out-in">
+              <keep-alive :max="10">
+                <component :is="Component" :key="pageKey" />
+              </keep-alive>
+            </transition>
+          </router-view>
         </div>
+      </SidebarInset>
+    </SidebarProvider>
+  </template>
 
-        <div class="topbar-actions">
-          <!-- Theme Toggle -->
-          <button class="theme-toggle" @click="appStore.toggleTheme" :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'">
-            <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6"/>
-            <Sun v-else :size="18" :stroke-width="1.6"/>
-          </button>
-
-          <!-- Help Button -->
-          <HelpButton />
-
-        </div>
-      </header>
-
-      <main class="page-content">
-        <router-view v-slot="{ Component }">
-          <transition name="page-fade" mode="out-in">
-            <keep-alive :max="10">
-              <component :is="Component" :key="pageKey" />
-            </keep-alive>
-          </transition>
-        </router-view>
-      </main>
-    </div>
+  <div v-else class="min-h-svh bg-background">
+    <router-view />
+  </div>
 
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
-    <div v-if="showAddProject" class="modal-overlay" @click.self="showAddProject = false">
-      <div class="modal-card">
-        <h3 class="card-title" style="margin-bottom:16px">Add New Project</h3>
-        <div v-if="!appStore.canCreateProject" class="upgrade-notice">
+    <div
+      v-if="showAddProject"
+      class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      @click.self="showAddProject = false"
+    >
+      <div class="w-[440px] max-w-[90vw] rounded-xl border border-border bg-card p-7 shadow-xl">
+        <h3 class="mb-4 text-lg font-bold text-card-foreground">Add New Project</h3>
+        <div v-if="!appStore.canCreateProject" class="py-3 text-center text-sm text-muted-foreground">
           <p>Your <strong>{{ appStore.userPlan }}</strong> plan allows {{ appStore.projectLimit }} project(s).</p>
-          <p style="margin-top:8px">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
-          <router-link to="/billing" class="btn btn-primary" style="margin-top:16px" @click="showAddProject = false">View Plans</router-link>
+          <p class="mt-2">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
+          <Button as="router-link" to="/billing" class="mt-4" @click="showAddProject = false">View Plans</Button>
         </div>
         <template v-else>
-          <div style="margin-bottom:12px">
-            <label class="form-label">Project Name</label>
-            <input v-model="newProject.name" class="form-input" placeholder="My Website" />
+          <div class="mb-3">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Project Name</label>
+            <input v-model="newProject.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="My Website" />
           </div>
-          <div style="margin-bottom:12px">
-            <label class="form-label">Website URL</label>
-            <input v-model="newProject.url" class="form-input" placeholder="https://example.com" />
+          <div class="mb-3">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Website URL</label>
+            <input v-model="newProject.url" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://example.com" />
           </div>
-          <div style="margin-bottom:16px">
-            <label class="form-label">Industry (optional)</label>
-            <input v-model="newProject.industry" class="form-input" placeholder="SaaS, E-commerce, etc." />
+          <div class="mb-4">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Industry (optional)</label>
+            <input v-model="newProject.industry" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="SaaS, E-commerce, etc." />
           </div>
-          <div class="flex gap-8" style="justify-content:flex-end">
-            <button class="btn btn-secondary" @click="showAddProject = false">Cancel</button>
-            <button class="btn btn-primary" @click="createProject" :disabled="!newProject.name || !newProject.url || creating">{{ creating ? 'Creating...' : 'Create Project' }}</button>
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" @click="showAddProject = false">Cancel</Button>
+            <Button @click="createProject" :disabled="!newProject.name || !newProject.url || creating">
+              {{ creating ? 'Creating...' : 'Create Project' }}
+            </Button>
           </div>
-          <p v-if="createError" class="text-sm" style="color:var(--color-danger);margin-top:12px">{{ createError }}</p>
+          <p v-if="createError" class="mt-3 text-sm text-destructive">{{ createError }}</p>
         </template>
       </div>
     </div>
@@ -229,7 +249,6 @@
         </div>
       </div>
     </Teleport>
-  </div>
 </template>
 
 <script setup>
@@ -242,7 +261,28 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
-import { Moon, Search, Sun } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarRail,
+  SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+  SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton,
+} from '@/components/ui/sidebar'
+import {
+  Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink,
+  BreadcrumbPage, BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import {
+  Search, Plus, LogOut, ChevronsUpDown,
+  LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
+  ShieldCheck, FileText, Plug, CreditCard, Settings,
+} from '@lucide/vue'
 
 const toast = useToast()
 
@@ -397,7 +437,63 @@ const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${we
 const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 
+const navMain = computed(() => [
+  {
+    group: 'Overview',
+    items: [
+      { title: 'Dashboard', to: '/dashboard', icon: LayoutGrid, match: '/dashboard' },
+      { title: 'Projects', to: '/websites', icon: Globe, match: '/websites' },
+    ],
+  },
+  {
+    group: 'Intelligence',
+    items: [
+      { title: 'Analytics', to: analyticsRoute.value, icon: BarChart3, match: '/analytics' },
+      {
+        title: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain, match: '/llm-ranking',
+        children: [
+          { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
+          { title: 'Model Test', to: sourceInfluenceRoute.value, match: '/source-influence' },
+          { title: 'Brand Vault', to: brandVaultRoute.value, match: '/brand-vault' },
+          { title: 'Content', to: contentStudioRoute.value, match: '/content' },
+        ],
+      },
+      { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
+    ],
+  },
+  {
+    group: 'Account',
+    items: [
+      { title: 'Billing', to: '/billing', icon: CreditCard, match: '/billing' },
+      { title: 'Settings', to: '/settings', icon: Settings, match: '/settings' },
+    ],
+  },
+])
 
+function isActive(item) {
+  return route.path === item.match || route.path.startsWith(item.match + '/') || route.path.startsWith(item.match)
+}
+function isChildActive(child) {
+  return route.path.includes(child.match)
+}
+
+const breadcrumbs = computed(() => {
+  const path = route.path
+  for (const group of navMain.value) {
+    for (const item of group.items) {
+      if (item.children) {
+        for (const child of item.children) {
+          if (isChildActive(child))
+            return [{ label: item.title, to: item.to }, { label: child.title, to: child.to }]
+        }
+      }
+      if (path === item.match || path.startsWith(item.match))
+        return [{ label: item.title, to: item.to }]
+    }
+  }
+  const name = String(route.name || 'Page').replace(/[-_]/g, ' ')
+  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }]
+})
 
 function switchWebsite(id) {
   const website = appStore.websites.find(w => w.id === id)
@@ -468,231 +564,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-/* While first-run onboarding is required the sidebar + topbar are
-   removed; expand the main wrapper to fill the viewport so the modal
-   sits on a clean canvas. */
-.app-layout.is-onboarding .main-wrapper { width: 100%; }
-
-/* Sidebar */
-.sidebar {
-  width: var(--sidebar-width);
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 100;
-  transition: width var(--transition-base);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.sidebar-collapsed .sidebar { width: var(--sidebar-collapsed); }
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 20px 16px;
-}
-
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.brand-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.project-select { padding: 0 16px 16px; }
-
-.project-limit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
-.project-limit-badge {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.btn-add-project {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-add-project:hover:not(:disabled) {
-  border-color: var(--text-primary);
-  color: var(--text-primary);
-  background: var(--bg-card);
-}
-
-.btn-add-project:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sidebar-nav { flex: 1; padding: 0 12px; }
-
-.nav-section-label {
-  font-size: var(--font-xs);
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 20px 8px 8px;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-base);
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-  text-decoration: none;
-}
-
-.nav-link .nav-icon {
-  color: var(--nav-color, var(--text-secondary));
-  transition: all var(--transition-fast);
-}
-
-.nav-link:hover {
-  color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.nav-link:hover .nav-icon {
-  color: var(--nav-color, var(--text-primary));
-  filter: drop-shadow(0 0 4px var(--nav-color, transparent));
-}
-
-[data-theme="dark"] .nav-link:hover { background: rgba(255, 255, 255, 0.06); }
-
-.nav-link.active {
-  color: var(--nav-color, var(--text-primary));
-  background: color-mix(in srgb, var(--nav-color, var(--bg-surface)) 8%, transparent);
-  font-weight: 600;
-}
-
-.nav-link.active .nav-icon {
-  color: var(--nav-color, var(--text-primary));
-  filter: drop-shadow(0 0 6px var(--nav-color, transparent));
-}
-
-.nav-icon { width: 24px; text-align: center; display: flex; align-items: center; justify-content: center; }
-.nav-text { white-space: nowrap; }
-
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.user-block { display: flex; align-items: center; gap: 10px; }
-.user-name { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); }
-.user-plan { font-size: var(--font-xs); color: var(--text-muted); text-transform: capitalize; }
-
-/* Main */
-.main-wrapper {
-  flex: 1;
-  margin-left: var(--sidebar-width);
-  transition: margin-left var(--transition-base);
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-collapsed); }
-
-/* Topbar */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  height: var(--topbar-height);
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  padding: 0 28px;
-  gap: 16px;
-}
-
-.sidebar-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: color var(--transition-fast);
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.sidebar-toggle:hover { color: var(--text-primary); }
-.topbar-search { flex: 1; max-width: 360px; }
-
-.topbar-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topbar-btn {
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  transition: color var(--transition-fast);
-}
-
-.topbar-btn:hover { color: var(--text-primary); }
-
-/* Page Content */
-.page-content {
-  flex: 1;
-  padding: 32px;
-  background: var(--bg-root);
-  min-height: calc(100vh - var(--topbar-height));
-}
-
 /* Page transition — smooth slide-up + fade (Framer-like) */
 .page-fade-leave-active {
   transition: opacity 120ms ease, transform 120ms ease;
@@ -707,85 +578,6 @@ onUnmounted(() => {
 .page-fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); width: var(--sidebar-width); }
-  .main-wrapper { margin-left: 0; }
-  .page-content { padding: 16px; }
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: var(--bg-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  width: 440px;
-  max-width: 90vw;
-  box-shadow: var(--shadow-lg);
-}
-
-.upgrade-notice {
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
-  text-align: center;
-  padding: 12px 0;
-}
-
-.form-label {
-  display: block;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-/* Search Trigger */
-.search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-width: 220px;
-}
-.search-trigger:hover {
-  border-color: var(--color-primary);
-  background: var(--bg-base);
-}
-.search-trigger svg {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.search-placeholder {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  flex: 1;
-}
-.search-shortcut {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--bg-base);
-  border: 1px solid var(--border-color);
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
 }
 </style>
 

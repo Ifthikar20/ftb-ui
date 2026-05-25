@@ -1,28 +1,28 @@
 <template>
-  <div class="rt">
-    <div class="rt-head">
-      <h3>Revision history</h3>
-      <p>Every approval, edit, supersede, and rejection — who, when, and what changed.</p>
+  <div class="flex flex-col gap-3.5">
+    <div>
+      <h3 class="mb-1 text-[1.05rem] text-foreground">Revision history</h3>
+      <p class="text-sm leading-relaxed text-muted-foreground">Every approval, edit, supersede, and rejection — who, when, and what changed.</p>
     </div>
 
-    <div v-if="loading" class="rt-skeleton">
-      <div v-for="i in 4" :key="i" class="rt-skel" />
+    <div v-if="loading" class="flex flex-col gap-2">
+      <div v-for="i in 4" :key="i" class="h-14 animate-pulse rounded-lg border border-border bg-card" />
     </div>
 
-    <div v-else-if="!revisions.length" class="rt-empty">
+    <div v-else-if="!revisions.length" class="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
       <p>No changes recorded yet.</p>
     </div>
 
-    <ol v-else class="rt-list">
-      <li v-for="rev in revisions" :key="rev.id" class="rt-row">
-        <span class="rt-dot" :class="`is-${rev.action}`" aria-hidden="true"></span>
-        <div class="rt-row-body">
-          <div class="rt-row-head">
-            <span class="rt-action">{{ actionLabel(rev.action) }}</span>
-            <span class="rt-actor" v-if="rev.actor_email">by {{ rev.actor_email }}</span>
-            <span class="rt-when">{{ formatDate(rev.created_at) }}</span>
+    <ol v-else class="rt-list relative m-0 list-none p-0">
+      <li v-for="rev in revisions" :key="rev.id" class="relative grid grid-cols-[20px_1fr] gap-3.5 py-2.5">
+        <span class="z-[1] mt-1.5 ml-1 h-3 w-3 rounded-full border-2 border-card" :class="dotClass(rev.action)" aria-hidden="true"></span>
+        <div>
+          <div class="flex flex-wrap items-baseline gap-2">
+            <span class="text-sm font-semibold text-foreground">{{ actionLabel(rev.action) }}</span>
+            <span class="text-xs text-muted-foreground" v-if="rev.actor_email">by {{ rev.actor_email }}</span>
+            <span class="ml-auto text-xs text-muted-foreground">{{ formatDate(rev.created_at) }}</span>
           </div>
-          <div v-if="changeSummary(rev)" class="rt-row-change">
+          <div v-if="changeSummary(rev)" class="mt-1 text-xs leading-relaxed text-muted-foreground">
             {{ changeSummary(rev) }}
           </div>
         </div>
@@ -45,6 +45,15 @@ const ACTION_LABELS = {
   superseded: 'Superseded',
 }
 function actionLabel(a) { return ACTION_LABELS[a] || a }
+
+const DOT_CLASS = {
+  approved: 'bg-chart-2',
+  rejected: 'bg-destructive',
+  superseded: 'bg-chart-4',
+  edited: 'bg-chart-3',
+  created: 'bg-muted-foreground',
+}
+function dotClass(a) { return DOT_CLASS[a] || 'bg-muted-foreground' }
 
 function changeSummary(rev) {
   const before = rev.before || {}
@@ -70,11 +79,6 @@ function formatDate(iso) {
 </script>
 
 <style scoped>
-.rt { display: flex; flex-direction: column; gap: 14px; }
-.rt-head h3 { margin: 0 0 4px; font-size: 1.05rem; color: var(--text-primary); }
-.rt-head p { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
-
-.rt-list { list-style: none; margin: 0; padding: 0; position: relative; }
 .rt-list::before {
   content: '';
   position: absolute;
@@ -82,63 +86,6 @@ function formatDate(iso) {
   top: 12px;
   bottom: 12px;
   width: 1px;
-  background: var(--border-color, #e5e7eb);
+  background: var(--border);
 }
-.rt-row {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: 14px;
-  padding: 10px 0;
-  position: relative;
-}
-.rt-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  margin-top: 6px;
-  margin-left: 4px;
-  border: 2px solid var(--bg-card, #fff);
-  z-index: 1;
-}
-.rt-dot.is-approved { background: #10b981; }
-.rt-dot.is-rejected { background: #ef4444; }
-.rt-dot.is-superseded { background: #6366f1; }
-.rt-dot.is-edited { background: #f59e0b; }
-.rt-dot.is-created { background: #94a3b8; }
-
-.rt-row-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-}
-.rt-action { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
-.rt-actor { font-size: 0.8rem; color: var(--text-secondary); }
-.rt-when { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
-.rt-row-change { font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
-
-.rt-skeleton { display: flex; flex-direction: column; gap: 8px; }
-.rt-skel {
-  height: 56px;
-  border-radius: 10px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.rt-empty {
-  text-align: center;
-  padding: 40px 20px;
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  color: var(--text-muted);
-  font-size: 0.88rem;
-}
-[data-theme="dark"] .rt-dot { border-color: var(--bg-card); }
-[data-theme="dark"] .rt-skel { background: var(--bg-card); border-color: var(--border-color); }
 </style>

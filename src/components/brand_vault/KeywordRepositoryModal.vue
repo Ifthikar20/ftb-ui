@@ -1,100 +1,117 @@
 <template>
-  <BaseModal v-model="modelOpen" title="" :wide="true">
-    <div class="krm">
-      <header class="krm-head">
-        <div>
-          <h2 class="krm-title">Keywords</h2>
-          <p class="krm-sub">
-            {{ totalMentions }} of {{ totalMentions }} facts analysed
-          </p>
-        </div>
-        <div class="krm-head-actions">
-          <button class="krm-btn-soft" type="button" @click="onExport">Export</button>
-        </div>
-      </header>
+  <Teleport to="body">
+    <Transition name="krm-fade">
+      <div
+        v-if="modelOpen"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        @click.self="modelOpen = false"
+      >
+        <div
+          class="flex max-h-[88vh] w-[860px] max-w-[95vw] flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card p-6 shadow-xl"
+          role="dialog"
+          aria-modal="true"
+        >
+          <header class="flex items-end justify-between gap-4">
+            <div>
+              <h2 class="m-0 text-2xl font-bold -tracking-[0.02em] text-foreground">Keywords</h2>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {{ totalMentions }} of {{ totalMentions }} facts analysed
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <Button variant="outline" size="sm" type="button" @click="onExport">Export</Button>
+            </div>
+          </header>
 
-      <div class="krm-toolbar">
-        <input
-          v-model="search"
-          type="search"
-          class="krm-search"
-          placeholder="Filter keywords…"
-        />
-        <div class="krm-sort">
-          <label>
-            Sort:
-            <select v-model="sortBy" class="krm-sort-select">
-              <option value="mentions">Mentions</option>
-              <option value="topic">A → Z</option>
-              <option value="confidence">Confidence</option>
-              <option value="recent">Most recent</option>
-            </select>
-          </label>
+          <div class="flex items-center gap-3">
+            <input
+              v-model="search"
+              type="search"
+              class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Filter keywords…"
+            />
+            <label class="flex flex-shrink-0 items-center gap-1.5 text-[0.82rem] text-muted-foreground">
+              Sort:
+              <select
+                v-model="sortBy"
+                class="rounded-lg border border-input bg-background px-2.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="mentions">Mentions</option>
+                <option value="topic">A → Z</option>
+                <option value="confidence">Confidence</option>
+                <option value="recent">Most recent</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="overflow-auto rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead class="w-7"></TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead class="w-24">AI Summary</TableHead>
+                  <TableHead class="w-[130px]">Avg. Confidence</TableHead>
+                  <TableHead class="w-[110px] text-right">Mentions</TableHead>
+                  <TableHead class="w-[130px] text-right">Share</TableHead>
+                  <TableHead class="w-[130px]">Chart</TableHead>
+                  <TableHead class="w-9"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow
+                  v-for="(row, i) in visibleRows"
+                  :key="row.topic"
+                >
+                  <TableCell class="text-right tabular-nums">{{ i + 1 }}</TableCell>
+                  <TableCell class="font-medium capitalize">{{ row.topic }}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm" type="button" @click="onAnalyze(row)">Analyze</Button>
+                  </TableCell>
+                  <TableCell>
+                    <span class="mr-1 text-chart-3">★</span>
+                    {{ formatConfidence(row.avg_confidence) }}
+                  </TableCell>
+                  <TableCell class="text-right tabular-nums">{{ row.mention_count.toLocaleString() }}</TableCell>
+                  <TableCell class="text-right tabular-nums">{{ row.share_pct }}%</TableCell>
+                  <TableCell>
+                    <KeywordSparkline :data="row.timeline" :width="110" :height="32" />
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <div class="relative inline-block" @click.stop>
+                      <button
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-md text-base leading-none text-muted-foreground hover:bg-muted hover:text-foreground"
+                        type="button"
+                        :aria-expanded="openMenu === row.topic"
+                        @click="openMenu = openMenu === row.topic ? null : row.topic"
+                      >⋯</button>
+                      <div
+                        v-if="openMenu === row.topic"
+                        class="absolute right-0 top-[calc(100%+4px)] z-[5] min-w-[168px] rounded-lg border border-border bg-card p-1.5 text-left shadow-lg"
+                      >
+                        <button type="button" class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-foreground hover:bg-muted" @click="onEdit(row)"><span aria-hidden="true">✎</span> Edit</button>
+                        <button type="button" class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-destructive hover:bg-destructive/10" @click="onDelete(row)"><span aria-hidden="true">🗑</span> Delete topic</button>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <div v-if="!visibleRows.length" class="px-5 py-8 text-center text-sm text-muted-foreground">
+              No keywords match the current filter.
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="krm-table-wrap">
-        <table class="krm-table">
-          <thead>
-            <tr>
-              <th style="width: 28px"></th>
-              <th>Category</th>
-              <th style="width: 96px">AI Summary</th>
-              <th style="width: 130px">Avg. Confidence</th>
-              <th style="width: 110px" class="num">Mentions</th>
-              <th style="width: 130px" class="num">Share</th>
-              <th style="width: 130px">Chart</th>
-              <th style="width: 36px"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(row, i) in visibleRows"
-              :key="row.topic"
-            >
-              <td class="num">{{ i + 1 }}</td>
-              <td class="krm-cat">{{ row.topic }}</td>
-              <td>
-                <button class="krm-analyze" type="button" @click="onAnalyze(row)">Analyze</button>
-              </td>
-              <td>
-                <span class="krm-star">★</span>
-                {{ formatConfidence(row.avg_confidence) }}
-              </td>
-              <td class="num">{{ row.mention_count.toLocaleString() }}</td>
-              <td class="num">{{ row.share_pct }}%</td>
-              <td>
-                <KeywordSparkline :data="row.timeline" :width="110" :height="32" />
-              </td>
-              <td class="num">
-                <div class="krm-menu-wrap" @click.stop>
-                  <button
-                    class="krm-menu-trigger"
-                    type="button"
-                    :aria-expanded="openMenu === row.topic"
-                    @click="openMenu = openMenu === row.topic ? null : row.topic"
-                  >⋯</button>
-                  <div v-if="openMenu === row.topic" class="krm-menu">
-                    <button type="button" @click="onEdit(row)"><span aria-hidden="true">✎</span> Edit</button>
-                    <button type="button" class="is-danger" @click="onDelete(row)"><span aria-hidden="true">🗑</span> Delete topic</button>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-if="!visibleRows.length" class="krm-empty">
-          No keywords match the current filter.
-        </div>
-      </div>
-    </div>
-  </BaseModal>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import BaseModal from '@/components/ui/BaseModal.vue'
 import KeywordSparkline from './KeywordSparkline.vue'
+import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -171,164 +188,6 @@ watch(modelOpen, (open) => {
 </script>
 
 <style scoped>
-.krm { display: flex; flex-direction: column; gap: 16px; padding: 4px 8px 16px; }
-.krm-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-.krm-title { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.krm-sub { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-muted); }
-.krm-head-actions { display: flex; gap: 8px; }
-.krm-btn-soft {
-  appearance: none;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-card, #fff);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 7px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.krm-btn-soft:hover { border-color: var(--text-primary); }
-
-.krm-toolbar { display: flex; align-items: center; gap: 12px; }
-.krm-search {
-  flex: 1;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-input, #fff);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-}
-.krm-search:focus { outline: none; border-color: var(--brand-accent, #ff6b35); box-shadow: 0 0 0 3px rgba(255,107,53,0.18); }
-.krm-sort { font-size: 0.82rem; color: var(--text-muted); }
-.krm-sort-select {
-  appearance: none;
-  background: var(--bg-input, #fff)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E")
-    no-repeat right 10px center;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 8px;
-  padding: 6px 28px 6px 10px;
-  font: inherit;
-  font-size: 0.82rem;
-  color: var(--text-primary);
-  margin-left: 6px;
-}
-
-.krm-table-wrap {
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--bg-card, #fff);
-}
-.krm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.krm-table th {
-  text-align: left;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  padding: 14px 16px;
-  background: var(--bg-subtle, #fafafa);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-}
-.krm-table th.num { text-align: right; }
-.krm-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  color: var(--text-primary);
-  vertical-align: middle;
-}
-.krm-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-.krm-table tbody tr:last-child td { border-bottom: none; }
-.krm-table tbody tr:hover { background: var(--bg-subtle, #fafafa); }
-.krm-cat { font-weight: 500; text-transform: capitalize; }
-
-.krm-analyze {
-  appearance: none;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-card, #fff);
-  border-radius: 999px;
-  padding: 5px 16px;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-.krm-analyze:hover { border-color: var(--text-primary); }
-
-.krm-star { color: #f59e0b; margin-right: 4px; }
-
-.krm-menu-wrap { position: relative; display: inline-block; }
-.krm-menu-trigger {
-  appearance: none;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  color: var(--text-muted);
-}
-.krm-menu-trigger:hover { background: var(--bg-subtle, #fafafa); color: var(--text-primary); }
-.krm-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  min-width: 168px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 10px;
-  box-shadow: 0 12px 24px -8px rgba(20, 23, 24, 0.16);
-  padding: 6px;
-  z-index: 5;
-  text-align: left;
-}
-.krm-menu button {
-  appearance: none;
-  background: transparent;
-  border: none;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  padding: 8px 10px;
-  border-radius: 6px;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.krm-menu button:hover { background: var(--bg-subtle, #fafafa); }
-.krm-menu button.is-danger { color: #b91c1c; }
-.krm-menu button.is-danger:hover { background: rgba(239, 68, 68, 0.10); }
-
-.krm-empty { padding: 32px 20px; text-align: center; font-size: 0.88rem; color: var(--text-muted); }
-
-[data-theme="dark"] .krm-table-wrap,
-[data-theme="dark"] .krm-table td,
-[data-theme="dark"] .krm-analyze,
-[data-theme="dark"] .krm-btn-soft,
-[data-theme="dark"] .krm-menu { background: var(--bg-card); border-color: var(--border-color); color: var(--text-primary); }
-[data-theme="dark"] .krm-table th { background: var(--bg-card-hover); border-color: var(--border-color); color: var(--text-muted); }
-[data-theme="dark"] .krm-table td { border-color: var(--border-color); }
-[data-theme="dark"] .krm-table tbody tr:hover { background: var(--bg-card-hover); }
-[data-theme="dark"] .krm-search { background: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
-[data-theme="dark"] .krm-sort-select { background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
+.krm-fade-enter-active, .krm-fade-leave-active { transition: opacity 0.15s ease; }
+.krm-fade-enter-from, .krm-fade-leave-to { opacity: 0; }
 </style>

@@ -53,7 +53,7 @@
     <!-- Search + style filters. Run-audit shortcut removed — audits live
          on the LLM Dashboard, not here. -->
     <div v-if="prompts.length" class="spt-filters">
-      <input v-model="search" type="search" class="spt-search" placeholder="Filter prompts…" />
+      <input v-model="search" type="search" class="flex-1 min-w-[220px] rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Filter prompts…" />
       <label class="spt-select-wrap">
         <span class="spt-select-label">Style</span>
         <select v-model="styleFilter" class="spt-select">
@@ -63,7 +63,7 @@
       </label>
     </div>
 
-    <AirCard size="md" :padded="false">
+    <Card class="overflow-hidden">
       <div v-if="loading" class="spt-state">Loading saved prompts…</div>
       <div v-else-if="!prompts.length" class="spt-empty">
         <div class="spt-empty-icon" aria-hidden="true">
@@ -77,55 +77,55 @@
           here, then group prompts into a <strong>prompt bundle</strong> to
           run as a batch on the Model Test page.
         </p>
-        <AirButton variant="primary" size="sm" @click="$emit('go-search')">
+        <Button size="sm" @click="$emit('go-search')">
           Search prompts
-        </AirButton>
+        </Button>
       </div>
 
       <!-- One unified table. Env membership is a column, not a section. -->
-      <table v-else-if="visibleRows.length" class="spt-table">
-        <thead>
-          <tr>
-            <th style="width: 36px">
+      <Table v-else-if="visibleRows.length">
+        <TableHeader>
+          <TableRow>
+            <TableHead style="width: 36px">
               <input
                 type="checkbox"
                 :checked="allVisibleSelected"
                 :indeterminate.prop="someVisibleSelected"
                 @change="toggleAllVisible"
               />
-            </th>
-            <th style="width: 110px">ID</th>
-            <th style="width: 120px">Style</th>
-            <th>Prompt</th>
-            <th style="width: 200px">Bundles</th>
-            <th style="width: 130px">Status</th>
-            <th style="width: 44px" class="text-right" aria-label="Remove"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
+            </TableHead>
+            <TableHead style="width: 110px">ID</TableHead>
+            <TableHead style="width: 120px">Style</TableHead>
+            <TableHead>Prompt</TableHead>
+            <TableHead style="width: 200px">Bundles</TableHead>
+            <TableHead style="width: 130px">Status</TableHead>
+            <TableHead style="width: 44px" class="text-right" aria-label="Remove"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
             v-for="row in visibleRows"
             :key="row._brand_prompt_id"
             class="spt-row"
             :class="{ 'is-selected': selectedIds.has(row._brand_prompt_id) }"
           >
-            <td>
+            <TableCell>
               <input
                 type="checkbox"
                 :checked="selectedIds.has(row._brand_prompt_id)"
                 @change="toggleRow(row)"
               />
-            </td>
-            <td><span class="spt-id-pill">{{ formatId(row._brand_prompt_id) }}</span></td>
-            <td><AirChip size="xs" variant="neutral">{{ titleCase(row.style) }}</AirChip></td>
-            <td class="spt-prompt-cell">
+            </TableCell>
+            <TableCell><span class="spt-id-pill">{{ formatId(row._brand_prompt_id) }}</span></TableCell>
+            <TableCell><Badge variant="secondary">{{ titleCase(row.style) }}</Badge></TableCell>
+            <TableCell class="spt-prompt-cell">
               <button
                 type="button"
                 class="spt-prompt-link"
                 @click="openPromptDetail(row)"
               >{{ row.text || row.template_text }}</button>
-            </td>
-            <td>
+            </TableCell>
+            <TableCell>
               <div v-if="envsForPrompt(row).length" class="spt-envtags">
                 <span
                   v-for="e in envsForPrompt(row)"
@@ -134,23 +134,23 @@
                 >{{ e.name }}</span>
               </div>
               <span v-else class="spt-muted">—</span>
-            </td>
-            <td>
-              <span v-if="!row.runs_count" class="spt-status spt-status-untested">Untested</span>
-              <span v-else-if="(row.effectiveness_score || 0) >= 0.7" class="spt-status spt-status-good">Top</span>
-              <span v-else-if="(row.effectiveness_score || 0) >= 0.4" class="spt-status spt-status-mid">Steady</span>
-              <span v-else class="spt-status spt-status-low">Underperforming</span>
-            </td>
-            <td class="text-right">
-              <button class="spt-action-btn spt-action-btn-ghost" @click="onRemove(row)" title="Remove from saved">×</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </TableCell>
+            <TableCell>
+              <Badge v-if="!row.runs_count" variant="warning">Untested</Badge>
+              <Badge v-else-if="(row.effectiveness_score || 0) >= 0.7" variant="success">Top</Badge>
+              <Badge v-else-if="(row.effectiveness_score || 0) >= 0.4" variant="default">Steady</Badge>
+              <Badge v-else variant="destructive">Underperforming</Badge>
+            </TableCell>
+            <TableCell class="text-right">
+              <Button variant="ghost" size="icon" class="h-7 w-7" @click="onRemove(row)" title="Remove from saved">×</Button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
       <div v-else class="spt-empty-filter">
         No prompts match these filters.
       </div>
-    </AirCard>
+    </Card>
 
     <!-- Sticky bulk-action bar (unchanged) -->
     <transition name="spt-bar">
@@ -190,9 +190,10 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import promptLibrary from '@/api/promptLibrary'
-import AirCard from '@/components/ui/AirCard.vue'
-import AirChip from '@/components/ui/AirChip.vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import SmokeTestResult from '@/components/prompt_library/SmokeTestResult.vue'
 
@@ -565,15 +566,15 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
 .spt-stat-strip {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 22px;
   padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 12px;
 }
 .spt-stat-cell { display: inline-flex; align-items: baseline; gap: 6px; }
-.spt-stat-cell + .spt-stat-cell { padding-left: 22px; border-left: 1px solid var(--border-color); }
-.spt-stat-label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
-.spt-stat-val { font-size: 13px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.spt-stat-cell + .spt-stat-cell { padding-left: 22px; border-left: 1px solid var(--border); }
+.spt-stat-label { font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); }
+.spt-stat-val { font-size: 13px; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) {
   .spt-stat-cell + .spt-stat-cell { padding-left: 0; border-left: 0; }
   .spt-stat-strip { gap: 12px 18px; }
@@ -591,28 +592,28 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
 .spt-envchip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 11px;
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 9999px;
-  font-size: 12.5px; font-weight: 500; color: #0f172a;
+  font-size: 12.5px; font-weight: 500; color: var(--foreground);
   cursor: pointer; white-space: nowrap;
   transition: background .12s ease, border-color .12s ease;
 }
-.spt-envchip:hover { border-color: #0f172a; }
+.spt-envchip:hover { border-color: var(--foreground); }
 .spt-envchip.is-on {
-  background: #0f172a; color: #fff; border-color: #0f172a;
+  background: var(--primary); color: var(--primary-foreground); border-color: var(--primary);
 }
 .spt-envchip.is-add {
-  border-style: dashed; color: #475569;
+  border-style: dashed; color: var(--muted-foreground);
 }
 .spt-envchip-count {
   font-size: 11px; font-weight: 700;
   padding: 1px 6px;
-  background: rgba(15, 23, 42, 0.08); color: #475569;
+  background: var(--muted); color: var(--muted-foreground);
   border-radius: 9999px;
 }
 .spt-envchip.is-on .spt-envchip-count {
-  background: rgba(255, 255, 255, 0.18); color: #fff;
+  background: color-mix(in oklab, var(--primary-foreground) 18%, transparent); color: var(--primary-foreground);
 }
 .spt-envactions {
   display: flex; gap: 6px; flex: none;
@@ -620,94 +621,43 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
 .spt-envaction {
   background: transparent; border: 0;
   padding: 5px 10px;
-  font: inherit; font-size: 12.5px; color: #475569;
+  font: inherit; font-size: 12.5px; color: var(--muted-foreground);
   cursor: pointer;
   border-radius: 6px;
 }
-.spt-envaction:hover { background: #f1f5f9; color: #0f172a; }
-.spt-envaction.is-danger { color: #b91c1c; }
-.spt-envaction.is-danger:hover { background: #fef2f2; }
+.spt-envaction:hover { background: var(--muted); color: var(--foreground); }
+.spt-envaction.is-danger { color: var(--destructive); }
+.spt-envaction.is-danger:hover { background: color-mix(in oklab, var(--destructive) 10%, transparent); }
 
 /* Environment tags inside the table column */
 .spt-envtags { display: flex; flex-wrap: wrap; gap: 4px; }
 .spt-envtag {
   font-size: 11px; font-weight: 500;
   padding: 2px 8px;
-  background: #f1f5f9; color: #475569;
+  background: var(--muted); color: var(--muted-foreground);
   border-radius: 9999px;
   white-space: nowrap;
 }
 
 .spt-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.spt-search {
-  flex: 1; min-width: 220px;
-  padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 9999px;
-  background: var(--bg-card); color: var(--text-primary); font-size: 14px; outline: none;
-}
-.spt-search:focus-visible { border-color: var(--brand-accent); box-shadow: 0 0 0 3px var(--brand-accent-glow); }
 .spt-select-wrap { display: inline-flex; align-items: center; gap: 8px; }
-.spt-select-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.spt-select-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
 .spt-select {
   appearance: none; -webkit-appearance: none;
-  background-color: var(--bg-card);
+  background-color: var(--card);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center;
-  border: 1px solid var(--border-color); border-radius: 9999px;
-  color: var(--text-primary); padding: 6px 30px 6px 12px;
+  border: 1px solid var(--border); border-radius: 9999px;
+  color: var(--foreground); padding: 6px 30px 6px 12px;
   font-size: 13px; cursor: pointer;
 }
 .spt-new-env-btn {
-  padding: 6px 14px; border: 1px dashed var(--border-color); border-radius: 9999px;
-  background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer;
+  padding: 6px 14px; border: 1px dashed var(--border); border-radius: 9999px;
+  background: transparent; color: var(--muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.spt-new-env-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+.spt-new-env-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-/* Groups */
-.spt-groups { display: flex; flex-direction: column; }
-.spt-group { border-bottom: 1px solid var(--border-color); }
-.spt-group:last-child { border-bottom: 0; }
-.spt-group-head {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px; background: var(--bg-surface, rgba(15, 23, 42, 0.02));
-}
-.spt-group-check input { accent-color: var(--brand-accent); cursor: pointer; }
-.spt-group-title {
-  display: inline-flex; align-items: center; gap: 8px;
-  border: 0; background: transparent; cursor: pointer;
-  font-size: 14px; font-weight: 600; color: var(--text-primary);
-  padding: 4px 0;
-}
-.spt-caret { transition: transform 0.15s ease; flex-shrink: 0; color: var(--text-muted); }
-.spt-caret.is-open { transform: rotate(0deg); }
-.spt-caret:not(.is-open) { transform: rotate(-90deg); }
-.spt-group-name { letter-spacing: -0.01em; }
-.spt-group-count {
-  font-size: 11px; font-weight: 500;
-  padding: 1px 8px; border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.06); color: var(--text-secondary);
-}
-.spt-group-tools { margin-left: auto; display: inline-flex; gap: 6px; }
-.spt-group-tool {
-  font-size: 12px; padding: 5px 12px; border: 1px solid var(--border-color);
-  background: var(--bg-card); color: var(--text-secondary);
-  border-radius: 9999px; cursor: pointer;
-}
-.spt-group-tool:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
-.spt-group-tool.is-danger:hover { border-color: var(--color-danger, #dc2626); color: var(--color-danger, #dc2626); }
-.spt-group-body { padding: 0; }
-
-.spt-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.spt-table thead th {
-  padding: 12px 16px; font-size: 11.5px; font-weight: 500;
-  color: var(--text-muted); text-align: left;
-  border-bottom: 1px solid var(--border-color);
-}
-.spt-table tbody td {
-  padding: 12px 16px; border-top: 1px solid var(--border-color);
-  font-size: 14px; vertical-align: middle; color: var(--text-primary);
-}
-.spt-row.is-selected td { background: rgba(91, 141, 239, 0.06); }
-.spt-row:hover td { background: var(--bg-surface, rgba(0, 0, 0, 0.02)); }
+.spt-row.is-selected td { background: color-mix(in oklab, var(--primary) 8%, transparent); }
 .spt-prompt-cell { max-width: 56rem; }
 .spt-prompt-link {
   appearance: none;
@@ -720,50 +670,21 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
   cursor: pointer;
   width: 100%;
 }
-.spt-prompt-link:hover { color: var(--brand-accent, #ff6b35); text-decoration: underline; }
+.spt-prompt-link:hover { color: var(--primary); text-decoration: underline; }
 .spt-prompt-text {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; line-height: 1.5;
 }
 .spt-id-pill {
   display: inline-flex; align-items: center; padding: 4px 12px;
-  border-radius: 9999px; border: 1px solid var(--border-color);
-  background: var(--bg-card); font-size: 12px;
-  font-variant-numeric: tabular-nums; color: var(--text-secondary);
+  border-radius: 9999px; border: 1px solid var(--border);
+  background: var(--card); font-size: 12px;
+  font-variant-numeric: tabular-nums; color: var(--muted-foreground);
 }
-.spt-muted { color: var(--text-muted); font-size: 13px; }
-
-.spt-status { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 500; }
-.spt-status-untested { background: rgba(180, 83, 9, 0.10); color: var(--color-warning, #b45309); }
-.spt-status-good { background: rgba(16, 185, 129, 0.12); color: var(--color-success, #059669); }
-.spt-status-mid { background: rgba(91, 141, 239, 0.12); color: var(--brand-accent); }
-.spt-status-low { background: rgba(220, 38, 38, 0.10); color: #b91c1c; }
-
-.spt-action-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  height: 30px; padding: 0 14px;
-  background: var(--brand-accent); color: #fff; border: 0;
-  border-radius: 9999px;
-  font-size: 13px; font-weight: 500; cursor: pointer;
-  transition: filter 0.15s ease, opacity 0.15s ease;
-}
-.spt-action-btn:hover:not(:disabled) { filter: brightness(0.96); }
-.spt-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.spt-action-btn-ghost {
-  background: transparent; color: var(--text-muted);
-  margin-left: 4px; width: 28px; padding: 0;
-  font-size: 18px; line-height: 1;
-}
-.spt-action-btn-ghost:hover { background: var(--bg-surface, rgba(0, 0, 0, 0.04)); color: var(--color-danger, #dc2626); }
-.spt-spinner {
-  width: 12px; height: 12px;
-  border: 2px solid currentColor; border-right-color: transparent;
-  border-radius: 50%; animation: spt-spin 0.7s linear infinite;
-}
-@keyframes spt-spin { to { transform: rotate(360deg); } }
+.spt-muted { color: var(--muted-foreground); font-size: 13px; }
 
 .spt-state, .spt-empty-filter {
-  padding: 28px 24px; text-align: center; font-size: 13px; color: var(--text-muted);
+  padding: 28px 24px; text-align: center; font-size: 13px; color: var(--muted-foreground);
 }
 .spt-empty {
   display: flex; flex-direction: column; align-items: center;
@@ -773,11 +694,11 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
   width: 64px; height: 64px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 9999px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.04));
-  color: var(--text-muted); margin-bottom: 6px;
+  background: var(--muted);
+  color: var(--muted-foreground); margin-bottom: 6px;
 }
-.spt-empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.spt-empty-sub { font-size: 14px; color: var(--text-muted); max-width: 32rem; line-height: 1.55; margin: 0 0 12px; }
+.spt-empty-title { font-size: 16px; font-weight: 600; color: var(--foreground); }
+.spt-empty-sub { font-size: 14px; color: var(--muted-foreground); max-width: 32rem; line-height: 1.55; margin: 0 0 12px; }
 
 /* Sticky bulk-action bar */
 .spt-bar {
@@ -785,37 +706,37 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
   bottom: 24px; z-index: 50;
   display: flex; align-items: center; gap: 16px;
   padding: 12px 18px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14), 0 1px 2px rgba(15, 23, 42, 0.06);
 }
-.spt-bar-info { font-size: 13px; color: var(--text-secondary); }
-.spt-bar-info strong { color: var(--text-primary); font-weight: 700; margin-right: 6px; }
-.spt-bar-link { background: none; border: 0; color: var(--brand-accent); font-size: 12px; cursor: pointer; margin-left: 8px; }
+.spt-bar-info { font-size: 13px; color: var(--muted-foreground); }
+.spt-bar-info strong { color: var(--foreground); font-weight: 700; margin-right: 6px; }
+.spt-bar-link { background: none; border: 0; color: var(--primary); font-size: 12px; cursor: pointer; margin-left: 8px; }
 .spt-bar-actions { display: inline-flex; gap: 8px; }
 .spt-bar-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 14px;
-  background: var(--bg-card); color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--card); color: var(--foreground);
+  border: 1px solid var(--border);
   border-radius: 9999px;
   font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.spt-bar-btn:hover:not(:disabled) { border-color: var(--brand-accent); color: var(--brand-accent); }
+.spt-bar-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .spt-bar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .spt-bar-btn.is-primary {
-  background: var(--brand-accent); color: #fff; border-color: var(--brand-accent);
+  background: var(--primary); color: var(--primary-foreground); border-color: var(--primary);
 }
-.spt-bar-btn.is-primary:hover { filter: brightness(0.96); color: #fff; }
+.spt-bar-btn.is-primary:hover { filter: brightness(0.96); color: var(--primary-foreground); }
 
 .spt-add-wrap { position: relative; }
 .spt-add-menu {
   position: absolute; bottom: calc(100% + 6px); right: 0;
   min-width: 220px;
   padding: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   display: flex; flex-direction: column;
@@ -824,13 +745,13 @@ defineExpose({ load, count: computed(() => prompts.value.length) })
 .spt-add-item {
   text-align: left; padding: 7px 10px;
   border: 0; background: transparent;
-  font-size: 13px; color: var(--text-primary);
+  font-size: 13px; color: var(--foreground);
   cursor: pointer; border-radius: 8px;
 }
-.spt-add-item:hover { background: var(--bg-surface, rgba(15, 23, 42, 0.04)); }
-.spt-add-item.is-primary { color: var(--brand-accent); font-weight: 600; }
-.spt-add-divider { height: 1px; background: var(--border-color); margin: 4px 0; }
-.spt-add-empty { padding: 8px 10px; font-size: 12px; color: var(--text-muted); }
+.spt-add-item:hover { background: var(--muted); }
+.spt-add-item.is-primary { color: var(--primary); font-weight: 600; }
+.spt-add-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.spt-add-empty { padding: 8px 10px; font-size: 12px; color: var(--muted-foreground); }
 
 .spt-bar-enter-active, .spt-bar-leave-active { transition: transform 0.18s ease, opacity 0.18s ease; }
 .spt-bar-enter-from, .spt-bar-leave-to { transform: translate(-50%, 12px); opacity: 0; }

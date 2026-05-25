@@ -7,7 +7,7 @@
     raw response length so the user can spot which provider is being
     chatty vs sparse.
   -->
-  <div v-if="hasData" class="ph-card">
+  <Card v-if="hasData" class="mb-6 p-5">
     <div class="ph-header">
       <h3 class="ph-title">Where you rank, prompt by provider</h3>
       <div class="ph-legend">
@@ -51,11 +51,12 @@
         </template>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { Card } from '@/components/ui/card'
 
 const props = defineProps({
   results: { type: Array, default: () => [] },
@@ -120,13 +121,6 @@ function cellTitle(cell) {
 </script>
 
 <style scoped>
-.ph-card {
-  background: var(--bg-secondary, #fff);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
-}
 .ph-header {
   display: flex;
   align-items: center;
@@ -139,14 +133,14 @@ function cellTitle(cell) {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .ph-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .ph-legend-item {
   display: inline-flex;
@@ -170,7 +164,7 @@ function cellTitle(cell) {
 }
 
 .ph-corner {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
 }
 .ph-prov-cell {
   display: flex;
@@ -180,8 +174,8 @@ function cellTitle(cell) {
   padding: 6px 8px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,7 +192,7 @@ function cellTitle(cell) {
   gap: 8px;
   padding: 6px 8px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -206,7 +200,7 @@ function cellTitle(cell) {
 .ph-prompt-num {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 .ph-prompt-text {
@@ -224,7 +218,7 @@ function cellTitle(cell) {
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  background: var(--bg-base, #f4f4f5);
+  background: var(--muted);
   border: 1px solid transparent;
   transition: transform 0.15s ease, border-color 0.15s ease;
   cursor: default;
@@ -234,7 +228,7 @@ function cellTitle(cell) {
 .ph-rank-1 { background: rgba(16, 185, 129, 0.85); color: #fff; }
 .ph-rank-2 { background: rgba(16, 185, 129, 0.45); color: #064e3b; }
 .ph-rank-3 { background: rgba(16, 185, 129, 0.2); color: #064e3b; }
-.ph-miss   { background: var(--bg-base, #f4f4f5); color: var(--text-muted); }
+.ph-miss   { background: var(--muted); color: var(--muted-foreground); }
 .ph-fail   { background: rgba(239, 68, 68, 0.18); color: #b91c1c; }
 .ph-empty  { background: transparent; }
 </style>

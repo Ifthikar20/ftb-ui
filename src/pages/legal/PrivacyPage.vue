@@ -1,20 +1,20 @@
 <template>
-  <div class="legal-page">
-    <header class="legal-header">
-      <router-link to="/" class="legal-logo">
+  <div class="legal-page min-h-screen bg-background text-foreground">
+    <header class="sticky top-0 z-[100] flex items-center justify-between border-b border-border bg-card px-10 py-4 backdrop-blur-md">
+      <router-link to="/" class="flex items-center gap-2.5 text-[1.1rem] font-bold text-foreground no-underline">
         <img src="/images/fb-logo.png" alt="FetchBot" width="28" height="28" />
         <span>FetchBot</span>
       </router-link>
-      <div class="legal-nav">
-        <router-link to="/terms">Terms of Service</router-link>
-        <router-link to="/login" class="btn btn-sm btn-primary">Sign In</router-link>
+      <div class="flex items-center gap-5">
+        <router-link to="/terms" class="text-sm font-medium text-muted-foreground no-underline hover:text-foreground">Terms of Service</router-link>
+        <Button as="router-link" to="/login" size="sm">Sign In</Button>
       </div>
     </header>
 
-    <main class="legal-content">
-      <div class="legal-meta">
-        <span class="legal-badge">Legal</span>
-        <span class="legal-date">Effective Date: May 17, 2026</span>
+    <main class="legal-content mx-auto max-w-[780px] px-6 pb-20 pt-12 leading-[1.8]">
+      <div class="mb-4 flex items-center gap-3">
+        <Badge variant="secondary">Legal</Badge>
+        <span class="text-sm text-muted-foreground">Effective Date: May 17, 2026</span>
       </div>
 
       <h1>Privacy Policy</h1>
@@ -34,7 +34,7 @@
         By using FetchBot, you agree to the practices described in this Privacy Policy.
       </p>
 
-      <div class="legal-toc">
+      <div class="legal-toc my-8 rounded-xl bg-muted px-7 py-6">
         <h3>Table of Contents</h3>
         <ol>
           <li><a href="#info-collected">Information We Collect</a></li>
@@ -309,12 +309,12 @@
       </section>
     </main>
 
-    <footer class="legal-footer">
+    <footer class="legal-footer flex items-center justify-between border-t border-border px-10 py-6 text-sm text-muted-foreground">
       <p>&copy; 2026 Alicorr LLC. All rights reserved.</p>
-      <div class="legal-footer-links">
-        <router-link to="/terms">Terms of Service</router-link>
-        <router-link to="/privacy">Privacy Policy</router-link>
-        <a href="mailto:support@fetchbot.ai">Contact</a>
+      <div class="flex gap-5">
+        <router-link to="/terms" class="font-medium text-muted-foreground no-underline hover:text-foreground">Terms of Service</router-link>
+        <router-link to="/privacy" class="font-medium text-muted-foreground no-underline hover:text-foreground">Privacy Policy</router-link>
+        <a href="mailto:support@fetchbot.ai" class="font-medium text-muted-foreground no-underline hover:text-foreground">Contact</a>
       </div>
     </footer>
   </div>
@@ -322,6 +322,8 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 onMounted(() => {
   document.title = 'Privacy Policy — FetchBot'
@@ -329,79 +331,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.legal-page {
-  min-height: 100vh;
-  background: var(--bg-body, #fafafa);
-  color: var(--text-primary, #1a1a2e);
-}
-
-.legal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 40px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-card, #fff);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  backdrop-filter: blur(12px);
-}
-
-.legal-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.legal-nav {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.legal-nav a {
-  font-size: var(--font-sm, 0.875rem);
-  color: var(--text-secondary, #6b7280);
-  text-decoration: none;
-  font-weight: 500;
-}
-.legal-nav a:hover { color: var(--text-primary); }
-.legal-nav .btn { padding: 8px 18px; border-radius: 8px; font-size: 0.8rem; }
-
-.legal-content {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 48px 24px 80px;
-  line-height: 1.8;
-}
-
-.legal-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.legal-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.08);
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-
-.legal-date {
-  font-size: var(--font-sm, 0.875rem);
-  color: var(--text-muted, #9ca3af);
-}
-
 h1 {
   font-size: 2.2rem;
   font-weight: 800;
@@ -411,22 +340,16 @@ h1 {
 
 .legal-intro {
   font-size: 1.05rem;
-  color: var(--text-secondary, #4b5563);
+  color: var(--muted-foreground);
   margin-bottom: 12px;
 }
 
-.legal-toc {
-  background: var(--bg-surface, #f3f4f6);
-  border-radius: 12px;
-  padding: 24px 28px;
-  margin: 32px 0;
-}
 .legal-toc h3 {
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-bottom: 12px;
 }
 .legal-toc ol {
@@ -436,15 +359,15 @@ h1 {
 }
 .legal-toc li {
   padding: 3px 0;
-  font-size: var(--font-sm, 0.875rem);
+  font-size: 0.875rem;
   break-inside: avoid;
 }
 .legal-toc a {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-decoration: none;
 }
 .legal-toc a:hover {
-  color: #8b5cf6;
+  color: var(--chart-1);
   text-decoration: underline;
 }
 
@@ -455,19 +378,19 @@ h2 {
   font-weight: 700;
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border);
 }
 
 h3 {
   font-size: 1rem;
   font-weight: 600;
   margin: 20px 0 8px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 p {
   margin-bottom: 12px;
-  color: var(--text-secondary, #4b5563);
+  color: var(--muted-foreground);
 }
 
 ul, ol {
@@ -477,69 +400,17 @@ ul, ol {
 
 li {
   margin-bottom: 6px;
-  color: var(--text-secondary, #4b5563);
+  color: var(--muted-foreground);
 }
 
 a {
-  color: #8b5cf6;
+  color: var(--chart-1);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.legal-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: var(--font-sm, 0.875rem);
-}
-.legal-table th {
-  background: var(--bg-surface, #f3f4f6);
-  padding: 10px 14px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-primary);
-  border-bottom: 2px solid var(--border-color, #e5e7eb);
-}
-.legal-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  color: var(--text-secondary);
-}
-.legal-table tr:last-child td { border-bottom: none; }
-
-.contact-card {
-  background: var(--bg-surface, #f3f4f6);
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-top: 12px;
-}
-.contact-card p { margin-bottom: 4px; }
-
-.legal-footer {
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  padding: 24px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-sm, 0.875rem);
-  color: var(--text-muted, #9ca3af);
-}
-.legal-footer-links {
-  display: flex;
-  gap: 20px;
-}
-.legal-footer-links a {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-weight: 500;
-}
-.legal-footer-links a:hover { color: var(--text-primary); }
-
 @media (max-width: 640px) {
-  .legal-header { padding: 12px 16px; }
-  .legal-content { padding: 32px 16px 60px; }
   h1 { font-size: 1.6rem; }
   .legal-toc ol { columns: 1; }
-  .legal-footer { flex-direction: column; gap: 12px; text-align: center; }
 }
 </style>

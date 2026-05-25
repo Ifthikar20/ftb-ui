@@ -24,11 +24,11 @@ defineProps({
 <style scoped>
 .pl-sort-icon {
   flex-shrink: 0;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   transition: color 0.15s;
 }
 .pl-sort-icon.is-active {
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-sort-icon path { transition: opacity 0.15s; }
 .pl-sort-icon.is-asc path:nth-child(2),

@@ -1,10 +1,8 @@
 <template>
-  <div class="integrations-page fade-in">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Integrations</h1>
-        <p class="page-subtitle">Connect your favorite tools to get daily updates, alerts, and growth reports.</p>
-      </div>
+  <div class="integrations-page mx-auto max-w-6xl px-6 py-8 sm:px-8">
+    <div class="mb-8">
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Integrations</h1>
+      <p class="mt-1 text-sm text-muted-foreground">Connect your favorite tools to get daily updates, alerts, and growth reports.</p>
     </div>
 
     <!-- Daily Update Preview Card -->
@@ -92,18 +90,18 @@
         </div>
 
         <!-- Connect / Manage -->
-        <div class="intg-card-actions">
+        <div class="flex gap-2">
           <template v-if="intg.connected">
-            <button class="intg-btn intg-btn-manage" @click="openSettings(intg)">
+            <Button variant="secondary" size="sm" class="flex-1" @click="openSettings(intg)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
               Settings
-            </button>
-            <button class="intg-btn intg-btn-disconnect" @click="disconnect(intg)">Disconnect</button>
+            </Button>
+            <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-destructive" @click="disconnect(intg)">Disconnect</Button>
           </template>
-          <button v-else class="intg-btn intg-btn-connect" @click="openConnect(intg)">
+          <Button v-else size="sm" class="flex-1" @click="openConnect(intg)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.5-1.5"/></svg>
             Connect {{ intg.name }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -158,14 +156,14 @@
                 <div class="step-number">2</div>
                 <div class="step-content">
                   <h4>Paste the Webhook URL</h4>
-                  <input v-model="webhookUrl" class="form-input" placeholder="https://hooks.slack.com/services/T.../B.../..." />
+                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://hooks.slack.com/services/T.../B.../..." />
                 </div>
               </div>
               <div class="connect-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
                   <h4>Choose a channel</h4>
-                  <input v-model="channelName" class="form-input" placeholder="#marketing-updates" />
+                  <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#marketing-updates" />
                 </div>
               </div>
             </template>
@@ -183,14 +181,14 @@
                 <div class="step-number">2</div>
                 <div class="step-content">
                   <h4>Paste the Webhook URL</h4>
-                  <input v-model="webhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/..." />
+                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://discord.com/api/webhooks/..." />
                 </div>
               </div>
               <div class="connect-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
                   <h4>Bot display name</h4>
-                  <input v-model="channelName" class="form-input" placeholder="FetchBot Growth Bot" value="FetchBot" />
+                  <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="FetchBot Growth Bot" value="FetchBot" />
                 </div>
               </div>
             </template>
@@ -208,7 +206,7 @@
                 <div class="step-number">2</div>
                 <div class="step-content">
                   <h4>Enter your Chat ID</h4>
-                  <input v-model="webhookUrl" class="form-input" placeholder="123456789" />
+                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="123456789" />
                 </div>
               </div>
               <div class="connect-step">
@@ -234,18 +232,18 @@
           </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="showConnectModal = false">Cancel</button>
-        <button class="btn btn-primary" :disabled="!webhookUrl.trim() || connecting" @click="confirmConnect">
+        <Button variant="secondary" @click="showConnectModal = false">Cancel</Button>
+        <Button :disabled="!webhookUrl.trim() || connecting" @click="confirmConnect">
           <span v-if="connecting" class="btn-spinner"></span>
           {{ connecting ? 'Connecting...' : 'Connect & Save' }}
-        </button>
+        </Button>
       </template>
     </BaseModal>
 
     <!-- Success Toast Overlay -->
     <Transition name="toast">
       <div v-if="showSuccessToast" class="success-toast">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--chart-2)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
         <span>{{ successMessage }}</span>
       </div>
     </Transition>
@@ -255,6 +253,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { Button } from '@/components/ui/button'
 import integrationsApi from '@/api/integrations'
 
 const scheduleTime = ref('09:00')
@@ -423,7 +422,7 @@ function showToast(msg) {
 .daily-preview-card {
   margin-bottom: 24px;
   padding: 2px;
-  border-radius: calc(var(--radius-lg) + 2px);
+  border-radius: 16px;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6, #6366f1, #3b82f6);
   background-size: 300% 300%;
   animation: gradient-shift 6s ease infinite;
@@ -435,8 +434,8 @@ function showToast(msg) {
 }
 
 .daily-preview-inner {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  background: var(--card);
+  border-radius: 14px;
   padding: 24px;
 }
 
@@ -451,9 +450,9 @@ function showToast(msg) {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--font-base);
+  font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .daily-schedule {
@@ -463,26 +462,26 @@ function showToast(msg) {
 }
 
 .schedule-label {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
 .schedule-select {
   padding: 4px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  font-size: var(--font-xs);
-  background: var(--bg-surface);
-  color: var(--text-primary);
+  border: 1px solid var(--input);
+  border-radius: 9999px;
+  font-size: 12px;
+  background: var(--muted);
+  color: var(--foreground);
   cursor: pointer;
 }
 
 /* ── Message Preview ── */
 .update-preview-msg {
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
+  background: var(--muted);
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
 }
 
 .preview-app-bar {
@@ -490,31 +489,31 @@ function showToast(msg) {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
 }
 
 .preview-avatar { font-size: 1.2rem; }
 
 .preview-bot-name {
   font-weight: 700;
-  font-size: var(--font-sm);
-  color: var(--text-primary);
+  font-size: 14px;
+  color: var(--foreground);
 }
 
 .preview-time {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--muted-foreground);
   margin-left: auto;
 }
 
 .preview-body { padding: 14px; }
 
 .preview-greeting {
-  font-size: var(--font-sm);
-  color: var(--text-primary);
+  font-size: 14px;
+  color: var(--foreground);
   margin-bottom: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px dashed color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 .preview-stats {
@@ -528,21 +527,21 @@ function showToast(msg) {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
 .preview-stat-icon { font-size: 0.9rem; }
-.preview-stat-row strong { color: var(--text-primary); font-weight: 700; }
+.preview-stat-row strong { color: var(--foreground); font-weight: 700; }
 
 .preview-cta {
   padding-top: 10px;
-  border-top: 1px dashed color-mix(in srgb, var(--border-color) 60%, transparent);
+  border-top: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 .preview-link {
-  font-size: var(--font-xs);
-  color: var(--brand-accent);
+  font-size: 12px;
+  color: var(--primary);
   font-weight: 600;
   cursor: pointer;
 }
@@ -564,9 +563,9 @@ function showToast(msg) {
 
 .integration-card {
   position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   padding: 24px;
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   animation: card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -578,7 +577,7 @@ function showToast(msg) {
 }
 
 .integration-card.connected {
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: color-mix(in srgb, var(--chart-2) 30%, transparent);
 }
 
 /* Status dot */
@@ -589,13 +588,13 @@ function showToast(msg) {
   width: 10px; height: 10px;
   border-radius: 50%;
 }
-.status-connected { background: #22c55e; }
-.status-disconnected { background: var(--border-color); }
+.status-connected { background: var(--chart-2); }
+.status-disconnected { background: var(--border); }
 .status-pulse {
   position: absolute;
   width: 100%; height: 100%;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--chart-2);
   animation: pulse-out 2s ease-out infinite;
 }
 @keyframes pulse-out {
@@ -612,7 +611,7 @@ function showToast(msg) {
 
 .intg-icon-wrap {
   width: 48px; height: 48px;
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -623,23 +622,23 @@ function showToast(msg) {
 
 .intg-card-name {
   display: block;
-  font-size: var(--font-base);
+  font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .intg-card-status {
   display: block;
-  font-size: var(--font-xs);
+  font-size: 12px;
   font-weight: 500;
   margin-top: 1px;
 }
-.text-success { color: #22c55e; }
-.text-muted-status { color: var(--text-muted); }
+.text-success { color: var(--chart-2); }
+.text-muted { color: var(--muted-foreground); }
 
 .intg-card-desc {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin-bottom: 14px;
 }
@@ -651,71 +650,26 @@ function showToast(msg) {
   gap: 6px;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 }
 
 .intg-feature {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--font-xs);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
-.intg-feature svg { color: #22c55e; flex-shrink: 0; }
-
-/* Buttons */
-.intg-card-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.intg-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.intg-btn-connect {
-  flex: 1;
-  justify-content: center;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-}
-.intg-btn-connect:hover { box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transform: translateY(-1px); }
-
-.intg-btn-manage {
-  flex: 1;
-  justify-content: center;
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-}
-.intg-btn-manage:hover { border-color: var(--text-primary); color: var(--text-primary); }
-
-.intg-btn-disconnect {
-  padding: 8px 12px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: var(--font-xs);
-}
-.intg-btn-disconnect:hover { color: #ef4444; }
+.intg-feature svg { color: var(--chart-2); flex-shrink: 0; }
 
 /* ═══════════════════════════════════════
    What Gets Sent
    ═══════════════════════════════════════ */
 .section-title {
-  font-size: var(--font-md);
+  font-size: 16px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin-bottom: 16px;
 }
 
@@ -726,9 +680,9 @@ function showToast(msg) {
 }
 
 .sent-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   padding: 20px;
   transition: all 0.2s;
 }
@@ -736,7 +690,7 @@ function showToast(msg) {
 
 .sent-item-icon {
   width: 36px; height: 36px;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,15 +699,15 @@ function showToast(msg) {
 }
 
 .sent-item h4 {
-  font-size: var(--font-sm);
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0 0 4px;
 }
 
 .sent-item p {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin: 0;
 }
@@ -776,8 +730,8 @@ function showToast(msg) {
 .step-number {
   width: 28px; height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-size: 12px;
   font-weight: 700;
   display: flex;
@@ -789,33 +743,33 @@ function showToast(msg) {
 
 .step-content { flex: 1; }
 .step-content h4 {
-  font-size: var(--font-sm);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0 0 4px;
 }
 .step-content p {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--muted-foreground);
   line-height: 1.4;
   margin: 0 0 8px;
 }
 
-.step-link { color: var(--brand-accent); text-decoration: none; font-weight: 600; }
+.step-link { color: var(--primary); text-decoration: none; font-weight: 600; }
 .step-link:hover { text-decoration: underline; }
 
 .notif-prefs {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   padding-top: 14px;
   margin-bottom: 16px;
 }
 
 .prefs-title {
-  font-size: var(--font-xs);
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin: 0 0 10px;
 }
 
@@ -829,31 +783,23 @@ function showToast(msg) {
 
 .pref-name {
   display: block;
-  font-size: var(--font-xs);
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .pref-desc {
   display: block;
   font-size: 0.65rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-top: 1px;
 }
 
 .modern-check {
   width: 15px; height: 15px;
   cursor: pointer;
-  accent-color: #8b5cf6;
+  accent-color: var(--primary);
   margin-top: 2px;
-}
-
-.modal-footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
 }
 
 .btn-spinner {
@@ -883,13 +829,13 @@ function showToast(msg) {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: var(--bg-card);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: var(--radius-full);
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--chart-2) 30%, transparent);
+  border-radius: 9999px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  font-size: var(--font-sm);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   z-index: 200;
 }
 

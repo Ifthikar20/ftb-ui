@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Button } from '@/components/ui/button'
 import promptLibrary from '@/api/promptLibrary'
 import { useToast } from '@/composables/useToast'
 
@@ -100,7 +100,7 @@ async function save() {
               <div class="vp-eyebrow">Variables</div>
               <h3 class="vp-title">{{ websiteName || 'Your website' }}</h3>
             </div>
-            <AirButton variant="primary" size="sm" :loading="saving" @click="save">Save</AirButton>
+            <Button size="sm" :disabled="saving" @click="save">{{ saving ? 'Saving…' : 'Save' }}</Button>
           </header>
 
           <div class="vp-body">
@@ -125,7 +125,7 @@ async function save() {
                 <div class="vp-row">
                   <input class="vp-input vp-name" v-model="newName" placeholder="variable_name" />
                   <input class="vp-input" v-model="newValue" placeholder="Value" @keyup.enter="addRow" />
-                  <AirButton variant="ghost" size="sm" @click="addRow">Add</AirButton>
+                  <Button variant="ghost" size="sm" @click="addRow">Add</Button>
                 </div>
               </section>
             </template>
@@ -139,46 +139,48 @@ async function save() {
 <style scoped>
 .vp-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.32);
-  z-index: 60;
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 200;
   display: flex; justify-content: flex-end;
 }
 .vp-panel {
   width: 420px; max-width: 100vw;
   height: 100%;
-  background: var(--bg-card);
-  border-left: 1px solid var(--border-color);
+  background: var(--card);
+  border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
   box-shadow: -16px 0 40px rgba(0,0,0,0.12);
 }
 .vp-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 20px; border-bottom: 1px solid var(--border-color);
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
 }
-.vp-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
-.vp-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 2px 0 0; }
+.vp-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
+.vp-title { font-size: 16px; font-weight: 600; color: var(--foreground); margin: 2px 0 0; }
 .vp-body { flex: 1; overflow-y: auto; padding: 16px 20px 24px; }
-.vp-loading { font-size: 13px; color: var(--text-muted); }
+.vp-loading { font-size: 13px; color: var(--muted-foreground); }
 .vp-section { margin-bottom: 18px; }
-.vp-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 0 0 8px; }
+.vp-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin: 0 0 8px; }
 .vp-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
 .vp-input {
   height: 32px; padding: 0 10px;
-  border-radius: 8px; border: 1px solid var(--border-color);
-  background: var(--bg-card); color: var(--text-primary);
-  font-size: 12px;
+  border-radius: 8px; border: 1px solid var(--input);
+  background: var(--background); color: var(--foreground);
+  font-size: 12px; outline: none;
 }
+.vp-input:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
 .vp-name { font-family: ui-monospace, SFMono-Regular, monospace; }
 .vp-tag {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--text-muted); padding: 2px 8px; border-radius: 9999px;
-  background: var(--bg-card-hover); border: 1px solid var(--border-color);
+  color: var(--muted-foreground); padding: 2px 8px; border-radius: 9999px;
+  background: var(--muted); border: 1px solid var(--border);
 }
 .vp-remove {
-  background: transparent; border: 1px solid var(--border-color); border-radius: 9999px;
-  width: 26px; height: 26px; cursor: pointer; color: var(--text-muted);
+  background: transparent; border: 1px solid var(--border); border-radius: 9999px;
+  width: 26px; height: 26px; cursor: pointer; color: var(--muted-foreground);
 }
-.vp-remove:hover { color: var(--color-danger, #dc2626); }
+.vp-remove:hover { color: var(--destructive); }
 .slide-panel-enter-active, .slide-panel-leave-active { transition: opacity 200ms ease-out; }
 .slide-panel-enter-from, .slide-panel-leave-to { opacity: 0; }
 </style>

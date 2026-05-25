@@ -27,21 +27,22 @@ export const useAppStore = defineStore('app', () => {
         projectLimit.value = limit
     }
 
-    // Theme: 'light' or 'dark'
-    const theme = ref(localStorage.getItem('fb-theme') || 'light')
+    // Theme: light only (night mode removed)
+    const theme = ref('light')
 
     function applyTheme(t) {
-        document.documentElement.setAttribute('data-theme', t)
-        localStorage.setItem('fb-theme', t)
+        document.documentElement.setAttribute('data-theme', 'light')
     }
 
     function toggleTheme() {
-        theme.value = theme.value === 'light' ? 'dark' : 'light'
-        applyTheme(theme.value)
+        // Night mode removed — always light.
+        theme.value = 'light'
+        applyTheme('light')
     }
 
     // Apply on init
-    applyTheme(theme.value)
+    applyTheme('light')
+    localStorage.removeItem('fb-theme')
 
     function toggleSidebar() {
         sidebarCollapsed.value = !sidebarCollapsed.value

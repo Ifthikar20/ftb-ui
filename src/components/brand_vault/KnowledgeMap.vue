@@ -1,65 +1,71 @@
 <template>
-  <div class="km">
-    <div class="km-filters">
+  <div class="flex flex-col gap-3.5">
+    <div class="flex flex-wrap gap-1.5">
       <button
         type="button"
-        class="km-chip"
-        :class="{ 'is-on': filter === 'all' }"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors"
+        :class="filter === 'all'
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-card text-foreground hover:border-muted-foreground'"
         @click="updateFilter('all')"
-      >All <span class="km-chip-count">{{ facts.length }}</span></button>
+      >All <span class="rounded-full px-1.5 py-px text-[0.7rem] font-bold" :class="filter === 'all' ? 'bg-white/20' : 'bg-foreground/[0.06]'">{{ facts.length }}</span></button>
       <button
         v-if="contradictions.length"
         type="button"
-        class="km-chip is-warn"
-        :class="{ 'is-on': filter === 'contradictions' }"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors"
+        :class="filter === 'contradictions'
+          ? 'border-chart-3 bg-chart-3 text-white'
+          : 'border-chart-3/40 bg-card text-chart-3 hover:border-chart-3'"
         @click="updateFilter('contradictions')"
-      >Contradictions <span class="km-chip-count">{{ contradictions.length }}</span></button>
+      >Contradictions <span class="rounded-full px-1.5 py-px text-[0.7rem] font-bold" :class="filter === 'contradictions' ? 'bg-white/20' : 'bg-foreground/[0.06]'">{{ contradictions.length }}</span></button>
       <button
         v-for="pl in productLines"
         :key="pl"
         type="button"
-        class="km-chip"
-        :class="{ 'is-on': filter === pl }"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors"
+        :class="filter === pl
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-card text-foreground hover:border-muted-foreground'"
         @click="updateFilter(pl)"
       >{{ pl }}</button>
     </div>
 
-    <div v-if="loading" class="km-grid">
-      <div v-for="i in 6" :key="i" class="km-skel" />
+    <div v-if="loading" class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+      <div v-for="i in 6" :key="i" class="h-[140px] animate-pulse rounded-xl border border-border bg-card" />
     </div>
 
-    <div v-else-if="!facts.length" class="km-empty">
-      <h3>Nothing here yet</h3>
-      <p>Approve facts from the Review queue to populate the map.</p>
+    <div v-else-if="!facts.length" class="rounded-2xl border border-dashed border-border px-5 py-[60px] text-center text-muted-foreground">
+      <h3 class="mb-1 text-[1.05rem] text-foreground">Nothing here yet</h3>
+      <p class="text-sm">Approve facts from the Review queue to populate the map.</p>
     </div>
 
-    <div v-else class="km-grid">
+    <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
       <div
         v-for="fact in facts"
         :key="fact.id"
-        class="km-card"
-        :class="{ 'is-conflict': conflictedIds.has(fact.id) }"
+        class="flex cursor-pointer flex-col gap-2.5 rounded-xl border bg-card px-4 py-3.5 transition-colors hover:border-muted-foreground hover:shadow-md"
+        :class="conflictedIds.has(fact.id) ? 'border-chart-3/55 bg-chart-3/5' : 'border-border'"
         @click="$emit('open-detail', fact)"
       >
-        <div class="km-card-status">
-          <span class="km-pill" :class="`is-${fact.status}`">
+        <div class="flex gap-1.5">
+          <Badge :variant="fact.status === 'auto' ? 'default' : 'success'">
             {{ fact.status === 'auto' ? 'Auto' : 'Approved' }}
-          </span>
-          <span v-if="conflictedIds.has(fact.id)" class="km-pill is-warn">Conflict</span>
+          </Badge>
+          <Badge v-if="conflictedIds.has(fact.id)" variant="warning">Conflict</Badge>
         </div>
-        <div class="km-card-text">
-          <strong>{{ fact.subject }}</strong>
-          <span class="km-pred">{{ fact.predicate }}</span>
+        <div class="flex flex-wrap gap-1 text-[0.9rem] leading-relaxed text-foreground">
+          <strong class="font-semibold">{{ fact.subject }}</strong>
+          <span class="text-muted-foreground">{{ fact.predicate }}</span>
           <span>{{ fact.object }}</span>
         </div>
-        <div class="km-card-meta">
-          <span v-if="fact.product_line" class="km-tag">{{ fact.product_line }}</span>
-          <span v-if="fact.topic" class="km-tag">{{ fact.topic }}</span>
-          <span class="km-conf">{{ confidencePct(fact.confidence) }}% conf</span>
+        <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <span v-if="fact.product_line" class="rounded-full bg-muted px-2 py-px uppercase tracking-[0.04em]">{{ fact.product_line }}</span>
+          <span v-if="fact.topic" class="rounded-full bg-muted px-2 py-px uppercase tracking-[0.04em]">{{ fact.topic }}</span>
+          <span class="tabular-nums">{{ confidencePct(fact.confidence) }}% conf</span>
         </div>
-        <div class="km-card-actions" @click.stop>
-          <AirButton variant="ghost" size="xs" @click="$emit('edit-click', fact)">Edit</AirButton>
-          <AirButton variant="ghost" size="xs" @click="$emit('reject', fact)">Archive</AirButton>
+        <div class="flex justify-end gap-1 border-t border-border pt-2" @click.stop>
+          <Button variant="ghost" size="sm" @click="$emit('edit-click', fact)">Edit</Button>
+          <Button variant="ghost" size="sm" @click="$emit('reject', fact)">Archive</Button>
         </div>
       </div>
     </div>
@@ -68,7 +74,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
   facts: { type: Array, required: true },
@@ -100,142 +107,3 @@ function confidencePct(c) {
   return Math.max(0, Math.min(100, Math.round(pct)))
 }
 </script>
-
-<style scoped>
-.km { display: flex; flex-direction: column; gap: 14px; }
-
-.km-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.km-chip {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 999px;
-  background: var(--bg-card, #fff);
-  font-size: 0.8rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.km-chip:hover { border-color: var(--border-hover, #d4d4d8); }
-.km-chip.is-on {
-  background: var(--text-primary);
-  color: var(--bg-card, #fff);
-  border-color: var(--text-primary);
-}
-.km-chip.is-warn { color: #b45309; border-color: rgba(245,158,11,0.4); }
-.km-chip.is-warn.is-on { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-.km-chip-count {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 1px 7px;
-  background: rgba(0,0,0,0.06);
-  border-radius: 999px;
-}
-.km-chip.is-on .km-chip-count { background: rgba(255,255,255,0.18); }
-
-.km-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-.km-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.km-card:hover {
-  border-color: var(--border-hover, #d4d4d8);
-  box-shadow: 0 6px 18px -10px rgba(20, 23, 24, 0.12);
-}
-.km-card.is-conflict { border-color: rgba(245,158,11,0.55); background: rgba(245,158,11,0.04); }
-.km-card-status { display: flex; gap: 6px; }
-.km-pill {
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-.km-pill.is-approved { background: rgba(16,185,129,0.14); color: #047857; }
-.km-pill.is-auto { background: rgba(91,141,239,0.14); color: #1d4ed8; }
-.km-pill.is-warn { background: rgba(245,158,11,0.16); color: #b45309; }
-.km-card-text {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--text-primary);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.km-card-text strong { font-weight: 600; }
-.km-pred { color: var(--text-secondary); }
-.km-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  align-items: center;
-}
-.km-tag {
-  background: var(--bg-subtle, #fafafa);
-  padding: 1px 7px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.km-conf { font-variant-numeric: tabular-nums; }
-.km-card-actions {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  padding-top: 8px;
-}
-
-.km-skel {
-  height: 140px;
-  border-radius: 12px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.km-empty {
-  text-align: center;
-  padding: 60px 20px;
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  color: var(--text-secondary);
-}
-.km-empty h3 { margin: 0 0 4px; color: var(--text-primary); font-size: 1.05rem; }
-.km-empty p { margin: 0; font-size: 0.88rem; }
-
-[data-theme="dark"] .km-chip,
-[data-theme="dark"] .km-card,
-[data-theme="dark"] .km-skel {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-[data-theme="dark"] .km-chip-count { background: rgba(255,255,255,0.06); }
-[data-theme="dark"] .km-tag { background: var(--bg-card-hover); color: var(--text-secondary); }
-[data-theme="dark"] .km-card-actions { border-color: var(--border-color); }
-</style>
