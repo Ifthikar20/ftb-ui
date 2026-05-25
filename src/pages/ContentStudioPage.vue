@@ -2,13 +2,13 @@
   <div class="cs-page mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-12">
     <!-- Header -->
     <header id="cs-header" class="mb-12 max-w-3xl">
-      <div class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-rose-500">
+      <div class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--chart-1)]">
         Content Studio
       </div>
-      <h1 class="text-4xl font-semibold leading-tight tracking-tight text-zinc-900 sm:text-[40px]">
+      <h1 class="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-[40px]">
         Write the things AI assistants miss.
       </h1>
-      <p class="mt-3 text-base leading-relaxed text-zinc-500">
+      <p class="mt-3 text-base leading-relaxed text-muted-foreground">
         AI-drafted blogs, FAQs, JSON-LD and Reddit replies to close your visibility,
         accuracy, and citation gaps. We surface every place AI could mention you better
         and let you ship a fix in a few clicks.
@@ -17,72 +17,66 @@
 
     <!-- Stats strip -->
     <section id="cs-stats" class="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <AirCard size="md">
-        <AirCardHeader>
-          <AirCardSubtitle class="text-xs font-semibold uppercase tracking-wider">
-            Open briefs
-          </AirCardSubtitle>
-        </AirCardHeader>
-        <div class="flex items-baseline gap-2">
-          <span class="text-3xl font-semibold tabular-nums text-zinc-900">{{ stats.open }}</span>
-          <span class="text-sm text-zinc-500">waiting for you</span>
+      <Card class="p-6">
+        <CardDescription class="text-xs font-semibold uppercase tracking-wider">
+          Open briefs
+        </CardDescription>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-semibold tabular-nums text-foreground">{{ stats.open }}</span>
+          <span class="text-sm text-muted-foreground">waiting for you</span>
         </div>
-      </AirCard>
-      <AirCard size="md">
-        <AirCardHeader>
-          <AirCardSubtitle class="text-xs font-semibold uppercase tracking-wider">
-            Drafts in progress
-          </AirCardSubtitle>
-        </AirCardHeader>
-        <div class="flex items-baseline gap-2">
-          <span class="text-3xl font-semibold tabular-nums text-zinc-900">{{ stats.drafting }}</span>
-          <span class="text-sm text-zinc-500">being written</span>
+      </Card>
+      <Card class="p-6">
+        <CardDescription class="text-xs font-semibold uppercase tracking-wider">
+          Drafts in progress
+        </CardDescription>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-semibold tabular-nums text-foreground">{{ stats.drafting }}</span>
+          <span class="text-sm text-muted-foreground">being written</span>
         </div>
-      </AirCard>
-      <AirCard size="md">
-        <AirCardHeader>
-          <AirCardSubtitle class="text-xs font-semibold uppercase tracking-wider">
-            Approved as publish content
-          </AirCardSubtitle>
-        </AirCardHeader>
-        <div class="flex items-baseline gap-2">
-          <span class="text-3xl font-semibold tabular-nums text-zinc-900">{{ stats.published }}</span>
+      </Card>
+      <Card class="p-6">
+        <CardDescription class="text-xs font-semibold uppercase tracking-wider">
+          Approved as publish content
+        </CardDescription>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-semibold tabular-nums text-foreground">{{ stats.published }}</span>
         </div>
-      </AirCard>
+      </Card>
     </section>
 
     <!-- Filter bar -->
     <section id="cs-filters" class="mb-8 flex flex-wrap items-center gap-3">
       <div class="flex flex-wrap items-center gap-2">
-        <AirChip
+        <Button
           v-for="g in gapFilters"
           :key="g.value"
-          as="button"
           size="sm"
-          :variant="filters.gap === g.value ? 'primary' : 'neutral'"
+          class="rounded-full"
+          :variant="filters.gap === g.value ? 'default' : 'outline'"
           @click="filters.gap = g.value"
         >
           {{ g.label }}
-        </AirChip>
+        </Button>
       </div>
-      <span class="hidden h-4 w-px bg-zinc-200 sm:block" aria-hidden="true"></span>
+      <span class="hidden h-4 w-px bg-border sm:block" aria-hidden="true"></span>
       <div class="flex flex-wrap items-center gap-2">
-        <AirChip
+        <Button
           v-for="f in formatFilters"
           :key="f.value"
-          as="button"
-          size="xs"
-          :variant="filters.format === f.value ? 'primary' : 'neutral'"
+          size="sm"
+          class="rounded-full"
+          :variant="filters.format === f.value ? 'default' : 'outline'"
           @click="filters.format = f.value"
         >
           {{ f.label }}
-        </AirChip>
+        </Button>
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <span class="text-xs text-zinc-500">Sort</span>
+        <span class="text-xs text-muted-foreground">Sort</span>
         <select
           v-model="filters.sort"
-          class="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 outline-none focus:border-rose-300"
+          class="rounded-full border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <option value="impact">Highest impact</option>
           <option value="newest">Newest</option>
@@ -95,30 +89,26 @@
       <div
         v-for="i in 6"
         :key="i"
-        class="h-56 animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+        class="h-56 animate-pulse rounded-2xl border border-border bg-card p-6 shadow-sm"
       ></div>
     </div>
 
     <!-- Empty state -->
     <div
       v-else-if="!filteredBriefs.length"
-      class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-200 bg-white px-8 py-20 text-center"
+      class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card px-8 py-20 text-center"
     >
-      <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-500">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 4h11l3 3v13H5z" />
-          <path d="M16 4v3h3" />
-          <path d="M8 12h8M8 16h6" />
-        </svg>
+      <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-[color:var(--chart-1)]">
+        <FileText class="size-7" />
       </div>
-      <h3 class="text-lg font-semibold text-zinc-900">No briefs in this view yet.</h3>
-      <p class="mt-2 max-w-md text-sm text-zinc-500">
+      <h3 class="text-lg font-semibold text-foreground">No briefs in this view yet.</h3>
+      <p class="mt-2 max-w-md text-sm text-muted-foreground">
         Run an audit to start building your content queue. Once we know where AI assistants
         miss you, we'll suggest exactly what to write.
       </p>
-      <AirButton variant="primary" size="lg" class="mt-6" @click="goToLLMRanking">
+      <Button variant="default" size="lg" class="mt-6" @click="goToLLMRanking">
         Open LLM Dashboard
-      </AirButton>
+      </Button>
     </div>
 
     <!-- Brief grid -->
@@ -143,8 +133,11 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { FileText } from '@lucide/vue'
 import contentStudioApi from '@/api/contentStudio'
 import BriefCard from '@/components/content_studio/BriefCard.vue'
+import { Card, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const route = useRoute()
 const router = useRouter()

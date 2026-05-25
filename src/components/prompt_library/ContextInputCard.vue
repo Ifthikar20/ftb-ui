@@ -142,8 +142,8 @@ function clear() {
    spring easing the rest of the app uses (paywall / onboarding
    modal). */
 .cic-shell {
-  --cic-accent: #ff6a2c;
-  --cic-accent-soft: rgba(255, 106, 44, 0.10);
+  --cic-accent: var(--primary);
+  --cic-accent-soft: color-mix(in oklab, var(--primary) 10%, transparent);
   --cic-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --cic-spring-strong: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -176,8 +176,8 @@ function clear() {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 18px 22px 14px;
   box-shadow:
@@ -223,7 +223,7 @@ function clear() {
   width: 100%;
   border: 0;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--foreground);
   padding: 6px 2px;
   font-size: 18px;
   line-height: 1.55;
@@ -236,7 +236,7 @@ function clear() {
   font-weight: 500;
 }
 .cic-textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-weight: 400;
 }
 
@@ -247,31 +247,31 @@ function clear() {
   gap: 12px;
   padding-top: 12px;
   margin-top: 10px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
 }
 .cic-meta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   min-width: 0;
   flex-wrap: wrap;
 }
 .cic-count { font-variant-numeric: tabular-nums; transition: color 0.2s var(--cic-spring); }
 .cic-count.is-ok { color: var(--cic-accent); font-weight: 600; }
-.cic-sep { color: var(--text-muted); opacity: 0.6; }
+.cic-sep { color: var(--muted-foreground); opacity: 0.6; }
 .cic-sep-light { opacity: 0.35; }
 .cic-hint-inline { font-style: italic; }
 .cic-kbd {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px;
   padding: 0 4px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--bg-surface, rgba(15, 23, 42, 0.03));
+  background: var(--muted);
   font-size: 10.5px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .cic-kbd + .cic-kbd { margin-left: 2px; }
@@ -288,7 +288,7 @@ function clear() {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-left: auto;
 }
 .cic-count-label {
@@ -300,10 +300,10 @@ function clear() {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .cic-count-max {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   opacity: 0.65;
   font-variant-numeric: tabular-nums;
 }
@@ -356,7 +356,7 @@ function clear() {
 .cic-clear {
   border: 0;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 6px 12px;
   border-radius: 9999px;
@@ -366,8 +366,8 @@ function clear() {
   transition: background 0.2s var(--cic-spring), color 0.2s var(--cic-spring);
 }
 .cic-clear:hover {
-  background: var(--bg-surface, rgba(15, 23, 42, 0.04));
-  color: var(--text-primary);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .cic-submit {

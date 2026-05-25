@@ -11,38 +11,39 @@
     Misses on either axis are pinned to a "miss" rail at rank 0 so
     they're visible without distorting the rank scale.
   -->
-  <div v-if="hasData" class="pa-card">
-    <div class="pa-header">
-      <h3 class="pa-title">Do {{ axisLabels.x }} and {{ axisLabels.y }} agree?</h3>
-      <p class="pa-sub">
+  <Card v-if="hasData" class="h-full flex flex-col">
+    <CardHeader>
+      <CardTitle class="text-sm">Do {{ axisLabels.x }} and {{ axisLabels.y }} agree?</CardTitle>
+      <CardDescription>
         Each dot is one prompt. Dots near the diagonal mean the two
         models rank you the same; off-diagonal dots are where they
         disagree most.
-      </p>
-    </div>
-    <div class="pa-body">
+      </CardDescription>
+    </CardHeader>
+    <CardContent class="relative flex-1 min-h-[280px]">
       <Scatter :data="chartData" :options="chartOptions" />
-    </div>
-    <div class="pa-stat-row">
-      <span class="pa-stat">
-        <strong>{{ stats.agree }}</strong> agree
-        <span class="pa-stat-muted">(within ±2 ranks)</span>
+    </CardContent>
+    <CardFooter class="flex flex-wrap gap-4 text-xs text-muted-foreground">
+      <span>
+        <strong class="text-foreground tabular-nums">{{ stats.agree }}</strong> agree
+        <span class="text-muted-foreground">(within ±2 ranks)</span>
       </span>
-      <span class="pa-stat">
-        <strong>{{ stats.disagree }}</strong> disagree
+      <span>
+        <strong class="text-foreground tabular-nums">{{ stats.disagree }}</strong> disagree
       </span>
-      <span class="pa-stat">
-        <strong>{{ stats.onlyX }}</strong> only on {{ axisLabels.x }}
+      <span>
+        <strong class="text-foreground tabular-nums">{{ stats.onlyX }}</strong> only on {{ axisLabels.x }}
       </span>
-      <span class="pa-stat">
-        <strong>{{ stats.onlyY }}</strong> only on {{ axisLabels.y }}
+      <span>
+        <strong class="text-foreground tabular-nums">{{ stats.onlyY }}</strong> only on {{ axisLabels.y }}
       </span>
-    </div>
-  </div>
+    </CardFooter>
+  </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Scatter } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -178,45 +179,3 @@ const chartOptions = computed(() => ({
 }))
 </script>
 
-<style scoped>
-.pa-card {
-  background: var(--bg-secondary, #fff);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.pa-header { margin-bottom: 12px; }
-.pa-title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.pa-sub {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-.pa-body {
-  position: relative;
-  flex: 1;
-  min-height: 280px;
-}
-.pa-stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.pa-stat strong {
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-.pa-stat-muted { color: var(--text-muted); }
-</style>

@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
-import AirCard from '@/components/ui/AirCard.vue'
-import AirChip from '@/components/ui/AirChip.vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import EffectivenessMeter from './EffectivenessMeter.vue'
 import VariableChip from './VariableChip.vue'
 
@@ -21,12 +21,12 @@ const menuOpen = ref(false)
 function closeMenu() { menuOpen.value = false }
 
 const styleVariantMap = {
-  story: 'primary',
-  question: 'info',
+  story: 'default',
+  question: 'secondary',
   comparison: 'warning',
   local: 'success',
-  how_to: 'neutral',
-  listicle: 'neutral',
+  how_to: 'outline',
+  listicle: 'outline',
 }
 
 const styleLabel = computed(() => {
@@ -42,7 +42,7 @@ const styleLabel = computed(() => {
   return map[s] || s
 })
 
-const styleVariant = computed(() => styleVariantMap[props.prompt.style] || 'neutral')
+const styleVariant = computed(() => styleVariantMap[props.prompt.style] || 'outline')
 
 const score = computed(() => {
   const v = props.prompt.effectiveness_score
@@ -98,9 +98,9 @@ const runsLabel = computed(() => {
 </script>
 
 <template>
-  <AirCard interactive size="md" class="pc-card" @click="emit('select', prompt)">
+  <Card class="pc-card cursor-pointer p-4 transition-shadow hover:shadow-md" @click="emit('select', prompt)">
     <div class="pc-top">
-      <AirChip :variant="styleVariant" size="xs">{{ styleLabel }}</AirChip>
+      <Badge :variant="styleVariant">{{ styleLabel }}</Badge>
       <EffectivenessMeter
         :score="score"
         :stable="stable"
@@ -130,25 +130,24 @@ const runsLabel = computed(() => {
     </div>
 
     <div v-if="actionMode === 'save'" class="pc-actions" @click.stop>
-      <AirChip v-if="saved" variant="success" size="sm">Saved</AirChip>
-      <AirButton
+      <Badge v-if="saved" variant="success">Saved</Badge>
+      <Button
         v-if="!saved"
-        variant="primary"
         size="sm"
-        :loading="saving"
+        :disabled="saving"
         @click="emit('save', prompt)"
-      >Save to my prompts</AirButton>
-      <AirButton
+      >{{ saving ? 'Saving…' : 'Save to my prompts' }}</Button>
+      <Button
         v-else
         variant="ghost"
         size="sm"
         @click="emit('remove', prompt)"
-      >Remove</AirButton>
+      >Remove</Button>
     </div>
 
     <div v-else class="pc-actions" @click.stop>
-      <AirButton variant="ghost" size="sm" @click="emit('preview', prompt)">Preview filled</AirButton>
-      <AirButton variant="ghost" size="sm" @click="emit('edit', prompt)">Edit</AirButton>
+      <Button variant="ghost" size="sm" @click="emit('preview', prompt)">Preview filled</Button>
+      <Button variant="ghost" size="sm" @click="emit('edit', prompt)">Edit</Button>
       <div class="pc-kebab-wrap">
         <button
           type="button"
@@ -165,7 +164,7 @@ const runsLabel = computed(() => {
         </div>
       </div>
     </div>
-  </AirCard>
+  </Card>
 </template>
 
 <style scoped>
@@ -174,14 +173,14 @@ const runsLabel = computed(() => {
 .pc-body {
   font-size: 14px;
   line-height: 1.55;
-  color: var(--text-primary);
+  color: var(--foreground);
   white-space: pre-wrap;
   word-break: break-word;
   display: inline;
 }
 .pc-stats {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .pc-actions {
   margin-top: auto;
@@ -197,20 +196,20 @@ const runsLabel = computed(() => {
   border-radius: 9999px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
-.pc-kebab:hover { background: var(--bg-card-hover); border-color: var(--border-color); }
+.pc-kebab:hover { background: var(--accent); border-color: var(--border); }
 .pc-menu {
   position: absolute;
   right: 0;
   top: 100%;
   margin-top: 4px;
   min-width: 140px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
   padding: 4px;
@@ -224,10 +223,10 @@ const runsLabel = computed(() => {
   border: 0;
   padding: 6px 10px;
   font-size: 12px;
-  color: var(--text-primary);
+  color: var(--foreground);
   border-radius: 6px;
   cursor: pointer;
 }
-.pc-menu-item:hover { background: var(--bg-card-hover); }
-.pc-menu-danger { color: var(--color-danger, #dc2626); }
+.pc-menu-item:hover { background: var(--accent); }
+.pc-menu-danger { color: var(--destructive); }
 </style>

@@ -39,7 +39,7 @@
       <!-- Empty State -->
       <div v-if="noData && activeTab === 'overview'" class="empty-state-card">
         <div class="empty-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--brand-accent)" stroke-width="1.5">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--primary)" stroke-width="1.5">
             <rect x="6" y="6" width="36" height="36" rx="4"/>
             <path d="M6 18h36M18 18v24"/>
             <circle cx="30" cy="30" r="6" fill="none" stroke-dasharray="4"/>
@@ -86,108 +86,124 @@
             <!-- Traffic Overview -->
             <div v-if="cid === 'traffic'" class="ret-dyn-card ret-full">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card chart-card">
-                <div class="card-header">
-                  <div><h3 class="card-title">Traffic Overview</h3><p class="card-subtitle">Visitor sessions over time</p></div>
-                </div>
-                <div class="chart-container" style="height:260px;position:relative">
-                  <Line v-if="chartData.length" :data="trafficChartData" :options="trafficChartOptions" />
-                  <div v-else class="empty-inline">No chart data yet</div>
-                </div>
-              </div>
+              <Card class="mb-6">
+                <CardHeader>
+                  <CardTitle>Traffic Overview</CardTitle>
+                  <CardDescription>Visitor sessions over time</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div class="chart-container" style="height:260px;position:relative">
+                    <Line v-if="chartData.length" :data="trafficChartData" :options="trafficChartOptions" />
+                    <div v-else class="empty-inline">No chart data yet</div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Top Sources -->
             <div v-if="cid === 'sources'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Top Sources</h3></div>
-                <div class="chart-container" style="height:200px;position:relative" v-if="sources.length">
-                  <Bar :data="sourcesChartData" :options="sourcesChartOptions" />
-                </div>
-                <div v-else class="empty-inline">No source data yet</div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Top Sources</CardTitle></CardHeader>
+                <CardContent>
+                  <div class="chart-container" style="height:200px;position:relative" v-if="sources.length">
+                    <Bar :data="sourcesChartData" :options="sourcesChartOptions" />
+                  </div>
+                  <div v-else class="empty-inline">No source data yet</div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Top Pages -->
             <div v-if="cid === 'pages'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Top Pages</h3></div>
-                <table class="data-table">
-                  <thead><tr><th>Page</th><th style="text-align:right">Views</th></tr></thead>
-                  <tbody>
-                    <tr v-for="(page, i) in topPages.slice(0, 5)" :key="i">
-                      <td><span class="page-rank">{{ i + 1 }}</span> {{ page.url }}</td>
-                      <td style="text-align:right" class="font-semibold">{{ page.views }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div v-if="!topPages.length" class="empty-inline">No page data yet</div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Top Pages</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Page</TableHead><TableHead class="text-right">Views</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      <TableRow v-for="(page, i) in topPages.slice(0, 5)" :key="i">
+                        <TableCell><span class="page-rank">{{ i + 1 }}</span> {{ page.url }}</TableCell>
+                        <TableCell class="text-right font-semibold">{{ page.views }}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                  <div v-if="!topPages.length" class="empty-inline">No page data yet</div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Live Activity -->
             <div v-if="cid === 'live'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header">
-                  <div><h3 class="card-title">Live Activity</h3><p class="card-subtitle">Real-time events</p></div>
+              <Card>
+                <CardHeader class="flex-row items-start justify-between space-y-0">
+                  <div><CardTitle>Live Activity</CardTitle><CardDescription>Real-time events</CardDescription></div>
                   <span class="live-badge"><span class="live-pulse"></span>LIVE</span>
-                </div>
-                <div class="live-feed" v-if="liveEvents.length">
-                  <div v-for="ev in liveEvents.slice(0, 8)" :key="ev.id" class="live-feed-item">
-                    <span class="badge badge-sm" :class="eventBadge(ev.event_type)">{{ ev.event_type }}</span>
-                    <span class="live-feed-url truncate">{{ cleanPath(ev.url) }}</span>
-                    <span class="text-xs text-muted">{{ formatTime(ev.timestamp) }}</span>
+                </CardHeader>
+                <CardContent>
+                  <div class="live-feed" v-if="liveEvents.length">
+                    <div v-for="ev in liveEvents.slice(0, 8)" :key="ev.id" class="live-feed-item">
+                      <span class="badge badge-sm" :class="eventBadge(ev.event_type)">{{ ev.event_type }}</span>
+                      <span class="live-feed-url truncate">{{ cleanPath(ev.url) }}</span>
+                      <span class="text-xs text-muted">{{ formatTime(ev.timestamp) }}</span>
+                    </div>
                   </div>
-                </div>
-                <div v-else class="empty-inline" style="padding:30px 20px">
-                  <p style="margin:0;font-size:var(--font-sm)">No live events in the last 2 minutes.</p>
-                </div>
-              </div>
+                  <div v-else class="empty-inline" style="padding:30px 20px">
+                    <p style="margin:0;font-size:var(--font-sm)">No live events in the last 2 minutes.</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Engagement Score -->
             <div v-if="cid === 'engagement'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Engagement Score</h3></div>
-                <div class="chart-container" style="height:220px;position:relative">
-                  <Radar :data="radarChartData" :options="radarChartOptions" />
-                </div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Engagement Score</CardTitle></CardHeader>
+                <CardContent>
+                  <div class="chart-container" style="height:220px;position:relative">
+                    <Radar :data="radarChartData" :options="radarChartOptions" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Source Distribution -->
             <div v-if="cid === 'source_polar'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Source Distribution</h3></div>
-                <div class="chart-container" style="height:220px;position:relative" v-if="sources.length">
-                  <PolarArea :data="polarChartData" :options="polarChartOptions" />
-                </div>
-                <div v-else class="empty-inline">No source data yet</div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Source Distribution</CardTitle></CardHeader>
+                <CardContent>
+                  <div class="chart-container" style="height:220px;position:relative" v-if="sources.length">
+                    <PolarArea :data="polarChartData" :options="polarChartOptions" />
+                  </div>
+                  <div v-else class="empty-inline">No source data yet</div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Device Types -->
             <div v-if="cid === 'devices'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Device Types</h3></div>
-                <div class="chart-container" style="height:180px;position:relative" v-if="devices.length">
-                  <Doughnut :data="devicesChartData" :options="devicesChartOptions" />
-                </div>
-                <div v-else class="empty-inline">No device data yet</div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Device Types</CardTitle></CardHeader>
+                <CardContent>
+                  <div class="chart-container" style="height:180px;position:relative" v-if="devices.length">
+                    <Doughnut :data="devicesChartData" :options="devicesChartOptions" />
+                  </div>
+                  <div v-else class="empty-inline">No device data yet</div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Browsers -->
             <div v-if="cid === 'browsers'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Browsers</h3></div>
+              <Card>
+                <CardHeader><CardTitle>Browsers</CardTitle></CardHeader>
+                <CardContent>
                 <div v-if="browserData.length" class="browser-list">
                   <div v-for="(b, i) in browserData" :key="i" class="browser-item">
                     <div class="browser-info">
@@ -199,14 +215,16 @@
                   </div>
                 </div>
                 <div v-else class="empty-inline">No browser data yet</div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Operating Systems -->
             <div v-if="cid === 'os'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Operating Systems</h3></div>
+              <Card>
+                <CardHeader><CardTitle>Operating Systems</CardTitle></CardHeader>
+                <CardContent>
                 <div v-if="operatingSystems.length" class="browser-list">
                   <div v-for="(os, i) in operatingSystems" :key="i" class="browser-item">
                     <div class="browser-info">
@@ -218,14 +236,16 @@
                   </div>
                 </div>
                 <div v-else class="empty-inline">No OS data yet</div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Countries -->
             <div v-if="cid === 'countries'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Top Countries</h3></div>
+              <Card>
+                <CardHeader><CardTitle>Top Countries</CardTitle></CardHeader>
+                <CardContent>
                 <div class="country-list" v-if="countries.length">
                   <div v-for="(c, i) in countries" :key="i" class="country-item">
                     <div class="country-rank">{{ i + 1 }}</div>
@@ -237,7 +257,8 @@
                   </div>
                 </div>
                 <div v-else class="empty-inline">No geo data yet</div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
           </template>
@@ -264,27 +285,30 @@
 
       <!-- ═══════════ TAB 2: Funnels ═══════════ -->
       <div v-show="activeTab === 'funnels'">
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <h3 class="card-title">Conversion Funnels</h3>
-            <button class="btn btn-primary btn-sm" @click="showCreateFunnel = true">+ New Funnel</button>
-          </div>
-          <!-- Saved funnels -->
-          <div v-if="funnelList.length" class="funnel-list">
-            <div v-for="f in funnelList" :key="f.id" class="funnel-item" @click="runFunnel(f.id)">
-              <span class="font-semibold">{{ f.name }}</span>
-              <span class="text-xs text-muted">{{ f.steps?.length || 0 }} steps</span>
+        <Card class="mb-5">
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <CardTitle>Conversion Funnels</CardTitle>
+            <Button size="sm" @click="showCreateFunnel = true">+ New Funnel</Button>
+          </CardHeader>
+          <CardContent>
+            <!-- Saved funnels -->
+            <div v-if="funnelList.length" class="funnel-list">
+              <div v-for="f in funnelList" :key="f.id" class="funnel-item" @click="runFunnel(f.id)">
+                <span class="font-semibold">{{ f.name }}</span>
+                <span class="text-xs text-muted">{{ f.steps?.length || 0 }} steps</span>
+              </div>
             </div>
-          </div>
-          <div v-else class="empty-inline">No funnels yet. Create one to track conversions.</div>
-        </div>
+            <div v-else class="empty-inline">No funnels yet. Create one to track conversions.</div>
+          </CardContent>
+        </Card>
 
         <!-- Funnel result -->
-        <div v-if="funnelResult" class="card">
-          <div class="card-header">
-            <h3 class="card-title">{{ funnelResult.name }}</h3>
-            <span class="badge badge-success">{{ funnelResult.overall_conversion_pct }}% conversion</span>
-          </div>
+        <Card v-if="funnelResult">
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <CardTitle>{{ funnelResult.name }}</CardTitle>
+            <Badge variant="success">{{ funnelResult.overall_conversion_pct }}% conversion</Badge>
+          </CardHeader>
+          <CardContent>
           <div class="funnel-viz">
             <div v-for="(step, i) in funnelResult.steps" :key="i" class="funnel-step">
               <div class="funnel-bar" :style="{ height: step.conversion_pct + '%' }">
@@ -297,21 +321,22 @@
               </div>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Create Funnel Modal -->
         <div v-if="showCreateFunnel" class="modal-overlay" @click.self="showCreateFunnel = false">
           <div class="modal-card" style="max-width:500px">
             <h3 class="card-title" style="margin-bottom:16px">Create Funnel</h3>
-            <div class="form-group"><label class="form-label">Name</label><input v-model="newFunnel.name" class="form-input" placeholder="e.g. Signup Flow" /></div>
+            <div class="form-group"><label class="form-label">Name</label><input v-model="newFunnel.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="e.g. Signup Flow" /></div>
             <div v-for="(step, i) in newFunnel.steps" :key="i" class="form-group" style="display:flex;gap:8px">
-              <input v-model="step.name" class="form-input" :placeholder="'Step ' + (i+1) + ' name'" style="flex:1" />
-              <input v-model="step.value" class="form-input" :placeholder="'URL contains...'" style="flex:1" />
+              <input v-model="step.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'Step ' + (i+1) + ' name'" style="flex:1" />
+              <input v-model="step.value" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'URL contains...'" style="flex:1" />
             </div>
-            <button class="btn btn-secondary btn-sm" @click="newFunnel.steps.push({name:'',type:'url',value:''})" style="margin-bottom:16px">+ Add Step</button>
+            <Button variant="outline" size="sm" class="mb-4" @click="newFunnel.steps.push({name:'',type:'url',value:''})">+ Add Step</Button>
             <div class="flex gap-8">
-              <button class="btn btn-primary" @click="createFunnel">Create</button>
-              <button class="btn btn-secondary" @click="showCreateFunnel = false">Cancel</button>
+              <Button @click="createFunnel">Create</Button>
+              <Button variant="secondary" @click="showCreateFunnel = false">Cancel</Button>
             </div>
           </div>
         </div>
@@ -323,17 +348,17 @@
         <!-- Empty State -->
         <div v-if="!retentionCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5">
               <rect x="6" y="6" width="36" height="36" rx="4"/><path d="M24 16v16M16 24h16"/>
             </svg>
           </div>
           <h3 class="ret-empty-title">Build Your Retention Dashboard</h3>
           <p class="ret-empty-desc">Add widgets to track visitor engagement, retention, and behavior patterns.</p>
           <div class="ret-add-wrap">
-            <button class="btn btn-primary" @click.stop="showCardPicker = !showCardPicker">
+            <Button @click.stop="showCardPicker = !showCardPicker">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M7 1v12M1 7h12"/></svg>
               Add Widget
-            </button>
+            </Button>
             <div v-if="showCardPicker" class="card-picker-dropdown card-picker-center" @click.stop>
               <div class="card-picker-header">Choose a widget</div>
               <div v-for="c in retAvailableCards" :key="c.id" class="card-picker-item" :class="{ disabled: retentionCards.includes(c.id) }" @click="addRetCard(c.id)">
@@ -355,40 +380,44 @@
             <!-- Engagement Score -->
             <div v-if="cid === 'engagement_score'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
-              <div class="card engagement-score-card">
-                <div class="card-header"><h3 class="card-title">Engagement Score</h3><span class="text-xs text-muted">Composite health metric</span></div>
+              <Card class="engagement-score-card">
+                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Engagement Score</CardTitle><span class="text-xs text-muted">Composite health metric</span></CardHeader>
+                <CardContent>
                 <div class="engagement-ring-wrap">
                   <svg class="engagement-ring" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--bg-surface)" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--muted)" stroke-width="8"/>
                     <circle cx="60" cy="60" r="50" fill="none" :stroke="engScoreColor" stroke-width="8" stroke-linecap="round" :stroke-dasharray="engDash" stroke-dashoffset="0" transform="rotate(-90 60 60)" class="ring-progress"/>
                   </svg>
                   <div class="engagement-ring-label"><span class="eng-score-num">{{ engagementData.engagement_score || 0 }}</span><span class="eng-score-unit">/100</span></div>
                 </div>
                 <div class="eng-breakdown">
-                  <div class="eng-factor"><span class="eng-factor-label">Low Bounce</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: (100 - (engagementData.bounce_rate || 0)) + '%', background: 'var(--color-success)' }"></div></div></div>
-                  <div class="eng-factor"><span class="eng-factor-label">Depth</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: Math.min((engagementData.avg_pages_per_session || 0) / 5 * 100, 100) + '%', background: 'var(--color-info)' }"></div></div></div>
-                  <div class="eng-factor"><span class="eng-factor-label">Return Rate</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: (engagementData.returning_pct || 0) + '%', background: 'var(--brand-accent)' }"></div></div></div>
+                  <div class="eng-factor"><span class="eng-factor-label">Low Bounce</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: (100 - (engagementData.bounce_rate || 0)) + '%', background: 'var(--chart-2)' }"></div></div></div>
+                  <div class="eng-factor"><span class="eng-factor-label">Depth</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: Math.min((engagementData.avg_pages_per_session || 0) / 5 * 100, 100) + '%', background: 'var(--chart-1)' }"></div></div></div>
+                  <div class="eng-factor"><span class="eng-factor-label">Return Rate</span><div class="eng-factor-bar"><div class="eng-factor-fill" :style="{ width: (engagementData.returning_pct || 0) + '%', background: 'var(--primary)' }"></div></div></div>
                 </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- New vs Returning -->
             <div v-if="cid === 'new_vs_returning'" class="ret-dyn-card ret-half">
               <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">New vs Returning</h3><span class="text-xs text-muted">{{ engagementData.total_visitors || 0 }} total</span></div>
+              <Card>
+                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>New vs Returning</CardTitle><span class="text-xs text-muted">{{ engagementData.total_visitors || 0 }} total</span></CardHeader>
+                <CardContent>
                 <div class="donut-wrap">
                   <svg class="donut-chart" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="44" fill="none" stroke="var(--color-info)" stroke-width="14" :stroke-dasharray="newDonutDash" stroke-dashoffset="0" transform="rotate(-90 60 60)" class="donut-arc"/>
-                    <circle cx="60" cy="60" r="44" fill="none" stroke="var(--color-success)" stroke-width="14" :stroke-dasharray="retDonutDash" :stroke-dashoffset="retDonutOffset" transform="rotate(-90 60 60)" class="donut-arc"/>
+                    <circle cx="60" cy="60" r="44" fill="none" stroke="var(--chart-1)" stroke-width="14" :stroke-dasharray="newDonutDash" stroke-dashoffset="0" transform="rotate(-90 60 60)" class="donut-arc"/>
+                    <circle cx="60" cy="60" r="44" fill="none" stroke="var(--chart-2)" stroke-width="14" :stroke-dasharray="retDonutDash" :stroke-dashoffset="retDonutOffset" transform="rotate(-90 60 60)" class="donut-arc"/>
                   </svg>
                   <div class="donut-center-label"><span class="donut-big">{{ engagementData.returning_pct || 0 }}%</span><span class="donut-sub">returning</span></div>
                 </div>
                 <div class="donut-legend">
-                  <div class="legend-item"><span class="legend-dot" style="background:var(--color-info)"></span>New <b>{{ engagementData.new_visitors || 0 }}</b></div>
-                  <div class="legend-item"><span class="legend-dot" style="background:var(--color-success)"></span>Returning <b>{{ engagementData.returning_visitors || 0 }}</b></div>
+                  <div class="legend-item"><span class="legend-dot" style="background:var(--chart-1)"></span>New <b>{{ engagementData.new_visitors || 0 }}</b></div>
+                  <div class="legend-item"><span class="legend-dot" style="background:var(--chart-2)"></span>Returning <b>{{ engagementData.returning_visitors || 0 }}</b></div>
                 </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Bounce Rate -->
@@ -438,28 +467,31 @@
             <!-- Top Returning Visitors -->
             <div v-if="cid === 'top_returners'" class="ret-dyn-card ret-full">
               <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Top Returning Visitors</h3><span class="text-xs text-muted">Most loyal by visit count</span></div>
-                <table v-if="engagementData.top_returners && engagementData.top_returners.length" class="data-table">
-                  <thead><tr><th>Visitor</th><th>Visits</th><th>Avg Pages</th><th>Device</th><th>Country</th><th>Last Seen</th></tr></thead>
-                  <tbody>
-                    <tr v-for="r in engagementData.top_returners" :key="r.hash" class="returner-row">
-                      <td><span class="visitor-hash">{{ r.hash }}...</span><span v-if="r.browser" class="badge badge-sm badge-outline" style="margin-left:6px">{{ r.browser }}</span></td>
-                      <td><span class="visit-count-badge">{{ r.visits }}</span></td>
-                      <td>{{ r.avg_pages }}</td><td>{{ r.device || '—' }}</td><td>{{ r.country || '—' }}</td>
-                      <td class="text-muted">{{ r.last_seen ? relativeTime(r.last_seen) : '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <Card>
+                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Top Returning Visitors</CardTitle><span class="text-xs text-muted">Most loyal by visit count</span></CardHeader>
+                <CardContent>
+                <Table v-if="engagementData.top_returners && engagementData.top_returners.length">
+                  <TableHeader><TableRow><TableHead>Visitor</TableHead><TableHead>Visits</TableHead><TableHead>Avg Pages</TableHead><TableHead>Device</TableHead><TableHead>Country</TableHead><TableHead>Last Seen</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    <TableRow v-for="r in engagementData.top_returners" :key="r.hash" class="returner-row">
+                      <TableCell><span class="visitor-hash">{{ r.hash }}...</span><Badge v-if="r.browser" variant="outline" class="ml-1.5">{{ r.browser }}</Badge></TableCell>
+                      <TableCell><span class="visit-count-badge">{{ r.visits }}</span></TableCell>
+                      <TableCell>{{ r.avg_pages }}</TableCell><TableCell>{{ r.device || '—' }}</TableCell><TableCell>{{ r.country || '—' }}</TableCell>
+                      <TableCell class="text-muted">{{ r.last_seen ? relativeTime(r.last_seen) : '—' }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
                 <div v-else class="empty-inline">No returning visitors yet.</div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <!-- Cohort Matrix -->
             <div v-if="cid === 'cohort_matrix'" class="ret-dyn-card ret-full">
               <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
-              <div class="card">
-                <div class="card-header"><h3 class="card-title">Cohort Retention</h3><p class="card-subtitle">How many visitors return over time</p></div>
+              <Card>
+                <CardHeader><CardTitle>Cohort Retention</CardTitle><CardDescription>How many visitors return over time</CardDescription></CardHeader>
+                <CardContent>
                 <div v-if="retentionData.rows && retentionData.rows.length" class="retention-matrix">
                   <table class="data-table retention-table">
                     <thead><tr><th>Cohort</th><th>Size</th><th v-for="w in maxRetentionWeeks" :key="w">Wk {{ w - 1 }}</th></tr></thead>
@@ -472,7 +504,8 @@
                   </table>
                 </div>
                 <div v-else class="empty-inline">No retention data yet.</div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
           </template>
@@ -504,17 +537,17 @@
         <!-- Empty State -->
         <div v-if="!flowCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5">
               <path d="M6 20h12l6 8-6 8H6M42 20H30l-6 8 6 8h12"/><path d="M24 16v16M16 24h16"/>
             </svg>
           </div>
           <h3 class="ret-empty-title">Build Your Flow Analytics</h3>
           <p class="ret-empty-desc">Add widgets to analyze visitor journeys, page flows, and navigation patterns.</p>
           <div class="ret-add-wrap">
-            <button class="btn btn-primary" @click.stop="showFlowPicker = !showFlowPicker">
+            <Button @click.stop="showFlowPicker = !showFlowPicker">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M7 1v12M1 7h12"/></svg>
               Add Widget
-            </button>
+            </Button>
             <div v-if="showFlowPicker" class="card-picker-dropdown card-picker-center" @click.stop>
               <div class="card-picker-header">Choose a widget</div>
               <div v-for="c in flowAvailableCards" :key="c.id" class="card-picker-item" :class="{ disabled: flowCards.includes(c.id) }" @click="addFlowCard(c.id)">
@@ -559,8 +592,9 @@
               <!-- Common Flow Patterns -->
               <div v-if="cid === 'flow_patterns'" class="ret-dyn-card ret-half">
                 <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Common Flow Patterns</h3><span class="text-xs text-muted">Page-to-page transitions</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Common Flow Patterns</CardTitle><span class="text-xs text-muted">Page-to-page transitions</span></CardHeader>
+                  <CardContent>
                   <div v-if="flowData.links && flowData.links.length" class="flow-list">
                     <div v-for="(link, i) in flowData.links.slice(0, 12)" :key="i" class="flow-item-enhanced">
                       <div class="flow-item-route">
@@ -573,16 +607,18 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">No flow data yet</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <!-- Entry & Exit Pages -->
               <div v-if="cid === 'entry_exit'" class="ret-dyn-card ret-half">
                 <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Entry & Exit Pages</h3><span class="text-xs text-muted">Where sessions start and end</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Entry & Exit Pages</CardTitle><span class="text-xs text-muted">Where sessions start and end</span></CardHeader>
+                  <CardContent>
                   <div v-if="entryExitData.entry_pages && entryExitData.entry_pages.length">
-                    <h4 class="text-sm font-semibold" style="margin-bottom:8px;color:var(--color-success)">Entry Pages</h4>
+                    <h4 class="text-sm font-semibold" style="margin-bottom:8px;color:var(--chart-2)">Entry Pages</h4>
                     <div v-for="p in entryExitData.entry_pages" :key="'e'+p.page" class="flow-bar-row">
                       <div class="flow-bar-label-group">
                         <span class="flow-bar-label truncate">{{ cleanPath(p.page) }}</span>
@@ -591,7 +627,7 @@
                       <div class="flow-bar-track"><div class="flow-bar-fill entry" :style="{ width: entryPct(p.count) + '%' }"></div></div>
                       <span class="flow-bar-count">{{ p.count }}</span>
                     </div>
-                    <h4 class="text-sm font-semibold" style="margin:20px 0 8px;color:var(--color-danger)">Exit Pages</h4>
+                    <h4 class="text-sm font-semibold" style="margin:20px 0 8px;color:var(--destructive)">Exit Pages</h4>
                     <div v-for="p in entryExitData.exit_pages || []" :key="'x'+p.page" class="flow-bar-row">
                       <span class="flow-bar-label truncate">{{ cleanPath(p.page) }}</span>
                       <div class="flow-bar-track"><div class="flow-bar-fill exit" :style="{ width: exitPct(p.count) + '%' }"></div></div>
@@ -599,17 +635,19 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">No entry/exit data yet</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <!-- Visitor Journeys -->
               <div v-if="cid === 'visitor_journeys'" class="ret-dyn-card ret-full">
                 <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
-                <div class="card" v-if="filteredJourneys.length">
-                  <div class="card-header">
-                    <h3 class="card-title">Visitor Journeys</h3>
+                <Card v-if="filteredJourneys.length">
+                  <CardHeader class="flex-row items-center justify-between space-y-0">
+                    <CardTitle>Visitor Journeys</CardTitle>
                     <span class="text-xs text-muted">{{ filteredJourneys.length }} of {{ journeys.length }} sessions{{ activeFlowFilterCount ? ` (${activeFlowFilterCount} filter${activeFlowFilterCount > 1 ? 's' : ''})` : '' }}</span>
-                  </div>
+                  </CardHeader>
+                  <CardContent>
                   <div class="journey-list">
                     <div v-for="(j, i) in filteredJourneys" :key="i" class="journey-card" :class="{ 'journey-expanded': expandedJourneys.has(i) }">
                       <div class="journey-meta">
@@ -620,9 +658,9 @@
                           <span v-if="j.company" class="journey-company">{{ j.company }}</span>
                         </span>
                         <div class="journey-tags">
-                          <span class="badge badge-sm badge-outline" v-if="j.device">{{ j.device }}</span>
-                          <span class="badge badge-sm badge-outline" v-if="j.country">{{ j.country }}</span>
-                          <span class="badge badge-sm badge-outline" v-if="j.source && j.source !== 'direct'">{{ j.source }}</span>
+                          <Badge variant="outline" v-if="j.device">{{ j.device }}</Badge>
+                          <Badge variant="outline" v-if="j.country">{{ j.country }}</Badge>
+                          <Badge variant="outline" v-if="j.source && j.source !== 'direct'">{{ j.source }}</Badge>
                           <span class="journey-duration" v-if="j.duration_secs">{{ formatDuration(j.duration_secs) }}</span>
                         </div>
                       </div>
@@ -662,13 +700,14 @@
                       </div>
                     </div>
                   </div>
-                </div>
-                <div class="card" v-else-if="journeys.length && !filteredJourneys.length">
-                  <div class="empty-inline">No journeys match your filters</div>
-                </div>
-                <div class="card" v-else>
-                  <div class="empty-inline">No journey data yet</div>
-                </div>
+                  </CardContent>
+                </Card>
+                <Card v-else-if="journeys.length && !filteredJourneys.length">
+                  <CardContent class="empty-inline">No journeys match your filters</CardContent>
+                </Card>
+                <Card v-else>
+                  <CardContent class="empty-inline">No journey data yet</CardContent>
+                </Card>
               </div>
 
             </template>
@@ -701,17 +740,17 @@
         <!-- Empty State -->
         <div v-if="!insightCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5">
               <circle cx="24" cy="20" r="12"/><path d="M18 32v2a6 6 0 0012 0v-2"/><line x1="24" y1="38" x2="24" y2="42"/>
             </svg>
           </div>
           <h3 class="ret-empty-title">Actionable Growth Insights</h3>
           <p class="ret-empty-desc">Add widgets to see AI-generated recommendations for improving traffic, engagement, and conversions.</p>
           <div class="ret-add-wrap">
-            <button class="btn btn-primary" @click.stop="showInsightPicker = !showInsightPicker">
+            <Button @click.stop="showInsightPicker = !showInsightPicker">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M7 1v12M1 7h12"/></svg>
               Add Widget
-            </button>
+            </Button>
             <div v-if="showInsightPicker" class="card-picker-dropdown card-picker-center" @click.stop>
               <div class="card-picker-header">Choose a widget</div>
               <div v-for="c in insightAvailableCards" :key="c.id" class="card-picker-item" :class="{ disabled: insightCards.includes(c.id) }" @click="addInsightCard(c.id)">
@@ -734,8 +773,9 @@
               <!-- Growth Actions -->
               <div v-if="cid === 'growth_actions'" class="ret-dyn-card ret-full">
                 <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Growth Actions</h3><span class="text-xs text-muted">Prioritized by impact</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Growth Actions</CardTitle><span class="text-xs text-muted">Prioritized by impact</span></CardHeader>
+                  <CardContent>
                   <div v-if="insightsData.actions && insightsData.actions.length">
                     <div v-for="(a, i) in insightsData.actions" :key="i" class="growth-action-item">
                       <div class="growth-action-priority" :class="'gap-' + a.priority">{{ a.priority }}</div>
@@ -747,14 +787,16 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">Collecting data to generate actions...</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <!-- Anomalies -->
               <div v-if="cid === 'anomalies'" class="ret-dyn-card ret-half">
                 <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Anomaly Detection</h3><span class="text-xs text-muted">Unusual patterns</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Anomaly Detection</CardTitle><span class="text-xs text-muted">Unusual patterns</span></CardHeader>
+                  <CardContent>
                   <div v-if="anomalyInsights.length">
                     <div v-for="(ins, i) in anomalyInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
                       <span class="insight-compact-badge" :class="'icb-' + ins.type">{{ ins.type }}</span>
@@ -766,14 +808,16 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">No anomalies detected</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <!-- Content Performance -->
               <div v-if="cid === 'content_perf'" class="ret-dyn-card ret-half">
                 <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Content Performance</h3><span class="text-xs text-muted">Top & underperforming pages</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Content Performance</CardTitle><span class="text-xs text-muted">Top & underperforming pages</span></CardHeader>
+                  <CardContent>
                   <div v-if="contentInsights.length">
                     <div v-for="(ins, i) in contentInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
                       <span class="insight-compact-badge" :class="'icb-' + ins.type">{{ ins.type }}</span>
@@ -785,14 +829,16 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">Need more page data</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <!-- Engagement Health -->
               <div v-if="cid === 'engagement_health'" class="ret-dyn-card ret-full">
                 <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Engagement Health</h3><span class="text-xs text-muted">Behavioral patterns & improvement areas</span></div>
+                <Card>
+                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Engagement Health</CardTitle><span class="text-xs text-muted">Behavioral patterns & improvement areas</span></CardHeader>
+                  <CardContent>
                   <div v-if="engagementInsights.length">
                     <div v-for="(ins, i) in engagementInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
                       <span class="insight-compact-badge" :class="'icb-' + ins.type">{{ ins.type }}</span>
@@ -805,7 +851,8 @@
                     </div>
                   </div>
                   <div v-else class="empty-inline">Need more engagement data</div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
             </template>
@@ -870,38 +917,41 @@
             <button class="chip-remove" @click="removeFilter(i)">&times;</button>
           </span>
         </TransitionGroup>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Visitor Profiles</h3>
+        <Card>
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <CardTitle>Visitor Profiles</CardTitle>
             <span class="text-xs text-muted">{{ filteredVisitors.length }} of {{ visitorList.length }} visitors</span>
-          </div>
-          <table class="data-table" v-if="filteredVisitors.length">
-            <thead>
-              <tr><th>Visitor</th><th>Device</th><th>Country</th><th>Visits</th><th>Events</th><th>Last Seen</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="v in filteredVisitors" :key="v.id" class="clickable-row" @click="loadTimeline(v.id)">
-                <td>
+          </CardHeader>
+          <CardContent>
+          <Table v-if="filteredVisitors.length">
+            <TableHeader>
+              <TableRow><TableHead>Visitor</TableHead><TableHead>Device</TableHead><TableHead>Country</TableHead><TableHead>Visits</TableHead><TableHead>Events</TableHead><TableHead>Last Seen</TableHead></TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="v in filteredVisitors" :key="v.id" class="clickable-row" @click="loadTimeline(v.id)">
+                <TableCell>
                   <div class="visitor-id">{{ v.fingerprint_hash?.substring(0, 8) }}...</div>
                   <div class="text-xs text-muted" v-if="v.company_name">{{ v.company_name }}</div>
-                </td>
-                <td>{{ v.device_type || '--' }}<br><span class="text-xs text-muted">{{ v.browser }}</span></td>
-                <td>{{ v.geo_country || '--' }} {{ v.geo_city || '' }}</td>
-                <td class="font-semibold">{{ v.visit_count }}</td>
-                <td>{{ v.event_count }}</td>
-                <td class="text-xs text-muted">{{ formatDate(v.last_seen) }}</td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+                <TableCell>{{ v.device_type || '--' }}<br><span class="text-xs text-muted">{{ v.browser }}</span></TableCell>
+                <TableCell>{{ v.geo_country || '--' }} {{ v.geo_city || '' }}</TableCell>
+                <TableCell class="font-semibold">{{ v.visit_count }}</TableCell>
+                <TableCell>{{ v.event_count }}</TableCell>
+                <TableCell class="text-xs text-muted">{{ formatDate(v.last_seen) }}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
           <div v-else class="empty-inline">{{ visitorList.length ? 'No visitors match your filters' : 'No visitor data yet' }}</div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Visitor Timeline -->
-        <div v-if="timelineEvents.length" class="card" style="margin-top:20px">
-          <div class="card-header">
-            <h3 class="card-title">Event Timeline</h3>
-            <button class="btn btn-secondary btn-sm" @click="timelineEvents = []">Close</button>
-          </div>
+        <Card v-if="timelineEvents.length" class="mt-5">
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <CardTitle>Event Timeline</CardTitle>
+            <Button variant="secondary" size="sm" @click="timelineEvents = []">Close</Button>
+          </CardHeader>
+          <CardContent>
           <div class="timeline">
             <div v-for="e in timelineEvents" :key="e.id" class="timeline-item">
               <div class="timeline-dot" :class="'dot-' + e.event_type"></div>
@@ -912,7 +962,8 @@
               </div>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </template>
   </div>
@@ -925,6 +976,10 @@ import { useAnalyticsStore } from '@/stores/analytics'
 import analyticsApi from '@/api/analytics'
 import dashboardApi from '@/api/dashboard'
 import { Line, Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -1443,7 +1498,7 @@ function flowBarWidth(value) {
 }
 
 function flowBarColor(i) {
-  const colors = ['var(--brand-accent)', '#34d399', '#fbbf24', '#f97316', '#a78bfa', '#f472b6']
+  const colors = ['var(--primary)', '#34d399', '#fbbf24', '#f97316', '#a78bfa', '#f472b6']
   return colors[i % colors.length]
 }
 
@@ -1736,10 +1791,10 @@ function retentionColor(pct) {
 // ── Engagement Score Ring ──
 const engScoreColor = computed(() => {
   const s = engagementData.value.engagement_score || 0
-  if (s >= 60) return 'var(--color-success)'
-  if (s >= 40) return 'var(--color-info)'
-  if (s >= 20) return 'var(--color-warning)'
-  return 'var(--color-danger)'
+  if (s >= 60) return 'var(--chart-2)'
+  if (s >= 40) return 'var(--chart-1)'
+  if (s >= 20) return 'var(--chart-3)'
+  return 'var(--destructive)'
 })
 
 const engDash = computed(() => {
@@ -1836,27 +1891,27 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: var(--text-muted); }
-.refresh-indicator { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: var(--font-xs); color: var(--text-muted); }
-.refresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-accent); animation: pulse 1s infinite; }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: var(--muted-foreground); }
+.refresh-indicator { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: var(--font-xs); color: var(--muted-foreground); }
+.refresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: pulse 1s infinite; }
 
 /* Refresh Button */
 .refresh-btn {
   display: flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; border-radius: var(--radius-md);
-  border: 1px solid var(--border-color); background: var(--bg-card);
-  color: var(--text-secondary); cursor: pointer;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--muted-foreground); cursor: pointer;
   transition: all 0.2s;
 }
-.refresh-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+.refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
 .refresh-btn.spinning svg { animation: spin-refresh 0.8s ease; }
 @keyframes spin-refresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ── Tabs ── */
-.analytics-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--bg-card); border: none; border-radius: var(--radius-md); padding: 4px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
-.atab { display: flex; align-items: center; gap: 6px; padding: 10px 16px; border: none; background: transparent; border-radius: var(--radius-md); font-size: var(--font-sm); font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--font-family); }
-.atab:hover { color: var(--text-primary); background: var(--bg-surface); }
-.atab.active { background: var(--text-primary); color: var(--text-inverse); }
+.analytics-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--card); border: none; border-radius: var(--radius-md); padding: 4px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
+.atab { display: flex; align-items: center; gap: 6px; padding: 10px 16px; border: none; background: transparent; border-radius: var(--radius-md); font-size: var(--font-sm); font-weight: 600; color: var(--muted-foreground); cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--font-family); }
+.atab:hover { color: var(--foreground); background: var(--muted); }
+.atab.active { background: var(--foreground); color: var(--primary-foreground); }
 .atab-icon { width: 16px; height: 16px; flex-shrink: 0; }
 .chart-container canvas { width: 100% !important; }
 
@@ -1877,25 +1932,25 @@ onBeforeUnmount(() => {
 
 /* ── KPI Grid ── */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.kpi-card { background: var(--bg-card); border: none; border-radius: var(--radius-md); padding: 16px; transition: all var(--transition-base); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
+.kpi-card { background: var(--card); border: none; border-radius: var(--radius-md); padding: 16px; transition: all var(--transition-base); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
 .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); transform: translateY(-1px); }
-.kpi-highlight { border-color: var(--brand-accent); background: linear-gradient(135deg, var(--bg-card) 0%, rgba(91, 141, 239, 0.04) 100%); }
+.kpi-highlight { border-color: var(--primary); background: linear-gradient(135deg, var(--card) 0%, rgba(91, 141, 239, 0.04) 100%); }
 .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.kpi-label { font-size: var(--font-xs); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi-label { font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.06em; }
 .kpi-trend { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); }
-.trend-up { color: var(--color-success); background: var(--color-success-bg); }
-.trend-down { color: var(--color-danger); background: var(--color-danger-bg); }
-.kpi-value { font-family: var(--font-display); font-size: var(--font-3xl); color: var(--text-primary); line-height: 1.1; }
-.kpi-period { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+.trend-up { color: var(--chart-2); background: color-mix(in srgb, var(--chart-2) 14%, transparent); }
+.trend-down { color: var(--destructive); background: color-mix(in srgb, var(--destructive) 12%, transparent); }
+.kpi-value { font-family: var(--font-display); font-size: var(--font-3xl); color: var(--foreground); line-height: 1.1; }
+.kpi-period { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; font-weight: 500; }
 
 /* ── Vendor Integration Bar ── */
-.vendor-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: var(--bg-card); border: none; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
-.vendor-bar-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.vendor-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: var(--card); border: none; border-radius: var(--radius-md); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
+.vendor-bar-label { font-size: 12px; font-weight: 700; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
 .vendor-icons { display: flex; gap: 10px; flex-wrap: wrap; }
-.vendor-chip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--radius-full); background: var(--bg-surface); border: 1px solid var(--border-color); transition: all 0.15s; cursor: default; }
+.vendor-chip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--radius-full); background: var(--muted); border: 1px solid var(--border); transition: all 0.15s; cursor: default; }
 .vendor-chip.connected { border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.05); }
 .vendor-icon-wrap { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.vendor-name { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.vendor-name { font-size: 12px; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; }
 .vendor-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot-on { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
 .dot-off { background: #d1d5db; }
@@ -1903,13 +1958,13 @@ onBeforeUnmount(() => {
 /* ── Chart ── */
 .chart-card { margin-bottom: 24px; }
 .chart-legend { display: flex; gap: 16px; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--muted-foreground); }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .area-chart-wrap { position: relative; margin-top: 12px; }
 .area-chart-svg { width: 100%; height: 220px; display: block; }
-.chart-tooltip { position: absolute; top: 10px; transform: translateX(-50%); background: var(--text-primary); color: var(--text-inverse); padding: 8px 14px; border-radius: var(--radius-md); font-size: var(--font-xs); white-space: nowrap; z-index: 10; box-shadow: var(--shadow-md); pointer-events: none; }
-.area-chart-labels { display: flex; justify-content: space-between; padding: 8px 0 0; font-size: 10px; color: var(--text-muted); }
-.area-chart-labels .highlighted { color: var(--text-secondary); font-weight: 600; }
+.chart-tooltip { position: absolute; top: 10px; transform: translateX(-50%); background: var(--foreground); color: var(--primary-foreground); padding: 8px 14px; border-radius: var(--radius-md); font-size: var(--font-xs); white-space: nowrap; z-index: 10; box-shadow: var(--shadow-md); pointer-events: none; }
+.area-chart-labels { display: flex; justify-content: space-between; padding: 8px 0 0; font-size: 10px; color: var(--muted-foreground); }
+.area-chart-labels .highlighted { color: var(--muted-foreground); font-weight: 600; }
 
 /* ── Layout ── */
 .analytics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
@@ -1918,13 +1973,13 @@ onBeforeUnmount(() => {
 .channel-list { display: flex; flex-direction: column; gap: 14px; }
 .channel-item { display: flex; align-items: center; gap: 14px; }
 .channel-info { min-width: 130px; }
-.channel-name { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); display: block; }
-.channel-bar-wrap { flex: 1; height: 6px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.channel-name { font-size: var(--font-sm); font-weight: 600; color: var(--foreground); display: block; }
+.channel-bar-wrap { flex: 1; height: 6px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .channel-bar { height: 100%; border-radius: var(--radius-full); transition: width var(--transition-slow); }
-.channel-pct { font-size: var(--font-sm); font-weight: 700; color: var(--text-primary); min-width: 36px; text-align: right; }
+.channel-pct { font-size: var(--font-sm); font-weight: 700; color: var(--foreground); min-width: 36px; text-align: right; }
 
 /* ── Pages ── */
-.page-rank { width: 22px; height: 22px; background: var(--bg-surface); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-right: 8px; }
+.page-rank { width: 22px; height: 22px; background: var(--muted); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted-foreground); margin-right: 8px; }
 
 /* ── Devices ── */
 .device-breakdown { display: flex; align-items: center; gap: 28px; }
@@ -1932,61 +1987,61 @@ onBeforeUnmount(() => {
 .donut-chart svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .device-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .device-legend-item { display: flex; align-items: center; gap: 10px; font-size: var(--font-sm); }
-.device-name { flex: 1; color: var(--text-secondary); }
-.device-value { color: var(--text-primary); }
+.device-name { flex: 1; color: var(--muted-foreground); }
+.device-value { color: var(--foreground); }
 
 /* ── Countries ── */
 .country-list { display: flex; flex-direction: column; gap: 10px; }
 .country-item { display: flex; align-items: center; gap: 12px; }
-.country-rank { width: 22px; height: 22px; background: var(--bg-surface); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.country-rank { width: 22px; height: 22px; background: var(--muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted-foreground); }
 .country-info { flex: 1; }
-.country-name { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-.country-bar-wrap { height: 4px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
-.country-bar { height: 100%; background: var(--brand-accent); border-radius: var(--radius-full); }
+.country-name { font-size: var(--font-sm); font-weight: 600; color: var(--foreground); margin-bottom: 4px; }
+.country-bar-wrap { height: 4px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
+.country-bar { height: 100%; background: var(--primary); border-radius: var(--radius-full); }
 
 /* ── Realtime ── */
 .realtime-card { display: flex; align-items: center; gap: 12px; padding: 16px 24px; }
-.realtime-dot { width: 10px; height: 10px; background: var(--color-success); border-radius: 50%; animation: pulse 2s infinite; }
+.realtime-dot { width: 10px; height: 10px; background: var(--chart-2); border-radius: 50%; animation: pulse 2s infinite; }
 
 /* ── Period Tabs ── */
-.period-tabs { display: flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-full); overflow: hidden; }
-.period-tab { padding: 6px 14px; font-size: var(--font-xs); font-weight: 600; color: var(--text-muted); background: transparent; border: none; cursor: pointer; transition: all var(--transition-fast); font-family: var(--font-family); }
-.period-tab:hover { color: var(--text-primary); }
-.period-tab.active { background: var(--brand-accent); color: #1a1a2e; }
+.period-tabs { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-full); overflow: hidden; }
+.period-tab { padding: 6px 14px; font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); background: transparent; border: none; cursor: pointer; transition: all var(--transition-fast); font-family: var(--font-family); }
+.period-tab:hover { color: var(--foreground); }
+.period-tab.active { background: var(--primary); color: #1a1a2e; }
 
 /* ── Funnels ── */
 .funnel-list { display: flex; flex-direction: column; gap: 8px; }
-.funnel-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--bg-surface); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
-.funnel-item:hover { background: var(--bg-card); border: 1px solid var(--border-hover); }
+.funnel-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--muted); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
+.funnel-item:hover { background: var(--card); border: 1px solid var(--input); }
 .funnel-viz { display: flex; gap: 4px; align-items: flex-end; padding: 20px 0; height: 200px; }
 .funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
 .funnel-bar { width: 100%; background: rgba(91,141,239,0.08); border-radius: var(--radius-md) var(--radius-md) 0 0; position: relative; min-height: 20px; transition: height 0.5s; display: flex; align-items: flex-end; }
-.funnel-bar-fill { width: 100%; height: 100%; background: linear-gradient(180deg, var(--brand-accent), rgba(91,141,239,0.3)); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.funnel-bar-fill { width: 100%; height: 100%; background: linear-gradient(180deg, var(--primary), rgba(91,141,239,0.3)); border-radius: var(--radius-md) var(--radius-md) 0 0; }
 .funnel-step-info { text-align: center; }
-.text-danger { color: var(--color-danger); }
+.text-danger { color: var(--destructive); }
 
 /* ── Retention ── */
 .retention-table { font-size: var(--font-xs); }
 /* ── Retention: Empty State ── */
 .ret-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; text-align: center; padding: 40px 20px; }
 .ret-empty-icon { margin-bottom: 16px; opacity: 0.5; }
-.ret-empty-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-.ret-empty-desc { font-size: 13px; color: var(--text-muted); margin: 0 0 24px; max-width: 360px; }
+.ret-empty-title { font-size: 18px; font-weight: 700; color: var(--foreground); margin: 0 0 8px; }
+.ret-empty-desc { font-size: 13px; color: var(--muted-foreground); margin: 0 0 24px; max-width: 360px; }
 .ret-add-wrap { position: relative; display: inline-block; }
 
 /* ── Card Picker Dropdown ── */
-.card-picker-dropdown { position: absolute; top: 100%; right: 0; z-index: 100; width: 320px; max-height: 400px; overflow-y: auto; background: var(--bg-card); border: none; border-radius: var(--radius-md); box-shadow: 0 12px 40px rgba(0,0,0,0.2); margin-top: 8px; animation: pickerFadeIn 0.15s ease; }
+.card-picker-dropdown { position: absolute; top: 100%; right: 0; z-index: 100; width: 320px; max-height: 400px; overflow-y: auto; background: var(--card); border: none; border-radius: var(--radius-md); box-shadow: 0 12px 40px rgba(0,0,0,0.2); margin-top: 8px; animation: pickerFadeIn 0.15s ease; }
 .card-picker-center { left: 50%; transform: translateX(-50%); }
 @keyframes pickerFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.card-picker-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding: 12px 16px 8px; }
+.card-picker-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted-foreground); padding: 12px 16px 8px; }
 .card-picker-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; transition: background 0.15s; }
-.card-picker-item:hover:not(.disabled) { background: var(--bg-surface); }
+.card-picker-item:hover:not(.disabled) { background: var(--muted); }
 .card-picker-item.disabled { opacity: 0.4; cursor: default; }
-.card-picker-icon { flex-shrink: 0; color: var(--brand-accent); }
+.card-picker-icon { flex-shrink: 0; color: var(--primary); }
 .card-picker-info { flex: 1; min-width: 0; }
-.card-picker-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.card-picker-desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
-.card-picker-check { color: var(--color-success); font-size: 14px; font-weight: 700; }
+.card-picker-name { font-size: 13px; font-weight: 600; color: var(--foreground); }
+.card-picker-desc { font-size: 11px; color: var(--muted-foreground); line-height: 1.3; }
+.card-picker-check { color: var(--chart-2); font-size: 14px; font-weight: 700; }
 
 /* ── Dynamic Card Grid ── */
 .ret-card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -1996,14 +2051,14 @@ onBeforeUnmount(() => {
 .ret-half { grid-column: span 2; }
 .ret-quarter { grid-column: span 1; }
 .ret-full { grid-column: 1 / -1; }
-.ret-card-close { position: absolute; top: 8px; right: 8px; z-index: 5; width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--bg-surface); color: var(--text-muted); font-size: 16px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+.ret-card-close { position: absolute; top: 8px; right: 8px; z-index: 5; width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--muted); color: var(--muted-foreground); font-size: 16px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
 .ret-dyn-card:hover .ret-card-close { opacity: 1; }
-.ret-card-close:hover { background: var(--color-danger); color: white; }
+.ret-card-close:hover { background: var(--destructive); color: white; }
 
 /* ── Add Widget Inline ── */
 .ret-add-inline { display: flex; align-items: center; justify-content: flex-end; position: relative; min-height: auto; border: none; border-radius: 0; grid-column: 1 / -1; padding: 0; margin: -8px 0 8px; order: -1; }
-.ret-add-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border-color); background: var(--bg-card); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: var(--shadow-sm); }
-.ret-add-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); background: rgba(99,102,241,0.08); }
+.ret-add-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: var(--card); color: var(--muted-foreground); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+.ret-add-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(99,102,241,0.08); }
 
 /* ── Engagement Score Ring ── */
 .engagement-score-card { display: flex; flex-direction: column; }
@@ -2011,12 +2066,12 @@ onBeforeUnmount(() => {
 .engagement-ring { width: 130px; height: 130px; }
 .ring-progress { transition: stroke-dasharray 1s ease; }
 .engagement-ring-label { position: absolute; text-align: center; }
-.eng-score-num { font-size: 32px; font-weight: 700; color: var(--text-primary); }
-.eng-score-unit { font-size: 13px; color: var(--text-muted); margin-left: 2px; }
+.eng-score-num { font-size: 32px; font-weight: 700; color: var(--foreground); }
+.eng-score-unit { font-size: 13px; color: var(--muted-foreground); margin-left: 2px; }
 .eng-breakdown { padding: 0 8px; display: flex; flex-direction: column; gap: 8px; }
 .eng-factor { display: flex; align-items: center; gap: 8px; }
-.eng-factor-label { font-size: 11px; color: var(--text-muted); min-width: 72px; }
-.eng-factor-bar { flex: 1; height: 6px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.eng-factor-label { font-size: 11px; color: var(--muted-foreground); min-width: 72px; }
+.eng-factor-bar { flex: 1; height: 6px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .eng-factor-fill { height: 100%; border-radius: var(--radius-full); transition: width 0.8s ease; }
 
 /* ── Donut Chart ── */
@@ -2024,24 +2079,24 @@ onBeforeUnmount(() => {
 .donut-chart { width: 140px; height: 140px; }
 .donut-arc { transition: stroke-dasharray 0.8s ease, stroke-dashoffset 0.8s ease; }
 .donut-center-label { position: absolute; text-align: center; }
-.donut-big { font-size: 26px; font-weight: 700; color: var(--text-primary); display: block; }
-.donut-sub { font-size: 11px; color: var(--text-muted); }
+.donut-big { font-size: 26px; font-weight: 700; color: var(--foreground); display: block; }
+.donut-sub { font-size: 11px; color: var(--muted-foreground); }
 .donut-legend { display: flex; gap: 20px; justify-content: center; padding-top: 8px; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── Retention Stat Grid ── */
 .ret-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 768px) { .ret-stat-grid { grid-template-columns: repeat(2, 1fr); } }
-.ret-stat-card { background: var(--bg-card); border: none; border-radius: var(--radius-md); padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: default; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
+.ret-stat-card { background: var(--card); border: none; border-radius: var(--radius-md); padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: default; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
 .ret-stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 .ret-stat-card.stat-danger { border-color: rgba(231,76,60,0.3); }
-.ret-stat-icon { margin-bottom: 8px; color: var(--text-muted); }
-.ret-stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
-.ret-stat-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-.ret-stat-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
-.visit-count-badge { display: inline-block; background: var(--brand-accent); color: white; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: var(--radius-full); min-width: 28px; text-align: center; }
-.returner-row:hover { background: var(--bg-surface); }
+.ret-stat-icon { margin-bottom: 8px; color: var(--muted-foreground); }
+.ret-stat-value { font-size: 28px; font-weight: 700; color: var(--foreground); line-height: 1.1; }
+.ret-stat-label { font-size: 12px; font-weight: 600; color: var(--muted-foreground); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ret-stat-hint { font-size: 10px; color: var(--muted-foreground); margin-top: 4px; }
+.visit-count-badge { display: inline-block; background: var(--primary); color: white; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: var(--radius-full); min-width: 28px; text-align: center; }
+.returner-row:hover { background: var(--muted); }
 .retention-cell { text-align: center; font-weight: 600; font-size: 11px; min-width: 50px; }
 
 /* ── Flows: Insights Grid ── */
@@ -2055,117 +2110,117 @@ onBeforeUnmount(() => {
 .dot-warning { background: #f59e0b; }
 .dot-info { background: #5B8DEF; }
 .dot-success { background: var(--color-success, #22c55e); }
-.dot-muted { background: var(--text-muted); }
-.dot-neutral { background: var(--text-secondary); }
-.flow-insight-title { font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; }
-.flow-insight-value { font-size: var(--font-base); font-weight: 700; color: var(--text-primary); word-break: break-word; }
-.flow-insight-desc { font-size: var(--font-xs); color: var(--text-secondary); line-height: 1.5; }
+.dot-muted { background: var(--muted-foreground); }
+.dot-neutral { background: var(--muted-foreground); }
+.flow-insight-title { font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); font-weight: 700; }
+.flow-insight-value { font-size: var(--font-base); font-weight: 700; color: var(--foreground); word-break: break-word; }
+.flow-insight-desc { font-size: var(--font-xs); color: var(--muted-foreground); line-height: 1.5; }
 
 /* ── Flow Filters ── */
 .flow-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.flow-filter-input { flex: 1; min-width: 200px; padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-size: var(--font-sm); outline: none; }
-.flow-filter-input:focus { border-color: var(--brand-accent); }
-.flow-filter-select { padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-size: var(--font-sm); cursor: pointer; }
+.flow-filter-input { flex: 1; min-width: 200px; padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--muted); color: var(--foreground); font-size: var(--font-sm); outline: none; }
+.flow-filter-input:focus { border-color: var(--primary); }
+.flow-filter-select { padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--muted); color: var(--foreground); font-size: var(--font-sm); cursor: pointer; }
 
 /* ── Journey Intent ── */
 .intent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; margin-right: 6px; }
-.journey-intent-label { font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 6px; }
+.journey-intent-label { font-size: var(--font-xs); color: var(--muted-foreground); margin-bottom: 6px; }
 .intent-score-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-full); margin-left: 6px; }
-.score-high { background: rgba(52,199,89,0.15); color: var(--color-success); }
-.score-med { background: rgba(0,122,255,0.12); color: var(--color-info); }
-.score-low { background: rgba(255,159,10,0.12); color: var(--color-warning); }
-.score-bounce { background: var(--bg-surface); color: var(--text-muted); }
-.journey-recs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border-color); }
-.rec-label { font-size: 10px; color: var(--text-muted); font-weight: 500; }
-.rec-item { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(99,102,241,0.1); color: var(--brand-accent); cursor: help; font-family: 'SF Mono', monospace; }
+.score-high { background: rgba(52,199,89,0.15); color: var(--chart-2); }
+.score-med { background: rgba(0,122,255,0.12); color: var(--chart-1); }
+.score-low { background: rgba(255,159,10,0.12); color: var(--chart-3); }
+.score-bounce { background: var(--muted); color: var(--muted-foreground); }
+.journey-recs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.rec-label { font-size: 10px; color: var(--muted-foreground); font-weight: 500; }
+.rec-item { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(99,102,241,0.1); color: var(--primary); cursor: help; font-family: 'SF Mono', monospace; }
 .journey-predicted { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
-.predicted-label { font-size: 10px; color: var(--text-muted); font-style: italic; }
-.predicted-page { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--bg-surface); color: var(--text-secondary); font-family: 'SF Mono', monospace; }
-.journey-duration { font-size: var(--font-xs); color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.predicted-label { font-size: 10px; color: var(--muted-foreground); font-style: italic; }
+.predicted-page { font-size: 10px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--muted); color: var(--muted-foreground); font-family: 'SF Mono', monospace; }
+.journey-duration { font-size: var(--font-xs); color: var(--muted-foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ── Flows: Enhanced Items ── */
 .flow-list { display: flex; flex-direction: column; gap: 6px; }
-.flow-item-enhanced { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+.flow-item-enhanced { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .flow-item-enhanced:last-child { border-bottom: none; }
 .flow-item-route { display: flex; align-items: center; gap: 6px; min-width: 200px; flex-shrink: 0; }
-.flow-page { background: var(--bg-surface); padding: 4px 10px; border-radius: var(--radius-sm); font-family: 'SF Mono', monospace; font-size: var(--font-xs); }
-.flow-arrow { color: var(--text-muted); font-size: 14px; }
-.flow-count { margin-left: 8px; font-weight: 700; color: var(--text-primary); font-size: var(--font-sm); min-width: 30px; text-align: right; flex-shrink: 0; }
-.flow-item-bar-wrap { flex: 1; height: 6px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.flow-page { background: var(--muted); padding: 4px 10px; border-radius: var(--radius-sm); font-family: 'SF Mono', monospace; font-size: var(--font-xs); }
+.flow-arrow { color: var(--muted-foreground); font-size: 14px; }
+.flow-count { margin-left: 8px; font-weight: 700; color: var(--foreground); font-size: var(--font-sm); min-width: 30px; text-align: right; flex-shrink: 0; }
+.flow-item-bar-wrap { flex: 1; height: 6px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .flow-item-bar { height: 100%; border-radius: var(--radius-full); transition: width 0.5s ease; }
 
 /* ── Flows: Bar Rows ── */
-.flow-bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: var(--font-sm); }
+.flow-bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: var(--font-sm); }
 .flow-bar-row:last-child { border-bottom: none; }
-.flow-bar-label { min-width: 100px; max-width: 160px; font-family: 'SF Mono', monospace; font-size: var(--font-xs); color: var(--text-secondary); }
+.flow-bar-label { min-width: 100px; max-width: 160px; font-family: 'SF Mono', monospace; font-size: var(--font-xs); color: var(--muted-foreground); }
 .flow-bar-label-group { display: flex; flex-direction: column; gap: 2px; min-width: 100px; max-width: 180px; }
 .flow-bar-label-group .flow-bar-label { min-width: auto; max-width: none; }
-.flow-source-tag { font-size: 10px; color: var(--brand-accent); opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.flow-bar-track { flex: 1; height: 8px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.flow-source-tag { font-size: 10px; color: var(--primary); opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flow-bar-track { flex: 1; height: 8px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .flow-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width 0.5s ease; }
-.flow-bar-fill.entry { background: var(--color-success); }
-.flow-bar-fill.exit { background: var(--color-danger); }
-.flow-bar-count { font-weight: 700; color: var(--text-primary); min-width: 24px; text-align: right; }
-.flow-stat-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: var(--font-sm); }
+.flow-bar-fill.entry { background: var(--chart-2); }
+.flow-bar-fill.exit { background: var(--destructive); }
+.flow-bar-count { font-weight: 700; color: var(--foreground); min-width: 24px; text-align: right; }
+.flow-stat-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: var(--font-sm); }
 .flow-stat-item:last-child { border-bottom: none; }
 
 /* ── AI Insights ── */
 .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.insight-card { background: var(--bg-card); border: none; border-radius: var(--radius-md); padding: 20px; transition: all 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
+.insight-card { background: var(--card); border: none; border-radius: var(--radius-md); padding: 20px; transition: all 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
 .insight-card:hover { box-shadow: var(--shadow-sm); }
-.insight-warning { border-left: 3px solid var(--color-warning); }
-.insight-critical { border-left: 3px solid var(--color-danger); }
-.insight-opportunity { border-left: 3px solid var(--color-success); }
-.insight-info { border-left: 3px solid var(--color-info); }
+.insight-warning { border-left: 3px solid var(--chart-3); }
+.insight-critical { border-left: 3px solid var(--destructive); }
+.insight-opportunity { border-left: 3px solid var(--chart-2); }
+.insight-info { border-left: 3px solid var(--chart-1); }
 .insight-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .insight-icon { font-size: 20px; }
 .insight-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: var(--radius-full); }
-.ibadge-warning { background: rgba(243,156,18,0.12); color: var(--color-warning); }
-.ibadge-critical { background: rgba(231,76,60,0.12); color: var(--color-danger); }
-.ibadge-opportunity { background: rgba(39,174,96,0.12); color: var(--color-success); }
-.ibadge-info { background: rgba(52,152,219,0.12); color: var(--color-info); }
-.insight-metric { margin-left: auto; font-size: var(--font-md); font-weight: 700; color: var(--text-primary); }
-.insight-title { font-size: var(--font-md); color: var(--text-primary); margin: 0 0 6px; }
-.insight-desc { font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5; margin: 0 0 12px; }
-.insight-action { display: flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--brand-accent); font-weight: 600; }
+.ibadge-warning { background: rgba(243,156,18,0.12); color: var(--chart-3); }
+.ibadge-critical { background: rgba(231,76,60,0.12); color: var(--destructive); }
+.ibadge-opportunity { background: rgba(39,174,96,0.12); color: var(--chart-2); }
+.ibadge-info { background: rgba(52,152,219,0.12); color: var(--chart-1); }
+.insight-metric { margin-left: auto; font-size: var(--font-md); font-weight: 700; color: var(--foreground); }
+.insight-title { font-size: var(--font-md); color: var(--foreground); margin: 0 0 6px; }
+.insight-desc { font-size: var(--font-sm); color: var(--muted-foreground); line-height: 1.5; margin: 0 0 12px; }
+.insight-action { display: flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--primary); font-weight: 600; }
 
 /* ── Actions ── */
-.action-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
+.action-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
 .action-item:last-child { border-bottom: none; }
 .action-priority { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--radius-full); }
-.ap-critical { background: rgba(231,76,60,0.12); color: var(--color-danger); }
-.ap-warning { background: rgba(243,156,18,0.12); color: var(--color-warning); }
-.ap-opportunity { background: rgba(39,174,96,0.12); color: var(--color-success); }
-.ap-info { background: rgba(52,152,219,0.12); color: var(--color-info); }
+.ap-critical { background: rgba(231,76,60,0.12); color: var(--destructive); }
+.ap-warning { background: rgba(243,156,18,0.12); color: var(--chart-3); }
+.ap-opportunity { background: rgba(39,174,96,0.12); color: var(--chart-2); }
+.ap-info { background: rgba(52,152,219,0.12); color: var(--chart-1); }
 
 /* ── Visitors ── */
 .clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: var(--bg-surface); }
-.visitor-id { font-family: 'SF Mono', monospace; font-size: var(--font-sm); color: var(--text-primary); }
+.clickable-row:hover { background: var(--muted); }
+.visitor-id { font-family: 'SF Mono', monospace; font-size: var(--font-sm); color: var(--foreground); }
 
 /* ── Timeline ── */
 .timeline { display: flex; flex-direction: column; gap: 0; }
-.timeline-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.timeline-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .timeline-item:last-child { border-bottom: none; }
 .timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.dot-pageview { background: var(--color-info); }
-.dot-click { background: var(--color-warning); }
-.dot-scroll { background: var(--text-muted); }
-.dot-form_submit { background: var(--color-success); }
-.dot-exit { background: var(--color-danger); }
-.dot-custom { background: var(--brand-accent); }
+.dot-pageview { background: var(--chart-1); }
+.dot-click { background: var(--chart-3); }
+.dot-scroll { background: var(--muted-foreground); }
+.dot-form_submit { background: var(--chart-2); }
+.dot-exit { background: var(--destructive); }
+.dot-custom { background: var(--primary); }
 .timeline-content { display: flex; align-items: center; gap: 10px; flex: 1; }
 .badge-sm { font-size: 10px; padding: 1px 6px; }
 
 /* ── Empty ── */
-.empty-state-card { text-align: center; padding: 60px 40px; background: var(--bg-card); border: 2px dashed var(--border-color); border-radius: var(--radius-md); margin-bottom: 24px; }
+.empty-state-card { text-align: center; padding: 60px 40px; background: var(--card); border: 2px dashed var(--border); border-radius: var(--radius-md); margin-bottom: 24px; }
 .empty-icon { margin-bottom: 20px; opacity: 0.7; }
-.empty-title { font-size: var(--font-lg); color: var(--text-primary); margin: 0 0 10px; }
-.empty-desc { font-size: var(--font-sm); color: var(--text-secondary); max-width: 480px; margin: 0 auto 20px; line-height: 1.6; }
-.empty-snippet { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 20px; display: inline-block; margin-bottom: 16px; }
-.empty-snippet code { font-size: var(--font-xs); color: var(--brand-accent); font-family: 'SF Mono', 'Fira Code', monospace; }
-.empty-hint { font-size: var(--font-xs); color: var(--text-muted); }
-.empty-inline { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: var(--font-sm); }
+.empty-title { font-size: var(--font-lg); color: var(--foreground); margin: 0 0 10px; }
+.empty-desc { font-size: var(--font-sm); color: var(--muted-foreground); max-width: 480px; margin: 0 auto 20px; line-height: 1.6; }
+.empty-snippet { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 20px; display: inline-block; margin-bottom: 16px; }
+.empty-snippet code { font-size: var(--font-xs); color: var(--primary); font-family: 'SF Mono', 'Fira Code', monospace; }
+.empty-hint { font-size: var(--font-xs); color: var(--muted-foreground); }
+.empty-inline { text-align: center; padding: 40px 20px; color: var(--muted-foreground); font-size: var(--font-sm); }
 
 /* ── Modal ── */
 /* Inherit shared .modal-overlay / .modal-card from components.css */
@@ -2174,101 +2229,100 @@ onBeforeUnmount(() => {
 .browser-list { display: flex; flex-direction: column; gap: 12px; }
 .browser-item { display: flex; align-items: center; gap: 12px; }
 .browser-info { display: flex; align-items: center; gap: 8px; min-width: 100px; }
-.browser-icon { color: var(--text-muted); flex-shrink: 0; }
-.browser-name { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); }
-.browser-bar-wrap { flex: 1; height: 6px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.browser-icon { color: var(--muted-foreground); flex-shrink: 0; }
+.browser-name { font-size: var(--font-sm); font-weight: 600; color: var(--foreground); }
+.browser-bar-wrap { flex: 1; height: 6px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .browser-bar { height: 100%; border-radius: var(--radius-full); transition: width var(--transition-slow); }
-.browser-pct { font-size: var(--font-sm); font-weight: 700; color: var(--text-primary); min-width: 36px; text-align: right; }
+.browser-pct { font-size: var(--font-sm); font-weight: 700; color: var(--foreground); min-width: 36px; text-align: right; }
 
 /* ── Live Events ── */
-.realtime-badge { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); background: rgba(34, 197, 94, 0.1); color: var(--color-success); font-size: var(--font-xs); font-weight: 600; }
+.realtime-badge { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); background: rgba(34, 197, 94, 0.1); color: var(--chart-2); font-size: var(--font-xs); font-weight: 600; }
 .live-badge { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; }
 .live-pulse { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: pulse 1.5s infinite; }
 .live-feed { display: flex; flex-direction: column; gap: 0; max-height: 300px; overflow-y: auto; }
-.live-feed-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: var(--font-sm); }
+.live-feed-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--font-sm); }
 .live-feed-item:last-child { border-bottom: none; }
-.live-feed-url { flex: 1; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'SF Mono', monospace; font-size: var(--font-xs); }
+.live-feed-url { flex: 1; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'SF Mono', monospace; font-size: var(--font-xs); }
 
 /* ── Visitor Journeys ── */
 .journey-list { display: flex; flex-direction: column; gap: 0; }
-.journey-card { padding: 14px 0; border-bottom: 1px solid var(--border-color); }
+.journey-card { padding: 14px 0; border-bottom: 1px solid var(--border); }
 .journey-card:last-child { border-bottom: none; }
 .journey-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
 .journey-visitor { display: flex; align-items: center; gap: 8px; }
-.visitor-hash { font-family: 'SF Mono', monospace; font-size: var(--font-xs); color: var(--text-secondary); }
-.journey-company { font-size: var(--font-xs); font-weight: 600; color: var(--brand-accent); }
+.visitor-hash { font-family: 'SF Mono', monospace; font-size: var(--font-xs); color: var(--muted-foreground); }
+.journey-company { font-size: var(--font-xs); font-weight: 600; color: var(--primary); }
 .journey-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.badge-outline { border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); }
 .journey-path { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.journey-step { padding: 3px 10px; background: var(--bg-surface); border-radius: var(--radius-sm); font-family: 'SF Mono', monospace; font-size: 11px; color: var(--text-primary); }
-.step-entry { border-left: 3px solid var(--color-success); }
-.step-exit { border-right: 3px solid var(--color-danger); }
-.journey-arrow { color: var(--text-muted); font-size: 12px; }
-.journey-pages-count { margin-left: auto; font-size: var(--font-xs); color: var(--text-muted); font-weight: 600; }
+.journey-step { padding: 3px 10px; background: var(--muted); border-radius: var(--radius-sm); font-family: 'SF Mono', monospace; font-size: 11px; color: var(--foreground); }
+.step-entry { border-left: 3px solid var(--chart-2); }
+.step-exit { border-right: 3px solid var(--destructive); }
+.journey-arrow { color: var(--muted-foreground); font-size: 12px; }
+.journey-pages-count { margin-left: auto; font-size: var(--font-xs); color: var(--muted-foreground); font-weight: 600; }
 .journey-summary-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.journey-more-btn { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid var(--brand-accent); border-radius: var(--radius-full); background: rgba(99,102,241,0.08); color: var(--brand-accent); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-.journey-more-btn:hover { background: var(--brand-accent); color: white; }
-.journey-collapse-btn { display: inline-flex; align-items: center; padding: 1px 8px; border: none; border-radius: var(--radius-full); background: var(--bg-surface); color: var(--text-muted); font-size: 10px; cursor: pointer; margin-left: 6px; transition: all 0.15s; }
-.journey-collapse-btn:hover { color: var(--text-primary); }
+.journey-more-btn { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid var(--primary); border-radius: var(--radius-full); background: rgba(99,102,241,0.08); color: var(--primary); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.journey-more-btn:hover { background: var(--primary); color: white; }
+.journey-collapse-btn { display: inline-flex; align-items: center; padding: 1px 8px; border: none; border-radius: var(--radius-full); background: var(--muted); color: var(--muted-foreground); font-size: 10px; cursor: pointer; margin-left: 6px; transition: all 0.15s; }
+.journey-collapse-btn:hover { color: var(--foreground); }
 
 /* ── Growth Actions ── */
-.growth-action-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+.growth-action-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .growth-action-item:last-child { border-bottom: none; }
 .growth-action-priority { flex-shrink: 0; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .gap-high { background: rgba(239,68,68,0.12); color: #ef4444; }
 .gap-medium { background: rgba(245,158,11,0.12); color: #f59e0b; }
 .gap-low { background: rgba(34,197,94,0.12); color: #22c55e; }
 .growth-action-content { flex: 1; min-width: 0; }
-.growth-action-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
-.growth-action-reason { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-.growth-action-impact { flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--brand-accent); white-space: nowrap; }
+.growth-action-title { font-size: 13px; font-weight: 600; color: var(--foreground); margin-bottom: 2px; }
+.growth-action-reason { font-size: 11px; color: var(--muted-foreground); line-height: 1.4; }
+.growth-action-impact { flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--primary); white-space: nowrap; }
 
 /* ── Insight Compact Items ── */
-.insight-compact-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.insight-compact-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .insight-compact-item:last-child { border-bottom: none; }
 .insight-compact-badge { flex-shrink: 0; padding: 2px 8px; border-radius: var(--radius-full); font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .icb-anomaly, .icb-warning, .icb-spike { background: rgba(239,68,68,0.12); color: #ef4444; }
 .icb-drop { background: rgba(245,158,11,0.12); color: #f59e0b; }
 .icb-content, .icb-opportunity, .icb-success { background: rgba(34,197,94,0.12); color: #22c55e; }
-.icb-engagement, .icb-trend, .icb-info { background: rgba(99,102,241,0.12); color: var(--brand-accent); }
+.icb-engagement, .icb-trend, .icb-info { background: rgba(99,102,241,0.12); color: var(--primary); }
 .insight-compact-body { flex: 1; min-width: 0; }
-.insight-compact-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
-.insight-compact-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-.insight-compact-action { font-size: 11px; color: var(--brand-accent); font-weight: 600; margin-top: 4px; }
-.insight-compact-metric { flex-shrink: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.insight-compact-title { font-size: 13px; font-weight: 600; color: var(--foreground); margin-bottom: 2px; }
+.insight-compact-desc { font-size: 11px; color: var(--muted-foreground); line-height: 1.4; }
+.insight-compact-action { font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 4px; }
+.insight-compact-metric { flex-shrink: 0; font-size: 14px; font-weight: 700; color: var(--foreground); }
 
 
 /* ── Engagement ── */
 .engagement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.engagement-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-surface); border-radius: var(--radius-md); }
-.engagement-label { font-size: var(--font-xs); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.engagement-value { font-size: var(--font-xl); font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+.engagement-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--muted); border-radius: var(--radius-md); }
+.engagement-label { font-size: var(--font-xs); color: var(--muted-foreground); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.engagement-value { font-size: var(--font-xl); font-weight: 700; color: var(--foreground); margin-top: 2px; }
 
 /* ── Performance ── */
 .perf-grid { display: flex; flex-direction: column; gap: 18px; }
 .perf-item { display: flex; align-items: center; gap: 14px; }
-.perf-label { font-size: var(--font-sm); font-weight: 600; color: var(--text-secondary); min-width: 120px; }
-.perf-bar-wrap { flex: 1; height: 8px; background: var(--bg-surface); border-radius: var(--radius-full); overflow: hidden; }
+.perf-label { font-size: var(--font-sm); font-weight: 600; color: var(--muted-foreground); min-width: 120px; }
+.perf-bar-wrap { flex: 1; height: 8px; background: var(--muted); border-radius: var(--radius-full); overflow: hidden; }
 .perf-bar { height: 100%; border-radius: var(--radius-full); transition: width var(--transition-slow); }
-.perf-good { background: var(--color-success); }
-.perf-ok { background: var(--color-warning); }
-.perf-bad { background: var(--color-danger); }
-.perf-value { font-size: var(--font-sm); font-weight: 700; color: var(--text-primary); min-width: 40px; text-align: right; }
+.perf-good { background: var(--chart-2); }
+.perf-ok { background: var(--chart-3); }
+.perf-bad { background: var(--destructive); }
+.perf-value { font-size: var(--font-sm); font-weight: 700; color: var(--foreground); min-width: 40px; text-align: right; }
 /* ── Filter Bar ── */
 .filter-bar { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
 .filter-input-wrap { position: relative; flex: 1; min-width: 200px; }
-.filter-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.filter-input { width: 100%; padding: 10px 14px 10px 36px; font-family: var(--font-family); font-size: var(--font-sm); color: var(--text-primary); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); outline: none; transition: all var(--transition-fast); }
-.filter-input:focus { border-color: var(--brand-accent); box-shadow: var(--shadow-glow); }
-.filter-input::placeholder { color: var(--text-muted); }
+.filter-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none; }
+.filter-input { width: 100%; padding: 10px 14px 10px 36px; font-family: var(--font-family); font-size: var(--font-sm); color: var(--foreground); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); outline: none; transition: all var(--transition-fast); }
+.filter-input:focus { border-color: var(--primary); box-shadow: var(--shadow-glow); }
+.filter-input::placeholder { color: var(--muted-foreground); }
 .filter-selects { display: flex; gap: 8px; }
-.filter-select { padding: 8px 12px; font-family: var(--font-family); font-size: var(--font-xs); font-weight: 600; color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; outline: none; transition: all var(--transition-fast); appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px; }
-.filter-select:focus { border-color: var(--brand-accent); }
+.filter-select { padding: 8px 12px; font-family: var(--font-family); font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; outline: none; transition: all var(--transition-fast); appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px; }
+.filter-select:focus { border-color: var(--primary); }
 
 /* ── Filter Chips ── */
 .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: var(--brand-accent-glow); color: var(--brand-accent); border-radius: var(--radius-full); font-size: var(--font-xs); font-weight: 600; }
-.chip-remove { background: none; border: none; color: var(--brand-accent); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; opacity: 0.7; transition: opacity 0.15s; }
+.filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: var(--ring); color: var(--primary); border-radius: var(--radius-full); font-size: var(--font-xs); font-weight: 600; }
+.chip-remove { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; opacity: 0.7; transition: opacity 0.15s; }
 .chip-remove:hover { opacity: 1; }
 .chip-enter-active { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .chip-leave-active { transition: all 0.2s ease; }
@@ -2276,8 +2330,8 @@ onBeforeUnmount(() => {
 .chip-leave-to { opacity: 0; transform: scale(0.8); }
 
 /* ── KPI Tooltip ── */
-.kpi-info { position: relative; display: inline-flex; align-items: center; margin-left: 4px; cursor: help; vertical-align: middle; color: var(--text-muted); }
-.kpi-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--text-inverse); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--font-xs); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.5; white-space: nowrap; max-width: 300px; white-space: normal; z-index: 50; box-shadow: var(--shadow-md); pointer-events: none; }
+.kpi-info { position: relative; display: inline-flex; align-items: center; margin-left: 4px; cursor: help; vertical-align: middle; color: var(--muted-foreground); }
+.kpi-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--foreground); color: var(--primary-foreground); padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--font-xs); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.5; white-space: nowrap; max-width: 300px; white-space: normal; z-index: 50; box-shadow: var(--shadow-md); pointer-events: none; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .analytics-row { grid-template-columns: 1fr; } .analytics-tabs { flex-wrap: wrap; } .engagement-grid { grid-template-columns: 1fr; } .filter-bar { flex-direction: column; } .filter-selects { flex-wrap: wrap; } }

@@ -92,20 +92,20 @@
               </option>
             </select>
           </label>
-          <AirButton
+          <Button
             v-if="generatedPrompts.length"
             variant="ghost"
             size="sm"
-            :loading="generating"
+            :disabled="generating"
             @click="regenerate"
           >
-            Search again
-          </AirButton>
+            {{ generating ? 'Searching…' : 'Search again' }}
+          </Button>
         </div>
       </div>
 
 
-      <AirCard size="md" :padded="false">
+      <Card class="overflow-hidden">
         <!-- Skeleton rows while we wait for the synthesis call to come back.
              More tactile than a spinning bar — feels like the table is
              populating itself. -->
@@ -141,27 +141,27 @@
         </div>
 
         <div v-else class="pl-table-wrap">
-          <table class="pl-data-table">
-            <thead>
-              <tr>
-                <th class="pl-th sortable" style="width: 110px" @click="toggleResultsSort('id')">
+          <Table class="pl-data-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="pl-th sortable" style="width: 110px" @click="toggleResultsSort('id')">
                   <div class="pl-th-inner">
                     <span>ID</span>
                     <SortIcon :state="resultsSortState('id')" />
                   </div>
-                </th>
-                <th class="pl-th sortable" style="width: 120px" @click="toggleResultsSort('style')">
+                </TableHead>
+                <TableHead class="pl-th sortable" style="width: 120px" @click="toggleResultsSort('style')">
                   <div class="pl-th-inner">
                     <span>Style</span>
                     <SortIcon :state="resultsSortState('style')" />
                   </div>
-                </th>
-                <th class="pl-th">
+                </TableHead>
+                <TableHead class="pl-th">
                   <div class="pl-th-inner">
                     <span>Prompt</span>
                   </div>
-                </th>
-                <th class="pl-th sortable" style="width: 200px" @click="toggleResultsSort('trend')">
+                </TableHead>
+                <TableHead class="pl-th sortable" style="width: 200px" @click="toggleResultsSort('trend')">
                   <div class="pl-th-inner">
                     <span>Trend</span>
                     <span class="pl-info-icon" @click.stop role="button" tabindex="0" aria-label="How is trend scored?">
@@ -183,71 +183,70 @@
                     </span>
                     <SortIcon :state="resultsSortState('trend')" />
                   </div>
-                </th>
-                <th class="pl-th sortable" style="width: 140px" @click="toggleResultsSort('status')">
+                </TableHead>
+                <TableHead class="pl-th sortable" style="width: 140px" @click="toggleResultsSort('status')">
                   <div class="pl-th-inner">
                     <span>Status</span>
                     <SortIcon :state="resultsSortState('status')" />
                   </div>
-                </th>
-                <th class="pl-th text-right" style="width: 130px">
+                </TableHead>
+                <TableHead class="pl-th text-right" style="width: 130px">
                   <div class="pl-th-inner justify-end">
                     <span>Action</span>
                   </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               <template v-for="(p, idx) in pagedGeneratedPrompts" :key="p._uid">
-                <tr
+                <TableRow
                   class="pl-row pl-row-stagger"
                   :class="{ 'is-expanded': expandedResult === p._uid }"
                   :style="{ animationDelay: Math.min(idx, 12) * 28 + 'ms' }"
                   @click="toggleExpand(p._uid)"
                 >
-                  <td class="pl-td">
+                  <TableCell class="pl-td">
                     <span class="pl-id-pill">{{ formatRowId(p) }}</span>
-                  </td>
-                  <td class="pl-td">
-                    <AirChip size="xs" variant="neutral">{{ titleCaseStyle(p.style) }}</AirChip>
-                  </td>
-                  <td class="pl-td pl-td-prompt">
+                  </TableCell>
+                  <TableCell class="pl-td">
+                    <Badge variant="secondary">{{ titleCaseStyle(p.style) }}</Badge>
+                  </TableCell>
+                  <TableCell class="pl-td pl-td-prompt">
                     <span class="pl-prompt-text" v-html="renderHighlighted(p.prompt_text || p.template_text, p.keywords)"></span>
-                  </td>
-                  <td class="pl-td">
+                  </TableCell>
+                  <TableCell class="pl-td">
                     <div class="flex items-center gap-2">
                       <div class="pl-trend-bar">
                         <div class="pl-trend-fill" :class="trendBarClass(p.trend_score)" :style="{ width: (p.trend_score || 0) + '%' }"></div>
                       </div>
-                      <span class="text-xs tabular-nums" style="color: var(--text-secondary); min-width: 1.75rem">{{ p.trend_score ?? '—' }}</span>
-                      <span class="text-[10px] uppercase tracking-wider" style="color: var(--text-muted)">{{ trendLabel(p.trend_score) }}</span>
+                      <span class="text-xs tabular-nums text-muted-foreground" style="min-width: 1.75rem">{{ p.trend_score ?? '—' }}</span>
+                      <span class="text-[10px] uppercase tracking-wider text-muted-foreground">{{ trendLabel(p.trend_score) }}</span>
                     </div>
-                  </td>
-                  <td class="pl-td">
-                    <span v-if="p._saved" class="pl-status-pill is-signed">Saved</span>
-                    <span v-else class="pl-status-pill is-pending">Untested</span>
-                  </td>
-                  <td class="pl-td text-right" @click.stop>
+                  </TableCell>
+                  <TableCell class="pl-td">
+                    <Badge v-if="p._saved" variant="success">Saved</Badge>
+                    <Badge v-else variant="warning">Untested</Badge>
+                  </TableCell>
+                  <TableCell class="pl-td text-right" @click.stop>
                     <div class="pl-action-row">
-                      <AirButton
+                      <Button
                         v-if="!p._saved"
-                        variant="primary"
                         size="sm"
-                        :loading="!!p._saving"
+                        :disabled="!!p._saving"
                         @click="onSaveGenerated(p)"
                       >
-                        Save
-                      </AirButton>
+                        {{ p._saving ? 'Saving…' : 'Save' }}
+                      </Button>
                       <button class="pl-expand-toggle" :aria-expanded="expandedResult === p._uid" @click.stop="toggleExpand(p._uid)" aria-label="Toggle details">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" :style="{ transform: expandedResult === p._uid ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.18s' }">
                           <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                       </button>
                     </div>
-                  </td>
-                </tr>
-                <tr class="pl-detail-row" :class="{ 'is-open': expandedResult === p._uid }">
-                  <td colspan="6" class="pl-detail-cell">
+                  </TableCell>
+                </TableRow>
+                <TableRow class="pl-detail-row" :class="{ 'is-open': expandedResult === p._uid }">
+                  <TableCell colspan="6" class="pl-detail-cell">
                     <div class="pl-detail-inner">
                       <div class="pl-detail-grid">
                         <div class="pl-detail-block">
@@ -270,11 +269,11 @@
                         </div>
                         <div class="pl-detail-block">
                           <div class="pl-detail-label">Length</div>
-                          <div class="pl-detail-value">{{ wordCountOf(p) }} words · <span style="color: var(--text-muted)">{{ titleCaseStyle(lengthBandOf(p)) }}</span></div>
+                          <div class="pl-detail-value">{{ wordCountOf(p) }} words · <span class="text-muted-foreground">{{ titleCaseStyle(lengthBandOf(p)) }}</span></div>
                         </div>
                         <div class="pl-detail-block">
                           <div class="pl-detail-label">Trend score</div>
-                          <div class="pl-detail-value">{{ p.trend_score ?? '—' }} / 100 · <span style="color: var(--text-muted)">{{ trendLabel(p.trend_score) }}</span></div>
+                          <div class="pl-detail-value">{{ p.trend_score ?? '—' }} / 100 · <span class="text-muted-foreground">{{ trendLabel(p.trend_score) }}</span></div>
                         </div>
                         <div class="pl-detail-block">
                           <div class="pl-detail-label">Sentiment</div>
@@ -287,16 +286,16 @@
                         <div class="pl-detail-block">
                           <div class="pl-detail-label">Suggested LLMs</div>
                           <div class="pl-detail-value">
-                            <AirChip v-for="prov in suggestedProviders(p)" :key="prov" size="xs" variant="neutral" class="mr-1">{{ prov }}</AirChip>
+                            <Badge v-for="prov in suggestedProviders(p)" :key="prov" variant="secondary" class="mr-1">{{ prov }}</Badge>
                           </div>
                         </div>
                       </div>
                       <div class="pl-detail-block-wide">
                         <div class="pl-detail-label">Keywords highlighted</div>
                         <div class="pl-detail-value">
-                          <span v-if="!p.keywords || !p.keywords.length" style="color: var(--text-muted)">No keywords detected</span>
+                          <span v-if="!p.keywords || !p.keywords.length" class="text-muted-foreground">No keywords detected</span>
                           <span v-else>
-                            <AirChip v-for="kw in p.keywords" :key="kw" size="xs" variant="warning" class="mr-1 mb-1">{{ kw }}</AirChip>
+                            <Badge v-for="kw in p.keywords" :key="kw" variant="warning" class="mr-1 mb-1">{{ kw }}</Badge>
                           </span>
                         </div>
                       </div>
@@ -360,24 +359,23 @@
                       </div>
 
                       <div class="pl-detail-actions">
-                        <AirButton variant="ghost" size="sm" @click.stop="onRemoveGenerated(p)">Skip</AirButton>
-                        <AirButton
+                        <Button variant="ghost" size="sm" @click.stop="onRemoveGenerated(p)">Skip</Button>
+                        <Button
                           v-if="!p._saved"
-                          variant="primary"
                           size="sm"
-                          :loading="!!p._saving"
+                          :disabled="!!p._saving"
                           @click.stop="onSaveGenerated(p)"
                         >
-                          Save to my prompts
-                        </AirButton>
-                        <AirChip v-else size="sm" variant="success">Saved</AirChip>
+                          {{ p._saving ? 'Saving…' : 'Save to my prompts' }}
+                        </Button>
+                        <Badge v-else variant="success">Saved</Badge>
                       </div>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               </template>
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
         <div v-if="generatedPrompts.length" class="pl-table-footer">
           <span class="pl-table-foot-info">
@@ -394,7 +392,7 @@
             </button>
           </div>
         </div>
-      </AirCard>
+      </Card>
     </section>
     </template>
 
@@ -415,7 +413,7 @@
     <!-- Smoke-test result modal -->
     <BaseModal v-model="smokeOpen" title="Smoke test" subtitle="Single-provider sanity run" wide>
       <SmokeTestResult v-if="smokeResult" :result="smokeResult" @try-provider="(p) => runSmoke(activeSmokePromptId, p)" />
-      <div v-else class="text-sm" style="color: var(--text-muted)">Running…</div>
+      <div v-else class="text-sm" style="color: var(--muted-foreground)">Running…</div>
     </BaseModal>
 
   </div>
@@ -429,10 +427,10 @@ import { storeToRefs } from 'pinia'
 import { useToast } from '@/composables/useToast'
 import { useAppStore } from '@/stores/app'
 import promptLibrary from '@/api/promptLibrary'
-import AirCard from '@/components/ui/AirCard.vue'
-import AirCardSubtitle from '@/components/ui/AirCardSubtitle.vue'
-import AirChip from '@/components/ui/AirChip.vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import PromptCard from '@/components/prompt_library/PromptCard.vue'
 import ContextInputCard from '@/components/prompt_library/ContextInputCard.vue'
@@ -1114,7 +1112,7 @@ const Sparkline = {
   setup(props) {
     return () => {
       const v = props.values
-      if (!v.length) return h('span', { style: 'color: var(--text-muted); font-size: 11px' }, 'No trend data yet')
+      if (!v.length) return h('span', { style: 'color: var(--muted-foreground); font-size: 11px' }, 'No trend data yet')
       const w = 720, ht = 56
       const max = Math.max(...v), min = Math.min(...v)
       const range = Math.max(1, max - min)
@@ -1124,7 +1122,7 @@ const Sparkline = {
         return `${x.toFixed(1)},${y.toFixed(1)}`
       }).join(' ')
       return h('svg', { width: '100%', height: ht, viewBox: `0 0 ${w} ${ht}`, preserveAspectRatio: 'none', style: 'display:block' },
-        [h('polyline', { points: pts, fill: 'none', stroke: 'var(--brand-accent)', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })])
+        [h('polyline', { points: pts, fill: 'none', stroke: 'var(--primary)', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })])
     }
   },
 }
@@ -1153,7 +1151,7 @@ watch(websiteId, loadVariables)
   max-width: none;
   padding: 20px 24px 40px;
   margin: 0;
-  background: var(--bg-root, var(--bg-page, #fafafa));
+  background: var(--background);
   min-height: 100%;
   overflow-x: hidden;
 }
@@ -1188,7 +1186,7 @@ watch(websiteId, loadVariables)
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-bottom: 14px;
   font-weight: 600;
 }
@@ -1225,13 +1223,13 @@ watch(websiteId, loadVariables)
   line-height: 1.08;
   font-weight: 600;
   letter-spacing: -0.025em;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0;
 }
 .pl-hero-sub {
   font-size: 15px;
   line-height: 1.55;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin: 0;
   max-width: 560px;
 }
@@ -1256,7 +1254,7 @@ watch(websiteId, loadVariables)
   display: inline-flex;
   align-items: center;
   padding: 5px;
-  background: var(--bg-surface, rgba(15, 23, 42, 0.06));
+  background: var(--muted);
   border-radius: 9999px;
   margin-bottom: 28px;
   isolation: isolate;
@@ -1267,7 +1265,7 @@ watch(websiteId, loadVariables)
   bottom: 5px;
   left: 5px;
   width: calc(50% - 5px);
-  background: var(--bg-card, #ffffff);
+  background: var(--card);
   border-radius: 9999px;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.06),
@@ -1307,7 +1305,7 @@ watch(websiteId, loadVariables)
   padding: 9px 22px;
   border: 0;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 500;
   font-family: inherit;
@@ -1324,10 +1322,10 @@ watch(websiteId, loadVariables)
   opacity: 0.6;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.pl-tab:hover { color: var(--text-primary); }
+.pl-tab:hover { color: var(--foreground); }
 .pl-tab:hover .pl-tab-icon { opacity: 0.85; }
 .pl-tab.is-active {
-  color: var(--text-primary);
+  color: var(--foreground);
   font-weight: 600;
 }
 .pl-tab.is-active .pl-tab-icon { opacity: 1; transform: scale(1.05); }
@@ -1339,8 +1337,8 @@ watch(websiteId, loadVariables)
   height: 22px;
   padding: 0 6px;
   border-radius: 9999px;
-  background: var(--brand-accent);
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -1358,26 +1356,26 @@ watch(websiteId, loadVariables)
   align-items: center;
   gap: 7px;
   padding: 6px 12px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.pl-chip svg { color: var(--text-muted); }
+.pl-chip svg { color: var(--muted-foreground); }
 .pl-chip-back {
   appearance: none;
   background: transparent;
   border: none;
   font: inherit;
   font-size: 12.5px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 4px 8px;
 }
-.pl-chip-back:hover { color: var(--text-primary); }
+.pl-chip-back:hover { color: var(--foreground); }
 
 .pl-search-helper {
   margin: 0 auto 20px;
@@ -1385,7 +1383,7 @@ watch(websiteId, loadVariables)
   text-align: center;
   font-size: 0.88rem;
   line-height: 1.55;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .pl-section { margin-bottom: 32px; }
@@ -1400,10 +1398,10 @@ watch(websiteId, loadVariables)
 .pl-section-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0;
 }
-.pl-section-sub-inline { color: var(--text-muted); font-weight: 400; }
+.pl-section-sub-inline { color: var(--muted-foreground); font-weight: 400; }
 
 /* ── Stat tiles ───────────────────────────────────────────── */
 .pl-stat-strip {
@@ -1413,8 +1411,8 @@ watch(websiteId, loadVariables)
   gap: 22px;
   padding: 10px 14px;
   margin-bottom: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 12px;
 }
@@ -1425,24 +1423,24 @@ watch(websiteId, loadVariables)
 }
 .pl-stat-cell + .pl-stat-cell {
   padding-left: 22px;
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border);
 }
 .pl-stat-strip .pl-stat-label {
   font-size: 11.5px;
   font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 .pl-stat-strip .pl-stat-val {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
 }
 .pl-stat-strip .pl-stat-hint {
   font-size: 10.5px;
-  color: var(--text-muted, #94a3b8);
+  color: var(--muted-foreground);
 }
 @media (max-width: 600px) {
   .pl-stat-cell + .pl-stat-cell { padding-left: 0; border-left: 0; }
@@ -1453,7 +1451,7 @@ watch(websiteId, loadVariables)
   font-size: 34px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0;
 }
 .pl-hero-sub {
@@ -1461,7 +1459,7 @@ watch(websiteId, loadVariables)
   max-width: 36rem;
   font-size: 15px;
   line-height: 1.55;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Section head — title left, dropdowns + Search-again right */
@@ -1480,18 +1478,18 @@ watch(websiteId, loadVariables)
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .pl-select {
   appearance: none;
   -webkit-appearance: none;
-  background-color: var(--bg-card);
+  background-color: var(--card);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 9999px;
-  color: var(--text-primary);
+  color: var(--foreground);
   padding: 6px 30px 6px 12px;
   font-size: 13px;
   font-family: inherit;
@@ -1500,20 +1498,20 @@ watch(websiteId, loadVariables)
 }
 .pl-select:focus-visible {
   outline: none;
-  border-color: var(--brand-accent);
-  box-shadow: 0 0 0 3px var(--brand-accent-glow);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent);
 }
 
 /* Sources panel inside the expanded detail */
 .pl-detail-sources {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   padding-top: 16px;
   margin-top: 4px;
   margin-bottom: 16px;
 }
 .pl-sources-state {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 8px 0;
 }
 .pl-sources-list {
@@ -1525,12 +1523,12 @@ watch(websiteId, loadVariables)
   gap: 10px;
 }
 .pl-source-row {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.pl-source-row:hover { border-color: var(--text-muted); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06); }
+.pl-source-row:hover { border-color: var(--muted-foreground); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06); }
 .pl-source-link {
   display: block;
   padding: 12px 14px;
@@ -1546,19 +1544,19 @@ watch(websiteId, loadVariables)
 .pl-source-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--foreground);
   line-height: 1.35;
 }
 .pl-source-host {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
 }
 .pl-source-snippet {
   margin-top: 6px;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1573,18 +1571,18 @@ watch(websiteId, loadVariables)
   gap: 16px;
 }
 .pl-asker-group {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  background: var(--bg-card);
+  background: var(--card);
 }
 .pl-asker-group-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.025));
-  border-bottom: 1px solid var(--border-color);
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
 }
 .pl-asker-group-title {
   display: inline-flex;
@@ -1592,13 +1590,13 @@ watch(websiteId, loadVariables)
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-asker-source-dot {
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background: var(--text-muted);
+  background: var(--muted-foreground);
   flex-shrink: 0;
 }
 .pl-asker-source-dot.is-reddit { background: #ff4500; }
@@ -1615,14 +1613,14 @@ watch(websiteId, loadVariables)
 .pl-asker-source-dot.is-other { background: #94a3b8; }
 .pl-asker-group-count {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .pl-asker-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.pl-asker-row + .pl-asker-row { border-top: 1px solid var(--border-color); }
+.pl-asker-row + .pl-asker-row { border-top: 1px solid var(--border); }
 .pl-asker-link {
   display: flex;
   align-items: flex-start;
@@ -1632,14 +1630,14 @@ watch(websiteId, loadVariables)
   color: inherit;
   transition: background 0.12s;
 }
-.pl-asker-link:hover { background: var(--bg-surface, rgba(0, 0, 0, 0.025)); }
+.pl-asker-link:hover { background: var(--muted); }
 .pl-asker-avatar {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
   border-radius: 9999px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.06));
-  color: var(--text-primary);
+  background: var(--muted);
+  color: var(--foreground);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1656,28 +1654,28 @@ watch(websiteId, loadVariables)
 .pl-asker-handle {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-asker-community {
   font-size: 12px;
-  color: var(--text-muted);
-  background: var(--bg-surface, rgba(0, 0, 0, 0.04));
+  color: var(--muted-foreground);
+  background: var(--muted);
   padding: 1px 8px;
   border-radius: 9999px;
 }
 .pl-asker-when {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .pl-asker-question {
   font-size: 13.5px;
-  color: var(--text-primary);
+  color: var(--foreground);
   line-height: 1.4;
   margin-top: 2px;
 }
 .pl-asker-snippet {
   font-size: 12.5px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   line-height: 1.45;
   margin-top: 4px;
   display: -webkit-box;
@@ -1687,7 +1685,7 @@ watch(websiteId, loadVariables)
 }
 .pl-asker-go {
   flex-shrink: 0;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-size: 14px;
   align-self: center;
   opacity: 0;
@@ -1697,20 +1695,20 @@ watch(websiteId, loadVariables)
 
 .pl-control {
   border-radius: 9999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-primary);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
   padding: 0.5rem 0.875rem;
   font-size: 0.8125rem;
   outline: none;
 }
-.pl-control:focus-visible { border-color: var(--brand-accent); box-shadow: 0 0 0 3px var(--brand-accent-glow); }
-.pl-eyebrow { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+.pl-control:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent); }
+.pl-eyebrow { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin-bottom: 4px; }
 .pl-filter-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   flex-shrink: 0;
   width: 60px;
   padding-top: 6px;
@@ -1721,17 +1719,17 @@ watch(websiteId, loadVariables)
 
 :deep(.pl-mark) {
   background: linear-gradient(180deg, transparent 25%, #fff3a8 25%, #fff3a8 95%, transparent 95%);
-  color: var(--text-primary);
+  color: var(--foreground);
   padding: 0 2px;
   border-radius: 2px;
   font-weight: 500;
 }
-.pl-divider { display: inline-block; width: 1px; height: 16px; background: var(--border-color); margin: 0 6px; }
-.pl-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.pl-stat-val { font-size: 22px; font-weight: 600; color: var(--text-primary); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.pl-divider { display: inline-block; width: 1px; height: 16px; background: var(--border); margin: 0 6px; }
+.pl-stat-label { font-size: 11px; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.06em; }
+.pl-stat-val { font-size: 22px; font-weight: 600; color: var(--foreground); margin-top: 4px; font-variant-numeric: tabular-nums; }
 .pl-skeleton-row {
   height: 12px; border-radius: 6px;
-  background: var(--border-color); opacity: 0.5;
+  background: var(--border); opacity: 0.5;
   animation: pl-pulse 1.4s ease-in-out infinite;
 }
 @keyframes pl-pulse { 0%, 100% { opacity: 0.4 } 50% { opacity: 0.7 } }
@@ -1743,8 +1741,8 @@ watch(websiteId, loadVariables)
 .pl-stagger-leave-to { opacity: 0; }
 
 .pl-row { transition: background 0.12s ease-out; cursor: pointer; }
-.pl-row:hover { background: var(--bg-surface, rgba(0, 0, 0, 0.02)); }
-.pl-row.is-expanded { background: var(--bg-surface, rgba(0, 0, 0, 0.02)); }
+.pl-row:hover { background: var(--muted); }
+.pl-row.is-expanded { background: var(--muted); }
 
 .pl-table-wrap {
   /* Only show the horizontal scrollbar if the table actually overflows on
@@ -1757,27 +1755,27 @@ watch(websiteId, loadVariables)
   border-spacing: 0;
   text-align: left;
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-th {
   padding: 14px 16px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   letter-spacing: 0;
   text-transform: none;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-surface, rgba(0, 0, 0, 0.02));
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
 }
 .pl-th.sortable { cursor: pointer; user-select: none; }
-.pl-th.sortable:hover { color: var(--text-primary); }
+.pl-th.sortable:hover { color: var(--foreground); }
 .pl-th-inner { display: inline-flex; align-items: center; gap: 6px; }
 .pl-th-inner.justify-end { justify-content: flex-end; }
 
 .pl-td {
   padding: 16px;
   vertical-align: middle;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
 }
 .pl-td-prompt { max-width: 56rem; }
 .pl-prompt-text {
@@ -1794,29 +1792,12 @@ watch(websiteId, loadVariables)
   justify-content: center;
   padding: 4px 14px;
   border-radius: 9999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
+  border: 1px solid var(--border);
+  background: var(--card);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   letter-spacing: 0.02em;
-}
-
-.pl-status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.pl-status-pill.is-pending {
-  background: rgba(180, 83, 9, 0.10);
-  color: var(--color-warning, #b45309);
-}
-.pl-status-pill.is-signed {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--color-success, #059669);
 }
 
 .pl-action-row {
@@ -1833,15 +1814,15 @@ watch(websiteId, loadVariables)
   justify-content: center;
   border-radius: 9999px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.pl-expand-toggle:hover { background: var(--bg-surface); color: var(--text-primary); }
+.pl-expand-toggle:hover { background: var(--muted); color: var(--foreground); }
 
 /* ── Animated detail expansion ─────────────────────────────── */
-.pl-detail-row { background: var(--bg-surface, rgba(0, 0, 0, 0.025)); }
+.pl-detail-row { background: var(--muted); }
 .pl-detail-cell { padding: 0; border: 0; }
 .pl-detail-inner {
   max-height: 0;
@@ -1859,7 +1840,7 @@ watch(websiteId, loadVariables)
   max-height: 1400px;
   opacity: 1;
   padding: 24px 28px 28px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
 }
 .pl-detail-grid {
   display: grid;
@@ -1873,7 +1854,7 @@ watch(websiteId, loadVariables)
   gap: 6px;
   padding-top: 16px;
   margin-bottom: 4px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
 }
 .pl-detail-block { display: flex; flex-direction: column; gap: 4px; }
 .pl-detail-label {
@@ -1881,28 +1862,28 @@ watch(websiteId, loadVariables)
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .pl-detail-value {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-detail-prompt {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   padding-top: 16px;
   margin-bottom: 16px;
 }
 .pl-detail-fulltext {
   font-size: 14px;
   line-height: 1.65;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0;
 }
 .pl-detail-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   padding-top: 16px;
   justify-content: flex-end;
 }
@@ -1912,11 +1893,11 @@ watch(websiteId, loadVariables)
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
-.pl-table-foot-info strong { color: var(--text-primary); font-weight: 500; }
+.pl-table-foot-info strong { color: var(--foreground); font-weight: 500; }
 .pl-pagination { display: flex; gap: 6px; }
 .pl-page-btn {
   width: 32px;
@@ -1925,16 +1906,16 @@ watch(websiteId, loadVariables)
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 9999px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.15s;
 }
 .pl-page-btn:hover:not(:disabled) {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border-color: var(--text-primary);
+  background: var(--muted);
+  color: var(--foreground);
+  border-color: var(--foreground);
 }
 .pl-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -1947,12 +1928,12 @@ watch(websiteId, loadVariables)
   height: 18px;
   margin-left: 4px;
   border-radius: 9999px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   cursor: help;
   position: relative;
   transition: color 0.15s, background 0.15s;
 }
-.pl-info-icon:hover, .pl-info-icon:focus { color: var(--text-primary); background: var(--bg-card); outline: none; }
+.pl-info-icon:hover, .pl-info-icon:focus { color: var(--foreground); background: var(--card); outline: none; }
 .pl-tooltip {
   position: absolute;
   top: 100%;
@@ -1960,9 +1941,9 @@ watch(websiteId, loadVariables)
   transform: translate(-50%, 8px);
   width: 320px;
   padding: 14px 16px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
   font-size: 12px;
@@ -1984,12 +1965,12 @@ watch(websiteId, loadVariables)
   transform: translate(-50%, 6px);
   pointer-events: auto;
 }
-.pl-tooltip strong { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
-.pl-tooltip p { margin: 0 0 8px; color: var(--text-secondary); }
-.pl-tooltip ul { margin: 0 0 8px; padding-left: 18px; color: var(--text-secondary); }
+.pl-tooltip strong { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--foreground); }
+.pl-tooltip p { margin: 0 0 8px; color: var(--muted-foreground); }
+.pl-tooltip ul { margin: 0 0 8px; padding-left: 18px; color: var(--muted-foreground); }
 .pl-tooltip ul li { margin: 0 0 4px; }
-.pl-tooltip ul b { color: var(--text-primary); font-weight: 500; }
-.pl-tooltip-foot { margin: 6px 0 0; padding-top: 8px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 11px; }
+.pl-tooltip ul b { color: var(--foreground); font-weight: 500; }
+.pl-tooltip-foot { margin: 6px 0 0; padding-top: 8px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 11px; }
 
 /* ── Empty state inside the results table ───────────────────── */
 /* ── Skeleton loading rows ──────────────────────────────────── */
@@ -2004,10 +1985,10 @@ watch(websiteId, loadVariables)
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   margin-bottom: 14px;
   padding: 8px 14px;
-  background: var(--bg-surface, rgba(15, 23, 42, 0.04));
+  background: var(--muted);
   border-radius: 9999px;
   align-self: flex-start;
 }
@@ -2015,8 +1996,8 @@ watch(websiteId, loadVariables)
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background: var(--brand-accent);
-  box-shadow: 0 0 0 0 var(--brand-accent-glow, rgba(91, 141, 239, 0.5));
+  background: var(--primary);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 50%, transparent);
   animation: pl-skel-pulse 1.4s ease-out infinite;
 }
 @keyframes pl-skel-pulse {
@@ -2028,8 +2009,8 @@ watch(websiteId, loadVariables)
   align-items: center;
   gap: 24px;
   padding: 22px 20px;
-  background: var(--bg-elevated, rgba(15, 23, 42, 0.02));
-  border: 1px solid var(--border-color);
+  background: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 12px;
   opacity: 0;
   animation: pl-skel-fade 0.4s ease-out forwards;
@@ -2066,13 +2047,13 @@ watch(websiteId, loadVariables)
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 500;
-  background: var(--bg-surface, rgba(15, 23, 42, 0.04));
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
 }
 .pl-source-dot {
   width: 7px; height: 7px; border-radius: 9999px;
-  background: var(--text-muted);
+  background: var(--muted-foreground);
   flex-shrink: 0;
 }
 .pl-source-chip.is-reddit           { background: rgba(255, 69, 0, 0.10);  color: #c4400a; }
@@ -2113,18 +2094,18 @@ watch(websiteId, loadVariables)
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.04));
-  color: var(--text-muted);
+  background: var(--muted);
+  color: var(--muted-foreground);
   margin-bottom: 6px;
 }
 .pl-empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .pl-empty-sub {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   max-width: 32rem;
   line-height: 1.55;
 }
@@ -2134,10 +2115,10 @@ watch(websiteId, loadVariables)
   align-items: center;
   padding: 2px 10px;
   border-radius: 9999px;
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--border);
   font-size: 11px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   background: transparent;
 }
 
@@ -2146,7 +2127,7 @@ watch(websiteId, loadVariables)
   width: 70px;
   height: 6px;
   border-radius: 9999px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.06));
+  background: var(--muted);
   overflow: hidden;
 }
 .pl-trend-fill {
@@ -2154,17 +2135,17 @@ watch(websiteId, loadVariables)
   border-radius: 9999px;
   transition: width 0.3s ease-out;
 }
-.pl-trend-fill.is-hot { background: var(--color-success, #10b981); }
-.pl-trend-fill.is-warm { background: var(--brand-accent); }
-.pl-trend-fill.is-cool { background: var(--text-muted); }
+.pl-trend-fill.is-hot { background: var(--chart-2); }
+.pl-trend-fill.is-warm { background: var(--primary); }
+.pl-trend-fill.is-cool { background: var(--muted-foreground); }
 
 :deep(.pl-var-chip) {
   display: inline-block;
   padding: 1px 8px;
   margin: 0 2px;
   border-radius: 9999px;
-  background: var(--bg-surface, rgba(0, 0, 0, 0.04));
-  color: var(--brand-accent);
+  background: var(--muted);
+  color: var(--primary);
   font-size: 0.8em;
   font-weight: 500;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

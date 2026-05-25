@@ -1,76 +1,83 @@
 <template>
-  <div class="frq">
-    <div v-if="pendingFacts.length" class="frq-bar">
-      <label class="frq-check">
+  <div class="flex flex-col gap-3">
+    <div
+      v-if="pendingFacts.length"
+      class="flex items-center justify-between gap-2.5 rounded-xl border border-border bg-card px-3.5 py-2.5"
+    >
+      <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
         <input
           type="checkbox"
+          class="h-4 w-4 rounded border-input accent-primary"
           :checked="allSelected"
           :indeterminate.prop="someSelected"
           @change="toggleAll"
         />
         <span>{{ allSelected ? 'Deselect all' : 'Select all' }}</span>
       </label>
-      <div class="frq-bar-actions">
-        <span v-if="selectedIds.size" class="frq-selected">
+      <div class="flex items-center gap-2">
+        <span v-if="selectedIds.size" class="text-xs text-muted-foreground">
           {{ selectedIds.size }} selected
         </span>
-        <AirButton
+        <Button
           variant="outline"
           size="sm"
           :disabled="!selectedIds.size"
           @click="$emit('bulk-reject', Array.from(selectedIds))"
         >
           Reject {{ selectedIds.size || '' }}
-        </AirButton>
-        <AirButton
-          variant="primary"
+        </Button>
+        <Button
           size="sm"
           :disabled="!selectedIds.size"
           @click="bulkApprove"
         >
           Approve {{ selectedIds.size || '' }}
-        </AirButton>
+        </Button>
       </div>
     </div>
 
-    <div v-if="loading" class="frq-skeleton">
-      <div v-for="i in 4" :key="i" class="frq-skel" />
+    <div v-if="loading" class="flex flex-col gap-2">
+      <div v-for="i in 4" :key="i" class="h-[84px] animate-pulse rounded-xl border border-border bg-card" />
     </div>
 
-    <div v-else-if="!pendingFacts.length" class="frq-empty">
-      <div class="frq-empty-icon" aria-hidden="true">
+    <div
+      v-else-if="!pendingFacts.length"
+      class="rounded-2xl border border-dashed border-border px-5 py-[60px] text-center text-muted-foreground"
+    >
+      <div class="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-chart-2/10 text-chart-2" aria-hidden="true">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 12l2 2 4-4"/>
           <circle cx="12" cy="12" r="10"/>
         </svg>
       </div>
-      <h3>Nothing to review</h3>
-      <p>No pending facts. Run a re-scan or import facts to build up the vault.</p>
+      <h3 class="mb-1 text-[1.05rem] text-foreground">Nothing to review</h3>
+      <p class="text-sm">No pending facts. Run a re-scan or import facts to build up the vault.</p>
     </div>
 
-    <div v-else class="frq-list">
+    <div v-else class="flex flex-col gap-2">
       <div
         v-for="fact in pendingFacts"
         :key="fact.id"
-        class="frq-row"
-        :class="{ 'is-selected': selectedIds.has(fact.id) }"
+        class="grid grid-cols-[22px_1fr_auto] items-start gap-3.5 rounded-xl border bg-card px-4 py-3.5 transition-colors hover:border-muted-foreground"
+        :class="selectedIds.has(fact.id) ? 'border-chart-1 bg-chart-1/5' : 'border-border'"
       >
-        <label class="frq-row-check">
+        <label class="inline-flex items-center pt-0.5">
           <input
             type="checkbox"
+            class="h-4 w-4 rounded border-input accent-primary"
             :checked="selectedIds.has(fact.id)"
             @change="toggle(fact.id)"
           />
         </label>
-        <div class="frq-row-body">
-          <div class="frq-fact-text">
-            <strong>{{ fact.subject }}</strong>
-            <span class="frq-pred">{{ fact.predicate }}</span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap gap-1.5 text-[0.92rem] leading-relaxed text-foreground">
+            <strong class="font-semibold">{{ fact.subject }}</strong>
+            <span class="text-muted-foreground">{{ fact.predicate }}</span>
             <span>{{ fact.object }}</span>
           </div>
-          <div class="frq-row-meta">
-            <span class="frq-conf">
-              <span class="frq-conf-dot" :class="confidenceClass(fact.confidence)"></span>
+          <div class="mt-1.5 flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-[7px] w-[7px] rounded-full" :class="confidenceClass(fact.confidence)"></span>
               {{ confidencePct(fact.confidence) }}% confidence
             </span>
             <a
@@ -78,16 +85,16 @@
               :href="fact.source_url"
               target="_blank"
               rel="noopener"
-              class="frq-source"
+              class="text-chart-1 hover:underline"
             >Source ↗</a>
-            <span v-if="fact.product_line" class="frq-tag">{{ fact.product_line }}</span>
-            <span v-if="fact.topic" class="frq-tag">{{ fact.topic }}</span>
+            <span v-if="fact.product_line" class="rounded-full bg-muted px-2 py-px text-[0.7rem] uppercase tracking-[0.04em] text-muted-foreground">{{ fact.product_line }}</span>
+            <span v-if="fact.topic" class="rounded-full bg-muted px-2 py-px text-[0.7rem] uppercase tracking-[0.04em] text-muted-foreground">{{ fact.topic }}</span>
           </div>
         </div>
-        <div class="frq-row-actions">
-          <AirButton variant="outline" size="xs" @click="$emit('edit-click', fact)">Edit</AirButton>
-          <AirButton variant="ghost" size="xs" @click="$emit('reject', fact)">Reject</AirButton>
-          <AirButton variant="primary" size="xs" @click="$emit('approve', fact)">Approve</AirButton>
+        <div class="flex flex-shrink-0 items-center gap-1.5">
+          <Button variant="outline" size="sm" @click="$emit('edit-click', fact)">Edit</Button>
+          <Button variant="ghost" size="sm" @click="$emit('reject', fact)">Reject</Button>
+          <Button size="sm" @click="$emit('approve', fact)">Approve</Button>
         </div>
       </div>
     </div>
@@ -96,7 +103,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps({
   pendingFacts: { type: Array, required: true },
@@ -150,119 +157,8 @@ function confidencePct(c) {
 }
 function confidenceClass(c) {
   const p = confidencePct(c)
-  if (p >= 75) return 'is-high'
-  if (p >= 50) return 'is-mid'
-  return 'is-low'
+  if (p >= 75) return 'bg-chart-2'
+  if (p >= 50) return 'bg-chart-3'
+  return 'bg-destructive'
 }
 </script>
-
-<style scoped>
-.frq { display: flex; flex-direction: column; gap: 12px; }
-
-.frq-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 10px;
-}
-.frq-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
-.frq-bar-actions { display: flex; gap: 8px; align-items: center; }
-.frq-selected { font-size: 0.78rem; color: var(--text-muted); }
-
-.frq-list { display: flex; flex-direction: column; gap: 8px; }
-.frq-row {
-  display: grid;
-  grid-template-columns: 22px 1fr auto;
-  gap: 14px;
-  align-items: start;
-  padding: 14px 16px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-  transition: border-color 0.15s ease;
-}
-.frq-row:hover { border-color: var(--border-hover, #d4d4d8); }
-.frq-row.is-selected { border-color: var(--brand-accent, #ff6b35); background: rgba(255, 107, 53, 0.04); }
-.frq-row-check { display: inline-flex; align-items: center; padding-top: 2px; }
-.frq-row-body { min-width: 0; }
-.frq-fact-text {
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: var(--text-primary);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.frq-fact-text strong { font-weight: 600; }
-.frq-pred { color: var(--text-secondary); }
-.frq-row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 6px;
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  align-items: center;
-}
-.frq-conf { display: inline-flex; align-items: center; gap: 6px; }
-.frq-conf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
-.frq-conf-dot.is-high { background: #10b981; }
-.frq-conf-dot.is-mid { background: #f59e0b; }
-.frq-conf-dot.is-low { background: #ef4444; }
-.frq-source { color: var(--brand-accent, #ff6b35); text-decoration: none; }
-.frq-source:hover { text-decoration: underline; }
-.frq-tag {
-  background: var(--bg-subtle, #fafafa);
-  color: var(--text-secondary);
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.frq-row-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-
-.frq-skeleton { display: flex; flex-direction: column; gap: 8px; }
-.frq-skel {
-  height: 84px;
-  border-radius: 12px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.frq-empty {
-  text-align: center;
-  padding: 60px 20px;
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  color: var(--text-secondary);
-}
-.frq-empty-icon {
-  display: inline-flex;
-  width: 56px; height: 56px;
-  align-items: center; justify-content: center;
-  border-radius: 14px;
-  background: rgba(16, 185, 129, 0.10);
-  color: #047857;
-  margin-bottom: 12px;
-}
-.frq-empty h3 { margin: 0 0 4px; font-size: 1.05rem; color: var(--text-primary); }
-.frq-empty p { margin: 0; font-size: 0.88rem; }
-
-[data-theme="dark"] .frq-bar,
-[data-theme="dark"] .frq-row,
-[data-theme="dark"] .frq-skel {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-[data-theme="dark"] .frq-tag { background: var(--bg-card-hover); color: var(--text-secondary); }
-</style>

@@ -87,43 +87,43 @@
           </h3>
         </div>
         <div class="pd-table-wrap">
-          <table class="pd-table">
-            <thead>
-              <tr>
-                <th class="num">#</th>
-                <th>Brand</th>
-                <th class="num">Visibility</th>
-                <th class="num">SOV</th>
-                <th class="num">Sentiment</th>
-                <th class="num">Position</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(b, i) in topBrands" :key="b.name" :class="{ 'is-self': b.is_self }">
-                <td class="num">{{ i + 1 }}</td>
-                <td>
+          <Table class="pd-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="num">#</TableHead>
+                <TableHead>Brand</TableHead>
+                <TableHead class="num">Visibility</TableHead>
+                <TableHead class="num">SOV</TableHead>
+                <TableHead class="num">Sentiment</TableHead>
+                <TableHead class="num">Position</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="(b, i) in topBrands" :key="b.name" :class="{ 'is-self': b.is_self }">
+                <TableCell class="num">{{ i + 1 }}</TableCell>
+                <TableCell>
                   <span class="pd-brand-name">{{ b.name }}</span>
                   <span v-if="b.is_self" class="pd-self-pill">you</span>
-                </td>
-                <td class="num">{{ b.visibility_pct }}%</td>
-                <td class="num">{{ b.sov_pct }}%</td>
-                <td class="num">
+                </TableCell>
+                <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
+                <TableCell class="num">{{ b.sov_pct }}%</TableCell>
+                <TableCell class="num">
                   <span v-if="b.sentiment_score != null" class="pd-sent">
                     <span class="pd-sent-dot" :class="sentimentClass(b.sentiment_score)"></span>
                     {{ b.sentiment_score }}
                   </span>
                   <span v-else class="text-muted">—</span>
-                </td>
-                <td class="num">
+                </TableCell>
+                <TableCell class="num">
                   <span v-if="b.avg_position != null">#{{ b.avg_position }}</span>
                   <span v-else class="text-muted">—</span>
-                </td>
-              </tr>
-              <tr v-if="!topBrands.length">
-                <td colspan="6" class="pd-table-empty">No brand mentions yet.</td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="!topBrands.length">
+                <TableCell colspan="6" class="pd-table-empty">No brand mentions yet.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -146,36 +146,36 @@
           </h3>
         </div>
         <div class="pd-table-wrap">
-          <table class="pd-table">
-            <thead>
-              <tr>
-                <th class="num">#</th>
-                <th>Domain</th>
-                <th class="num">Retrieved</th>
-                <th class="num">Citation rate</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(d, i) in topDomains" :key="d.apex_domain">
-                <td class="num">{{ i + 1 }}</td>
-                <td>
+          <Table class="pd-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="num">#</TableHead>
+                <TableHead>Domain</TableHead>
+                <TableHead class="num">Retrieved</TableHead>
+                <TableHead class="num">Citation rate</TableHead>
+                <TableHead>Type</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="(d, i) in topDomains" :key="d.apex_domain">
+                <TableCell class="num">{{ i + 1 }}</TableCell>
+                <TableCell>
                   <img :src="faviconFor(d.apex_domain)" :alt="d.domain" class="pd-favicon" @error="onFaviconError($event, d)"/>
                   <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener">{{ d.apex_domain }}</a>
-                </td>
-                <td class="num">{{ d.retrieved_pct }}%</td>
-                <td class="num">{{ d.citation_rate.toFixed(1) }}</td>
-                <td>
+                </TableCell>
+                <TableCell class="num">{{ d.retrieved_pct }}%</TableCell>
+                <TableCell class="num">{{ d.citation_rate.toFixed(1) }}</TableCell>
+                <TableCell>
                   <span class="pd-type-pill" :class="`is-${(d.source_class || 'other').toLowerCase()}`">
                     {{ typeLabel(d.source_class) }}
                   </span>
-                </td>
-              </tr>
-              <tr v-if="!topDomains.length">
-                <td colspan="5" class="pd-table-empty">No citations yet.</td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="!topDomains.length">
+                <TableCell colspan="5" class="pd-table-empty">No citations yet.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -275,6 +275,8 @@ import {
   Workflow,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
+import { Card } from '@/components/ui/card'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
@@ -434,18 +436,18 @@ function onFaviconError(ev, d) {
 </script>
 
 <style scoped>
-.pd-page { padding: 32px 40px 56px; color: var(--text-primary); }
+.pd-page { padding: 32px 40px 56px; color: var(--foreground); }
 
 .pd-breadcrumb {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 6px 12px 6px 8px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-bottom: 24px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
@@ -453,13 +455,13 @@ function onFaviconError(ev, d) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   text-decoration: none;
   font-weight: 500;
 }
-.pd-bc-link:hover { color: var(--text-primary); }
-.pd-bc-sep { color: var(--border-color); }
-.pd-bc-current { color: var(--text-primary); font-weight: 500; }
+.pd-bc-link:hover { color: var(--foreground); }
+.pd-bc-sep { color: var(--border); }
+.pd-bc-current { color: var(--foreground); font-weight: 500; }
 
 .pd-header { margin-bottom: 28px; }
 .pd-header-eyebrow {
@@ -467,8 +469,8 @@ function onFaviconError(ev, d) {
   align-items: center;
   gap: 5px;
   padding: 3px 9px;
-  background: rgba(255, 107, 53, 0.10);
-  color: var(--brand-accent, #ff6b35);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--primary);
   border-radius: 999px;
   font-size: 10.5px;
   font-weight: 700;
@@ -481,7 +483,7 @@ function onFaviconError(ev, d) {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
-  color: var(--text-primary);
+  color: var(--foreground);
   line-height: 1.15;
   max-width: 56rem;
 }
@@ -491,14 +493,14 @@ function onFaviconError(ev, d) {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
   padding: 18px 22px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   margin-bottom: 28px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 @media (max-width: 900px) { .pd-meta-grid { grid-template-columns: repeat(2, 1fr); row-gap: 18px; padding: 16px; } }
-.pd-meta { padding: 0 18px; border-left: 1px solid var(--border-color, #e5e7eb); }
+.pd-meta { padding: 0 18px; border-left: 1px solid var(--border); }
 .pd-meta:first-child { border-left: none; padding-left: 0; }
 .pd-meta-label {
   display: inline-flex;
@@ -507,15 +509,15 @@ function onFaviconError(ev, d) {
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-bottom: 8px;
   font-weight: 600;
 }
-.pd-meta-label svg { color: var(--text-muted); }
-.pd-meta-val { font-size: 14px; color: var(--text-primary); font-weight: 500; line-height: 1.3; }
+.pd-meta-label svg { color: var(--muted-foreground); }
+.pd-meta-val { font-size: 14px; color: var(--foreground); font-weight: 500; line-height: 1.3; }
 .pd-meta-bars { display: inline-flex; gap: 3px; }
-.pd-bar { width: 5px; height: 14px; border-radius: 2px; background: var(--border-color, #e5e7eb); }
-.pd-bar.is-on { background: #10b981; }
+.pd-bar { width: 5px; height: 14px; border-radius: 2px; background: var(--border); }
+.pd-bar.is-on { background: var(--chart-2); }
 .pd-status {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 10px 3px 8px;
@@ -523,8 +525,8 @@ function onFaviconError(ev, d) {
   font-size: 12px; font-weight: 600;
 }
 .pd-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.pd-status.is-active { background: rgba(16,185,129,0.12); color: #047857; }
-.pd-status.is-inactive { background: var(--bg-subtle, #fafafa); color: var(--text-muted); }
+.pd-status.is-active { background: color-mix(in oklab, var(--chart-2) 14%, transparent); color: var(--chart-2); }
+.pd-status.is-inactive { background: var(--muted); color: var(--muted-foreground); }
 
 .pd-overview-head { margin-bottom: 14px; }
 .pd-section-title {
@@ -534,19 +536,19 @@ function onFaviconError(ev, d) {
   margin: 0 0 4px;
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   letter-spacing: -0.015em;
 }
-.pd-section-title svg { color: var(--text-muted); }
-.pd-section-sub { margin: 0; font-size: 0.86rem; color: var(--text-secondary); }
+.pd-section-title svg { color: var(--muted-foreground); }
+.pd-section-sub { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
 
 .pd-grid { display: grid; gap: 18px; }
 .pd-grid-2 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
 @media (max-width: 960px) { .pd-grid-2 { grid-template-columns: 1fr; } }
 
 .pd-card {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 20px 22px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -554,7 +556,7 @@ function onFaviconError(ev, d) {
 }
 .pd-card:hover {
   box-shadow: 0 4px 16px -8px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.04);
-  border-color: var(--border-hover, #d4d4d8);
+  border-color: var(--border);
 }
 .pd-card-head {
   display: flex;
@@ -570,13 +572,13 @@ function onFaviconError(ev, d) {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
-.pd-card-head h3 svg { color: var(--text-muted); }
+.pd-card-head h3 svg { color: var(--muted-foreground); }
 .pd-card-meta {
   font-size: 0.78rem;
-  color: var(--text-muted);
-  background: var(--bg-subtle, #fafafa);
+  color: var(--muted-foreground);
+  background: var(--muted);
   padding: 3px 10px;
   border-radius: 999px;
 }
@@ -590,10 +592,10 @@ function onFaviconError(ev, d) {
   gap: 8px;
   height: 100%;
   min-height: 200px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-size: 0.88rem;
 }
-.pd-empty-inline svg { color: var(--text-muted); opacity: 0.55; }
+.pd-empty-inline svg { color: var(--muted-foreground); opacity: 0.55; }
 .pd-empty-inline p { margin: 0; }
 
 .pd-table-wrap { overflow-x: auto; }
@@ -608,20 +610,20 @@ function onFaviconError(ev, d) {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border);
 }
 .pd-table th.num, .pd-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pd-table td {
   padding: 10px;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
 }
 .pd-table tbody tr:last-child td { border-bottom: none; }
-.pd-table tbody tr:hover { background: var(--bg-subtle, #fafafa); }
+.pd-table tbody tr:hover { background: var(--muted); }
 .pd-table tr.is-self td:nth-child(2) { font-weight: 600; }
-.pd-table-empty { text-align: center; color: var(--text-muted); padding: 18px; }
+.pd-table-empty { text-align: center; color: var(--muted-foreground); padding: 18px; }
 
 .pd-favicon {
   width: 20px;
@@ -629,10 +631,10 @@ function onFaviconError(ev, d) {
   border-radius: 5px;
   vertical-align: -5px;
   margin-right: 8px;
-  background: var(--bg-subtle, #fafafa);
+  background: var(--muted);
 }
-.pd-table a { color: var(--text-primary); text-decoration: none; border-bottom: 1px solid transparent; }
-.pd-table a:hover { border-bottom-color: var(--text-muted); }
+.pd-table a { color: var(--foreground); text-decoration: none; border-bottom: 1px solid transparent; }
+.pd-table a:hover { border-bottom-color: var(--muted-foreground); }
 
 .pd-brand-name { font-weight: 500; }
 .pd-self-pill {
@@ -644,16 +646,16 @@ function onFaviconError(ev, d) {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: 999px;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--primary);
   color: #fff;
 }
 
 .pd-sent { display: inline-flex; align-items: center; gap: 6px; }
-.pd-sent-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
-.pd-sent-dot.is-pos { background: #10b981; }
-.pd-sent-dot.is-neu { background: #6b7280; }
-.pd-sent-dot.is-neg { background: #ef4444; }
-.pd-sent-dot.is-mute { background: var(--border-color); }
+.pd-sent-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-foreground); }
+.pd-sent-dot.is-pos { background: var(--chart-2); }
+.pd-sent-dot.is-neu { background: var(--muted-foreground); }
+.pd-sent-dot.is-neg { background: var(--destructive); }
+.pd-sent-dot.is-mute { background: var(--border); }
 
 .pd-type-pill {
   display: inline-flex;
@@ -672,7 +674,7 @@ function onFaviconError(ev, d) {
 .pd-type-pill.is-institutional { background: rgba(6,182,212,0.14); color: #0e7490; }
 .pd-type-pill.is-your_site { background: rgba(255,107,53,0.14); color: #c2410c; }
 .pd-type-pill.is-competitor { background: rgba(239,68,68,0.14); color: #b91c1c; }
-.pd-type-pill.is-other { background: var(--bg-subtle, #fafafa); color: var(--text-muted); }
+.pd-type-pill.is-other { background: var(--muted); color: var(--muted-foreground); }
 
 .pd-types { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .pd-types li {
@@ -681,11 +683,11 @@ function onFaviconError(ev, d) {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border);
   font-size: 0.88rem;
 }
 .pd-types li:last-child { border-bottom: none; }
-.pd-type-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.pd-type-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted-foreground); }
 .pd-type-dot.is-corporate { background: #f59e0b; }
 .pd-type-dot.is-ugc { background: #6366f1; }
 .pd-type-dot.is-reference { background: #8b5cf6; }
@@ -694,10 +696,10 @@ function onFaviconError(ev, d) {
 .pd-type-dot.is-your_site { background: #ff6b35; }
 .pd-type-dot.is-competitor { background: #ef4444; }
 .pd-type-dot.is-other { background: #94a3b8; }
-.pd-type-name { color: var(--text-primary); }
-.pd-type-pct { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.pd-type-name { color: var(--foreground); }
+.pd-type-pct { font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
 
-.pd-loading { padding: 40px 0; text-align: center; color: var(--text-muted); }
+.pd-loading { padding: 40px 0; text-align: center; color: var(--muted-foreground); }
 
 /* Fanout queries card */
 .pd-fanout-card { padding-bottom: 8px; }
@@ -708,8 +710,8 @@ function onFaviconError(ev, d) {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--text-primary, #131718);
-  color: var(--text-inverse, #fff);
+  background: var(--foreground);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   font: inherit;
@@ -727,42 +729,42 @@ function onFaviconError(ev, d) {
   align-items: center;
   gap: 12px;
   padding: 12px 8px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border);
 }
 .pd-fanout-row:last-child { border-bottom: none; }
 .pd-fanout-dot {
   width: 8px; height: 8px; border-radius: 50%;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--primary);
   opacity: 0.85;
 }
-.pd-fanout-text { font-size: 0.92rem; line-height: 1.4; color: var(--text-primary); }
+.pd-fanout-text { font-size: 0.92rem; line-height: 1.4; color: var(--foreground); }
 .pd-fanout-prov {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 2px 8px;
-  background: var(--bg-subtle, #fafafa);
+  background: var(--muted);
   border-radius: 999px;
 }
 
 .pd-spinner {
   width: 22px; height: 22px;
   border-radius: 50%;
-  border: 2px solid var(--border-color, #e5e7eb);
-  border-top-color: var(--text-primary);
+  border: 2px solid var(--border);
+  border-top-color: var(--foreground);
   animation: pd-spin 0.9s linear infinite;
 }
 @keyframes pd-spin { to { transform: rotate(360deg); } }
-[data-theme="dark"] .pd-fanout-prov { background: var(--bg-card-hover); }
-.pd-error { padding: 20px; text-align: center; color: #b91c1c; }
-.text-muted { color: var(--text-muted); }
+[data-theme="dark"] .pd-fanout-prov { background: var(--accent); }
+.pd-error { padding: 20px; text-align: center; color: var(--destructive); }
+.text-muted { color: var(--muted-foreground); }
 
 [data-theme="dark"] .pd-card,
-[data-theme="dark"] .pd-meta-grid { background: var(--bg-card); border-color: var(--border-color); }
+[data-theme="dark"] .pd-meta-grid { background: var(--card); border-color: var(--border); }
 [data-theme="dark"] .pd-table th,
-[data-theme="dark"] .pd-table td { border-color: var(--border-color); color: var(--text-primary); }
-[data-theme="dark"] .pd-table th { color: var(--text-muted); }
-[data-theme="dark"] .pd-table tbody tr:hover { background: var(--bg-card-hover); }
-[data-theme="dark"] .pd-favicon { background: var(--bg-card-hover); }
+[data-theme="dark"] .pd-table td { border-color: var(--border); color: var(--foreground); }
+[data-theme="dark"] .pd-table th { color: var(--muted-foreground); }
+[data-theme="dark"] .pd-table tbody tr:hover { background: var(--accent); }
+[data-theme="dark"] .pd-favicon { background: var(--accent); }
 </style>

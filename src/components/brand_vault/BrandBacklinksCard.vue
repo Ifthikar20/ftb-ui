@@ -1,63 +1,76 @@
 <template>
-  <div class="bbl-card">
-    <div class="bbl-head">
-      <h3 class="bbl-title">Find every place your brand was mentioned.</h3>
-      <p class="bbl-sub">
+  <Card>
+    <CardHeader>
+      <CardTitle class="text-xl -tracking-[0.02em]">Find every place your brand was mentioned.</CardTitle>
+      <CardDescription class="leading-relaxed">
         We watch which third-party sources Claude, GPT-4, Gemini, and Perplexity
-        cite whenever they talk about <strong>{{ brandName || 'your brand' }}</strong>.
-      </p>
-    </div>
+        cite whenever they talk about <strong class="font-semibold text-foreground">{{ brandName || 'your brand' }}</strong>.
+      </CardDescription>
+    </CardHeader>
 
-    <div v-if="loading" class="bbl-list">
-      <div v-for="i in 3" :key="i" class="bbl-skel" />
-    </div>
+    <CardContent>
+      <div v-if="loading" class="flex flex-col rounded-xl border border-border p-1">
+        <div v-for="i in 3" :key="i" class="h-[52px] animate-pulse border-b border-border bg-muted last:border-b-0" />
+      </div>
 
-    <div v-else-if="!items.length" class="bbl-empty">
-      No third-party mentions detected yet. Run an audit on the LLM Dashboard
-      to surface where models cite your brand from.
-    </div>
-
-    <div v-else class="bbl-list">
       <div
-        v-for="row in visible"
-        :key="row.apex_domain"
-        class="bbl-row"
+        v-else-if="!items.length"
+        class="rounded-xl border border-dashed border-border px-4 py-7 text-center text-sm text-muted-foreground"
       >
-        <img
-          :src="faviconFor(row.apex_domain)"
-          :alt="row.domain"
-          class="bbl-favicon"
-          @error="onFaviconError($event, row)"
-        />
-        <div class="bbl-row-name">
-          <a :href="`https://${row.domain}`" target="_blank" rel="noopener">{{ row.domain }}</a>
-          <span v-if="row.recent" class="bbl-pill bbl-pill-new">JUST DETECTED</span>
-          <span v-else-if="row.is_competitor_source" class="bbl-pill bbl-pill-comp">COMPETITOR</span>
-        </div>
-        <div class="bbl-row-count">
-          {{ row.mention_count }}<span class="bbl-row-unit"> mention{{ row.mention_count === 1 ? '' : 's' }}</span>
-        </div>
+        No third-party mentions detected yet. Run an audit on the LLM Dashboard
+        to surface where models cite your brand from.
       </div>
 
-      <div class="bbl-footer">
-        <span>Total mentions across {{ items.length }} {{ items.length === 1 ? 'source' : 'sources' }}</span>
-        <strong>{{ totalMentions }}</strong>
-      </div>
+      <div v-else class="flex flex-col rounded-xl border border-border bg-card p-1">
+        <div
+          v-for="row in visible"
+          :key="row.apex_domain"
+          class="grid grid-cols-[32px_1fr_auto] items-center gap-3.5 border-b border-border px-4 py-3 last-of-type:border-b-0"
+        >
+          <img
+            :src="faviconFor(row.apex_domain)"
+            :alt="row.domain"
+            class="h-7 w-7 rounded-lg bg-muted object-cover"
+            @error="onFaviconError($event, row)"
+          />
+          <div class="inline-flex min-w-0 items-center gap-2.5 text-base text-foreground">
+            <a
+              :href="`https://${row.domain}`"
+              target="_blank"
+              rel="noopener"
+              class="font-medium text-foreground hover:underline"
+            >{{ row.domain }}</a>
+            <Badge v-if="row.recent" variant="warning">JUST DETECTED</Badge>
+            <Badge v-else-if="row.is_competitor_source" variant="secondary">COMPETITOR</Badge>
+          </div>
+          <div class="text-[0.95rem] tabular-nums text-muted-foreground">
+            {{ row.mention_count }}<span class="font-normal text-muted-foreground"> mention{{ row.mention_count === 1 ? '' : 's' }}</span>
+          </div>
+        </div>
 
-      <button
-        v-if="items.length > limit"
-        type="button"
-        class="bbl-toggle"
-        @click="expanded = !expanded"
-      >
-        {{ expanded ? 'Show top 5' : `Show all ${items.length} sources` }}
-      </button>
-    </div>
-  </div>
+        <div class="mt-1 flex items-baseline justify-between border-t border-border px-4 pb-2 pt-3 text-sm text-muted-foreground">
+          <span>Total mentions across {{ items.length }} {{ items.length === 1 ? 'source' : 'sources' }}</span>
+          <strong class="text-base tabular-nums text-foreground">{{ totalMentions }}</strong>
+        </div>
+
+        <Button
+          v-if="items.length > limit"
+          variant="link"
+          class="h-auto justify-start px-4 pb-2.5 pt-1.5 text-[0.82rem]"
+          @click="expanded = !expanded"
+        >
+          {{ expanded ? 'Show top 5' : `Show all ${items.length} sources` }}
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
   items: { type: Array, default: () => [] },
@@ -81,155 +94,3 @@ function onFaviconError(ev, row) {
   ev.target.src = svg
 }
 </script>
-
-<style scoped>
-.bbl-card {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 16px;
-  padding: 24px;
-}
-.bbl-head { margin-bottom: 18px; }
-.bbl-title {
-  margin: 0 0 6px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
-.bbl-sub {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-.bbl-sub strong { color: var(--text-primary); font-weight: 600; }
-
-.bbl-list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  background: var(--bg-card, #fff);
-  padding: 4px 4px;
-}
-.bbl-row {
-  display: grid;
-  grid-template-columns: 32px 1fr auto;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-}
-.bbl-row:last-of-type { border-bottom: none; }
-.bbl-favicon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  object-fit: cover;
-  background: var(--bg-subtle, #fafafa);
-}
-.bbl-row-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-.bbl-row-name a {
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 500;
-  border-bottom: 1px solid transparent;
-}
-.bbl-row-name a:hover { border-bottom-color: var(--text-muted); }
-.bbl-row-count {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.bbl-row-unit { color: var(--text-muted); font-weight: 400; }
-
-.bbl-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  border: 1px solid;
-}
-.bbl-pill-new {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.32);
-  color: #b45309;
-}
-.bbl-pill-comp {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.30);
-  color: #4338ca;
-}
-
-.bbl-footer {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 12px 16px 8px;
-  margin-top: 4px;
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  font-size: 0.88rem;
-  color: var(--text-muted);
-}
-.bbl-footer strong {
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.bbl-toggle {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--brand-accent, #ff6b35);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 6px 16px 10px;
-  cursor: pointer;
-  text-align: left;
-}
-.bbl-toggle:hover { text-decoration: underline; }
-
-.bbl-skel {
-  height: 52px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background:
-    linear-gradient(90deg, transparent 32%, rgba(255,255,255,0.4) 50%, transparent 68%),
-    var(--bg-subtle, #fafafa);
-  background-size: 200% 100%;
-  animation: bbl-shimmer 1.4s linear infinite;
-}
-.bbl-skel:last-of-type { border-bottom: none; }
-@keyframes bbl-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.bbl-empty {
-  padding: 28px 16px;
-  text-align: center;
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 12px;
-}
-
-[data-theme="dark"] .bbl-card,
-[data-theme="dark"] .bbl-list { background: var(--bg-card); border-color: var(--border-color); }
-[data-theme="dark"] .bbl-row { border-color: var(--border-color); }
-[data-theme="dark"] .bbl-footer { border-color: var(--border-color); }
-[data-theme="dark"] .bbl-favicon { background: var(--bg-card-hover); }
-</style>

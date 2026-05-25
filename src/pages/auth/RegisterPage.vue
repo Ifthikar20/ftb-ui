@@ -1,61 +1,63 @@
 <template>
   <AuthLayout title="Create your account" subtitle="Start your free 7-day trial — no credit card required.">
-    <form @submit.prevent="handleRegister" class="auth-form">
-      <div v-if="error" class="form-alert form-alert-danger">{{ error }}</div>
+    <form @submit.prevent="handleRegister" class="flex flex-col gap-[18px]">
+      <div v-if="error" class="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{{ error }}</div>
 
       <!-- ── Trial Banner ── -->
-      <div class="trial-banner">
-        <div class="trial-icon">🚀</div>
-        <div class="trial-text">
+      <div class="flex items-center gap-3.5 rounded-xl border border-[color:var(--chart-4)]/15 bg-[color:var(--chart-4)]/[0.07] px-[18px] py-3.5">
+        <div class="shrink-0 text-2xl">🚀</div>
+        <div class="text-sm font-semibold leading-relaxed text-foreground">
           <strong>7 days free</strong> — full access to all features.
-          <span class="trial-sub">No commitment. Cancel anytime.</span>
+          <span class="mt-px block text-xs font-normal text-muted-foreground">No commitment. Cancel anytime.</span>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Full Name</label>
-        <input v-model="fullName" class="form-input" placeholder="Jane Doe" required />
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
+        <input v-model="fullName" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Jane Doe" required />
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input v-model="email" type="email" class="form-input" placeholder="you@company.com" required />
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
+        <input v-model="email" type="email" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="you@company.com" required />
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div class="pw-field">
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Password</label>
+        <div class="relative flex">
           <input
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
-            class="form-input pw-input"
+            class="h-9 w-full rounded-lg border border-input bg-background pl-3 pr-11 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             placeholder="Min 12 characters"
             required
             autocomplete="new-password"
           />
-          <button
+          <Button
             type="button"
-            class="pw-toggle"
+            variant="ghost"
+            size="icon"
+            class="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground"
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
             :aria-pressed="showPassword"
             @click="showPassword = !showPassword"
           >
-            <svg v-if="showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+            <EyeOff v-if="showPassword" class="size-[18px]" />
+            <Eye v-else class="size-[18px]" />
+          </Button>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary w-full btn-lg" :disabled="loading">
+      <Button type="submit" size="lg" class="w-full" :disabled="loading">
         {{ loading ? 'Creating...' : 'Start Free Trial' }}
-      </button>
+      </Button>
 
-      <p class="auth-terms">
-        By signing up you agree to our <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.
+      <p class="-mt-1.5 text-center text-xs leading-relaxed text-muted-foreground">
+        By signing up you agree to our <a href="/terms" target="_blank" class="text-muted-foreground underline underline-offset-2">Terms</a> and <a href="/privacy" target="_blank" class="text-muted-foreground underline underline-offset-2">Privacy Policy</a>.
       </p>
 
-      <p class="auth-switch">
-        Already have an account? <router-link to="/login">Sign in</router-link>
+      <p class="text-center text-sm text-muted-foreground">
+        Already have an account? <router-link to="/login" class="font-semibold text-foreground">Sign in</router-link>
       </p>
     </form>
   </AuthLayout>
@@ -66,6 +68,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import { Button } from '@/components/ui/button'
+import { Eye, EyeOff } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -95,79 +99,3 @@ async function handleRegister() {
   }
 }
 </script>
-
-<style scoped>
-.auth-form { display: flex; flex-direction: column; gap: 18px; }
-
-.form-alert { padding: 12px 16px; border-radius: var(--radius-md); font-size: var(--font-sm); font-weight: 500; }
-.form-alert-danger { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid rgba(231, 76, 60, 0.2); }
-
-.auth-switch { text-align: center; font-size: var(--font-sm); color: var(--text-secondary); margin: 0; }
-.auth-switch a { color: var(--text-primary); font-weight: 600; }
-
-.auth-terms {
-  text-align: center;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin: -6px 0 0;
-  line-height: 1.5;
-}
-.auth-terms a {
-  color: var(--text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-/* ── Trial Banner ── */
-.trial-banner {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.06));
-  border: 1px solid rgba(139, 92, 246, 0.15);
-}
-
-.trial-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.trial-text {
-  font-size: var(--font-sm);
-  color: var(--text-primary);
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.trial-sub {
-  display: block;
-  font-weight: 400;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.pw-field { position: relative; display: flex; }
-.pw-input { flex: 1; padding-right: 44px; }
-.pw-toggle {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-sm, 6px);
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.pw-toggle:hover { color: var(--text-primary); background: rgba(0, 0, 0, 0.04); }
-.pw-toggle:focus-visible { outline: 2px solid var(--brand-accent, #ff6b35); outline-offset: 1px; }
-</style>

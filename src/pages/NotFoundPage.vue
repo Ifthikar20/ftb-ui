@@ -1,19 +1,15 @@
 <template>
-  <div class="not-found fade-in">
-    <div class="empty-state">
-      <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><path d="M30 30l12 12"/></svg></div>
-      <h1 class="empty-state-title">Page Not Found</h1>
-      <p class="empty-state-desc">The page you're looking for doesn't exist or has been moved.</p>
-      <button class="btn btn-primary" @click="$router.push('/dashboard')">Go to Dashboard</button>
+  <div class="flex min-h-screen items-center justify-center">
+    <div class="flex flex-col items-center text-center">
+      <div class="mb-5 text-muted-foreground"><SearchX :size="48" :stroke-width="1.5" /></div>
+      <h1 class="mb-2 text-2xl font-bold text-foreground">Page Not Found</h1>
+      <p class="mb-6 text-sm text-muted-foreground">The page you're looking for doesn't exist or has been moved.</p>
+      <Button @click="$router.push('/dashboard')">Go to Dashboard</Button>
     </div>
   </div>
 </template>
 
-<style scoped>
-.not-found {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-}
-</style>
+<script setup>
+import { Button } from '@/components/ui/button'
+import { SearchX } from '@lucide/vue'
+</script>

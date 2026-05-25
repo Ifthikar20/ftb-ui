@@ -1,37 +1,34 @@
 <template>
-  <div class="brand-vault-page p-6">
+  <div class="p-6 text-foreground">
     <!-- Header --------------------------------------------------------- -->
-    <header id="bv-header" class="bv-header">
-      <div class="bv-header-titles">
-        <div class="bv-eyebrow">
+    <header id="bv-header" class="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-chart-1/10 px-2.5 py-[3px] text-[10.5px] font-bold uppercase tracking-[0.08em] text-chart-1">
           <Vault :size="12" :stroke-width="2"/>
           <span>Source of truth</span>
         </div>
-        <h1 class="bv-title">Brand Vault</h1>
-        <p class="bv-subtitle">
+        <h1 class="text-2xl font-bold -tracking-[0.02em] text-foreground">Brand Vault</h1>
+        <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
           The single source of truth our AI agents read when they answer
           questions about
-          <strong>{{ websiteName || 'your brand' }}</strong>.
-          <span v-if="lastExtractedAt" class="text-muted">
+          <strong class="font-semibold text-foreground">{{ websiteName || 'your brand' }}</strong>.
+          <span v-if="lastExtractedAt" class="text-muted-foreground">
             · Last scanned {{ relativeTime(lastExtractedAt) }}
           </span>
         </p>
       </div>
-      <div class="bv-header-actions">
-        <AirButton variant="outline" size="md" @click="importOpen = true">
+      <div class="flex flex-shrink-0 items-center gap-2">
+        <Button variant="outline" @click="importOpen = true">
           <Upload :size="14" :stroke-width="1.8"/>
           Import facts
-        </AirButton>
-        <AirButton
-          variant="primary"
-          size="md"
-          :loading="extracting"
+        </Button>
+        <Button
           :disabled="extracting"
           @click="onReExtract"
         >
           <RefreshCcw v-if="!extracting" :size="14" :stroke-width="1.8"/>
           {{ extracting ? 'Queuing…' : 'Re-scan from sources' }}
-        </AirButton>
+        </Button>
       </div>
     </header>
 
@@ -45,7 +42,7 @@
 
     <!-- Two-up widget grid. Each widget is a self-contained card and
          drills into a fuller view on click. -->
-    <div class="bv-widget-grid mb-4">
+    <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
       <BrandBacklinksCard
         :items="backlinks.items"
         :total-mentions="backlinks.total"
@@ -70,31 +67,40 @@
     />
 
     <!-- Contradictions banner ---------------------------------------- -->
-    <div v-if="contradictions.length" class="bv-contradiction">
-      <div class="bv-contradiction-icon" aria-hidden="true">!</div>
-      <div class="bv-contradiction-body">
-        <strong>{{ contradictions.length }} contradiction{{ contradictions.length === 1 ? '' : 's' }} found.</strong>
+    <div
+      v-if="contradictions.length"
+      class="mb-4 flex items-center gap-3.5 rounded-xl border border-chart-3/30 bg-chart-3/10 px-4 py-3 text-sm text-foreground"
+    >
+      <div
+        class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-chart-3/20 text-chart-3 font-bold"
+        aria-hidden="true"
+      >!</div>
+      <div class="min-w-0 flex-1 leading-snug">
+        <strong class="font-semibold">{{ contradictions.length }} contradiction{{ contradictions.length === 1 ? '' : 's' }} found.</strong>
         Multiple approved facts claim different things about the same subject — review them before models read conflicting grounding.
       </div>
-      <AirButton variant="outline" size="sm" @click="activeTab = 'map'; mapFilter = 'contradictions'">
+      <Button variant="outline" size="sm" @click="activeTab = 'map'; mapFilter = 'contradictions'">
         Review
-      </AirButton>
+      </Button>
     </div>
 
     <!-- Tab bar -------------------------------------------------------- -->
-    <div class="bv-tabs" role="tablist">
+    <div class="mb-5 flex gap-1 border-b border-border" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
-        class="bv-tab"
-        :class="{ active: activeTab === tab.id }"
+        class="inline-flex items-center gap-2 border-b-2 border-transparent px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+        :class="{ 'border-primary text-foreground': activeTab === tab.id }"
         :aria-selected="activeTab === tab.id"
         role="tab"
         @click="activeTab = tab.id"
       >
         {{ tab.label }}
-        <span v-if="tab.badge" class="bv-tab-badge">{{ tab.badge }}</span>
+        <Badge
+          v-if="tab.badge"
+          :variant="activeTab === tab.id ? 'default' : 'secondary'"
+        >{{ tab.badge }}</Badge>
       </button>
     </div>
 
@@ -179,7 +185,8 @@ import RevisionTimeline from '@/components/brand_vault/RevisionTimeline.vue'
 import FactDetailDrawer from '@/components/brand_vault/FactDetailDrawer.vue'
 import EditFactModal from '@/components/brand_vault/EditFactModal.vue'
 import ImportFactsModal from '@/components/brand_vault/ImportFactsModal.vue'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const route = useRoute()
 const appStore = useAppStore()
@@ -578,136 +585,3 @@ onBeforeUnmount(() => {
   stopExtractPolling()
 })
 </script>
-
-<style scoped>
-.brand-vault-page { color: var(--text-primary); }
-
-.bv-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-.bv-header-titles { min-width: 0; }
-.bv-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  background: rgba(255, 107, 53, 0.10);
-  color: var(--brand-accent, #ff6b35);
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-.bv-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
-.bv-subtitle {
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-.bv-subtitle strong { color: var(--text-primary); font-weight: 600; }
-.bv-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-
-/* Contradictions banner ---------------------------------------------- */
-.bv-contradiction {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  background: rgba(245, 158, 11, 0.10);
-  border: 1px solid rgba(245, 158, 11, 0.30);
-  border-radius: 12px;
-  margin-bottom: 16px;
-  font-size: 0.88rem;
-  color: var(--text-primary);
-}
-[data-theme="dark"] .bv-contradiction {
-  background: rgba(245, 158, 11, 0.10);
-  border-color: rgba(245, 158, 11, 0.40);
-  color: var(--text-primary);
-}
-.bv-contradiction-icon {
-  width: 28px; height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(245, 158, 11, 0.20);
-  color: #b45309;
-  font-weight: 700;
-  font-size: 0.95rem;
-  flex-shrink: 0;
-}
-.bv-contradiction-body { flex: 1; min-width: 0; line-height: 1.45; }
-.bv-contradiction-body strong { color: var(--text-primary); font-weight: 600; }
-
-/* Tabs ---------------------------------------------------------------- */
-.bv-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  margin: 0 0 20px;
-}
-.bv-tab {
-  appearance: none;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 10px 16px;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.bv-tab:hover { color: var(--text-primary); }
-.bv-tab.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--brand-accent, #ff6b35);
-}
-.bv-tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--bg-subtle, #fafafa);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-.bv-tab.active .bv-tab-badge {
-  background: var(--brand-accent, #ff6b35);
-  color: #fff;
-}
-
-.text-muted { color: var(--text-muted); }
-.mb-4 { margin-bottom: 16px; }
-
-.bv-widget-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-@media (max-width: 960px) {
-  .bv-widget-grid { grid-template-columns: 1fr; }
-}
-</style>

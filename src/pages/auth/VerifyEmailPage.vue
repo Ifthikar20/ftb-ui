@@ -1,22 +1,22 @@
 <template>
   <AuthLayout title="Verify your email" :subtitle="`Enter the 6-digit code sent to ${email}`">
-    <form @submit.prevent="handleVerify" class="auth-form">
-      <div v-if="error" class="form-alert form-alert-danger">{{ error }}</div>
+    <form @submit.prevent="handleVerify" class="flex flex-col gap-[18px]">
+      <div v-if="error" class="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{{ error }}</div>
 
-      <div class="form-group">
-        <label class="form-label">Verification Code</label>
-        <input v-model="otp" class="form-input otp-input" placeholder="000000" maxlength="6" required />
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Verification Code</label>
+        <input v-model="otp" class="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-2xl font-bold tracking-[0.4em] outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="000000" maxlength="6" required />
       </div>
 
-      <button type="submit" class="btn btn-primary w-full btn-lg" :disabled="loading">
+      <Button type="submit" size="lg" class="w-full" :disabled="loading">
         {{ loading ? 'Verifying...' : 'Verify Email' }}
-      </button>
+      </Button>
 
-      <p class="auth-switch">
+      <p class="text-center text-sm text-muted-foreground">
         Didn't receive the code?
-        <button type="button" class="resend-btn" @click="handleResend" :disabled="resending">
+        <Button type="button" variant="link" class="h-auto px-1 py-0 font-semibold text-foreground" @click="handleResend" :disabled="resending">
           {{ resending ? 'Sending...' : 'Resend code' }}
-        </button>
+        </Button>
       </p>
     </form>
   </AuthLayout>
@@ -27,6 +27,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import authApi from '@/api/auth'
+import { Button } from '@/components/ui/button'
 
 const router = useRouter()
 const route = useRoute()
@@ -57,13 +58,3 @@ async function handleResend() {
   resending.value = false
 }
 </script>
-
-<style scoped>
-.auth-form { display: flex; flex-direction: column; gap: 18px; }
-.form-alert { padding: 12px 16px; border-radius: var(--radius-md); font-size: var(--font-sm); font-weight: 500; }
-.form-alert-danger { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid rgba(231, 76, 60, 0.2); }
-.otp-input { text-align: center; font-size: var(--font-2xl); letter-spacing: 0.4em; font-weight: 700; }
-.auth-switch { text-align: center; font-size: var(--font-sm); color: var(--text-secondary); }
-.resend-btn { background: none; border: none; color: var(--text-primary); font-weight: 600; cursor: pointer; font-family: var(--font-family); font-size: var(--font-sm); }
-.resend-btn:hover { opacity: 0.7; }
-</style>

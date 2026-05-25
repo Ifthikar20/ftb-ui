@@ -1,47 +1,59 @@
 <template>
-  <section v-if="text" class="bvc">
-    <header class="bvc-head">
-      <span class="bvc-title">Brand Vault check</span>
+  <section v-if="text" class="mt-3 rounded-xl border border-border bg-muted px-4 py-3.5">
+    <header class="mb-3 flex items-center gap-2.5">
+      <span class="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">Brand Vault check</span>
       <span v-if="loading" class="bvc-spinner" aria-hidden="true"></span>
-      <span v-else-if="result" class="bvc-summary">
-        <span class="bvc-tally bvc-tally-good"><span class="bvc-dot is-good"></span>{{ result.corroborated.length }} confirmed</span>
-        <span v-if="result.contradicted.length" class="bvc-tally bvc-tally-bad"><span class="bvc-dot is-bad"></span>{{ result.contradicted.length }} mismatch{{ result.contradicted.length === 1 ? '' : 'es' }}</span>
-        <span class="bvc-tally bvc-tally-mute"><span class="bvc-dot is-mute"></span>{{ result.missed.length }} not mentioned</span>
+      <span v-else-if="result" class="inline-flex items-center gap-3.5 text-[0.78rem] text-muted-foreground">
+        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-chart-2"></span>{{ result.corroborated.length }} confirmed</span>
+        <span v-if="result.contradicted.length" class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-destructive"></span>{{ result.contradicted.length }} mismatch{{ result.contradicted.length === 1 ? '' : 'es' }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-muted-foreground/50"></span>{{ result.missed.length }} not mentioned</span>
       </span>
-      <span v-else-if="error" class="bvc-error">{{ error }}</span>
+      <span v-else-if="error" class="text-[0.78rem] text-destructive">{{ error }}</span>
     </header>
 
-    <div v-if="result" class="bvc-grid">
+    <div v-if="result" class="grid grid-cols-1 gap-3.5 md:grid-cols-[minmax(220px,0.9fr)_minmax(0,1.1fr)]">
       <!-- Brand vault truth -->
-      <div class="bvc-col">
-        <div class="bvc-col-h">Your brand says</div>
-        <ul v-if="!result.total" class="bvc-empty">
+      <div>
+        <div class="mb-1.5 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">Your brand says</div>
+        <ul v-if="!result.total" class="m-0 list-none p-1.5 px-2.5 text-[0.82rem] text-muted-foreground">
           <li>No approved facts in the vault yet — nothing to compare.</li>
         </ul>
-        <ul v-else class="bvc-list">
+        <ul v-else class="m-0 flex list-none flex-col gap-1 p-0">
           <li
             v-for="f in displayedFacts"
             :key="f.id"
-            class="bvc-fact"
-            :class="`is-${f._tag}`"
+            class="grid grid-cols-[18px_1fr_auto] items-baseline gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-[0.82rem]"
+            :class="{
+              'border-chart-2/30': f._tag === 'good',
+              'border-destructive/30 bg-destructive/5': f._tag === 'bad',
+              'border-transparent opacity-[0.78]': f._tag === 'mute',
+            }"
           >
-            <span class="bvc-fact-icon" aria-hidden="true">
+            <span
+              class="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full font-mono text-[11px] font-bold"
+              :class="{
+                'bg-chart-2/15 text-chart-2': f._tag === 'good',
+                'bg-destructive/15 text-destructive': f._tag === 'bad',
+                'bg-muted text-muted-foreground': f._tag === 'mute',
+              }"
+              aria-hidden="true"
+            >
               <template v-if="f._tag === 'good'">✓</template>
               <template v-else-if="f._tag === 'bad'">!</template>
               <template v-else>·</template>
             </span>
-            <span class="bvc-fact-text">
-              <strong>{{ f.subject }}</strong>
-              <span class="bvc-fact-pred">{{ f.predicate }}</span>
+            <span class="flex flex-wrap gap-1 leading-snug text-foreground">
+              <strong class="font-semibold">{{ f.subject }}</strong>
+              <span class="text-muted-foreground">{{ f.predicate }}</span>
               <span>{{ f.object }}</span>
             </span>
-            <span v-if="f.topic" class="bvc-fact-tag">{{ f.topic }}</span>
+            <span v-if="f.topic" class="self-center rounded-full bg-muted px-[7px] py-px text-[0.65rem] uppercase tracking-[0.04em] text-muted-foreground">{{ f.topic }}</span>
           </li>
         </ul>
         <button
           v-if="hiddenMissedCount"
           type="button"
-          class="bvc-toggle"
+          class="mt-1 self-start px-0.5 py-1 text-[0.78rem] font-semibold text-chart-1 hover:underline"
           @click="showAllMissed = !showAllMissed"
         >
           {{ showAllMissed ? `Hide ${hiddenMissedCount}` : `Show ${hiddenMissedCount} more` }}
@@ -49,9 +61,12 @@
       </div>
 
       <!-- What the model said -->
-      <div class="bvc-col">
-        <div class="bvc-col-h">What the model said</div>
-        <div class="bvc-response" v-html="highlightedResponse"></div>
+      <div>
+        <div class="mb-1.5 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">What the model said</div>
+        <div
+          class="bvc-response max-h-[260px] overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-card px-3 py-2.5 text-[0.85rem] leading-relaxed text-foreground"
+          v-html="highlightedResponse"
+        ></div>
       </div>
     </div>
   </section>
@@ -154,145 +169,18 @@ function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }
 </script>
 
 <style scoped>
-.bvc {
-  margin-top: 12px;
-  padding: 14px 16px;
-  background: var(--bg-subtle, #fafafa);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-}
-.bvc-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.bvc-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-.bvc-summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-.bvc-tally { display: inline-flex; align-items: center; gap: 6px; }
-.bvc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-.bvc-dot.is-good { background: #10b981; }
-.bvc-dot.is-bad  { background: #ef4444; }
-.bvc-dot.is-mute { background: #cbd5e1; }
-.bvc-error { font-size: 0.78rem; color: #b91c1c; }
 .bvc-spinner {
   width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid var(--border-color, #e5e7eb);
-  border-top-color: var(--text-primary);
+  border: 2px solid var(--border);
+  border-top-color: var(--foreground);
   animation: bvc-spin 0.9s linear infinite;
 }
 @keyframes bvc-spin { to { transform: rotate(360deg); } }
 
-.bvc-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
-  gap: 14px;
-}
-@media (max-width: 720px) { .bvc-grid { grid-template-columns: 1fr; } }
-
-.bvc-col-h {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-
-.bvc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.bvc-fact {
-  display: grid;
-  grid-template-columns: 18px 1fr auto;
-  gap: 8px;
-  align-items: baseline;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--bg-card, #fff);
-  font-size: 0.82rem;
-  border: 1px solid transparent;
-}
-.bvc-fact.is-good { border-color: rgba(16, 185, 129, 0.30); }
-.bvc-fact.is-bad  { border-color: rgba(239, 68, 68, 0.32); background: rgba(239,68,68,0.04); }
-.bvc-fact.is-mute { opacity: 0.78; }
-.bvc-fact-icon {
-  width: 18px; height: 18px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: ui-monospace, monospace;
-}
-.bvc-fact.is-good .bvc-fact-icon { background: rgba(16, 185, 129, 0.16); color: #047857; }
-.bvc-fact.is-bad  .bvc-fact-icon { background: rgba(239, 68, 68, 0.16); color: #b91c1c; }
-.bvc-fact.is-mute .bvc-fact-icon { background: var(--bg-subtle, #fafafa); color: var(--text-muted); }
-.bvc-fact-text {
-  display: inline-flex; flex-wrap: wrap; gap: 4px;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-.bvc-fact-text strong { font-weight: 600; }
-.bvc-fact-pred { color: var(--text-secondary); }
-.bvc-fact-tag {
-  align-self: center;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--bg-subtle, #fafafa);
-}
-.bvc-empty { list-style: none; margin: 0; padding: 6px 10px; font-size: 0.82rem; color: var(--text-muted); }
-
-.bvc-toggle {
-  appearance: none;
-  background: transparent;
-  border: none;
-  font: inherit;
-  font-size: 0.78rem;
-  color: var(--brand-accent, #ff6b35);
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 4px;
-  padding: 4px 2px;
-  align-self: flex-start;
-}
-.bvc-toggle:hover { text-decoration: underline; }
-
-.bvc-response {
-  font-size: 0.85rem;
-  line-height: 1.55;
-  color: var(--text-primary);
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 8px;
-  padding: 10px 12px;
-  max-height: 260px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-}
 .bvc-response :deep(.bvc-mark) {
-  background: rgba(16, 185, 129, 0.18);
+  background: color-mix(in srgb, var(--chart-2) 18%, transparent);
   color: inherit;
   padding: 0 2px;
   border-radius: 3px;
 }
-
-[data-theme="dark"] .bvc { background: var(--bg-card-hover); border-color: var(--border-color); }
-[data-theme="dark"] .bvc-fact { background: var(--bg-card); }
-[data-theme="dark"] .bvc-fact.is-bad { background: rgba(239,68,68,0.08); }
-[data-theme="dark"] .bvc-response { background: var(--bg-card); border-color: var(--border-color); }
-[data-theme="dark"] .bvc-fact-tag { background: var(--bg-card-hover); }
 </style>

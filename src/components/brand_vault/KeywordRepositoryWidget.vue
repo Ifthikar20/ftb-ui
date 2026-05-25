@@ -1,49 +1,64 @@
 <template>
-  <section class="kw-widget" :class="{ 'is-clickable': items.length }">
-    <header class="kw-head">
+  <Card>
+    <CardHeader class="flex-row items-start justify-between gap-3 space-y-0">
       <div>
-        <h3 class="kw-title">Keyword repository</h3>
-        <p class="kw-sub">
+        <CardTitle class="text-lg -tracking-[0.01em]">Keyword repository</CardTitle>
+        <CardDescription class="mt-1">
           <template v-if="totalMentions">
             {{ totalMentions }} mentions across {{ items.length }} {{ items.length === 1 ? 'topic' : 'topics' }}
           </template>
           <template v-else>
             Topics extracted from your approved facts.
           </template>
-        </p>
+        </CardDescription>
       </div>
-      <button
+      <Button
         v-if="items.length"
-        type="button"
-        class="kw-expand"
+        variant="link"
+        class="h-auto whitespace-nowrap p-0"
         @click="$emit('expand')"
-      >View all →</button>
-    </header>
+      >View all →</Button>
+    </CardHeader>
 
-    <div v-if="loading" class="kw-list">
-      <div v-for="i in 4" :key="i" class="kw-skel" />
-    </div>
+    <CardContent>
+      <div v-if="loading" class="flex flex-col overflow-hidden rounded-xl border border-border">
+        <div v-for="i in 4" :key="i" class="h-[42px] animate-pulse border-b border-border bg-muted last:border-b-0" />
+      </div>
 
-    <div v-else-if="!items.length" class="kw-empty">
-      Approve some facts with a topic to fill the repository.
-    </div>
+      <div
+        v-else-if="!items.length"
+        class="rounded-xl border border-dashed border-border px-4 py-7 text-center text-sm text-muted-foreground"
+      >
+        Approve some facts with a topic to fill the repository.
+      </div>
 
-    <ul v-else class="kw-list" @click="$emit('expand')">
-      <li v-for="row in top" :key="row.topic" class="kw-row">
-        <span class="kw-rank">{{ row.rank }}</span>
-        <span class="kw-name">{{ row.topic }}</span>
-        <span class="kw-spark" aria-hidden="true">
-          <KeywordSparkline :data="row.timeline" />
-        </span>
-        <span class="kw-count">{{ row.mention_count }}</span>
-      </li>
-    </ul>
-  </section>
+      <ul
+        v-else
+        class="flex cursor-pointer flex-col gap-0.5 overflow-hidden rounded-xl border border-border hover:border-muted-foreground"
+        @click="$emit('expand')"
+      >
+        <li
+          v-for="row in top"
+          :key="row.topic"
+          class="grid grid-cols-[24px_1fr_110px_64px] items-center gap-3 border-b border-border bg-card px-4 py-2.5 last:border-b-0"
+        >
+          <span class="text-[0.78rem] tabular-nums text-muted-foreground">{{ row.rank }}</span>
+          <span class="text-[0.92rem] font-medium capitalize text-foreground">{{ row.topic }}</span>
+          <span class="flex items-center justify-end opacity-85" aria-hidden="true">
+            <KeywordSparkline :data="row.timeline" />
+          </span>
+          <span class="text-right text-[0.92rem] font-semibold tabular-nums text-foreground">{{ row.mention_count }}</span>
+        </li>
+      </ul>
+    </CardContent>
+  </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import KeywordSparkline from './KeywordSparkline.vue'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps({
   items: { type: Array, default: () => [] },
@@ -56,92 +71,3 @@ const top = computed(() =>
   props.items.slice(0, 5).map((row, i) => ({ ...row, rank: i + 1 })),
 )
 </script>
-
-<style scoped>
-.kw-widget {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 16px;
-  padding: 20px 24px;
-}
-.kw-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.kw-title { margin: 0 0 4px; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
-.kw-sub { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
-.kw-expand {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--brand-accent, #ff6b35);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.kw-expand:hover { text-decoration: underline; }
-
-.kw-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-}
-.kw-widget.is-clickable .kw-list:hover { border-color: var(--text-muted); }
-.kw-row {
-  display: grid;
-  grid-template-columns: 24px 1fr 110px 64px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: var(--bg-card, #fff);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-}
-.kw-row:last-child { border-bottom: none; }
-.kw-rank { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.kw-name { font-size: 0.92rem; color: var(--text-primary); font-weight: 500; text-transform: capitalize; }
-.kw-spark { display: flex; align-items: center; justify-content: flex-end; opacity: 0.85; }
-.kw-count {
-  font-size: 0.92rem;
-  color: var(--text-primary);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.kw-skel {
-  height: 42px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background: linear-gradient(90deg, transparent 32%, rgba(255,255,255,0.45) 50%, transparent 68%), var(--bg-subtle, #fafafa);
-  background-size: 200% 100%;
-  animation: kw-shimmer 1.4s linear infinite;
-}
-.kw-skel:last-child { border-bottom: none; }
-@keyframes kw-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-.kw-empty {
-  padding: 28px 16px;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 12px;
-}
-
-[data-theme="dark"] .kw-widget,
-[data-theme="dark"] .kw-list,
-[data-theme="dark"] .kw-row { background: var(--bg-card); border-color: var(--border-color); }
-</style>

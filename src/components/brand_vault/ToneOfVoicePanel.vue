@@ -1,45 +1,45 @@
 <template>
-  <div class="tov">
-    <div class="tov-intro">
-      <h3>Tone of voice</h3>
-      <p>
+  <div class="flex flex-col gap-4">
+    <div>
+      <h3 class="mb-1 text-[1.05rem] text-foreground">Tone of voice</h3>
+      <p class="text-sm leading-relaxed text-muted-foreground">
         Real samples of your brand's writing. Content Studio reads these when
         generating drafts so the output sounds like you, not a generic LLM.
       </p>
     </div>
 
-    <form class="tov-add" @submit.prevent="onAdd">
+    <form class="flex flex-col gap-2 rounded-xl border border-border bg-card p-3.5" @submit.prevent="onAdd">
       <textarea
         v-model="text"
         rows="3"
         maxlength="4000"
         placeholder="Paste a paragraph from a blog post, sales email, or product page…"
-        class="tov-input"
+        class="w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
-      <div class="tov-add-foot">
-        <span class="tov-counter">{{ (text || '').length }} / 4000</span>
-        <AirButton type="submit" variant="primary" size="sm" :disabled="!text.trim() || saving">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-muted-foreground">{{ (text || '').length }} / 4000</span>
+        <Button type="submit" size="sm" :disabled="!text.trim() || saving">
           {{ saving ? 'Saving…' : 'Add sample' }}
-        </AirButton>
+        </Button>
       </div>
     </form>
 
-    <div v-if="loading" class="tov-skeleton">
-      <div v-for="i in 3" :key="i" class="tov-skel" />
+    <div v-if="loading" class="flex flex-col gap-2">
+      <div v-for="i in 3" :key="i" class="h-[88px] animate-pulse rounded-xl border border-border bg-card" />
     </div>
 
-    <div v-else-if="!samples.length" class="tov-empty">
+    <div v-else-if="!samples.length" class="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
       <p>No tone samples yet. Add a paragraph above to teach the agents your voice.</p>
     </div>
 
-    <ul v-else class="tov-list">
-      <li v-for="sample in samples" :key="sample.id" class="tov-row">
-        <p class="tov-row-text">{{ sample.text }}</p>
-        <div class="tov-row-meta">
+    <ul v-else class="flex flex-col gap-2">
+      <li v-for="sample in samples" :key="sample.id" class="rounded-xl border border-border bg-card px-4 py-3.5">
+        <p class="mb-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{{ sample.text }}</p>
+        <div class="flex items-center gap-2 text-xs text-muted-foreground">
           <span>{{ sample.word_count || 0 }} words</span>
           <span>·</span>
           <span>{{ formatDate(sample.created_at) }}</span>
-          <button class="tov-remove" type="button" @click="onRemove(sample)">Remove</button>
+          <button class="ml-auto text-destructive hover:underline" type="button" @click="onRemove(sample)">Remove</button>
         </div>
       </li>
     </ul>
@@ -50,7 +50,7 @@
 import { ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import brandVaultApi from '@/api/brandVault'
-import AirButton from '@/components/ui/AirButton.vue'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -94,101 +94,3 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 </script>
-
-<style scoped>
-.tov { display: flex; flex-direction: column; gap: 16px; }
-.tov-intro h3 { margin: 0 0 4px; font-size: 1.05rem; color: var(--text-primary); }
-.tov-intro p { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
-
-.tov-add {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-}
-.tov-input {
-  width: 100%;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-input, #fff);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font: inherit;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  resize: vertical;
-}
-.tov-input:focus {
-  outline: none;
-  border-color: var(--brand-accent, #ff6b35);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);
-}
-.tov-add-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.tov-counter { font-size: 0.78rem; color: var(--text-muted); }
-
-.tov-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.tov-row {
-  padding: 14px 16px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-}
-.tov-row-text {
-  margin: 0 0 8px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-.tov-row-meta {
-  display: flex;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  align-items: center;
-}
-.tov-remove {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: #b91c1c;
-  font: inherit;
-  font-size: 0.78rem;
-  margin-left: auto;
-  cursor: pointer;
-}
-.tov-remove:hover { text-decoration: underline; }
-
-.tov-skeleton { display: flex; flex-direction: column; gap: 8px; }
-.tov-skel {
-  height: 88px;
-  border-radius: 12px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.tov-empty {
-  text-align: center;
-  padding: 40px 20px;
-  border: 1px dashed var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  color: var(--text-muted);
-  font-size: 0.88rem;
-}
-
-[data-theme="dark"] .tov-add,
-[data-theme="dark"] .tov-row,
-[data-theme="dark"] .tov-skel { background: var(--bg-card); border-color: var(--border-color); }
-[data-theme="dark"] .tov-input { background: var(--bg-input); color: var(--text-primary); border-color: var(--border-color); }
-</style>

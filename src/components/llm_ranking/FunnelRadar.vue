@@ -11,22 +11,23 @@
     Uses the same INTENT_FUNNEL_STAGE mapping the recommendations card
     already uses, so the numbers match between the two views.
   -->
-  <div v-if="hasData" class="fr-card">
-    <div class="fr-header">
-      <h3 class="fr-title">Funnel coverage</h3>
-      <p class="fr-sub">
+  <Card v-if="hasData" class="h-full flex flex-col">
+    <CardHeader>
+      <CardTitle class="text-sm">Funnel coverage</CardTitle>
+      <CardDescription>
         How often {{ targetName }} appears at each buyer-journey stage,
         compared with <strong>{{ competitorName }}</strong>.
-      </p>
-    </div>
-    <div class="fr-body">
+      </CardDescription>
+    </CardHeader>
+    <CardContent class="relative flex-1 min-h-[280px]">
       <Radar :data="chartData" :options="chartOptions" />
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Radar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -161,32 +162,3 @@ const chartOptions = computed(() => ({
 }))
 </script>
 
-<style scoped>
-.fr-card {
-  background: var(--bg-secondary, #fff);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.fr-header { margin-bottom: 12px; }
-.fr-title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.fr-sub {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-.fr-body {
-  position: relative;
-  flex: 1;
-  min-height: 280px;
-}
-</style>

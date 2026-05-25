@@ -1,28 +1,28 @@
 <template>
-  <AirCard size="md" interactive class="fact-card flex h-full flex-col">
+  <Card class="fact-card flex h-full flex-col p-4 transition-colors hover:border-muted-foreground">
     <div class="mb-3 flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <div class="text-[15px] font-semibold leading-snug" style="color: var(--text-primary)">
+        <div class="text-[15px] font-semibold leading-snug text-foreground">
           {{ fact.subject }}
         </div>
-        <div class="mt-1 text-[13px] leading-relaxed" style="color: var(--text-secondary)">
-          <span class="font-medium" style="color: var(--text-primary)">{{ fact.predicate }}</span>
-          <span class="mx-1.5" style="color: var(--text-muted)">·</span>
+        <div class="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+          <span class="font-medium text-foreground">{{ fact.predicate }}</span>
+          <span class="mx-1.5 text-muted-foreground">·</span>
           <span>{{ fact.object }}</span>
         </div>
       </div>
-      <AirChip :variant="statusVariant" size="xs">{{ statusLabel }}</AirChip>
+      <Badge :variant="statusVariant">{{ statusLabel }}</Badge>
     </div>
 
-    <div class="mt-auto flex flex-col gap-3 pt-4" style="border-top: 1px solid var(--border-color)">
+    <div class="mt-auto flex flex-col gap-3 border-t border-border pt-4">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-muted)">
+        <span class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Confidence
         </span>
-        <div class="h-1.5 flex-1 overflow-hidden rounded-full" style="background: var(--border-color)">
-          <div class="h-full rounded-full" :style="{ width: pct + '%', background: 'var(--brand-accent)' }"></div>
+        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
+          <div class="h-full rounded-full bg-chart-1" :style="{ width: pct + '%' }"></div>
         </div>
-        <span class="tabular-nums text-xs" style="color: var(--text-secondary)">{{ pct }}%</span>
+        <span class="tabular-nums text-xs text-muted-foreground">{{ pct }}%</span>
       </div>
 
       <div class="flex items-center justify-between gap-2">
@@ -31,8 +31,7 @@
           :href="fact.source_url"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-          style="color: var(--brand-accent)"
+          class="inline-flex items-center gap-1 text-xs font-medium text-chart-1 hover:underline"
           @click.stop
         >
           Source
@@ -40,23 +39,23 @@
             <path d="M3 7l4-4M4 3h3v3" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </a>
-        <span v-else class="text-xs" style="color: var(--text-muted)">No source</span>
+        <span v-else class="text-xs text-muted-foreground">No source</span>
 
         <div v-if="isPending" class="flex flex-wrap gap-2">
-          <AirButton variant="outline" size="xs" @click.stop="$emit('edit-click', fact)">Edit</AirButton>
-          <AirButton variant="ghost" size="xs" @click.stop="$emit('reject', fact)">Reject</AirButton>
-          <AirButton variant="primary" size="xs" @click.stop="$emit('approve', fact)">Approve</AirButton>
+          <Button variant="outline" size="sm" @click.stop="$emit('edit-click', fact)">Edit</Button>
+          <Button variant="ghost" size="sm" @click.stop="$emit('reject', fact)">Reject</Button>
+          <Button size="sm" @click.stop="$emit('approve', fact)">Approve</Button>
         </div>
       </div>
     </div>
-  </AirCard>
+  </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import AirCard from '@/components/ui/AirCard.vue'
-import AirButton from '@/components/ui/AirButton.vue'
-import AirChip from '@/components/ui/AirChip.vue'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
   fact: { type: Object, required: true },
@@ -67,8 +66,8 @@ defineEmits(['approve', 'reject', 'edit-click'])
 const STATUS_VARIANT = {
   pending: 'warning',
   approved: 'success',
-  rejected: 'neutral',
-  auto: 'info',
+  rejected: 'secondary',
+  auto: 'default',
 }
 
 const statusVariant = computed(() => STATUS_VARIANT[props.fact.status] || 'warning')

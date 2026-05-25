@@ -2,24 +2,18 @@
   <div class="cs-page mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-12">
     <!-- Top bar -->
     <header class="mb-8 flex flex-wrap items-center gap-4">
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-        @click="goBack"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M9 3l-4 4 4 4" />
-        </svg>
+      <Button variant="ghost" size="sm" class="rounded-full" @click="goBack">
+        <ChevronLeft class="size-3.5" />
         Back
-      </button>
-      <nav class="flex flex-wrap items-center gap-1.5 text-sm text-zinc-500" aria-label="Breadcrumb">
-        <router-link :to="`/llm-ranking/${websiteId}/content`" class="hover:text-zinc-800">
+      </Button>
+      <nav class="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
+        <router-link :to="`/llm-ranking/${websiteId}/content`" class="hover:text-foreground">
           Content Studio
         </router-link>
-        <span class="text-zinc-300">/</span>
-        <span class="truncate text-zinc-800">{{ briefHeadline }}</span>
+        <span class="text-muted-foreground/50">/</span>
+        <span class="truncate text-foreground">{{ briefHeadline }}</span>
       </nav>
-      <div class="ml-auto text-xs text-zinc-500">
+      <div class="ml-auto text-xs text-muted-foreground">
         <span v-if="draft">Revision {{ draft.revision || 1 }} ·</span>
         <span>{{ savedLabel }}</span>
       </div>
@@ -27,8 +21,8 @@
 
     <!-- Loading -->
     <div v-if="loading" class="grid gap-6 lg:grid-cols-[3fr,2fr]">
-      <div class="h-[600px] animate-pulse rounded-2xl border border-zinc-200 bg-white"></div>
-      <div class="h-[600px] animate-pulse rounded-2xl border border-zinc-200 bg-white"></div>
+      <div class="h-[600px] animate-pulse rounded-2xl border border-border bg-card"></div>
+      <div class="h-[600px] animate-pulse rounded-2xl border border-border bg-card"></div>
     </div>
 
     <div v-else-if="draft" class="grid gap-6 lg:grid-cols-[3fr,2fr]">
@@ -42,101 +36,93 @@
 
       <!-- RIGHT: brief & guards -->
       <aside class="flex flex-col gap-4">
-        <AirCard size="sm">
+        <Card class="p-4">
           <div class="mb-3 flex flex-wrap items-center gap-2">
             <GapTypeBadge v-if="brief?.gap_type" :gap="brief.gap_type" />
             <FormatBadge v-if="brief?.target_format" :format="brief.target_format" />
           </div>
-          <h3 class="text-[15px] font-medium" style="color: var(--text-primary)">
+          <h3 class="text-[15px] font-medium text-foreground">
             {{ brief?.headline || 'Brief' }}
           </h3>
           <p
             v-if="brief?.description"
-            class="mt-2 text-sm leading-relaxed"
-            style="color: var(--text-secondary)"
+            class="mt-2 text-sm leading-relaxed text-muted-foreground"
           >
             {{ brief.description }}
           </p>
-        </AirCard>
+        </Card>
 
-        <AirCard size="sm">
+        <Card class="p-4">
           <div class="mb-4">
             <QualityScoreBar :score="Number(draft.voice_score) || 0" label="Voice match" />
-            <p v-if="draft.voice_notes" class="mt-1.5 text-xs" style="color: var(--text-secondary)">{{ draft.voice_notes }}</p>
+            <p v-if="draft.voice_notes" class="mt-1.5 text-xs text-muted-foreground">{{ draft.voice_notes }}</p>
           </div>
           <div>
             <QualityScoreBar :score="Number(draft.accuracy_score) || 0" label="Accuracy" />
-            <p v-if="draft.accuracy_notes" class="mt-1.5 text-xs" style="color: var(--text-secondary)">{{ draft.accuracy_notes }}</p>
+            <p v-if="draft.accuracy_notes" class="mt-1.5 text-xs text-muted-foreground">{{ draft.accuracy_notes }}</p>
           </div>
-        </AirCard>
+        </Card>
 
-        <AirCard size="sm">
+        <Card class="p-4">
           <button
             type="button"
             class="flex w-full items-center justify-between text-left"
             @click="factsOpen = !factsOpen"
           >
-            <span class="text-[13px] font-semibold text-zinc-900">
+            <span class="text-[13px] font-semibold text-foreground">
               Grounded facts ({{ groundedFactIds.length }})
             </span>
-            <svg
-              :class="['h-4 w-4 text-zinc-400 transition-transform', factsOpen ? 'rotate-180' : '']"
-              viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-            >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
+            <ChevronDown
+              :class="['size-4 text-muted-foreground transition-transform', factsOpen ? 'rotate-180' : '']"
+            />
           </button>
           <div v-if="factsOpen" class="mt-3 flex flex-col gap-2">
             <div
               v-if="!groundedFactIds.length"
-              class="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500"
+              class="rounded-xl bg-muted px-4 py-3 text-xs text-muted-foreground"
             >
               No facts were attached to this draft.
             </div>
             <div
               v-for="id in groundedFactIds"
               :key="id"
-              class="rounded-xl bg-zinc-50 px-4 py-2.5 text-xs text-zinc-600"
+              class="rounded-xl bg-muted px-4 py-2.5 text-xs text-muted-foreground"
             >
-              <span class="font-mono text-[11px] text-zinc-400">{{ String(id).slice(0, 8) }}</span>
+              <span class="font-mono text-[11px] text-muted-foreground/70">{{ String(id).slice(0, 8) }}</span>
               <span class="ml-2">grounded fact reference</span>
             </div>
           </div>
-        </AirCard>
+        </Card>
 
-        <AirButton
+        <Button
           variant="outline"
-          size="md"
-          :loading="regenerating"
           :disabled="regenerating"
           @click="regenerate"
         >
           {{ regenerating ? 'Regenerating...' : 'Regenerate draft' }}
-        </AirButton>
+        </Button>
       </aside>
     </div>
 
-    <div v-else class="rounded-3xl border border-dashed border-zinc-200 bg-white px-8 py-20 text-center text-zinc-500">
+    <div v-else class="rounded-3xl border border-dashed border-border bg-card px-8 py-20 text-center text-muted-foreground">
       Draft not found.
     </div>
 
     <!-- Sticky footer action bar -->
     <div
       v-if="draft"
-      class="sticky bottom-4 z-30 mt-8 flex flex-wrap items-center justify-end gap-2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2.5 shadow-md backdrop-blur"
+      class="sticky bottom-4 z-30 mt-8 flex flex-wrap items-center justify-end gap-2 rounded-full border border-border bg-card/95 px-4 py-2.5 shadow-md backdrop-blur"
     >
-      <AirButton variant="ghost" size="md" :loading="saving" :disabled="saving" @click="save">
+      <Button variant="ghost" :disabled="saving" @click="save">
         {{ saving ? 'Saving...' : 'Save draft' }}
-      </AirButton>
-      <AirButton
-        variant="primary"
-        size="md"
-        :loading="approving"
+      </Button>
+      <Button
+        variant="default"
         :disabled="approving || draft.status === 'approved'"
         @click="approve"
       >
         {{ draft.status === 'approved' ? 'Approved' : (approving ? 'Approving...' : 'Approve as publish content') }}
-      </AirButton>
+      </Button>
     </div>
   </div>
 </template>
@@ -150,8 +136,9 @@ import DraftEditor from '@/components/content_studio/DraftEditor.vue'
 import GapTypeBadge from '@/components/content_studio/GapTypeBadge.vue'
 import FormatBadge from '@/components/content_studio/FormatBadge.vue'
 import QualityScoreBar from '@/components/content_studio/QualityScoreBar.vue'
-import AirButton from '@/components/ui/AirButton.vue'
-import AirCard from '@/components/ui/AirCard.vue'
+import { ChevronLeft, ChevronDown } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 const route = useRoute()
 const router = useRouter()

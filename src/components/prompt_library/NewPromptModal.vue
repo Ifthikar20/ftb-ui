@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import AirButton from '@/components/ui/AirButton.vue'
-import AirChip from '@/components/ui/AirChip.vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import promptLibrary from '@/api/promptLibrary'
 import { useToast } from '@/composables/useToast'
 
@@ -123,29 +123,29 @@ async function save() {
   >
     <div class="np-grid">
       <div class="np-col">
-        <label class="np-label">Prompt text or template</label>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Prompt text or template</label>
         <textarea
           v-model="text"
           rows="6"
-          class="np-textarea"
+          class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none resize-y focus-visible:ring-2 focus-visible:ring-ring"
           placeholder="E.g. What is the best {{ industry }} agency in {{ location }}?"
         ></textarea>
 
         <div v-if="detectedVars.length" class="np-vars">
           <span class="np-vars-label">Detected:</span>
-          <AirChip v-for="v in detectedVars" :key="v" variant="info" size="xs">{{ v }}</AirChip>
+          <Badge v-for="v in detectedVars" :key="v" variant="secondary">{{ v }}</Badge>
         </div>
 
         <div class="np-row">
           <div class="np-field">
-            <label class="np-label">Style</label>
-            <select v-model="style" class="np-select">
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Style</label>
+            <select v-model="style" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <option v-for="s in styles" :key="s.value" :value="s.value">{{ s.label }}</option>
             </select>
           </div>
           <div class="np-field">
-            <label class="np-label">Intent</label>
-            <select v-model="intentBucket" class="np-select">
+            <label class="mb-1.5 block text-sm font-medium text-foreground">Intent</label>
+            <select v-model="intentBucket" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <option v-for="i in intents" :key="i.value" :value="i.value">{{ i.label }}</option>
             </select>
           </div>
@@ -153,19 +153,19 @@ async function save() {
       </div>
 
       <div class="np-col">
-        <label class="np-label">Live preview</label>
+        <label class="mb-1.5 block text-sm font-medium text-foreground">Live preview</label>
         <div class="np-preview">{{ filledPreview || 'Start typing — preview shows here.' }}</div>
       </div>
     </div>
 
     <template #footer>
       <div class="np-footer">
-        <AirButton variant="outline" :loading="autoTemplating" :disabled="!text.trim()" @click="autoTemplate">
-          Auto-template this
-        </AirButton>
+        <Button variant="outline" :disabled="autoTemplating || !text.trim()" @click="autoTemplate">
+          {{ autoTemplating ? 'Templating…' : 'Auto-template this' }}
+        </Button>
         <div class="np-spacer"></div>
-        <AirButton variant="ghost" @click="close">Cancel</AirButton>
-        <AirButton variant="primary" :loading="saving" :disabled="!text.trim()" @click="save">Save</AirButton>
+        <Button variant="ghost" @click="close">Cancel</Button>
+        <Button :disabled="saving || !text.trim()" @click="save">{{ saving ? 'Saving…' : 'Save' }}</Button>
       </div>
     </template>
   </BaseModal>
@@ -175,27 +175,14 @@ async function save() {
 .np-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 720px) { .np-grid { grid-template-columns: 1fr; } }
 .np-col { display: flex; flex-direction: column; gap: 8px; }
-.np-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
-.np-textarea {
-  width: 100%; padding: 10px 12px;
-  border-radius: 10px; border: 1px solid var(--border-color);
-  background: var(--bg-card); color: var(--text-primary);
-  font-size: 14px; line-height: 1.5; resize: vertical;
-}
 .np-vars { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.np-vars-label { font-size: 11px; color: var(--text-muted); }
+.np-vars-label { font-size: 11px; color: var(--muted-foreground); }
 .np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .np-field { display: flex; flex-direction: column; gap: 4px; }
-.np-select {
-  height: 34px; padding: 0 10px;
-  border-radius: 9999px; border: 1px solid var(--border-color);
-  background: var(--bg-card); color: var(--text-primary);
-  font-size: 12px;
-}
 .np-preview {
-  border: 1px dashed var(--border-color); border-radius: 10px;
-  padding: 12px; background: var(--bg-card-hover, transparent);
-  color: var(--text-primary); font-size: 14px; line-height: 1.55;
+  border: 1px dashed var(--border); border-radius: 10px;
+  padding: 12px; background: var(--muted);
+  color: var(--foreground); font-size: 14px; line-height: 1.55;
   min-height: 140px; white-space: pre-wrap;
 }
 .np-footer { display: flex; align-items: center; gap: 8px; width: 100%; }

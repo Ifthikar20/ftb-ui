@@ -138,51 +138,51 @@
 
         <!-- Active / Archived table -->
         <div v-if="activeSub !== 'suggested'" class="spd-table-wrap">
-          <table v-if="filtered.length" class="spd-table">
-            <thead>
-              <tr>
-                <th class="spd-th-check">
+          <Table v-if="filtered.length" class="spd-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="spd-th-check">
                   <input
                     type="checkbox"
                     :checked="allSelected"
                     @change="toggleAll"
                   />
-                </th>
-                <th class="spd-th-prompt">Prompt</th>
-                <th class="num"><span class="spd-th-with-icon">Visibility<ChevronsUpDown :size="11" :stroke-width="2"/></span></th>
-                <th class="num"><span class="spd-th-with-icon">Sentiment<ChevronsUpDown :size="11" :stroke-width="2"/></span></th>
-                <th class="num"><span class="spd-th-with-icon">Position<ChevronsUpDown :size="11" :stroke-width="2"/></span></th>
-                <th>Mentions</th>
-                <th>Volume</th>
-                <th>Tags</th>
-                <th class="num">Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in filtered" :key="row.brand_prompt_id" @click="openDetail(row)">
-                <td @click.stop>
+                </TableHead>
+                <TableHead class="spd-th-prompt">Prompt</TableHead>
+                <TableHead class="num"><span class="spd-th-with-icon">Visibility<ChevronsUpDown :size="11" :stroke-width="2"/></span></TableHead>
+                <TableHead class="num"><span class="spd-th-with-icon">Sentiment<ChevronsUpDown :size="11" :stroke-width="2"/></span></TableHead>
+                <TableHead class="num"><span class="spd-th-with-icon">Position<ChevronsUpDown :size="11" :stroke-width="2"/></span></TableHead>
+                <TableHead>Mentions</TableHead>
+                <TableHead>Volume</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead class="num">Location</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="row in filtered" :key="row.brand_prompt_id" @click="openDetail(row)">
+                <TableCell @click.stop>
                   <input
                     type="checkbox"
                     :checked="selectedIds.has(row.brand_prompt_id)"
                     @change="toggleRow(row)"
                   />
-                </td>
-                <td class="spd-td-prompt">{{ row.text }}</td>
-                <td class="num">
+                </TableCell>
+                <TableCell class="spd-td-prompt">{{ row.text }}</TableCell>
+                <TableCell class="num">
                   <span class="spd-vis">{{ row.visibility_pct }}%</span>
-                </td>
-                <td class="num">
+                </TableCell>
+                <TableCell class="num">
                   <template v-if="row.sentiment_score != null">
                     <span class="spd-sent-dot" :class="sentimentClass(row.sentiment_score)"></span>
                     {{ row.sentiment_score }}
                   </template>
                   <span v-else class="spd-mute">—</span>
-                </td>
-                <td class="num">
+                </TableCell>
+                <TableCell class="num">
                   <span v-if="row.avg_position != null" class="spd-pos"># {{ row.avg_position }}</span>
                   <span v-else class="spd-mute">—</span>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <div class="spd-mentions">
                     <span
                       v-for="(p, i) in row.models_mentioned.slice(0, 3)"
@@ -200,20 +200,20 @@
                       <CloudOff :size="14" :stroke-width="1.8"/>
                     </span>
                   </div>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <span class="spd-volume" :title="`Demand ${row.demand_score}`">
                     <span v-for="i in 4" :key="i" class="spd-vol-bar" :class="{ 'is-on': demandBars(row.demand_score) >= i }"></span>
                   </span>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <span class="spd-tag is-nonbranded">non-branded</span>
                   <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
-                </td>
-                <td class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
           <div v-else-if="loading" class="spd-empty">
             <div class="spd-spinner" aria-hidden="true"></div>
@@ -233,56 +233,56 @@
 
         <!-- Suggested table -->
         <div v-else class="spd-table-wrap">
-          <table v-if="suggestedRows.length" class="spd-table">
-            <thead>
-              <tr>
-                <th class="spd-th-check">
+          <Table v-if="suggestedRows.length" class="spd-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="spd-th-check">
                   <input
                     type="checkbox"
                     :checked="allSuggestedSelected"
                     @change="toggleAllSuggested"
                   />
-                </th>
-                <th class="spd-th-prompt">Prompt</th>
-                <th>Volume</th>
-                <th>Tags</th>
-                <th class="num">Suggested at</th>
-                <th class="num">Location</th>
-                <th class="spd-th-act"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in suggestedFiltered" :key="row.id" class="spd-suggested-row">
-                <td @click.stop>
+                </TableHead>
+                <TableHead class="spd-th-prompt">Prompt</TableHead>
+                <TableHead>Volume</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead class="num">Suggested at</TableHead>
+                <TableHead class="num">Location</TableHead>
+                <TableHead class="spd-th-act"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="row in suggestedFiltered" :key="row.id" class="spd-suggested-row">
+                <TableCell @click.stop>
                   <input
                     type="checkbox"
                     :checked="selectedSuggested.has(row.id)"
                     @change="toggleSuggested(row)"
                   />
-                </td>
-                <td class="spd-td-prompt">{{ row.text }}</td>
-                <td>
+                </TableCell>
+                <TableCell class="spd-td-prompt">{{ row.text }}</TableCell>
+                <TableCell>
                   <span class="spd-volume" :title="`Demand ${row.demand_score}`">
                     <span v-for="i in 4" :key="i" class="spd-vol-bar" :class="{ 'is-on': demandBars(row.demand_score) >= i }"></span>
                   </span>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <span class="spd-tag is-nonbranded">non-branded</span>
                   <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
-                </td>
-                <td class="num spd-mute">{{ relTime(row.suggested_at) }}</td>
-                <td class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</td>
-                <td class="spd-act">
+                </TableCell>
+                <TableCell class="num spd-mute">{{ relTime(row.suggested_at) }}</TableCell>
+                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+                <TableCell class="spd-act">
                   <button class="spd-act-btn spd-act-reject" title="Reject" @click.stop="rejectOne(row)">
                     <X :size="14" :stroke-width="2.2"/>
                   </button>
                   <button class="spd-act-btn spd-act-accept" title="Track this prompt" @click.stop="acceptOne(row)">
                     <Check :size="14" :stroke-width="2.4"/>
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
           <div v-else-if="suggestLoading" class="spd-empty">
             <div class="spd-spinner" aria-hidden="true"></div>
@@ -320,6 +320,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import promptLibrary from '@/api/promptLibrary'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import {
   ArrowUpDown, Bot, Building, Calendar, Check, ChevronDown, ChevronsUpDown,
   CloudOff, Folder, Inbox, Plus, Search, Sparkles, Tag, X,
@@ -533,17 +534,17 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg-card, #fff);
+  background: var(--card);
   font: inherit;
   font-size: 0.82rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.spd-chip:hover { border-color: var(--border-hover, #d4d4d8); }
-.spd-chip svg { color: var(--text-muted); }
+.spd-chip:hover { border-color: var(--border); }
+.spd-chip svg { color: var(--muted-foreground); }
 
 /* Body two-col layout */
 .spd-body { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
@@ -551,8 +552,8 @@ defineEmits(['go-search'])
 
 /* Left rail */
 .spd-rail {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px;
   display: flex;
@@ -561,14 +562,14 @@ defineEmits(['go-search'])
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .spd-rail-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-.spd-rail-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.spd-rail-title { font-size: 0.9rem; font-weight: 600; color: var(--foreground); }
 .spd-rail-sort {
   appearance: none;
   background: transparent;
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .spd-rail-add {
   appearance: none;
@@ -577,14 +578,14 @@ defineEmits(['go-search'])
   justify-content: space-between;
   padding: 8px 12px;
   background: transparent;
-  border: 1px dashed var(--border-color, #e5e7eb);
+  border: 1px dashed var(--border);
   border-radius: 10px;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
 }
-.spd-rail-add:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.spd-rail-add:hover { color: var(--foreground); border-color: var(--muted-foreground); }
 .spd-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .spd-rail-item {
   appearance: none;
@@ -598,13 +599,13 @@ defineEmits(['go-search'])
   background: transparent;
   font: inherit;
   font-size: 0.85rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   cursor: pointer;
 }
-.spd-rail-item:hover { background: var(--bg-subtle, #fafafa); }
-.spd-rail-item.is-on { background: var(--bg-subtle, #fafafa); font-weight: 500; }
+.spd-rail-item:hover { background: var(--muted); }
+.spd-rail-item.is-on { background: var(--muted); font-weight: 500; }
 .spd-rail-name { text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.spd-rail-count { font-size: 0.78rem; color: var(--text-muted); margin-left: 8px; font-variant-numeric: tabular-nums; }
+.spd-rail-count { font-size: 0.78rem; color: var(--muted-foreground); margin-left: 8px; font-variant-numeric: tabular-nums; }
 
 /* Main column */
 .spd-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -625,10 +626,10 @@ defineEmits(['go-search'])
   font: inherit;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   cursor: pointer;
 }
-.spd-subtab.is-on { color: var(--text-primary); background: var(--bg-subtle, #fafafa); font-weight: 600; }
+.spd-subtab.is-on { color: var(--foreground); background: var(--muted); font-weight: 600; }
 
 .spd-head-actions { display: flex; gap: 8px; align-items: center; }
 .spd-head-count {
@@ -636,11 +637,11 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 4px;
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   padding: 4px 12px 4px 8px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--bg-card, #fff);
+  background: var(--card);
   font-variant-numeric: tabular-nums;
 }
 .spd-head-count svg { color: #10b981; }
@@ -650,8 +651,8 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  background: var(--text-primary, #131718);
-  color: var(--text-inverse, #fff);
+  background: var(--foreground);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   font: inherit;
@@ -668,8 +669,8 @@ defineEmits(['go-search'])
   justify-content: space-between;
   gap: 16px;
   padding: 12px 14px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
@@ -680,11 +681,11 @@ defineEmits(['go-search'])
   flex: 1;
   max-width: 320px;
   padding: 0 12px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg-input, #fff);
+  background: var(--background);
 }
-.spd-search-wrap svg { color: var(--text-muted); }
+.spd-search-wrap svg { color: var(--muted-foreground); }
 .spd-search {
   flex: 1;
   border: none;
@@ -692,7 +693,7 @@ defineEmits(['go-search'])
   padding: 8px 0;
   font: inherit;
   font-size: 0.88rem;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 .spd-search:focus { outline: none; }
 
@@ -702,11 +703,11 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
-.spd-kpi-label { color: var(--text-muted); }
+.spd-kpi-label { color: var(--muted-foreground); }
 .spd-kpi strong { font-weight: 600; font-variant-numeric: tabular-nums; }
-.spd-kpi-sep { width: 1px; height: 14px; background: var(--border-color, #e5e7eb); }
+.spd-kpi-sep { width: 1px; height: 14px; background: var(--border); }
 .spd-kpi-dot { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; }
 .spd-kpi-dot.is-pos { background: #10b981; }
 .spd-kpi-dot.is-neu { background: #6b7280; }
@@ -714,8 +715,8 @@ defineEmits(['go-search'])
 
 /* Table */
 .spd-table-wrap {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -727,10 +728,10 @@ defineEmits(['go-search'])
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 12px 14px;
-  background: var(--bg-subtle, #fafafa);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
 }
 .spd-table th.num, .spd-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .spd-th-check { width: 36px; }
@@ -738,15 +739,15 @@ defineEmits(['go-search'])
 .spd-th-with-icon { display: inline-flex; align-items: center; gap: 4px; }
 .spd-table td {
   padding: 14px;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 .spd-table tbody tr { cursor: pointer; transition: background 0.12s ease; }
-.spd-table tbody tr:hover { background: var(--bg-subtle, #fafafa); }
+.spd-table tbody tr:hover { background: var(--muted); }
 .spd-table tbody tr:last-child td { border-bottom: none; }
-.spd-td-prompt { font-weight: 500; color: var(--text-primary); }
-.spd-mute { color: var(--text-muted); }
+.spd-td-prompt { font-weight: 500; color: var(--foreground); }
+.spd-mute { color: var(--muted-foreground); }
 
 .spd-vis { font-weight: 600; }
 .spd-pos { font-weight: 500; }
@@ -754,7 +755,7 @@ defineEmits(['go-search'])
   display: inline-block;
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--muted-foreground);
   margin-right: 4px;
   vertical-align: middle;
 }
@@ -767,7 +768,7 @@ defineEmits(['go-search'])
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid var(--bg-card, #fff);
+  border: 2px solid var(--card);
   margin-left: -6px;
   display: inline-block;
 }
@@ -777,14 +778,14 @@ defineEmits(['go-search'])
 .spd-mention-dot.is-gemini { background: #5b8def; }
 .spd-mention-dot.is-perplexity { background: #1ea7a0; }
 .spd-mention-dot.is-deepseek { background: #6366f1; }
-.spd-mention-more { font-size: 0.75rem; color: var(--text-muted); margin-left: 6px; }
+.spd-mention-more { font-size: 0.75rem; color: var(--muted-foreground); margin-left: 6px; }
 
 .spd-volume { display: inline-flex; gap: 2px; align-items: end; }
 .spd-vol-bar {
   width: 4px;
   height: 8px;
   border-radius: 1px;
-  background: var(--border-color, #e5e7eb);
+  background: var(--border);
 }
 .spd-vol-bar:nth-child(2) { height: 11px; }
 .spd-vol-bar:nth-child(3) { height: 14px; }
@@ -807,26 +808,26 @@ defineEmits(['go-search'])
 .spd-tag.is-informational { background: rgba(6, 182, 212, 0.10); color: #0e7490; }
 .spd-tag.is-persona { background: rgba(16, 185, 129, 0.10); color: #047857; }
 
-.spd-loc { color: var(--text-secondary); }
+.spd-loc { color: var(--muted-foreground); }
 
 /* Empty + footer */
 .spd-empty {
   padding: 60px 24px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
-.spd-empty h3 { margin: 6px 0 4px; color: var(--text-primary); font-size: 1rem; }
+.spd-empty h3 { margin: 6px 0 4px; color: var(--foreground); font-size: 1rem; }
 .spd-empty p { margin: 0; font-size: 0.88rem; }
-.spd-empty strong { color: var(--text-primary); font-weight: 600; }
+.spd-empty strong { color: var(--foreground); font-weight: 600; }
 .spd-add-empty { margin-top: 10px; }
 .spd-spinner {
   width: 24px; height: 24px;
-  border: 2px solid var(--border-color, #e5e7eb);
-  border-top-color: var(--text-primary);
+  border: 2px solid var(--border);
+  border-top-color: var(--foreground);
   border-radius: 50%;
   animation: spd-spin 0.9s linear infinite;
 }
@@ -838,7 +839,7 @@ defineEmits(['go-search'])
   justify-content: space-between;
   padding: 0 6px;
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 .spd-archive {
   appearance: none;
@@ -849,10 +850,10 @@ defineEmits(['go-search'])
   gap: 5px;
   font: inherit;
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   cursor: pointer;
 }
-.spd-archive:hover { color: var(--text-primary); }
+.spd-archive:hover { color: var(--foreground); }
 .spd-archive:disabled { opacity: 0.5; cursor: progress; }
 
 .spd-foot-actions { display: inline-flex; gap: 8px; }
@@ -862,8 +863,8 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  background: var(--text-primary, #131718);
-  color: var(--text-inverse, #fff);
+  background: var(--foreground);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 999px;
   font: inherit;
@@ -885,13 +886,13 @@ defineEmits(['go-search'])
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  color: var(--text-muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
   cursor: pointer;
   margin-left: 4px;
 }
-.spd-act-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.spd-act-btn:hover { color: var(--foreground); border-color: var(--muted-foreground); }
 .spd-act-accept:hover { color: #047857; border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.06); }
 .spd-act-reject:hover { color: #b91c1c; border-color: rgba(239,68,68,0.36); background: rgba(239,68,68,0.06); }
 
@@ -902,8 +903,8 @@ defineEmits(['go-search'])
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--text-primary, #131718);
-  color: var(--text-inverse, #fff);
+  background: var(--foreground);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   font: inherit;
@@ -922,7 +923,7 @@ defineEmits(['go-search'])
   height: 18px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--primary);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -934,12 +935,12 @@ defineEmits(['go-search'])
 [data-theme="dark"] .spd-kpis,
 [data-theme="dark"] .spd-table-wrap,
 [data-theme="dark"] .spd-head-count {
-  background: var(--bg-card);
-  border-color: var(--border-color);
+  background: var(--card);
+  border-color: var(--border);
 }
-[data-theme="dark"] .spd-search-wrap { background: var(--bg-input); border-color: var(--border-color); }
-[data-theme="dark"] .spd-table th { background: var(--bg-card-hover); color: var(--text-muted); border-color: var(--border-color); }
-[data-theme="dark"] .spd-table td { border-color: var(--border-color); color: var(--text-primary); }
-[data-theme="dark"] .spd-table tbody tr:hover { background: var(--bg-card-hover); }
-[data-theme="dark"] .spd-mention-dot { border-color: var(--bg-card); }
+[data-theme="dark"] .spd-search-wrap { background: var(--background); border-color: var(--border); }
+[data-theme="dark"] .spd-table th { background: var(--accent); color: var(--muted-foreground); border-color: var(--border); }
+[data-theme="dark"] .spd-table td { border-color: var(--border); color: var(--foreground); }
+[data-theme="dark"] .spd-table tbody tr:hover { background: var(--accent); }
+[data-theme="dark"] .spd-mention-dot { border-color: var(--card); }
 </style>

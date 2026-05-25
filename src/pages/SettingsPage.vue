@@ -1,270 +1,316 @@
 <template>
-  <div class="settings-page fade-in">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Settings</h1>
-        <p class="page-subtitle">Manage your account, preferences, and AI usage.</p>
-      </div>
+  <div class="settings-page mx-auto max-w-4xl px-6 py-8 sm:px-8">
+    <div class="mb-8">
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
+      <p class="mt-1 text-sm text-muted-foreground">Manage your account, preferences, and AI usage.</p>
     </div>
 
-    <div class="content-grid" style="grid-template-columns: 1fr">
+    <Tabs default-value="profile" class="w-full">
+      <TabsList class="mb-6">
+        <TabsTrigger value="profile">Profile</TabsTrigger>
+        <TabsTrigger value="usage">AI Usage</TabsTrigger>
+        <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        <TabsTrigger value="appearance">Appearance</TabsTrigger>
+      </TabsList>
+
       <!-- Profile -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><h3 class="card-title">Profile</h3></div>
-        <form @submit.prevent="saveProfile" class="settings-form">
-          <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input v-model="profile.full_name" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input v-model="profile.email" class="form-input" disabled />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company</label>
-            <input v-model="profile.company_name" class="form-input" />
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm" :disabled="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
-        </form>
-      </div>
+      <TabsContent value="profile">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form @submit.prevent="saveProfile" class="flex max-w-md flex-col gap-4">
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
+                <input v-model="profile.full_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
+                <input v-model="profile.email" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60" disabled />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-foreground">Company</label>
+                <input v-model="profile.company_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+              <Button type="submit" size="sm" class="w-fit" :disabled="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</Button>
+            </form>
+          </CardContent>
+        </Card>
+      </TabsContent>
 
       <!-- AI Usage & Token Tracking -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-          <h3 class="card-title" style="display:flex;align-items:center;gap:8px">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-            AI Usage & Tokens
-          </h3>
-          <select v-model="usagePeriod" @change="loadUsage" class="usage-period-select">
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
-        </div>
+      <TabsContent value="usage">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between gap-4 space-y-0">
+            <CardTitle class="flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+              AI Usage &amp; Tokens
+            </CardTitle>
+            <select v-model="usagePeriod" @change="loadUsage" class="rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </CardHeader>
+          <CardContent>
+            <div v-if="usageLoading" class="flex items-center gap-2.5 p-8 text-sm text-muted-foreground">
+              <div class="spinner"></div>
+              <span>Loading usage data...</span>
+            </div>
 
-        <div v-if="usageLoading" class="usage-loading">
-          <div class="spinner"></div>
-          <span>Loading usage data...</span>
-        </div>
+            <div v-else-if="usage">
+              <!-- Monthly Cap Progress -->
+              <div v-if="usage.cap_status && usage.cap_status.cap_usd > 0" class="mb-5 rounded-lg border border-border bg-muted px-3.5 py-3">
+                <div class="mb-1.5 flex justify-between text-sm text-foreground">
+                  <span class="font-semibold">Monthly AI spend</span>
+                  <span class="text-muted-foreground">
+                    ${{ usage.cap_status.spent_usd.toFixed(2) }} / ${{ usage.cap_status.cap_usd.toFixed(2) }}
+                    ({{ usage.cap_status.pct }}%)
+                  </span>
+                </div>
+                <div class="h-2 overflow-hidden rounded bg-border">
+                  <div
+                    class="cap-bar-fill h-full"
+                    :class="{ 'cap-bar-warn': usage.cap_status.pct >= 80, 'cap-bar-exceeded': usage.cap_status.exceeded }"
+                    :style="{ width: Math.min(100, usage.cap_status.pct) + '%' }"
+                  ></div>
+                </div>
+                <p v-if="usage.cap_status.exceeded" class="mt-2 text-xs text-destructive">
+                  Cap reached. New AI runs will be blocked until next month or until you raise the cap.
+                </p>
+                <div class="mt-2.5 flex items-center gap-2">
+                  <label class="text-xs font-semibold text-muted-foreground" for="capInput">Cap (USD)</label>
+                  <input
+                    id="capInput"
+                    v-model.number="capInput"
+                    type="number"
+                    step="1"
+                    min="0"
+                    class="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :disabled="capSaving"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    :disabled="capSaving || capInput === usage.cap_status.cap_usd"
+                    @click="saveCap"
+                  >{{ capSaving ? 'Saving…' : 'Save' }}</Button>
+                  <span v-if="capError" class="text-xs text-destructive">{{ capError }}</span>
+                </div>
+              </div>
+              <div v-else-if="usage.cap_status" class="mb-5 rounded-lg border border-border bg-muted px-3.5 py-3 text-xs italic text-muted-foreground">
+                <div>No monthly spend cap set. Add one to control runaway AI cost.</div>
+                <div class="mt-2.5 flex items-center gap-2 not-italic">
+                  <label class="text-xs font-semibold text-muted-foreground" for="capInputNew">Cap (USD)</label>
+                  <input
+                    id="capInputNew"
+                    v-model.number="capInput"
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="50"
+                    class="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :disabled="capSaving"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    :disabled="capSaving || !capInput"
+                    @click="saveCap"
+                  >{{ capSaving ? 'Saving…' : 'Set cap' }}</Button>
+                  <span v-if="capError" class="text-xs text-destructive">{{ capError }}</span>
+                </div>
+              </div>
 
-        <div v-else-if="usage" class="usage-content">
-          <!-- Monthly Cap Progress -->
-          <div v-if="usage.cap_status && usage.cap_status.cap_usd > 0" class="cap-bar-wrap">
-            <div class="cap-bar-header">
-              <span class="cap-bar-label">Monthly AI spend</span>
-              <span class="cap-bar-value">
-                ${{ usage.cap_status.spent_usd.toFixed(2) }} / ${{ usage.cap_status.cap_usd.toFixed(2) }}
-                ({{ usage.cap_status.pct }}%)
-              </span>
-            </div>
-            <div class="cap-bar">
-              <div
-                class="cap-bar-fill"
-                :class="{ 'cap-bar-warn': usage.cap_status.pct >= 80, 'cap-bar-exceeded': usage.cap_status.exceeded }"
-                :style="{ width: Math.min(100, usage.cap_status.pct) + '%' }"
-              ></div>
-            </div>
-            <p v-if="usage.cap_status.exceeded" class="cap-bar-msg">
-              Cap reached. New AI runs will be blocked until next month or until you raise the cap.
-            </p>
-            <div class="cap-input-row">
-              <label class="cap-input-label" for="capInput">Cap (USD)</label>
-              <input
-                id="capInput"
-                v-model.number="capInput"
-                type="number"
-                step="1"
-                min="0"
-                class="cap-input"
-                :disabled="capSaving"
-              />
-              <button
-                class="cap-input-btn"
-                :disabled="capSaving || capInput === usage.cap_status.cap_usd"
-                @click="saveCap"
-              >{{ capSaving ? 'Saving…' : 'Save' }}</button>
-              <span v-if="capError" class="cap-input-error">{{ capError }}</span>
-            </div>
-          </div>
-          <div v-else-if="usage.cap_status" class="cap-bar-wrap cap-bar-none">
-            <div>No monthly spend cap set. Add one to control runaway AI cost.</div>
-            <div class="cap-input-row">
-              <label class="cap-input-label" for="capInputNew">Cap (USD)</label>
-              <input
-                id="capInputNew"
-                v-model.number="capInput"
-                type="number"
-                step="1"
-                min="0"
-                placeholder="50"
-                class="cap-input"
-                :disabled="capSaving"
-              />
-              <button
-                class="cap-input-btn"
-                :disabled="capSaving || !capInput"
-                @click="saveCap"
-              >{{ capSaving ? 'Saving…' : 'Set cap' }}</button>
-              <span v-if="capError" class="cap-input-error">{{ capError }}</span>
-            </div>
-          </div>
+              <!-- Totals Row -->
+              <div class="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(usage.totals.calls) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">API Calls</div>
+                </div>
+                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.total_tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total Tokens</div>
+                </div>
+                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.input_tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Input Tokens</div>
+                </div>
+                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.output_tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Output Tokens</div>
+                </div>
+                <div class="rounded-xl border border-border bg-accent p-3.5 text-center">
+                  <div class="text-xl font-bold tracking-tight text-[color:var(--chart-1)]">${{ usage.totals.estimated_cost_usd.toFixed(4) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Est. Cost</div>
+                </div>
+              </div>
 
-          <!-- Totals Row -->
-          <div class="usage-totals">
-            <div class="usage-stat">
-              <div class="usage-stat-value">{{ formatNum(usage.totals.calls) }}</div>
-              <div class="usage-stat-label">API Calls</div>
-            </div>
-            <div class="usage-stat">
-              <div class="usage-stat-value">{{ formatTokens(usage.totals.total_tokens) }}</div>
-              <div class="usage-stat-label">Total Tokens</div>
-            </div>
-            <div class="usage-stat">
-              <div class="usage-stat-value">{{ formatTokens(usage.totals.input_tokens) }}</div>
-              <div class="usage-stat-label">Input Tokens</div>
-            </div>
-            <div class="usage-stat">
-              <div class="usage-stat-value">{{ formatTokens(usage.totals.output_tokens) }}</div>
-              <div class="usage-stat-label">Output Tokens</div>
-            </div>
-            <div class="usage-stat cost">
-              <div class="usage-stat-value">${{ usage.totals.estimated_cost_usd.toFixed(4) }}</div>
-              <div class="usage-stat-label">Est. Cost</div>
-            </div>
-          </div>
+              <!-- Module Breakdown -->
+              <div class="mb-5" v-if="usage.by_module.length">
+                <h4 class="usage-section-title">Usage by Module</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Module</TableHead>
+                      <TableHead>Calls</TableHead>
+                      <TableHead>Tokens</TableHead>
+                      <TableHead>Cost</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="m in usage.by_module" :key="m.module">
+                      <TableCell class="font-semibold text-foreground">
+                        <span class="inline-flex items-center gap-2">
+                          <span class="module-dot" :class="m.module"></span>
+                          {{ moduleLabels[m.module] || m.module }}
+                        </span>
+                      </TableCell>
+                      <TableCell>{{ formatNum(m.calls) }}</TableCell>
+                      <TableCell>{{ formatTokens(m.tokens) }}</TableCell>
+                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ m.cost.toFixed(4) }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
 
-          <!-- Module Breakdown -->
-          <div class="usage-section" v-if="usage.by_module.length">
-            <h4 class="usage-section-title">Usage by Module</h4>
-            <div class="usage-table">
-              <div class="usage-table-header">
-                <span>Module</span>
-                <span>Calls</span>
-                <span>Tokens</span>
-                <span>Cost</span>
+              <!-- Provider Breakdown -->
+              <div class="mb-5" v-if="usage.by_provider && usage.by_provider.length">
+                <h4 class="usage-section-title">Usage by Provider</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Provider</TableHead>
+                      <TableHead>Calls</TableHead>
+                      <TableHead>Tokens</TableHead>
+                      <TableHead>Cost</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="p in usage.by_provider" :key="p.provider">
+                      <TableCell class="font-medium text-muted-foreground">{{ providerLabels[p.provider] || p.provider }}</TableCell>
+                      <TableCell>{{ formatNum(p.calls) }}</TableCell>
+                      <TableCell>{{ formatTokens(p.tokens) }}</TableCell>
+                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ p.cost.toFixed(4) }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </div>
-              <div v-for="m in usage.by_module" :key="m.module" class="usage-table-row">
-                <span class="module-name">
-                  <span class="module-dot" :class="m.module"></span>
-                  {{ moduleLabels[m.module] || m.module }}
-                </span>
-                <span>{{ formatNum(m.calls) }}</span>
-                <span>{{ formatTokens(m.tokens) }}</span>
-                <span class="cost-cell">${{ m.cost.toFixed(4) }}</span>
+
+              <!-- Role Split -->
+              <div class="mb-5" v-if="usage.by_role && usage.by_role.length">
+                <h4 class="usage-section-title">Upstream vs Internal Parsing</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Calls</TableHead>
+                      <TableHead>Tokens</TableHead>
+                      <TableHead>Cost</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="r in usage.by_role" :key="r.role">
+                      <TableCell class="font-medium text-muted-foreground">{{ roleLabels[r.role] || r.role }}</TableCell>
+                      <TableCell>{{ formatNum(r.calls) }}</TableCell>
+                      <TableCell>{{ formatTokens(r.tokens) }}</TableCell>
+                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ r.cost.toFixed(4) }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <!-- Model Breakdown -->
+              <div class="mb-5" v-if="usage.by_model.length">
+                <h4 class="usage-section-title">Usage by Model</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Calls</TableHead>
+                      <TableHead>Tokens</TableHead>
+                      <TableHead>Cost</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="m in usage.by_model" :key="m.model_name">
+                      <TableCell class="font-mono text-xs font-medium text-muted-foreground">{{ m.model_name }}</TableCell>
+                      <TableCell>{{ formatNum(m.calls) }}</TableCell>
+                      <TableCell>{{ formatTokens(m.tokens) }}</TableCell>
+                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ m.cost.toFixed(4) }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <!-- Daily Chart -->
+              <div class="mb-5" v-if="usage.daily.length">
+                <h4 class="usage-section-title">Daily Token Usage</h4>
+                <div class="usage-chart">
+                  <div v-for="d in usage.daily" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} calls`">
+                    <div class="chart-bar" :style="{ height: barHeight(d.tokens) + '%' }"></div>
+                    <span class="chart-label">{{ formatDay(d.day) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty state -->
+              <div v-if="!usage.by_module.length" class="flex flex-col items-center gap-2.5 p-8 text-center">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded yet. Token tracking starts automatically when you use AI features like Lead Finder, Agents, Messaging, or LLM Dashboard.</p>
               </div>
             </div>
-          </div>
-
-          <!-- Provider Breakdown -->
-          <div class="usage-section" v-if="usage.by_provider && usage.by_provider.length">
-            <h4 class="usage-section-title">Usage by Provider</h4>
-            <div class="usage-table">
-              <div class="usage-table-header">
-                <span>Provider</span>
-                <span>Calls</span>
-                <span>Tokens</span>
-                <span>Cost</span>
-              </div>
-              <div v-for="p in usage.by_provider" :key="p.provider" class="usage-table-row">
-                <span class="model-name">{{ providerLabels[p.provider] || p.provider }}</span>
-                <span>{{ formatNum(p.calls) }}</span>
-                <span>{{ formatTokens(p.tokens) }}</span>
-                <span class="cost-cell">${{ p.cost.toFixed(4) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Role Split -->
-          <div class="usage-section" v-if="usage.by_role && usage.by_role.length">
-            <h4 class="usage-section-title">Upstream vs Internal Parsing</h4>
-            <div class="usage-table">
-              <div class="usage-table-header">
-                <span>Role</span>
-                <span>Calls</span>
-                <span>Tokens</span>
-                <span>Cost</span>
-              </div>
-              <div v-for="r in usage.by_role" :key="r.role" class="usage-table-row">
-                <span class="model-name">{{ roleLabels[r.role] || r.role }}</span>
-                <span>{{ formatNum(r.calls) }}</span>
-                <span>{{ formatTokens(r.tokens) }}</span>
-                <span class="cost-cell">${{ r.cost.toFixed(4) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Model Breakdown -->
-          <div class="usage-section" v-if="usage.by_model.length">
-            <h4 class="usage-section-title">Usage by Model</h4>
-            <div class="usage-table">
-              <div class="usage-table-header">
-                <span>Model</span>
-                <span>Calls</span>
-                <span>Tokens</span>
-                <span>Cost</span>
-              </div>
-              <div v-for="m in usage.by_model" :key="m.model_name" class="usage-table-row">
-                <span class="model-name">{{ m.model_name }}</span>
-                <span>{{ formatNum(m.calls) }}</span>
-                <span>{{ formatTokens(m.tokens) }}</span>
-                <span class="cost-cell">${{ m.cost.toFixed(4) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Daily Chart -->
-          <div class="usage-section" v-if="usage.daily.length">
-            <h4 class="usage-section-title">Daily Token Usage</h4>
-            <div class="usage-chart">
-              <div v-for="d in usage.daily" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} calls`">
-                <div class="chart-bar" :style="{ height: barHeight(d.tokens) + '%' }"></div>
-                <span class="chart-label">{{ formatDay(d.day) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty state -->
-          <div v-if="!usage.by_module.length" class="usage-empty">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-            <p>No AI usage recorded yet. Token tracking starts automatically when you use AI features like Lead Finder, Agents, Messaging, or LLM Dashboard.</p>
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
 
       <!-- Notification Preferences -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><h3 class="card-title">Notification Preferences</h3></div>
-        <div class="settings-form">
-          <label class="toggle-row">
-            <span>Hot lead email alerts</span>
-            <input type="checkbox" v-model="notifPrefs.hot_lead_email" @change="saveNotifPrefs" />
-          </label>
-          <label class="toggle-row">
-            <span>Weekly report</span>
-            <input type="checkbox" v-model="notifPrefs.weekly_report" @change="saveNotifPrefs" />
-          </label>
-          <label class="toggle-row">
-            <span>Competitor change alerts</span>
-            <input type="checkbox" v-model="notifPrefs.competitor_changes" @change="saveNotifPrefs" />
-          </label>
-          <label class="toggle-row">
-            <span>Audit complete alerts</span>
-            <input type="checkbox" v-model="notifPrefs.audit_complete" @change="saveNotifPrefs" />
-          </label>
-        </div>
-      </div>
+      <TabsContent value="notifications">
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Preferences</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="flex max-w-md flex-col">
+              <label class="toggle-row">
+                <span>Hot lead email alerts</span>
+                <input type="checkbox" v-model="notifPrefs.hot_lead_email" @change="saveNotifPrefs" />
+              </label>
+              <label class="toggle-row">
+                <span>Weekly report</span>
+                <input type="checkbox" v-model="notifPrefs.weekly_report" @change="saveNotifPrefs" />
+              </label>
+              <label class="toggle-row">
+                <span>Competitor change alerts</span>
+                <input type="checkbox" v-model="notifPrefs.competitor_changes" @change="saveNotifPrefs" />
+              </label>
+              <label class="toggle-row">
+                <span>Audit complete alerts</span>
+                <input type="checkbox" v-model="notifPrefs.audit_complete" @change="saveNotifPrefs" />
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
 
       <!-- Theme -->
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">Appearance</h3></div>
-        <div class="settings-form">
-          <label class="toggle-row">
-            <span>Dark Mode</span>
-            <input type="checkbox" :checked="appStore.theme === 'dark'" @change="appStore.toggleTheme()" />
-          </label>
-        </div>
-      </div>
-    </div>
+      <TabsContent value="appearance">
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="flex max-w-md flex-col">
+              <label class="toggle-row">
+                <span>Dark Mode</span>
+                <input type="checkbox" :checked="appStore.theme === 'dark'" @change="appStore.toggleTheme()" />
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   </div>
 </template>
 
@@ -273,6 +319,10 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import notificationsApi from '@/api/notifications'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -442,243 +492,74 @@ async function saveNotifPrefs() {
 </script>
 
 <style scoped>
-.settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 480px;
-}
-
-.cap-bar-wrap {
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  background: var(--bg-soft, #f8fafc);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-}
-.cap-bar-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--font-sm);
-  margin-bottom: 6px;
-  color: var(--text-primary);
-}
-.cap-bar-label { font-weight: 600; }
-.cap-bar-value { color: var(--text-secondary); }
-.cap-bar {
-  height: 8px;
-  background: var(--border-color);
-  border-radius: 4px;
-  overflow: hidden;
-}
 .cap-bar-fill {
-  height: 100%;
-  background: #16a34a;
+  background: var(--chart-2);
   transition: width 0.2s;
 }
-.cap-bar-warn { background: #f59e0b; }
-.cap-bar-exceeded { background: #dc2626; }
-.cap-bar-msg {
-  margin: 8px 0 0;
-  font-size: var(--font-xs);
-  color: #dc2626;
-}
-.cap-bar-none {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  font-style: italic;
-}
-.cap-input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-style: normal;
-}
-.cap-input-label {
-  font-size: var(--font-xs);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-.cap-input {
-  width: 90px;
-  padding: 4px 8px;
-  font-size: var(--font-sm);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-base, #fff);
-  color: var(--text-primary);
-}
-.cap-input-btn {
-  padding: 4px 12px;
-  font-size: var(--font-xs);
-  font-weight: 600;
-  border: 1px solid var(--border-color);
-  background: var(--bg-base, #fff);
-  color: var(--text-primary);
-  border-radius: 4px;
-  cursor: pointer;
-}
-.cap-input-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.cap-input-error {
-  font-size: var(--font-xs);
-  color: #dc2626;
-}
+.cap-bar-warn { background: var(--chart-3); }
+.cap-bar-exceeded { background: var(--destructive); }
 
 .toggle-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-size: var(--font-sm);
-  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--foreground);
   cursor: pointer;
 }
-
 .toggle-row:last-child { border-bottom: none; }
-
 .toggle-row input[type="checkbox"] {
-  accent-color: var(--text-primary);
+  accent-color: var(--primary);
   width: 18px;
   height: 18px;
 }
 
-/* ── AI Usage Styles ── */
-.usage-period-select {
-  padding: 6px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 13px;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.usage-loading {
-  display: flex; align-items: center; gap: 10px;
-  padding: 32px; color: var(--text-muted); font-size: 14px;
-}
-
+/* ── Spinner ── */
 .spinner {
   width: 18px; height: 18px;
-  border: 2px solid var(--border-color);
-  border-top-color: #6366f1;
+  border: 2px solid var(--border);
+  border-top-color: var(--chart-1);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.usage-content { padding: 4px 0; }
-
-.usage-totals {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
-  margin-bottom: 20px;
-}
-
-.usage-stat {
-  background: var(--bg-surface); border: 1px solid var(--border-color);
-  border-radius: 10px; padding: 14px; text-align: center;
-}
-
-.usage-stat.cost { background: linear-gradient(135deg, #eef2ff, #faf5ff); }
-[data-theme="dark"] .usage-stat.cost { background: linear-gradient(135deg, #1e1b4b, #2e1065); }
-
-.usage-stat-value {
-  font-size: 20px; font-weight: 700; color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.usage-stat.cost .usage-stat-value { color: #6366f1; }
-
-.usage-stat-label {
-  font-size: 11px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;
-}
-
-.usage-section { margin-bottom: 20px; }
-
 .usage-section-title {
-  font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  font-size: 13px; font-weight: 700; color: var(--muted-foreground);
   text-transform: uppercase; letter-spacing: 0.05em;
   margin: 0 0 10px; padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.usage-table { font-size: 13px; }
-
-.usage-table-header {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-  padding: 8px 0; font-size: 11px; font-weight: 700;
-  color: var(--text-muted); text-transform: uppercase;
-  letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color);
-}
-
-.usage-table-row {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-  padding: 10px 0; align-items: center;
-  border-bottom: 1px solid var(--bg-surface);
-  transition: background 0.1s;
-}
-
-.usage-table-row:hover { background: var(--bg-surface); }
-
-.module-name {
-  display: flex; align-items: center; gap: 8px;
-  font-weight: 600; color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
 }
 
 .module-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  display: inline-block;
 }
-
-.module-dot.llm_ranking { background: #ec4899; }
-.module-dot.rag { background: #22c55e; }
-.module-dot.onboarding { background: #f97316; }
-
-.model-name {
-  font-family: 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
-  font-size: 12px; font-weight: 500; color: var(--text-secondary);
-}
-
-.cost-cell { color: #6366f1; font-weight: 600; }
+.module-dot.llm_ranking { background: var(--chart-1); }
+.module-dot.rag { background: var(--chart-2); }
+.module-dot.onboarding { background: var(--chart-3); }
 
 /* Daily chart */
 .usage-chart {
   display: flex; align-items: flex-end; gap: 3px;
   height: 120px; padding: 8px 0;
 }
-
 .chart-bar-wrap {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; height: 100%; justify-content: flex-end;
   cursor: pointer;
 }
-
 .chart-bar {
   width: 100%; min-width: 4px; max-width: 32px;
-  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  background: linear-gradient(180deg, var(--chart-1), var(--chart-4));
   border-radius: 3px 3px 0 0; transition: height 0.3s ease;
 }
-
-.chart-bar-wrap:hover .chart-bar { background: #4f46e5; }
-
+.chart-bar-wrap:hover .chart-bar { background: var(--primary); }
 .chart-label {
-  font-size: 9px; color: var(--text-muted); margin-top: 4px;
+  font-size: 9px; color: var(--muted-foreground); margin-top: 4px;
   writing-mode: vertical-rl; text-orientation: mixed;
   transform: rotate(180deg); white-space: nowrap;
-}
-
-.usage-empty {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 32px; gap: 10px; text-align: center;
-}
-
-.usage-empty p { font-size: 13px; color: var(--text-muted); max-width: 400px; margin: 0; }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .usage-totals { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
