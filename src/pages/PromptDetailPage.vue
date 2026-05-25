@@ -131,6 +131,31 @@
       </div>
     </div>
 
+    <!-- Visibility by model -->
+    <section class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <BarChart3 :size="16" :stroke-width="2"/>
+        Visibility by model
+      </h2>
+      <p class="pd-section-sub">How often {{ brandLabel }} appears in each model's answers to this prompt.</p>
+    </section>
+
+    <div class="pd-card">
+      <div class="pd-bymodel">
+        <div v-for="m in (detail?.by_model || [])" :key="m.provider" class="pd-bymodel-row">
+          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+          <span class="pd-bymodel-name">{{ m.label }}</span>
+          <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
+          <template v-else-if="m.responses">
+            <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
+            <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
+          </template>
+          <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
+        </div>
+        <div v-if="!(detail?.by_model || []).length" class="pd-mute" style="padding: 8px 0">No model data yet.</div>
+      </div>
+    </div>
+
     <!-- Top Domains + Domain type breakdown -->
     <section class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
@@ -778,6 +803,22 @@ function onFaviconError(ev, d) {
 }
 @keyframes pd-spin { to { transform: rotate(360deg); } }
 [data-theme="dark"] .pd-fanout-prov { background: var(--accent); }
+
+/* Visibility by model */
+.pd-bymodel { display: flex; flex-direction: column; gap: 10px; }
+.pd-bymodel-row { display: flex; align-items: center; gap: 10px; }
+.pd-bymodel-name { width: 110px; font-size: 0.88rem; color: var(--foreground); }
+.pd-bymodel-bar {
+  flex: 1; height: 8px; border-radius: 9999px; background: var(--muted);
+  overflow: hidden;
+}
+.pd-bymodel-bar > span {
+  display: block; height: 100%; border-radius: 9999px;
+  background: var(--chart-1, #5b8def);
+}
+.pd-bymodel-val { width: 48px; text-align: right; font-size: 0.85rem; font-variant-numeric: tabular-nums; color: var(--foreground); }
+.pd-bymodel-na { flex: 1; font-size: 0.82rem; color: var(--muted-foreground); }
+.pd-bymodel-nodata { font-style: italic; }
 
 /* Recent chats */
 .pd-chat-row { cursor: pointer; }
