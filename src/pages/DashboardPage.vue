@@ -36,7 +36,6 @@
           </TabsList>
 
           <TabsContent value="overview" class="space-y-6">
-            <KpiCards :stats="stats" />
             <OverviewSection :active-name="activeName" />
           </TabsContent>
 
@@ -86,7 +85,6 @@ import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
 import OverviewSection from '@/components/overview/OverviewSection.vue'
 
-import KpiCards from '@/components/dashboard/KpiCards.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
 import MorningBrief from '@/components/dashboard/MorningBrief.vue'

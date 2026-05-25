@@ -27,6 +27,33 @@ export function fallbackDomains() {
   ]
 }
 
+export function fallbackInsightKpis() {
+  return [
+    { label: 'Visibility', value: '65.4%', delta: '+65.4%', up: true },
+    { label: 'Sentiment', value: '58', delta: '+8.0', up: true, dot: true },
+    { label: 'Position', value: '#6.7', delta: '+6.7', up: true },
+    { label: 'SoV', value: '94.9%', delta: '+94.9%', up: true },
+    { label: 'Strongest model', value: 'Perplexity' },
+    { label: 'Weakest model', value: 'ChatGPT' },
+  ]
+}
+
+export function fallbackMatrix(activeName) {
+  return {
+    models: ['Grok', 'ChatGPT', 'Perplexity'],
+    rows: [
+      { brand: activeName || 'Your Brand', you: true, values: [69.2, 65.1, 63.7] },
+      { brand: 'YNAB', values: [7.7, 6.0, 4.2] },
+      { brand: 'Quicken', values: [9.4, 2.3, 0.9] },
+      { brand: 'Simplifi', values: [8.5, 0.5, 1.9] },
+      { brand: 'Mint', values: [3.4, 2.8, 1.9] },
+      { brand: 'PocketGuard', values: [1.7, 1.9, 3.7] },
+      { brand: 'Goodbudget', values: [1.7, 2.3, 1.4] },
+      { brand: 'Personal Capital', values: [0.9, 0.0, 0.5] },
+    ],
+  }
+}
+
 export function fallbackDomainTypes() {
   return {
     total: '10.3k',
