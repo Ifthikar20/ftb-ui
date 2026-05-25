@@ -205,7 +205,7 @@ function onFaviconError(e) {
 <template>
   <div class="flex flex-col gap-6">
     <!-- ── Header / breadcrumb row ── -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
         <span class="font-medium text-foreground">Sources</span>
         <ChevronRight class="size-3.5" />
@@ -289,7 +289,7 @@ function onFaviconError(e) {
             class="relative flex items-center justify-between gap-3 overflow-hidden rounded-md px-3 py-2">
             <div class="absolute inset-y-0 left-0 rounded-md bg-secondary"
               :style="{ width: (row.retrievals / moverMax * 100) + '%' }" />
-            <span class="relative z-10 truncate text-sm text-foreground" :title="row.title">{{ row.title }}</span>
+            <span class="relative z-10 min-w-0 truncate text-sm text-foreground" :title="row.title">{{ row.title }}</span>
             <span class="relative z-10 shrink-0 text-sm font-semibold tabular-nums text-foreground">{{ row.retrievals }}</span>
           </div>
         </CardContent>
@@ -320,7 +320,7 @@ function onFaviconError(e) {
     </div>
 
     <!-- ── URLs table ── -->
-    <div class="flex items-end justify-between">
+    <div class="flex flex-wrap items-end justify-between gap-2">
       <div>
         <h2 class="text-lg font-bold text-foreground">URLs</h2>
         <p class="text-sm text-muted-foreground">Every page AI used for this brand</p>
@@ -366,11 +366,11 @@ function onFaviconError(e) {
 
         <!-- table -->
         <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
+          <table class="w-full min-w-[820px] border-collapse text-sm">
             <thead>
               <tr class="border-b border-border text-left text-xs font-medium text-muted-foreground">
                 <th class="w-8 py-2"></th>
-                <th class="py-2 pr-3">URL</th>
+                <th class="w-[40%] py-2 pr-3">URL</th>
                 <th class="py-2 pr-3">URL type</th>
                 <th class="py-2 pr-3">Domain type</th>
                 <th class="py-2 pr-3">Mentions</th>
