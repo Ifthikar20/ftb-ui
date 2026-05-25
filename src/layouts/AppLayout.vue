@@ -109,7 +109,7 @@
 
       <SidebarInset>
         <header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/95 backdrop-blur transition-[width,height] ease-linear">
-          <div class="flex items-center gap-2 px-4">
+          <div class="flex items-center gap-2 px-4 md:px-6">
             <SidebarTrigger class="-ml-1" />
             <Separator orientation="vertical" class="mr-2 h-4" />
             <Breadcrumb>
@@ -128,7 +128,7 @@
             </Breadcrumb>
           </div>
 
-          <div class="ml-auto flex items-center gap-2 px-4">
+          <div class="ml-auto flex items-center gap-2 px-4 md:px-6">
             <button
               class="flex items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-background"
               @click="openSearch"
@@ -143,7 +143,7 @@
           </div>
         </header>
 
-        <div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <div class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6">
           <router-view v-slot="{ Component }">
             <transition name="page-fade" mode="out-in">
               <keep-alive :max="10">
