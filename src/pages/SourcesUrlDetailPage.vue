@@ -10,6 +10,7 @@ import {
   ChevronRight, MoreHorizontal, Info, Search, Upload, Loader2, ExternalLink,
 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
+import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import {
   Card, CardHeader, CardTitle, CardContent,
 } from '@/components/ui/card'
@@ -142,6 +143,22 @@ watch(() => [websiteId.value, targetUrl.value], load)
 
 function backToList() {
   router.push({ name: 'sources-urls', params: { websiteId: websiteId.value } })
+}
+
+/* ── Chat detail modal ── */
+const chatOpen = ref(false)
+const chatIndex = ref(0)
+const chatList = computed(() => detail.value?.chats || [])
+const currentChatId = computed(() => chatList.value[chatIndex.value]?.result_id || '')
+function openChat(i) {
+  chatIndex.value = i
+  chatOpen.value = true
+}
+function prevChat() {
+  if (chatIndex.value > 0) chatIndex.value -= 1
+}
+function nextChat() {
+  if (chatIndex.value < chatList.value.length - 1) chatIndex.value += 1
 }
 function fmtTime(iso) {
   if (!iso) return '—'
@@ -327,7 +344,8 @@ function fmtTime(iso) {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="c in detail.chats" :key="c.result_id" class="border-b border-border/60">
+                <tr v-for="(c, ci) in detail.chats" :key="c.result_id"
+                  class="cursor-pointer border-b border-border/60 hover:bg-muted/50" @click="openChat(ci)">
                   <td class="py-3 pr-3">
                     <div class="font-medium text-foreground line-clamp-1">{{ c.prompt }}</div>
                     <div class="text-xs text-muted-foreground line-clamp-1">{{ c.response_preview }}</div>
@@ -358,5 +376,16 @@ function fmtTime(iso) {
         </CardContent>
       </Card>
     </template>
+
+    <ChatDetailModal
+      :open="chatOpen"
+      :website-id="websiteId"
+      :result-id="currentChatId"
+      :has-prev="chatIndex > 0"
+      :has-next="chatIndex < chatList.length - 1"
+      @close="chatOpen = false"
+      @prev="prevChat"
+      @next="nextChat"
+    />
   </div>
 </template>
