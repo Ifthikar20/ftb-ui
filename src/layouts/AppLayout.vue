@@ -1,141 +1,132 @@
 <template>
-  <div
-    class="app-layout"
-    :class="{
-      'sidebar-collapsed': appStore.sidebarCollapsed,
-      'is-onboarding': sessionNeedsOnboarding,
-    }"
-  >
+  <div class="flex min-h-screen bg-background text-foreground">
     <!-- Sidebar (hidden while first-run onboarding is required) -->
-    <aside v-if="!sessionNeedsOnboarding" class="sidebar">
-      <div class="sidebar-brand">
-        <img src="/images/fb-logo.png" alt="FetchBot" class="brand-logo" />
-        <span v-if="!appStore.sidebarCollapsed" class="brand-name">FetchBot</span>
+    <aside
+      v-if="!sessionNeedsOnboarding"
+      class="fixed inset-y-0 left-0 z-[100] flex flex-col overflow-y-auto overflow-x-hidden border-r border-border bg-card transition-[width] duration-200"
+      :class="appStore.sidebarCollapsed ? 'w-[68px]' : 'w-64'"
+    >
+      <div class="flex items-center gap-3 px-5 pb-4 pt-5">
+        <img src="/images/fb-logo.png" alt="FetchBot" class="size-9 shrink-0 object-contain" />
+        <span v-if="!appStore.sidebarCollapsed" class="text-lg font-bold tracking-tight">FetchBot</span>
       </div>
 
       <!-- Project Selector -->
-      <div v-if="!appStore.sidebarCollapsed" class="project-select">
-        <select class="form-input" @change="switchWebsite($event.target.value)" style="font-size:var(--font-sm);padding:8px 12px">
+      <div v-if="!appStore.sidebarCollapsed" class="px-4 pb-4">
+        <select
+          class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          @change="switchWebsite($event.target.value)"
+        >
           <option v-for="w in appStore.websites" :key="w.id" :value="w.id" :selected="w.id === appStore.activeWebsite?.id">
             {{ w.name }}
           </option>
         </select>
-        <div class="project-limit-row">
-          <span class="project-limit-badge">{{ appStore.projectLimitLabel }}</span>
-          <button class="btn-add-project" :disabled="!appStore.canCreateProject" @click="showAddProject = true" :title="appStore.canCreateProject ? 'Add a new project' : 'Upgrade your plan to add more'">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+        <div class="mt-2 flex items-center justify-between">
+          <span class="text-xs font-medium text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
+          <button
+            class="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-foreground hover:text-foreground disabled:opacity-40"
+            :disabled="!appStore.canCreateProject"
+            @click="showAddProject = true"
+            :title="appStore.canCreateProject ? 'Add a new project' : 'Upgrade your plan to add more'"
+          >
+            <Plus class="size-3.5" />
           </button>
         </div>
       </div>
 
       <!-- Nav -->
-      <nav class="sidebar-nav">
-        <div class="nav-section-label">Overview</div>
-        <router-link to="/dashboard" class="nav-link" exact-active-class="active" style="--nav-color: #5B8DEF">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Dashboard</span>
-        </router-link>
-        <router-link to="/websites" class="nav-link" exact-active-class="active" style="--nav-color: #8b5cf6">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.5"/><ellipse cx="8" cy="8" rx="3" ry="7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Projects</span>
-        </router-link>
-
-        <div class="nav-section-label">Intelligence</div>
-        <router-link :to="analyticsRoute" class="nav-link" exact-active-class="active" style="--nav-color: #f97316">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 14V6l4-4 4 4 4-4v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Analytics</span>
-        </router-link>
-        <router-link :to="llmRankingRoute" class="nav-link" exact-active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/><path d="M5 2l6 0" stroke-linecap="round"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">LLM Dashboard</span>
-        </router-link>
-        <router-link :to="promptLibraryRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"/><path d="M5 6h6M5 9h4"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Prompts</span>
-        </router-link>
-        <router-link :to="sourceInfluenceRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13h12"/><rect x="3" y="8" width="2" height="5"/><rect x="7" y="5" width="2" height="8"/><rect x="11" y="2" width="2" height="11"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Model Test</span>
-        </router-link>
-        <router-link :to="brandVaultRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #ec4899">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4l5-2 5 2v5c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10 7"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Brand Vault</span>
-        </router-link>
-        <router-link :to="contentStudioRoute" class="nav-link nav-sub" active-class="active" style="--nav-color: #FF385C">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/><path d="M5 8h6M5 11h4"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Content</span>
-        </router-link>
-
-        <router-link to="/app/integrations" class="nav-link" exact-active-class="active" style="--nav-color: #22c55e">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.5-1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Integrations</span>
-        </router-link>
-
-        <div class="nav-section-label">Account</div>
-        <router-link to="/billing" class="nav-link" exact-active-class="active" style="--nav-color: #64748b">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Billing</span>
-        </router-link>
-        <router-link to="/settings" class="nav-link" exact-active-class="active" style="--nav-color: #78716c">
-          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          <span v-if="!appStore.sidebarCollapsed" class="nav-text">Settings</span>
-        </router-link>
+      <nav class="flex-1 px-3">
+        <template v-for="section in navSections" :key="section.label">
+          <div
+            v-if="!appStore.sidebarCollapsed"
+            class="px-2 pb-2 pt-5 text-xs font-bold uppercase tracking-wider text-muted-foreground"
+          >
+            {{ section.label }}
+          </div>
+          <div v-else class="my-3 border-t border-border" />
+          <router-link
+            v-for="item in section.items"
+            :key="item.name"
+            :to="item.to"
+            :active-class="item.exact ? '' : ACTIVE_LINK"
+            :exact-active-class="item.exact ? ACTIVE_LINK : ''"
+            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            :class="appStore.sidebarCollapsed ? 'justify-center' : ''"
+            :title="item.name"
+          >
+            <component :is="item.icon" class="size-[18px] shrink-0" />
+            <span v-if="!appStore.sidebarCollapsed" class="whitespace-nowrap">{{ item.name }}</span>
+          </router-link>
+        </template>
       </nav>
 
       <!-- User Footer -->
-      <div class="sidebar-footer" v-if="!appStore.sidebarCollapsed">
-        <div class="user-block">
-          <div class="avatar avatar-sm">{{ userInitials }}</div>
-          <div class="user-info">
-            <div class="user-name">{{ authStore.user?.full_name || 'User' }}</div>
-            <div class="user-plan">{{ authStore.user?.plan || 'Free' }}</div>
+      <div
+        v-if="!appStore.sidebarCollapsed"
+        class="flex items-center justify-between border-t border-border p-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+            {{ userInitials }}
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-foreground">{{ authStore.user?.full_name || 'User' }}</div>
+            <div class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }}</div>
           </div>
         </div>
-        <button class="btn-ghost btn-icon" @click="handleLogout" title="Logout" style="color:var(--text-muted)">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3v12h3M11 4l4 4-4 4M7 8h8"/></svg>
+        <button
+          class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          @click="handleLogout"
+          title="Logout"
+        >
+          <LogOut class="size-4" />
         </button>
       </div>
     </aside>
 
     <!-- Main Content -->
-    <div class="main-wrapper">
-      <header v-if="!sessionNeedsOnboarding" class="topbar">
-        <button class="btn-icon sidebar-toggle" @click="appStore.toggleSidebar" :title="appStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <!-- Collapse: panel + left arrow. Expand: panel + right arrow. -->
-          <svg v-if="!appStore.sidebarCollapsed" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75">
-            <rect x="1" y="1" width="16" height="16" rx="2.5" />
-            <line x1="6" y1="1" x2="6" y2="17" />
-            <polyline points="10,6 8,9 10,12" />
-          </svg>
-          <svg v-else width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75">
-            <rect x="1" y="1" width="16" height="16" rx="2.5" />
-            <line x1="6" y1="1" x2="6" y2="17" />
-            <polyline points="8,6 10,9 8,12" />
-          </svg>
+    <div
+      class="flex flex-1 flex-col transition-[margin] duration-200"
+      :class="sessionNeedsOnboarding ? 'ml-0' : (appStore.sidebarCollapsed ? 'ml-[68px]' : 'ml-64')"
+    >
+      <header
+        v-if="!sessionNeedsOnboarding"
+        class="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-card px-7"
+      >
+        <button
+          class="flex items-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          @click="appStore.toggleSidebar"
+          :title="appStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <PanelLeftOpen v-if="appStore.sidebarCollapsed" class="size-[18px]" />
+          <PanelLeftClose v-else class="size-[18px]" />
         </button>
 
-        <div class="topbar-search" @click="openSearch">
-          <div class="search-trigger">
-            <Search :size="14" :stroke-width="1.8"/>
-            <span class="search-placeholder">Search pages...</span>
-            <span class="search-shortcut">{{ isMac ? '⌘' : 'Ctrl' }}+K</span>
-          </div>
-        </div>
+        <button
+          class="flex min-w-[220px] max-w-sm flex-1 items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-background"
+          @click="openSearch"
+        >
+          <Search :size="14" :stroke-width="1.8" />
+          <span class="flex-1 text-left">Search pages...</span>
+          <span class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+            {{ isMac ? '⌘' : 'Ctrl' }}+K
+          </span>
+        </button>
 
-        <div class="topbar-actions">
-          <!-- Theme Toggle -->
-          <button class="theme-toggle" @click="appStore.toggleTheme" :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'">
-            <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6"/>
-            <Sun v-else :size="18" :stroke-width="1.6"/>
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            class="flex items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            @click="appStore.toggleTheme"
+            :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+          >
+            <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6" />
+            <Sun v-else :size="18" :stroke-width="1.6" />
           </button>
-
-          <!-- Help Button -->
           <HelpButton />
-
         </div>
       </header>
 
-      <main class="page-content">
+      <main class="min-h-[calc(100vh-4rem)] flex-1 bg-background p-8">
         <router-view v-slot="{ Component }">
           <transition name="page-fade" mode="out-in">
             <keep-alive :max="10">
@@ -149,32 +140,38 @@
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
-    <div v-if="showAddProject" class="modal-overlay" @click.self="showAddProject = false">
-      <div class="modal-card">
-        <h3 class="card-title" style="margin-bottom:16px">Add New Project</h3>
-        <div v-if="!appStore.canCreateProject" class="upgrade-notice">
+    <div
+      v-if="showAddProject"
+      class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      @click.self="showAddProject = false"
+    >
+      <div class="w-[440px] max-w-[90vw] rounded-xl border border-border bg-card p-7 shadow-xl">
+        <h3 class="mb-4 text-lg font-bold text-card-foreground">Add New Project</h3>
+        <div v-if="!appStore.canCreateProject" class="py-3 text-center text-sm text-muted-foreground">
           <p>Your <strong>{{ appStore.userPlan }}</strong> plan allows {{ appStore.projectLimit }} project(s).</p>
-          <p style="margin-top:8px">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
-          <router-link to="/billing" class="btn btn-primary" style="margin-top:16px" @click="showAddProject = false">View Plans</router-link>
+          <p class="mt-2">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
+          <Button as="router-link" to="/billing" class="mt-4" @click="showAddProject = false">View Plans</Button>
         </div>
         <template v-else>
-          <div style="margin-bottom:12px">
-            <label class="form-label">Project Name</label>
-            <input v-model="newProject.name" class="form-input" placeholder="My Website" />
+          <div class="mb-3">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Project Name</label>
+            <input v-model="newProject.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="My Website" />
           </div>
-          <div style="margin-bottom:12px">
-            <label class="form-label">Website URL</label>
-            <input v-model="newProject.url" class="form-input" placeholder="https://example.com" />
+          <div class="mb-3">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Website URL</label>
+            <input v-model="newProject.url" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://example.com" />
           </div>
-          <div style="margin-bottom:16px">
-            <label class="form-label">Industry (optional)</label>
-            <input v-model="newProject.industry" class="form-input" placeholder="SaaS, E-commerce, etc." />
+          <div class="mb-4">
+            <label class="mb-1.5 block text-sm font-semibold text-foreground">Industry (optional)</label>
+            <input v-model="newProject.industry" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="SaaS, E-commerce, etc." />
           </div>
-          <div class="flex gap-8" style="justify-content:flex-end">
-            <button class="btn btn-secondary" @click="showAddProject = false">Cancel</button>
-            <button class="btn btn-primary" @click="createProject" :disabled="!newProject.name || !newProject.url || creating">{{ creating ? 'Creating...' : 'Create Project' }}</button>
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" @click="showAddProject = false">Cancel</Button>
+            <Button @click="createProject" :disabled="!newProject.name || !newProject.url || creating">
+              {{ creating ? 'Creating...' : 'Create Project' }}
+            </Button>
           </div>
-          <p v-if="createError" class="text-sm" style="color:var(--color-danger);margin-top:12px">{{ createError }}</p>
+          <p v-if="createError" class="mt-3 text-sm text-destructive">{{ createError }}</p>
         </template>
       </div>
     </div>
@@ -242,7 +239,12 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
-import { Moon, Search, Sun } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  Moon, Search, Sun, Plus, LogOut, PanelLeftClose, PanelLeftOpen,
+  LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
+  ShieldCheck, FileText, Plug, CreditCard, Settings,
+} from '@lucide/vue'
 
 const toast = useToast()
 
@@ -397,7 +399,36 @@ const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${we
 const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 
+const navSections = computed(() => [
+  {
+    label: 'Overview',
+    items: [
+      { name: 'Dashboard', to: '/dashboard', icon: LayoutGrid, exact: true },
+      { name: 'Projects', to: '/websites', icon: Globe, exact: true },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { name: 'Analytics', to: analyticsRoute.value, icon: BarChart3 },
+      { name: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain },
+      { name: 'Prompts', to: promptLibraryRoute.value, icon: MessageSquare, sub: true },
+      { name: 'Model Test', to: sourceInfluenceRoute.value, icon: FlaskConical, sub: true },
+      { name: 'Brand Vault', to: brandVaultRoute.value, icon: ShieldCheck, sub: true },
+      { name: 'Content', to: contentStudioRoute.value, icon: FileText, sub: true },
+      { name: 'Integrations', to: '/app/integrations', icon: Plug, exact: true },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { name: 'Billing', to: '/billing', icon: CreditCard, exact: true },
+      { name: 'Settings', to: '/settings', icon: Settings, exact: true },
+    ],
+  },
+])
 
+const ACTIVE_LINK = 'bg-accent text-accent-foreground font-semibold'
 
 function switchWebsite(id) {
   const website = appStore.websites.find(w => w.id === id)
@@ -468,231 +499,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-/* While first-run onboarding is required the sidebar + topbar are
-   removed; expand the main wrapper to fill the viewport so the modal
-   sits on a clean canvas. */
-.app-layout.is-onboarding .main-wrapper { width: 100%; }
-
-/* Sidebar */
-.sidebar {
-  width: var(--sidebar-width);
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 100;
-  transition: width var(--transition-base);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.sidebar-collapsed .sidebar { width: var(--sidebar-collapsed); }
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 20px 16px;
-}
-
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.brand-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.project-select { padding: 0 16px 16px; }
-
-.project-limit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
-.project-limit-badge {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.btn-add-project {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-add-project:hover:not(:disabled) {
-  border-color: var(--text-primary);
-  color: var(--text-primary);
-  background: var(--bg-card);
-}
-
-.btn-add-project:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sidebar-nav { flex: 1; padding: 0 12px; }
-
-.nav-section-label {
-  font-size: var(--font-xs);
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 20px 8px 8px;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-base);
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-  text-decoration: none;
-}
-
-.nav-link .nav-icon {
-  color: var(--nav-color, var(--text-secondary));
-  transition: all var(--transition-fast);
-}
-
-.nav-link:hover {
-  color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.nav-link:hover .nav-icon {
-  color: var(--nav-color, var(--text-primary));
-  filter: drop-shadow(0 0 4px var(--nav-color, transparent));
-}
-
-[data-theme="dark"] .nav-link:hover { background: rgba(255, 255, 255, 0.06); }
-
-.nav-link.active {
-  color: var(--nav-color, var(--text-primary));
-  background: color-mix(in srgb, var(--nav-color, var(--bg-surface)) 8%, transparent);
-  font-weight: 600;
-}
-
-.nav-link.active .nav-icon {
-  color: var(--nav-color, var(--text-primary));
-  filter: drop-shadow(0 0 6px var(--nav-color, transparent));
-}
-
-.nav-icon { width: 24px; text-align: center; display: flex; align-items: center; justify-content: center; }
-.nav-text { white-space: nowrap; }
-
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.user-block { display: flex; align-items: center; gap: 10px; }
-.user-name { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); }
-.user-plan { font-size: var(--font-xs); color: var(--text-muted); text-transform: capitalize; }
-
-/* Main */
-.main-wrapper {
-  flex: 1;
-  margin-left: var(--sidebar-width);
-  transition: margin-left var(--transition-base);
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-collapsed); }
-
-/* Topbar */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  height: var(--topbar-height);
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  padding: 0 28px;
-  gap: 16px;
-}
-
-.sidebar-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: color var(--transition-fast);
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.sidebar-toggle:hover { color: var(--text-primary); }
-.topbar-search { flex: 1; max-width: 360px; }
-
-.topbar-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topbar-btn {
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  transition: color var(--transition-fast);
-}
-
-.topbar-btn:hover { color: var(--text-primary); }
-
-/* Page Content */
-.page-content {
-  flex: 1;
-  padding: 32px;
-  background: var(--bg-root);
-  min-height: calc(100vh - var(--topbar-height));
-}
-
 /* Page transition — smooth slide-up + fade (Framer-like) */
 .page-fade-leave-active {
   transition: opacity 120ms ease, transform 120ms ease;
@@ -707,85 +513,6 @@ onUnmounted(() => {
 .page-fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); width: var(--sidebar-width); }
-  .main-wrapper { margin-left: 0; }
-  .page-content { padding: 16px; }
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: var(--bg-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  width: 440px;
-  max-width: 90vw;
-  box-shadow: var(--shadow-lg);
-}
-
-.upgrade-notice {
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
-  text-align: center;
-  padding: 12px 0;
-}
-
-.form-label {
-  display: block;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-/* Search Trigger */
-.search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-width: 220px;
-}
-.search-trigger:hover {
-  border-color: var(--color-primary);
-  background: var(--bg-base);
-}
-.search-trigger svg {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.search-placeholder {
-  font-size: var(--font-sm);
-  color: var(--text-muted);
-  flex: 1;
-}
-.search-shortcut {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--bg-base);
-  border: 1px solid var(--border-color);
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
 }
 </style>
 
