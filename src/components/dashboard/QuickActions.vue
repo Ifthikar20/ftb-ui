@@ -1,50 +1,42 @@
-<template>
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Quick Actions</h3>
-    </div>
-    <div class="actions-list">
-      <router-link v-for="action in actions" :key="action.label" :to="action.to" class="action-row">
-        <div class="action-content">
-          <div class="action-label">{{ action.label }}</div>
-          <div class="action-desc">{{ action.desc }}</div>
-        </div>
-        <span class="action-arrow">&rarr;</span>
-      </router-link>
-    </div>
-  </div>
-</template>
-
 <script setup>
-defineProps({
-  actions: { type: Array, required: true },
+import { computed } from 'vue'
+import { ArrowRight } from '@lucide/vue'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+const props = defineProps({
+  actions: { type: Array, default: () => [] },
 })
+
+const FALLBACK = [
+  { label: 'Add a tracked prompt', desc: 'Monitor a new query for brand visibility', to: '/prompt-library' },
+  { label: 'Connect an integration', desc: 'Link analytics and ad platforms', to: '/integrations' },
+  { label: 'Review content drafts', desc: 'AI-generated content waiting for review', to: '/content-studio' },
+  { label: 'Check LLM rankings', desc: 'See how you rank across AI models', to: '/llm-ranking' },
+]
+
+const items = computed(() => (props.actions?.length ? props.actions : FALLBACK))
 </script>
 
-<style scoped>
-.actions-list { display: flex; flex-direction: column; }
-
-.action-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--border-color);
-  text-decoration: none;
-  color: inherit;
-  transition: background var(--transition-fast);
-}
-
-.action-row:hover {
-  background: var(--bg-surface);
-}
-
-.action-row:last-child { border-bottom: none; }
-
-.action-content { flex: 1; }
-
-.action-label { font-size: var(--font-sm); font-weight: 600; color: var(--text-primary); }
-.action-desc { font-size: var(--font-xs); color: var(--text-muted); margin-top: 1px; }
-.action-arrow { color: var(--text-muted); font-size: var(--font-base); transition: transform var(--transition-fast); }
-.action-row:hover .action-arrow { transform: translateX(3px); color: var(--text-secondary); }
-</style>
+<template>
+  <Card>
+    <CardHeader class="pb-2">
+      <CardTitle class="text-base">Quick Actions</CardTitle>
+    </CardHeader>
+    <CardContent class="pt-0">
+      <div class="flex flex-col">
+        <router-link
+          v-for="action in items"
+          :key="action.label"
+          :to="action.to"
+          class="group flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted"
+        >
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-card-foreground">{{ action.label }}</div>
+            <div class="text-xs text-muted-foreground">{{ action.desc }}</div>
+          </div>
+          <ArrowRight class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+        </router-link>
+      </div>
+    </CardContent>
+  </Card>
+</template>

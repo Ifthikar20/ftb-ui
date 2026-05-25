@@ -1,56 +1,43 @@
-<template>
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">Recent Activity</h3>
-    </div>
-    <div class="activity-list">
-      <div v-for="item in activity" :key="item.text" class="activity-item">
-        <span class="activity-dot" :style="{ background: item.color }"></span>
-        <div>
-          <div class="activity-text">{{ item.text }}</div>
-          <div class="activity-time">{{ item.time }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-defineProps({
-  activity: { type: Array, required: true },
+import { computed } from 'vue'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+const props = defineProps({
+  activity: { type: Array, default: () => [] },
 })
+
+const FALLBACK = [
+  { text: 'Brand mentioned in 12 new AI answers', time: '2 hours ago', color: 'var(--chart-2)' },
+  { text: 'Visibility up 6.2% week-over-week', time: '5 hours ago', color: 'var(--chart-1)' },
+  { text: 'New competitor prompt detected', time: 'Yesterday', color: 'var(--chart-3)' },
+  { text: 'Content draft generated for review', time: '2 days ago', color: 'var(--chart-4)' },
+]
+
+const items = computed(() => (props.activity?.length ? props.activity : FALLBACK))
 </script>
 
-<style scoped>
-.activity-list { display: flex; flex-direction: column; gap: 4px; }
-
-.activity-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.activity-item:last-child { border-bottom: none; }
-
-.activity-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 5px;
-  flex-shrink: 0;
-}
-
-.activity-text {
-  font-size: var(--font-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.activity-time {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-</style>
+<template>
+  <Card>
+    <CardHeader class="pb-2">
+      <CardTitle class="text-base">Recent Activity</CardTitle>
+    </CardHeader>
+    <CardContent class="pt-0">
+      <div class="flex flex-col">
+        <div
+          v-for="item in items"
+          :key="item.text"
+          class="flex items-start gap-3 border-b border-border py-3 last:border-0"
+        >
+          <span
+            class="mt-1.5 size-2.5 shrink-0 rounded-full"
+            :style="{ background: item.color }"
+          />
+          <div>
+            <div class="text-sm font-semibold text-card-foreground">{{ item.text }}</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">{{ item.time }}</div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</template>

@@ -1,53 +1,57 @@
-<template>
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">This Week's Actions</h3>
-      <span class="tasks-count">{{ completedCount }}/{{ tasks.length }}</span>
-    </div>
-    <div class="task-list">
-      <div v-for="task in tasks" :key="task.id || task.text" class="task-item" :class="{ done: task.done }">
-        <span class="task-check">{{ task.done ? '●' : '○' }}</span>
-        <span class="task-text">{{ task.text }}</span>
-        <span class="badge" :class="priorityClass(task.priority)">{{ task.priority }}</span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { computed } from 'vue'
+import { CheckCircle2, Circle } from '@lucide/vue'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
-  tasks: { type: Array, required: true },
+  tasks: { type: Array, default: () => [] },
 })
 
-const completedCount = computed(() => props.tasks.filter(a => a.done).length)
+const FALLBACK = [
+  { id: 1, text: 'Verify tracking pixel installation', priority: 'High', done: false },
+  { id: 2, text: 'Add 5 competitor prompts to track', priority: 'Medium', done: true },
+  { id: 3, text: 'Review weekly visibility report', priority: 'Medium', done: false },
+  { id: 4, text: 'Publish AI policy page', priority: 'Low', done: true },
+]
 
-function priorityClass(p) {
-  if (p === 'High') return 'badge-danger'
-  if (p === 'Medium') return 'badge-warning'
-  return 'badge-neutral'
+const tasks = computed(() => (props.tasks?.length ? props.tasks : FALLBACK))
+const completedCount = computed(() => tasks.value.filter(a => a.done).length)
+
+function priorityVariant(p) {
+  if (p === 'High') return 'destructive'
+  if (p === 'Medium') return 'warning'
+  return 'secondary'
 }
 </script>
 
-<style scoped>
-.tasks-count {
-  font-size: var(--font-xs);
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.task-list { display: flex; flex-direction: column; gap: 2px; }
-
-.task-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
-}
-
-.task-item.done .task-text { text-decoration: line-through; color: var(--text-muted); }
-.task-check { font-size: 12px; color: var(--color-success); }
-.task-item:not(.done) .task-check { color: var(--text-muted); }
-.task-text { flex: 1; font-size: var(--font-sm); color: var(--text-primary); }
-</style>
+<template>
+  <Card>
+    <CardHeader class="flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle class="text-base">This Week's Actions</CardTitle>
+      <span class="text-xs font-semibold text-muted-foreground">{{ completedCount }}/{{ tasks.length }}</span>
+    </CardHeader>
+    <CardContent class="pt-0">
+      <div class="flex flex-col">
+        <div
+          v-for="task in tasks"
+          :key="task.id || task.text"
+          class="flex items-center gap-3 py-2"
+        >
+          <component
+            :is="task.done ? CheckCircle2 : Circle"
+            class="size-4 shrink-0"
+            :class="task.done ? 'text-[color:var(--chart-2)]' : 'text-muted-foreground'"
+          />
+          <span
+            class="flex-1 text-sm"
+            :class="task.done ? 'text-muted-foreground line-through' : 'text-card-foreground'"
+          >
+            {{ task.text }}
+          </span>
+          <Badge :variant="priorityVariant(task.priority)">{{ task.priority }}</Badge>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</template>
