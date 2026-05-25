@@ -35,9 +35,12 @@
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" class="space-y-4">
+          <TabsContent value="overview" class="space-y-6">
             <KpiCards :stats="stats" />
+            <OverviewSection :active-name="activeName" />
+          </TabsContent>
 
+          <TabsContent value="analytics" class="space-y-4">
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
               <div class="lg:col-span-4">
                 <VisibilityChart :series="chartSeries" />
@@ -56,12 +59,6 @@
               <TrendInsights />
               <IntegrationStatus :integrations="integrations" />
             </div>
-          </TabsContent>
-
-          <TabsContent value="analytics" class="space-y-4">
-            <KpiCards :stats="stats" />
-            <VisibilityChart :series="chartSeries" />
-            <PromptsTable :prompts="prompts" />
           </TabsContent>
 
           <TabsContent value="reports">
@@ -85,7 +82,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
+import OverviewSection from '@/components/overview/OverviewSection.vue'
 
 import KpiCards from '@/components/dashboard/KpiCards.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
@@ -104,6 +103,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appStore = useAppStore()
+const activeName = computed(() => appStore.activeWebsite?.name || '')
 const firstName = computed(() => (authStore.user?.full_name || 'there').split(' ')[0])
 
 // First-run onboarding shows as an overlay over the dashboard rather

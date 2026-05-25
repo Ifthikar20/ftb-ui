@@ -177,6 +177,10 @@
         </div>
       </div>
 
+      <div class="my-6">
+        <OverviewSection :active-name="websiteName" />
+      </div>
+
       <!-- Trend + model coverage -->
       <div class="ov-grid ov-grid-2">
         <Card class="ov-card">
@@ -1630,6 +1634,7 @@ import llmRankingApi from '@/api/llm_ranking'
 import websitesApi from '@/api/websites'
 import promptLibraryApi from '@/api/promptLibrary'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import OverviewSection from '@/components/overview/OverviewSection.vue'
 import PromptHeatmap from '@/components/llm_ranking/PromptHeatmap.vue'
 import ProviderAgreement from '@/components/llm_ranking/ProviderAgreement.vue'
 import PromptSourceToggle from '@/components/llm_ranking/PromptSourceToggle.vue'
