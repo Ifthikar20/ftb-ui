@@ -38,7 +38,7 @@
             <ArrowUpDown :size="14" :stroke-width="1.8"/>
           </button>
         </header>
-        <button class="spd-rail-add" type="button">
+        <button class="spd-rail-add" type="button" @click="openNewTopic">
           <span>New topic</span>
           <Plus :size="14" :stroke-width="2"/>
         </button>
@@ -102,6 +102,10 @@
             >
               <Sparkles :size="14" :stroke-width="2"/>
               {{ suggestLoading ? 'Suggesting…' : 'Suggest more' }}
+            </button>
+            <button type="button" class="spd-add-prompt" @click="openAddPrompt">
+              <Plus :size="14" :stroke-width="2.2"/>
+              Add Prompt
             </button>
           </div>
         </div>
@@ -312,6 +316,51 @@
         </footer>
       </section>
     </div>
+    <!-- Add prompt / new topic modal -->
+    <div
+      v-if="showAdd"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="showAdd = false"
+    >
+      <div class="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-foreground">Add prompt</h3>
+          <button class="text-muted-foreground hover:text-foreground" @click="showAdd = false">
+            <X :size="18" :stroke-width="2"/>
+          </button>
+        </div>
+        <label class="mb-1 block text-xs font-medium text-muted-foreground">Prompt</label>
+        <textarea
+          v-model="addText"
+          rows="3"
+          placeholder="e.g. What are the best budgeting apps in 2026?"
+          class="mb-3 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        ></textarea>
+        <label class="mb-1 block text-xs font-medium text-muted-foreground">Topic (bundle)</label>
+        <input
+          v-model="addTopic"
+          list="spd-topic-options"
+          placeholder="Pick an existing topic or type a new one"
+          class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <datalist id="spd-topic-options">
+          <option v-for="t in topics" :key="t.name" :value="t.name" />
+        </datalist>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary"
+            @click="showAdd = false"
+          >Cancel</button>
+          <button
+            type="button"
+            class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            :disabled="addPending"
+            @click="submitAdd"
+          >{{ addPending ? 'Adding…' : 'Add prompt' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -328,11 +377,53 @@ import {
 // Plus stays imported even though it's only referenced from the
 // 'New topic' rail button; keeping it next to the other rail icons.
 
+import { useToast } from '@/composables/useToast'
+
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
+const toast = useToast()
 const websiteId = route.params.websiteId
 const websiteName = computed(() => appStore.activeWebsite?.name || '')
+
+/* ── Add prompt / new topic ── */
+const showAdd = ref(false)
+const addText = ref('')
+const addTopic = ref('')
+const addPending = ref(false)
+
+function openAddPrompt() {
+  addText.value = ''
+  addTopic.value = activeTopic.value || ''
+  showAdd.value = true
+}
+function openNewTopic() {
+  addText.value = ''
+  addTopic.value = ''
+  showAdd.value = true
+}
+async function submitAdd() {
+  const text = addText.value.trim()
+  if (!text) { toast.error('Enter the prompt text.'); return }
+  addPending.value = true
+  try {
+    await promptLibrary.createWebsitePrompt(websiteId, {
+      text,
+      topic: addTopic.value.trim(),
+      intent_bucket: 'category',
+      style: 'question',
+    })
+    toast.success('Prompt added')
+    showAdd.value = false
+    const t = addTopic.value.trim()
+    if (t) activeTopic.value = t
+    await load()
+  } catch (e) {
+    toast.error(e?.displayMessage || 'Could not add prompt.')
+  } finally {
+    addPending.value = false
+  }
+}
 
 const rows = ref([])
 const topics = ref([])
@@ -914,6 +1005,22 @@ defineEmits(['go-search'])
 }
 .spd-suggest:hover { opacity: 0.92; }
 .spd-suggest:disabled { opacity: 0.55; cursor: progress; }
+.spd-add-prompt {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--foreground);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.spd-add-prompt:hover { opacity: 0.92; }
 
 .spd-subtab-count {
   display: inline-flex;
