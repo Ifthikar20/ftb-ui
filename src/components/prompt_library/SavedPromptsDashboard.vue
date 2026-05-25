@@ -316,49 +316,108 @@
         </footer>
       </section>
     </div>
-    <!-- Add prompt / new topic modal -->
+    <!-- Add prompt / bulk upload modal -->
     <div
       v-if="showAdd"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       @click.self="showAdd = false"
     >
-      <div class="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl">
-        <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-base font-semibold text-foreground">Add prompt</h3>
-          <button class="text-muted-foreground hover:text-foreground" @click="showAdd = false">
-            <X :size="18" :stroke-width="2"/>
-          </button>
-        </div>
-        <label class="mb-1 block text-xs font-medium text-muted-foreground">Prompt</label>
-        <textarea
-          v-model="addText"
-          rows="3"
-          placeholder="e.g. What are the best budgeting apps in 2026?"
-          class="mb-3 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        ></textarea>
-        <label class="mb-1 block text-xs font-medium text-muted-foreground">Topic (bundle)</label>
-        <input
-          v-model="addTopic"
-          list="spd-topic-options"
-          placeholder="Pick an existing topic or type a new one"
-          class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        <datalist id="spd-topic-options">
-          <option v-for="t in topics" :key="t.name" :value="t.name" />
-        </datalist>
-        <div class="flex justify-end gap-2">
+      <div class="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl">
+        <!-- tab switch -->
+        <div class="mb-5 flex rounded-xl bg-secondary p-1">
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary"
-            @click="showAdd = false"
-          >Cancel</button>
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'add' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'add'"
+          >Add Prompt</button>
           <button
             type="button"
-            class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            :disabled="addPending"
-            @click="submitAdd"
-          >{{ addPending ? 'Adding…' : 'Add prompt' }}</button>
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'bulk' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'bulk'"
+          >Bulk Upload</button>
         </div>
+
+        <!-- ADD PROMPT -->
+        <template v-if="addTab === 'add'">
+          <h3 class="text-base font-semibold text-foreground">Add Prompt</h3>
+          <p class="mb-4 text-sm text-muted-foreground">Add your own prompts. Every line becomes a separate prompt.</p>
+
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-xs font-medium text-muted-foreground">Prompt</label>
+            <span class="text-xs text-muted-foreground">{{ promptCount }} prompt{{ promptCount === 1 ? '' : 's' }}</span>
+          </div>
+          <textarea
+            v-model="addText"
+            rows="3"
+            placeholder="e.g. any alternative to rocket money"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          ></textarea>
+
+          <label class="mb-1 block text-xs font-medium text-muted-foreground">Topic</label>
+          <input
+            v-model="addTopic"
+            list="spd-topic-options"
+            placeholder="No topic — pick or type one"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <datalist id="spd-topic-options">
+            <option v-for="t in topics" :key="t.name" :value="t.name" />
+          </datalist>
+
+          <label class="mb-1 block text-xs font-medium text-muted-foreground">Location</label>
+          <select
+            v-model="addLocation"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option v-for="l in LOCATIONS" :key="l.code" :value="l.code">{{ l.name }}</option>
+          </select>
+
+          <label class="mb-1.5 block text-xs font-medium text-muted-foreground">Tags</label>
+          <div class="mb-5 flex flex-wrap gap-2">
+            <button
+              v-for="tag in TAG_PRESETS"
+              :key="tag"
+              type="button"
+              class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+              :class="addTags.includes(tag)
+                ? 'border-ring bg-secondary text-foreground'
+                : 'border-border text-muted-foreground hover:border-ring'"
+              @click="toggleTag(tag)"
+            >{{ tag }}</button>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="showAdd = false">Cancel</button>
+            <button
+              type="button"
+              class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              :disabled="addPending"
+              @click="submitAdd"
+            >{{ addPending ? 'Adding…' : 'Add Prompt' }}</button>
+          </div>
+        </template>
+
+        <!-- BULK UPLOAD -->
+        <template v-else>
+          <p class="mb-3 text-center text-sm text-muted-foreground">
+            Make sure your CSV follows the required format or
+            <button type="button" class="underline hover:text-foreground" @click="downloadCsvExample">download example</button>.
+          </p>
+          <label
+            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-6 py-10 text-center hover:border-ring"
+            @dragover.prevent
+            @drop.prevent="onCsvFile"
+          >
+            <Plus :size="22" :stroke-width="1.8" class="text-muted-foreground" />
+            <span class="text-sm text-foreground">Drag and drop your file here, or <span class="underline">click to browse</span></span>
+            <input type="file" accept=".csv,text/csv" class="hidden" @change="onCsvFile" />
+          </label>
+          <div class="mt-5 flex justify-end">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="showAdd = false">Cancel</button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -388,32 +447,65 @@ const websiteName = computed(() => appStore.activeWebsite?.name || '')
 
 /* ── Add prompt / new topic ── */
 const showAdd = ref(false)
+const addTab = ref('add')          // 'add' | 'bulk'
 const addText = ref('')
 const addTopic = ref('')
+const addLocation = ref('US')
+const addTags = ref([])
 const addPending = ref(false)
 
-function openAddPrompt() {
+const TAG_PRESETS = ['branded', 'non-branded', 'informational', 'transactional']
+const LOCATIONS = [
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'IN', name: 'India' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'SG', name: 'Singapore' },
+]
+const promptCount = computed(() =>
+  addText.value.split('\n').map(l => l.trim()).filter(Boolean).length)
+
+function resetAddForm() {
   addText.value = ''
+  addTags.value = []
+  addLocation.value = 'US'
+  addTab.value = 'add'
+}
+function openAddPrompt() {
+  resetAddForm()
   addTopic.value = activeTopic.value || ''
   showAdd.value = true
 }
 function openNewTopic() {
-  addText.value = ''
+  resetAddForm()
   addTopic.value = ''
   showAdd.value = true
 }
+function toggleTag(tag) {
+  const i = addTags.value.indexOf(tag)
+  if (i >= 0) addTags.value.splice(i, 1)
+  else addTags.value.push(tag)
+}
+
 async function submitAdd() {
   const text = addText.value.trim()
-  if (!text) { toast.error('Enter the prompt text.'); return }
+  if (!text) { toast.error('Enter at least one prompt.'); return }
   addPending.value = true
   try {
-    await promptLibrary.createWebsitePrompt(websiteId, {
+    const res = await promptLibrary.createWebsitePrompt(websiteId, {
       text,
       topic: addTopic.value.trim(),
+      location: addLocation.value,
+      tags: addTags.value,
       intent_bucket: 'category',
       style: 'question',
     })
-    toast.success('Prompt added')
+    const body = res?.data?.data || res?.data || {}
+    const n = body.created_count || promptCount.value
+    toast.success(`Added ${n} prompt${n === 1 ? '' : 's'} · scanning…`)
     showAdd.value = false
     const t = addTopic.value.trim()
     if (t) activeTopic.value = t
@@ -423,6 +515,34 @@ async function submitAdd() {
   } finally {
     addPending.value = false
   }
+}
+
+/* Bulk CSV: one prompt per row (a leading "prompt" header is ignored). */
+function downloadCsvExample() {
+  const sample = 'prompt\nbest budgeting apps in 2026\nalternatives to rocket money\nhow do I automate my savings\n'
+  const blob = new Blob([sample], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'prompts-example.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+function parseCsv(content) {
+  const rows = content.split(/\r?\n/).map(r => r.trim()).filter(Boolean)
+  if (rows.length && /^"?prompts?"?$/i.test(rows[0])) rows.shift()
+  // Take the first column of each row, stripping surrounding quotes.
+  return rows.map(r => r.split(',')[0].replace(/^"|"$/g, '').trim()).filter(Boolean)
+}
+async function onCsvFile(e) {
+  const file = (e.target.files || e.dataTransfer?.files || [])[0]
+  if (!file) return
+  const content = await file.text()
+  const prompts = parseCsv(content)
+  if (!prompts.length) { toast.error('No prompts found in that file.'); return }
+  addText.value = prompts.join('\n')
+  addTab.value = 'add'
+  toast.success(`Loaded ${prompts.length} prompts — review and add.`)
 }
 
 const rows = ref([])
