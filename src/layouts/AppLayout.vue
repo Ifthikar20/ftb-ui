@@ -139,14 +139,6 @@
                 {{ isMac ? '⌘' : 'Ctrl' }}+K
               </span>
             </button>
-            <button
-              class="flex items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              @click="appStore.toggleTheme"
-              :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-            >
-              <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6" />
-              <Sun v-else :size="18" :stroke-width="1.6" />
-            </button>
             <HelpButton />
           </div>
         </header>
@@ -287,7 +279,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
-  Moon, Search, Sun, Plus, LogOut, ChevronsUpDown,
+  Search, Plus, LogOut, ChevronsUpDown,
   LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
   ShieldCheck, FileText, Plug, CreditCard, Settings,
 } from '@lucide/vue'
