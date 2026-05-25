@@ -125,7 +125,10 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const res = await citationsApi.websiteUrlDetail(websiteId.value, targetUrl.value)
+    const params = {}
+    if (route.query.topic) params.topic = route.query.topic
+    if (route.query.provider) params.provider = route.query.provider
+    const res = await citationsApi.websiteUrlDetail(websiteId.value, targetUrl.value, params)
     detail.value = res.data?.data || res.data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Failed to load URL details.'

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Line } from 'vue-chartjs'
 import {
@@ -143,6 +143,40 @@ function domainStyle(type) {
   return DOMAIN_TYPE_STYLES[type] || { bg: 'rgba(100,116,139,0.12)', fg: '#64748b' }
 }
 
+/* ── Global filters (topic = prompt bundle, model = provider) ── */
+const topics = ref([])
+const selectedTopic = ref(route.query.topic || null)
+const selectedModel = ref(null)
+const openMenu = ref(null)
+
+const MODEL_OPTIONS = [
+  { value: 'gpt4', label: 'ChatGPT' },
+  { value: 'perplexity', label: 'Perplexity' },
+  { value: 'gemini', label: 'Gemini' },
+  { value: 'claude', label: 'Claude' },
+  { value: 'grok', label: 'Grok' },
+  { value: 'deepseek', label: 'DeepSeek' },
+]
+const selectedModelLabel = computed(() =>
+  MODEL_OPTIONS.find(m => m.value === selectedModel.value)?.label || 'All Models')
+const topicsTotal = computed(() => topics.value.reduce((s, t) => s + (t.count || 0), 0))
+
+function toggleMenu(name) {
+  openMenu.value = openMenu.value === name ? null : name
+}
+function closeMenus() { openMenu.value = null }
+function selectTopic(name) {
+  selectedTopic.value = name
+  closeMenus()
+  router.replace({ query: { ...route.query, topic: name || undefined } })
+  load()
+}
+function selectModel(value) {
+  selectedModel.value = value
+  closeMenus()
+  load()
+}
+
 /* ── URLs table ── */
 const gapAnalysis = ref(true)
 const search = ref('')
@@ -183,8 +217,12 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const res = await citationsApi.websiteUrls(websiteId.value)
+    const params = {}
+    if (selectedTopic.value) params.topic = selectedTopic.value
+    if (selectedModel.value) params.provider = selectedModel.value
+    const res = await citationsApi.websiteUrls(websiteId.value, params)
     const data = res.data?.data || res.data || {}
+    topics.value = data.topics || []
     chartLabels.value = data.overview?.labels || []
     domainSeries.value = (data.overview?.series || []).map((s, i) => ({
       key: s.label,
@@ -208,14 +246,26 @@ async function load() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  document.addEventListener('click', onDocClick)
+})
+onUnmounted(() => document.removeEventListener('click', onDocClick))
 watch(websiteId, load)
+
+function onDocClick(e) {
+  if (!e.target.closest?.('[data-filter-menu]')) closeMenus()
+}
 
 function openDetail(row) {
   router.push({
     name: 'sources-url-detail',
     params: { websiteId: websiteId.value },
-    query: { url: row.normalizedUrl || row.url },
+    query: {
+      url: row.normalizedUrl || row.url,
+      ...(selectedTopic.value ? { topic: selectedTopic.value } : {}),
+      ...(selectedModel.value ? { provider: selectedModel.value } : {}),
+    },
   })
 }
 
@@ -255,11 +305,57 @@ function totalRetrievalsLabel() {
 
     <!-- ── Global filter pills ── -->
     <div class="flex flex-wrap items-center gap-2">
-      <button v-for="pill in [brandLabel, 'All time', 'All Tags', 'All Models', 'All Topics']" :key="pill"
+      <button v-for="pill in [brandLabel, 'All time', 'All Tags']" :key="pill"
         class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring">
         <span>{{ pill }}</span>
         <ChevronDown class="size-3.5 text-muted-foreground" />
       </button>
+
+      <!-- Models filter (AI provider) -->
+      <div class="relative" data-filter-menu>
+        <button @click="toggleMenu('models')"
+          class="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring"
+          :class="selectedModel ? 'border-ring' : 'border-border'">
+          <span>{{ selectedModelLabel }}</span>
+          <ChevronDown class="size-3.5 text-muted-foreground" />
+        </button>
+        <div v-if="openMenu === 'models'"
+          class="absolute left-0 z-20 mt-1 w-52 rounded-lg border border-border bg-popover p-1 shadow-md">
+          <button @click="selectModel(null)"
+            class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-secondary"
+            :class="!selectedModel ? 'font-semibold text-foreground' : 'text-muted-foreground'">All Models</button>
+          <button v-for="m in MODEL_OPTIONS" :key="m.value" @click="selectModel(m.value)"
+            class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-secondary"
+            :class="selectedModel === m.value ? 'font-semibold text-foreground' : 'text-muted-foreground'">
+            <span>{{ m.label }}</span>
+            <Check v-if="selectedModel === m.value" class="size-3.5 text-[color:var(--chart-1)]" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Topics filter (prompt bundle) -->
+      <div class="relative" data-filter-menu>
+        <button @click="toggleMenu('topics')"
+          class="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring"
+          :class="selectedTopic ? 'border-ring' : 'border-border'">
+          <span>{{ selectedTopic || 'All Topics' }}</span>
+          <ChevronDown class="size-3.5 text-muted-foreground" />
+        </button>
+        <div v-if="openMenu === 'topics'"
+          class="absolute left-0 z-20 mt-1 w-60 rounded-lg border border-border bg-popover p-1 shadow-md">
+          <button @click="selectTopic(null)"
+            class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-secondary"
+            :class="!selectedTopic ? 'font-semibold text-foreground' : 'text-muted-foreground'">
+            <span>All Topics</span><span class="text-xs text-muted-foreground">{{ topicsTotal }}</span>
+          </button>
+          <button v-for="t in topics" :key="t.name" @click="selectTopic(t.name)"
+            class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-secondary"
+            :class="selectedTopic === t.name ? 'font-semibold text-foreground' : 'text-muted-foreground'">
+            <span class="truncate">{{ t.name }}</span><span class="ml-2 shrink-0 text-xs text-muted-foreground">{{ t.count }}</span>
+          </button>
+          <div v-if="!topics.length" class="px-2.5 py-2 text-xs text-muted-foreground">No topics yet. Group prompts into topics on the Prompts page.</div>
+        </div>
+      </div>
     </div>
 
     <div v-if="error" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
