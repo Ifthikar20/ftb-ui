@@ -8,38 +8,76 @@
       @complete="onOnboardingComplete"
     />
 
-    <template v-else>
-      <div v-if="loading" class="space-y-6">
-        <Skeleton class="h-10 w-72 rounded-lg" />
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Skeleton v-for="n in 4" :key="n" class="h-24 rounded-xl" />
+    <PageContainer v-else>
+      <div v-if="loading" class="flex flex-1 flex-col space-y-6">
+        <Skeleton class="h-9 w-72 rounded-lg" />
+        <Skeleton class="h-9 w-80 rounded-lg" />
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Skeleton v-for="n in 4" :key="n" class="h-36 rounded-xl" />
         </div>
-        <Skeleton class="h-96 w-full rounded-xl" />
-        <div class="grid gap-4 lg:grid-cols-2">
-          <Skeleton class="h-64 rounded-xl" />
-          <Skeleton class="h-64 rounded-xl" />
-        </div>
-      </div>
-
-      <div v-else class="space-y-6">
-        <GreetingHeader :timeOfDay="timeOfDay" :firstName="firstName" />
-
-        <KpiCards :stats="stats" class="stagger-enter" />
-
-        <VisibilityChart :series="chartSeries" />
-
-        <PromptsTable :prompts="prompts" />
-
-        <div class="grid gap-4 lg:grid-cols-2">
-          <MorningBrief :brief="brief" />
-          <QuickActions :actions="quickActions" />
-          <WeeklyTasks :tasks="actions" />
-          <RecentActivity :activity="activity" />
-          <TrendInsights />
-          <IntegrationStatus :integrations="integrations" />
+        <div class="grid gap-4 lg:grid-cols-7">
+          <Skeleton class="h-96 rounded-xl lg:col-span-4" />
+          <Skeleton class="h-96 rounded-xl lg:col-span-3" />
         </div>
       </div>
-    </template>
+
+      <template v-else>
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-2xl font-bold tracking-tight">
+            Hi, Welcome back 👋
+          </h2>
+        </div>
+
+        <Tabs default-value="overview" class="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" class="space-y-4">
+            <KpiCards :stats="stats" />
+
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
+              <div class="lg:col-span-4">
+                <VisibilityChart :series="chartSeries" />
+              </div>
+              <div class="lg:col-span-3">
+                <RecentActivity :activity="activity" />
+              </div>
+            </div>
+
+            <PromptsTable :prompts="prompts" />
+
+            <div class="grid gap-4 lg:grid-cols-2">
+              <MorningBrief :brief="brief" />
+              <QuickActions :actions="quickActions" />
+              <WeeklyTasks :tasks="actions" />
+              <TrendInsights />
+              <IntegrationStatus :integrations="integrations" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" class="space-y-4">
+            <KpiCards :stats="stats" />
+            <VisibilityChart :series="chartSeries" />
+            <PromptsTable :prompts="prompts" />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reports</CardTitle>
+                <CardDescription>Scheduled and exported reports will appear here.</CardDescription>
+              </CardHeader>
+              <CardContent class="py-10 text-center text-sm text-muted-foreground">
+                No reports yet — generate one from any analytics view.
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </template>
+    </PageContainer>
   </div>
 </template>
 
@@ -49,7 +87,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import dashboardApi from '@/api/dashboard'
 
-import GreetingHeader from '@/components/dashboard/GreetingHeader.vue'
 import KpiCards from '@/components/dashboard/KpiCards.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
@@ -60,7 +97,10 @@ import RecentActivity from '@/components/dashboard/RecentActivity.vue'
 import TrendInsights from '@/components/dashboard/TrendInsights.vue'
 import IntegrationStatus from '@/components/dashboard/IntegrationStatus.vue'
 import OnboardingModal from '@/components/onboarding/OnboardingModal.vue'
+import PageContainer from '@/components/layout/PageContainer.vue'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 const router = useRouter()
 const authStore = useAuthStore()

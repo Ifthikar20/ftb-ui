@@ -1,141 +1,172 @@
 <template>
-  <div class="flex min-h-screen bg-background text-foreground">
-    <!-- Sidebar (hidden while first-run onboarding is required) -->
-    <aside
-      v-if="!sessionNeedsOnboarding"
-      class="fixed inset-y-0 left-0 z-[100] flex flex-col overflow-y-auto overflow-x-hidden border-r border-border bg-card transition-[width] duration-200"
-      :class="appStore.sidebarCollapsed ? 'w-[68px]' : 'w-64'"
-    >
-      <div class="flex items-center gap-3 px-5 pb-4 pt-5">
-        <img src="/images/fb-logo.png" alt="FetchBot" class="size-9 shrink-0 object-contain" />
-        <span v-if="!appStore.sidebarCollapsed" class="text-lg font-bold tracking-tight">FetchBot</span>
-      </div>
+  <template v-if="!sessionNeedsOnboarding">
+    <SidebarProvider>
+      <Sidebar collapsible="icon" variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                    </div>
+                    <div class="grid flex-1 text-left text-sm leading-tight">
+                      <span class="truncate font-semibold">{{ appStore.activeWebsite?.name || 'FetchBot' }}</span>
+                      <span class="truncate text-xs text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
+                    </div>
+                    <ChevronsUpDown class="ml-auto size-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="bottom" :side-offset="4" class="min-w-56 rounded-lg">
+                  <DropdownMenuLabel class="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
+                  <DropdownMenuItem v-for="w in appStore.websites" :key="w.id" @select="switchWebsite(w.id)">
+                    <Globe class="size-4" />
+                    <span class="truncate">{{ w.name }}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem :disabled="!appStore.canCreateProject" @select="showAddProject = true">
+                    <Plus class="size-4" />
+                    <span>Add project</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-      <!-- Project Selector -->
-      <div v-if="!appStore.sidebarCollapsed" class="px-4 pb-4">
-        <select
-          class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          @change="switchWebsite($event.target.value)"
-        >
-          <option v-for="w in appStore.websites" :key="w.id" :value="w.id" :selected="w.id === appStore.activeWebsite?.id">
-            {{ w.name }}
-          </option>
-        </select>
-        <div class="mt-2 flex items-center justify-between">
-          <span class="text-xs font-medium text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
-          <button
-            class="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-foreground hover:text-foreground disabled:opacity-40"
-            :disabled="!appStore.canCreateProject"
-            @click="showAddProject = true"
-            :title="appStore.canCreateProject ? 'Add a new project' : 'Upgrade your plan to add more'"
-          >
-            <Plus class="size-3.5" />
-          </button>
-        </div>
-      </div>
+        <SidebarContent>
+          <SidebarGroup v-for="group in navMain" :key="group.group">
+            <SidebarGroupLabel>{{ group.group }}</SidebarGroupLabel>
+            <SidebarMenu>
+              <template v-for="item in group.items" :key="item.title">
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child :is-active="isActive(item)" :tooltip="item.title">
+                    <router-link :to="item.to">
+                      <component :is="item.icon" />
+                      <span>{{ item.title }}</span>
+                    </router-link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuSub v-if="item.children && isActive(item)">
+                  <SidebarMenuSubItem v-for="child in item.children" :key="child.title">
+                    <SidebarMenuSubButton as-child :is-active="isChildActive(child)">
+                      <router-link :to="child.to">
+                        <span>{{ child.title }}</span>
+                      </router-link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </template>
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
 
-      <!-- Nav -->
-      <nav class="flex-1 px-3">
-        <template v-for="section in navSections" :key="section.label">
-          <div
-            v-if="!appStore.sidebarCollapsed"
-            class="px-2 pb-2 pt-5 text-xs font-bold uppercase tracking-wider text-muted-foreground"
-          >
-            {{ section.label }}
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <Avatar class="size-8 rounded-lg">
+                      <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
+                    </Avatar>
+                    <div class="grid flex-1 text-left text-sm leading-tight">
+                      <span class="truncate font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="truncate text-xs text-muted-foreground">{{ authStore.user?.email || '' }}</span>
+                    </div>
+                    <ChevronsUpDown class="ml-auto size-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="bottom" :side-offset="4" class="min-w-56 rounded-lg">
+                  <DropdownMenuLabel class="font-normal">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }} plan</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @select="router.push('/settings')">
+                    <Settings class="size-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @select="router.push('/billing')">
+                    <CreditCard class="size-4" />
+                    <span>Billing</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @select="handleLogout">
+                    <LogOut class="size-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+
+      <SidebarInset>
+        <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border transition-[width,height] ease-linear">
+          <div class="flex items-center gap-2 px-4">
+            <SidebarTrigger class="-ml-1" />
+            <Separator orientation="vertical" class="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem class="hidden md:block">
+                  <BreadcrumbLink as="router-link" to="/dashboard">FetchBot</BreadcrumbLink>
+                </BreadcrumbItem>
+                <template v-for="(crumb, i) in breadcrumbs" :key="i">
+                  <BreadcrumbSeparator class="hidden md:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage v-if="i === breadcrumbs.length - 1">{{ crumb.label }}</BreadcrumbPage>
+                    <BreadcrumbLink v-else as="router-link" :to="crumb.to">{{ crumb.label }}</BreadcrumbLink>
+                  </BreadcrumbItem>
+                </template>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <div v-else class="my-3 border-t border-border" />
-          <router-link
-            v-for="item in section.items"
-            :key="item.name"
-            :to="item.to"
-            :active-class="item.exact ? '' : ACTIVE_LINK"
-            :exact-active-class="item.exact ? ACTIVE_LINK : ''"
-            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            :class="appStore.sidebarCollapsed ? 'justify-center' : ''"
-            :title="item.name"
-          >
-            <component :is="item.icon" class="size-[18px] shrink-0" />
-            <span v-if="!appStore.sidebarCollapsed" class="whitespace-nowrap">{{ item.name }}</span>
-          </router-link>
-        </template>
-      </nav>
 
-      <!-- User Footer -->
-      <div
-        v-if="!appStore.sidebarCollapsed"
-        class="flex items-center justify-between border-t border-border p-4"
-      >
-        <div class="flex items-center gap-2.5">
-          <div class="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-            {{ userInitials }}
+          <div class="ml-auto flex items-center gap-2 px-4">
+            <button
+              class="flex items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-background"
+              @click="openSearch"
+            >
+              <Search :size="14" :stroke-width="1.8" />
+              <span class="hidden sm:inline">Search...</span>
+              <span class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
+                {{ isMac ? '⌘' : 'Ctrl' }}+K
+              </span>
+            </button>
+            <button
+              class="flex items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              @click="appStore.toggleTheme"
+              :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+            >
+              <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6" />
+              <Sun v-else :size="18" :stroke-width="1.6" />
+            </button>
+            <HelpButton />
           </div>
-          <div>
-            <div class="text-sm font-semibold text-foreground">{{ authStore.user?.full_name || 'User' }}</div>
-            <div class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }}</div>
-          </div>
+        </header>
+
+        <div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
+          <router-view v-slot="{ Component }">
+            <transition name="page-fade" mode="out-in">
+              <keep-alive :max="10">
+                <component :is="Component" :key="pageKey" />
+              </keep-alive>
+            </transition>
+          </router-view>
         </div>
-        <button
-          class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          @click="handleLogout"
-          title="Logout"
-        >
-          <LogOut class="size-4" />
-        </button>
-      </div>
-    </aside>
+      </SidebarInset>
+    </SidebarProvider>
+  </template>
 
-    <!-- Main Content -->
-    <div
-      class="flex flex-1 flex-col transition-[margin] duration-200"
-      :class="sessionNeedsOnboarding ? 'ml-0' : (appStore.sidebarCollapsed ? 'ml-[68px]' : 'ml-64')"
-    >
-      <header
-        v-if="!sessionNeedsOnboarding"
-        class="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-card px-7"
-      >
-        <button
-          class="flex items-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          @click="appStore.toggleSidebar"
-          :title="appStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        >
-          <PanelLeftOpen v-if="appStore.sidebarCollapsed" class="size-[18px]" />
-          <PanelLeftClose v-else class="size-[18px]" />
-        </button>
-
-        <button
-          class="flex min-w-[220px] max-w-sm flex-1 items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-background"
-          @click="openSearch"
-        >
-          <Search :size="14" :stroke-width="1.8" />
-          <span class="flex-1 text-left">Search pages...</span>
-          <span class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
-            {{ isMac ? '⌘' : 'Ctrl' }}+K
-          </span>
-        </button>
-
-        <div class="ml-auto flex items-center gap-2">
-          <button
-            class="flex items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            @click="appStore.toggleTheme"
-            :title="appStore.theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-          >
-            <Moon v-if="appStore.theme === 'light'" :size="18" :stroke-width="1.6" />
-            <Sun v-else :size="18" :stroke-width="1.6" />
-          </button>
-          <HelpButton />
-        </div>
-      </header>
-
-      <main class="min-h-[calc(100vh-4rem)] flex-1 bg-background p-8">
-        <router-view v-slot="{ Component }">
-          <transition name="page-fade" mode="out-in">
-            <keep-alive :max="10">
-              <component :is="Component" :key="pageKey" />
-            </keep-alive>
-          </transition>
-        </router-view>
-      </main>
-    </div>
+  <div v-else class="min-h-svh bg-background">
+    <router-view />
+  </div>
 
     <!-- Toast Notifications (global) -->
     <ToastContainer />
@@ -226,7 +257,6 @@
         </div>
       </div>
     </Teleport>
-  </div>
 </template>
 
 <script setup>
@@ -241,7 +271,23 @@ import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { Button } from '@/components/ui/button'
 import {
-  Moon, Search, Sun, Plus, LogOut, PanelLeftClose, PanelLeftOpen,
+  SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarRail,
+  SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+  SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton,
+} from '@/components/ui/sidebar'
+import {
+  Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink,
+  BreadcrumbPage, BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import {
+  Moon, Search, Sun, Plus, LogOut, ChevronsUpDown,
   LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
   ShieldCheck, FileText, Plug, CreditCard, Settings,
 } from '@lucide/vue'
@@ -399,36 +445,63 @@ const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${we
 const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 
-const navSections = computed(() => [
+const navMain = computed(() => [
   {
-    label: 'Overview',
+    group: 'Overview',
     items: [
-      { name: 'Dashboard', to: '/dashboard', icon: LayoutGrid, exact: true },
-      { name: 'Projects', to: '/websites', icon: Globe, exact: true },
+      { title: 'Dashboard', to: '/dashboard', icon: LayoutGrid, match: '/dashboard' },
+      { title: 'Projects', to: '/websites', icon: Globe, match: '/websites' },
     ],
   },
   {
-    label: 'Intelligence',
+    group: 'Intelligence',
     items: [
-      { name: 'Analytics', to: analyticsRoute.value, icon: BarChart3 },
-      { name: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain },
-      { name: 'Prompts', to: promptLibraryRoute.value, icon: MessageSquare, sub: true },
-      { name: 'Model Test', to: sourceInfluenceRoute.value, icon: FlaskConical, sub: true },
-      { name: 'Brand Vault', to: brandVaultRoute.value, icon: ShieldCheck, sub: true },
-      { name: 'Content', to: contentStudioRoute.value, icon: FileText, sub: true },
-      { name: 'Integrations', to: '/app/integrations', icon: Plug, exact: true },
+      { title: 'Analytics', to: analyticsRoute.value, icon: BarChart3, match: '/analytics' },
+      {
+        title: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain, match: '/llm-ranking',
+        children: [
+          { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
+          { title: 'Model Test', to: sourceInfluenceRoute.value, match: '/source-influence' },
+          { title: 'Brand Vault', to: brandVaultRoute.value, match: '/brand-vault' },
+          { title: 'Content', to: contentStudioRoute.value, match: '/content' },
+        ],
+      },
+      { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
     ],
   },
   {
-    label: 'Account',
+    group: 'Account',
     items: [
-      { name: 'Billing', to: '/billing', icon: CreditCard, exact: true },
-      { name: 'Settings', to: '/settings', icon: Settings, exact: true },
+      { title: 'Billing', to: '/billing', icon: CreditCard, match: '/billing' },
+      { title: 'Settings', to: '/settings', icon: Settings, match: '/settings' },
     ],
   },
 ])
 
-const ACTIVE_LINK = 'bg-accent text-accent-foreground font-semibold'
+function isActive(item) {
+  return route.path === item.match || route.path.startsWith(item.match + '/') || route.path.startsWith(item.match)
+}
+function isChildActive(child) {
+  return route.path.includes(child.match)
+}
+
+const breadcrumbs = computed(() => {
+  const path = route.path
+  for (const group of navMain.value) {
+    for (const item of group.items) {
+      if (item.children) {
+        for (const child of item.children) {
+          if (isChildActive(child))
+            return [{ label: item.title, to: item.to }, { label: child.title, to: child.to }]
+        }
+      }
+      if (path === item.match || path.startsWith(item.match))
+        return [{ label: item.title, to: item.to }]
+    }
+  }
+  const name = String(route.name || 'Page').replace(/[-_]/g, ' ')
+  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }]
+})
 
 function switchWebsite(id) {
   const website = appStore.websites.find(w => w.id === id)
