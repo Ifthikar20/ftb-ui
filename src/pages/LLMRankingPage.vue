@@ -90,14 +90,6 @@
       <button
         type="button"
         class="lr-tab"
-        :class="{ active: activeTab === 'performance' }"
-        role="tab"
-        :aria-selected="activeTab === 'performance'"
-        @click="activeTab = 'performance'"
-      >Performance</button>
-      <button
-        type="button"
-        class="lr-tab"
         :class="{ active: activeTab === 'pages' }"
         role="tab"
         :aria-selected="activeTab === 'pages'"
@@ -336,10 +328,12 @@
         </div>
       </Card>
 
-      </template>
-    </div><!-- /overview tab -->
-
-    <div v-show="activeTab === 'performance'" class="lr-performance">
+      <!-- Performance: moved from its own tab into the Overview page. -->
+      <div class="lr-section-head">
+        <h2 class="lr-section-title">Performance</h2>
+        <p class="lr-section-sub">How each model is doing on the latest run.</p>
+      </div>
+      <div class="lr-performance">
       <!-- Empty state when there's nothing to chart yet. The Overview tab
            handles the truly-empty website (no audits at all); this branch
            covers the case where audits exist but haven't completed. -->
@@ -470,7 +464,10 @@
           </div>
         </Card>
       </template>
-    </div><!-- /performance tab -->
+      </div><!-- /performance section -->
+
+      </template>
+    </div><!-- /overview tab -->
 
     <!-- ═════════════════════════════════════════════════════════════════════
          Pages tab — manage which pages of the project's site get scanned and
@@ -5905,7 +5902,10 @@ onBeforeUnmount(() => {
   border-radius: 4px;
 }
 
-/* ── Performance tab ─────────────────────────────────────────────────────── */
+/* ── Performance section (lives on the Overview page) ──────────────────────── */
+.lr-section-head { margin-top: 8px; }
+.lr-section-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--foreground); }
+.lr-section-sub { margin: 2px 0 0; font-size: 0.86rem; color: var(--muted-foreground); }
 .lr-performance { display: flex; flex-direction: column; gap: 20px; }
 .perf-empty {
   text-align: center;
