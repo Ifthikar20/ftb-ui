@@ -207,13 +207,13 @@ onUnmounted(() => {
 /* ── Right Panel ── */
 .auth-right {
   width: 480px;
-  background: var(--bg-card);
+  background: var(--card);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 48px 56px;
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border);
   position: relative;
 }
 
@@ -230,20 +230,20 @@ onUnmounted(() => {
   font-family: var(--font-display);
   font-size: var(--font-2xl);
   font-weight: 400;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin-bottom: 8px;
 }
 
 .auth-subtitle {
   font-size: var(--font-base);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .auth-footer {
   position: absolute;
   bottom: 24px;
   font-size: var(--font-xs);
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 
 /* ── Responsive ── */
