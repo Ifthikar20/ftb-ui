@@ -143,7 +143,7 @@
           </div>
         </header>
 
-        <div class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6">
+        <div class="flex w-full min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
           <router-view v-slot="{ Component }">
             <transition name="page-fade" mode="out-in">
               <keep-alive :max="10">
