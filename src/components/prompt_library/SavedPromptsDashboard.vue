@@ -211,10 +211,17 @@
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span class="spd-tag is-nonbranded">non-branded</span>
-                  <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
+                  <template v-if="(row.tags || []).length">
+                    <span v-for="t in row.tags" :key="t" class="spd-tag">{{ t }}</span>
+                  </template>
+                  <span v-else class="spd-mute">+ Add tags</span>
                 </TableCell>
-                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+                <TableCell class="num spd-loc">
+                  <template v-if="row.location">
+                    <span aria-hidden="true">{{ flag(row.location) }}</span> {{ row.location }}
+                  </template>
+                  <span v-else class="spd-mute">—</span>
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -271,11 +278,10 @@
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span class="spd-tag is-nonbranded">non-branded</span>
                   <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
                 </TableCell>
                 <TableCell class="num spd-mute">{{ relTime(row.suggested_at) }}</TableCell>
-                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+                <TableCell class="num spd-mute">—</TableCell>
                 <TableCell class="spd-act">
                   <button class="spd-act-btn spd-act-reject" title="Reject" @click.stop="rejectOne(row)">
                     <X :size="14" :stroke-width="2.2"/>
@@ -455,15 +461,20 @@ const addTags = ref([])
 const addPending = ref(false)
 
 const TAG_PRESETS = ['branded', 'non-branded', 'informational', 'transactional']
-// Only countries the scan can route web search to (see backend regions).
-const LOCATIONS = [
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'IN', name: 'India' },
-  { code: 'DE', name: 'Germany' },
-]
+// Countries the scan can route web search to, loaded from the backend
+// region catalog so the two never drift.
+const LOCATIONS = ref([{ code: 'US', name: 'United States' }])
+async function loadRegions() {
+  try {
+    const { data } = await promptLibrary.getRegions()
+    const list = (data?.data || data || {}).countries || []
+    if (list.length) LOCATIONS.value = list
+  } catch (_) { /* keep the default */ }
+}
+function flag(code) {
+  if (!code || code.length !== 2) return '🌐'
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)))
+}
 const promptCount = computed(() =>
   addText.value.split('\n').map(l => l.trim()).filter(Boolean).length)
 
@@ -574,7 +585,7 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+onMounted(() => { load(); loadRegions() })
 
 defineExpose({ load, get count() { return rows.value.length } })
 

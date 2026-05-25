@@ -36,8 +36,11 @@
         </div>
       </div>
       <div class="pd-meta">
-        <div class="pd-meta-label"><Repeat :size="12" :stroke-width="2"/>Runs</div>
-        <div class="pd-meta-val">{{ detail?.prompt?.runs_count || 0 }}</div>
+        <div class="pd-meta-label"><Globe :size="12" :stroke-width="2"/>Location</div>
+        <div class="pd-meta-val">
+          <template v-if="detail?.prompt?.location">{{ flag(detail.prompt.location) }} {{ detail.prompt.location }}</template>
+          <template v-else>Global</template>
+        </div>
       </div>
       <div class="pd-meta">
         <div class="pd-meta-label"><CircleDot :size="12" :stroke-width="2"/>Status</div>

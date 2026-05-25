@@ -5,6 +5,8 @@ import api from './client'
 export default {
     getIndustries: () => api.get('/prompt-library/industries/'),
 
+    getRegions: () => api.get('/prompt-library/regions/'),
+
     getIndustryTrends: (slug) => api.get(`/prompt-library/industries/${slug}/trends/`),
 
     getPrompts: (params) => api.get('/prompt-library/prompts/', { params }),
