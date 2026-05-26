@@ -44,6 +44,30 @@ function onFaviconError(e) { e.target.style.visibility = 'hidden' }
 
 const modelLabel = computed(() => modelStyle(detail.value?.model).label)
 
+/* Highlight the tracked brand (green) and competitors (amber) in any text.
+   Escapes HTML first, then wraps whole-word brand matches in <mark>. */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ))
+}
+function highlight(text) {
+  const safe = escapeHtml(text || '')
+  const brands = detail.value?.brands || []
+  const own = (detail.value?.brand || '').trim().toLowerCase()
+  const names = [...new Set(brands.map(b => (b.name || '').trim()).filter(Boolean))]
+  if (!names.length) return safe
+  names.sort((a, b) => b.length - a.length)
+  const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const re = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi')
+  return safe.replace(re, (m) => {
+    const style = m.toLowerCase() === own
+      ? 'background:rgba(34,197,94,0.20);color:#15803d'
+      : 'background:rgba(245,158,11,0.20);color:#b45309'
+    return `<mark style="${style};padding:0 2px;border-radius:3px;font-weight:600">${m}</mark>`
+  })
+}
+
 async function load() {
   if (!props.resultId || !props.open) return
   loading.value = true
@@ -86,10 +110,15 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
           <template v-else-if="detail">
             <!-- user prompt bubble -->
             <div class="mb-5 flex justify-end">
-              <div class="max-w-[80%] rounded-2xl bg-secondary px-4 py-2.5 text-sm text-foreground">{{ detail.prompt }}</div>
+              <div class="max-w-[80%] rounded-2xl bg-secondary px-4 py-2.5 text-sm text-foreground" v-html="highlight(detail.prompt)"></div>
+            </div>
+            <!-- legend -->
+            <div class="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm" style="background:rgba(34,197,94,0.45)"></span>{{ detail.brand }}</span>
+              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm" style="background:rgba(245,158,11,0.45)"></span>Competitors</span>
             </div>
             <!-- response -->
-            <div class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{{ detail.response_text || 'No response text captured.' }}</div>
+            <div class="whitespace-pre-wrap text-sm leading-relaxed text-foreground" v-html="detail.response_text ? highlight(detail.response_text) : 'No response text captured.'"></div>
           </template>
         </div>
 
