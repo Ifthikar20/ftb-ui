@@ -53,6 +53,12 @@
       </div>
     </div>
 
+    <!-- No scan data yet for this prompt. -->
+    <div v-if="detail && !detail.total_responses" class="pd-empty-banner">
+      <strong>No scan data for this prompt yet.</strong>
+      <span>Charts and brands populate once a scan runs. New prompts are scanned automatically — this needs at least one configured model with web search enabled. Check back in a moment.</span>
+    </div>
+
     <!-- Overview: Visibility chart + Top brands table -->
     <section class="pd-overview-head">
       <h2 class="pd-section-title">
@@ -803,6 +809,15 @@ function onFaviconError(ev, d) {
 }
 @keyframes pd-spin { to { transform: rotate(360deg); } }
 [data-theme="dark"] .pd-fanout-prov { background: var(--accent); }
+
+/* Empty banner */
+.pd-empty-banner {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--muted);
+  font-size: 0.88rem; color: var(--muted-foreground);
+}
+.pd-empty-banner strong { color: var(--foreground); }
 
 /* Visibility by model */
 .pd-bymodel { display: flex; flex-direction: column; gap: 10px; }
