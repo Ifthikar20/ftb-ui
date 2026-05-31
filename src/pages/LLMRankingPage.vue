@@ -3883,12 +3883,15 @@ const auditLogEvents = computed(() => {
     const provider = providerLabel(r.provider)
     const promptShort = (r.prompt || '').length > 70 ? r.prompt.slice(0, 70) + '...' : (r.prompt || '')
     if (!r.query_succeeded) {
+      const unavailable = (r.error_message || '').startsWith('service_unavailable')
       events.push({
         kind: 'fail',
         tag: provider.toUpperCase(),
         time: fmtTime(r.created_at),
-        message: `Query failed — "${promptShort}"`,
-        detail: r.error_message,
+        message: unavailable
+          ? `Service unavailable — "${promptShort}"`
+          : `Query failed — "${promptShort}"`,
+        detail: unavailable ? 'Provider not enabled in this environment' : r.error_message,
       })
       continue
     }
