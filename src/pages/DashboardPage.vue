@@ -40,6 +40,12 @@
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
+            <AnalyticsFilters
+              v-model="filters"
+              :available-prompts="availablePrompts"
+              @apply="refetchDashboard"
+            />
+
             <KpiCards :stats="stats" />
 
             <MetricBreakdowns v-if="analyticsBreakdowns" :breakdowns="analyticsBreakdowns" />
@@ -89,6 +95,7 @@ import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
 import OverviewSection from '@/components/overview/OverviewSection.vue'
 
+import AnalyticsFilters from '@/components/dashboard/AnalyticsFilters.vue'
 import KpiCards from '@/components/dashboard/KpiCards.vue'
 import MetricBreakdowns from '@/components/dashboard/MetricBreakdowns.vue'
 import MetricDeepDive from '@/components/dashboard/MetricDeepDive.vue'
@@ -137,10 +144,24 @@ const prompts = ref([])
 const chartSeries = ref(null)
 const analyticsBreakdowns = ref(null)
 const analyticsDeepDive = ref(null)
+const availablePrompts = ref([])
+const filters = ref({ range: '30d', start: '', end: '', prompts: [] })
 
-onMounted(async () => {
+function buildParams() {
+  const params = {}
+  if (filters.value.range) params.range = filters.value.range
+  if (filters.value.range === 'custom') {
+    if (filters.value.start) params.start = filters.value.start
+    if (filters.value.end) params.end = filters.value.end
+  }
+  if (filters.value.prompts?.length) params.prompts = filters.value.prompts
+  return params
+}
+
+async function refetchDashboard() {
   try {
-    const dashRes = await dashboardApi.get()
+    loading.value = true
+    const dashRes = await dashboardApi.get(buildParams())
     const d = dashRes.data?.data || dashRes.data
     stats.value = d.stats || []
     actions.value = d.actions || []
@@ -149,6 +170,27 @@ onMounted(async () => {
     prompts.value = d.prompts || []
     analyticsBreakdowns.value = d.analytics_breakdowns || null
     analyticsDeepDive.value = d.analytics_deep_dive || null
+    availablePrompts.value = d.analytics_deep_dive?.available_prompts || availablePrompts.value
+    chartSeries.value = d.visibility_series || null
+  } catch (e) {
+    console.error('Dashboard load error', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    const dashRes = await dashboardApi.get(buildParams())
+    const d = dashRes.data?.data || dashRes.data
+    stats.value = d.stats || []
+    actions.value = d.actions || []
+    activity.value = d.activity || []
+    quickActions.value = d.quick_actions || []
+    prompts.value = d.prompts || []
+    analyticsBreakdowns.value = d.analytics_breakdowns || null
+    analyticsDeepDive.value = d.analytics_deep_dive || null
+    availablePrompts.value = d.analytics_deep_dive?.available_prompts || []
     chartSeries.value = d.visibility_series || null
   } catch (e) {
     console.error('Dashboard load error', e)
