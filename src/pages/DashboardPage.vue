@@ -40,6 +40,8 @@
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
+            <KpiCards :stats="stats" />
+
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
               <div class="lg:col-span-4">
                 <VisibilityChart :series="chartSeries" />
@@ -83,6 +85,7 @@ import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
 import OverviewSection from '@/components/overview/OverviewSection.vue'
 
+import KpiCards from '@/components/dashboard/KpiCards.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
