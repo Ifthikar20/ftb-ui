@@ -52,7 +52,6 @@
             <PromptsTable :prompts="prompts" />
 
             <div class="grid gap-4 lg:grid-cols-2">
-              <MorningBrief :brief="brief" />
               <QuickActions :actions="quickActions" />
               <WeeklyTasks :tasks="actions" />
               <TrendInsights />
@@ -87,7 +86,6 @@ import OverviewSection from '@/components/overview/OverviewSection.vue'
 
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
-import MorningBrief from '@/components/dashboard/MorningBrief.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
 import WeeklyTasks from '@/components/dashboard/WeeklyTasks.vue'
 import RecentActivity from '@/components/dashboard/RecentActivity.vue'
@@ -125,7 +123,6 @@ const timeOfDay = computed(() => hour < 12 ? 'morning' : hour < 17 ? 'afternoon'
 
 const loading = ref(true)
 const stats = ref([])
-const brief = ref('')
 const actions = ref([])
 const activity = ref([])
 const quickActions = ref([])
@@ -147,7 +144,6 @@ onMounted(async () => {
     const dashRes = await dashboardApi.get()
     const d = dashRes.data?.data || dashRes.data
     stats.value = d.stats || []
-    brief.value = d.brief || 'Your visibility is trending up this week. FetchBot surfaced 3 new prompt opportunities and your brand moved up 2 positions across tracked queries.'
     actions.value = d.actions || []
     activity.value = d.activity || []
     quickActions.value = d.quick_actions || []
