@@ -55,7 +55,6 @@
               <QuickActions :actions="quickActions" />
               <WeeklyTasks :tasks="actions" />
               <TrendInsights />
-              <IntegrationStatus :integrations="integrations" />
             </div>
           </TabsContent>
 
@@ -90,7 +89,6 @@ import QuickActions from '@/components/dashboard/QuickActions.vue'
 import WeeklyTasks from '@/components/dashboard/WeeklyTasks.vue'
 import RecentActivity from '@/components/dashboard/RecentActivity.vue'
 import TrendInsights from '@/components/dashboard/TrendInsights.vue'
-import IntegrationStatus from '@/components/dashboard/IntegrationStatus.vue'
 import OnboardingModal from '@/components/onboarding/OnboardingModal.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -129,16 +127,6 @@ const quickActions = ref([])
 const prompts = ref([])
 const chartSeries = ref(null)
 
-const DEFAULT_INTEGRATIONS = {
-  pixel: { installed: false, verified: false, verified_at: null, pixel_key: null },
-  services: [
-    { type: 'ga', label: 'Google Analytics', connected: false, connected_at: null },
-    { type: 'gsc', label: 'Google Search Console', connected: false, connected_at: null },
-    { type: 'facebook', label: 'Facebook Ads', connected: false, connected_at: null },
-  ],
-}
-const integrations = ref({ ...DEFAULT_INTEGRATIONS })
-
 onMounted(async () => {
   try {
     const dashRes = await dashboardApi.get()
@@ -149,14 +137,6 @@ onMounted(async () => {
     quickActions.value = d.quick_actions || []
     prompts.value = d.prompts || []
     chartSeries.value = d.visibility_series || null
-    integrations.value = d.integrations
-      ? {
-          pixel: { ...DEFAULT_INTEGRATIONS.pixel, ...d.integrations.pixel },
-          services: d.integrations.services?.length
-            ? d.integrations.services
-            : DEFAULT_INTEGRATIONS.services,
-        }
-      : { ...DEFAULT_INTEGRATIONS }
   } catch (e) {
     console.error('Dashboard load error', e)
   } finally {
