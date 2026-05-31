@@ -44,6 +44,8 @@
 
             <MetricBreakdowns v-if="analyticsBreakdowns" :breakdowns="analyticsBreakdowns" />
 
+            <MetricDeepDive v-if="analyticsDeepDive" :deep-dive="analyticsDeepDive" />
+
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
               <div class="lg:col-span-4">
                 <VisibilityChart :series="chartSeries" />
@@ -89,6 +91,7 @@ import OverviewSection from '@/components/overview/OverviewSection.vue'
 
 import KpiCards from '@/components/dashboard/KpiCards.vue'
 import MetricBreakdowns from '@/components/dashboard/MetricBreakdowns.vue'
+import MetricDeepDive from '@/components/dashboard/MetricDeepDive.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
@@ -133,6 +136,7 @@ const quickActions = ref([])
 const prompts = ref([])
 const chartSeries = ref(null)
 const analyticsBreakdowns = ref(null)
+const analyticsDeepDive = ref(null)
 
 onMounted(async () => {
   try {
@@ -144,6 +148,7 @@ onMounted(async () => {
     quickActions.value = d.quick_actions || []
     prompts.value = d.prompts || []
     analyticsBreakdowns.value = d.analytics_breakdowns || null
+    analyticsDeepDive.value = d.analytics_deep_dive || null
     chartSeries.value = d.visibility_series || null
   } catch (e) {
     console.error('Dashboard load error', e)
