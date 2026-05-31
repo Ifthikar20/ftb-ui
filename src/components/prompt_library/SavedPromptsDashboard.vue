@@ -38,7 +38,7 @@
             <ArrowUpDown :size="14" :stroke-width="1.8"/>
           </button>
         </header>
-        <button class="spd-rail-add" type="button">
+        <button class="spd-rail-add" type="button" @click="openNewTopic">
           <span>New topic</span>
           <Plus :size="14" :stroke-width="2"/>
         </button>
@@ -102,6 +102,10 @@
             >
               <Sparkles :size="14" :stroke-width="2"/>
               {{ suggestLoading ? 'Suggesting…' : 'Suggest more' }}
+            </button>
+            <button type="button" class="spd-add-prompt" @click="openAddPrompt">
+              <Plus :size="14" :stroke-width="2.2"/>
+              Add Prompt
             </button>
           </div>
         </div>
@@ -207,10 +211,17 @@
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span class="spd-tag is-nonbranded">non-branded</span>
-                  <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
+                  <template v-if="(row.tags || []).length">
+                    <span v-for="t in row.tags" :key="t" class="spd-tag">{{ t }}</span>
+                  </template>
+                  <span v-else class="spd-mute">+ Add tags</span>
                 </TableCell>
-                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+                <TableCell class="num spd-loc">
+                  <template v-if="row.location">
+                    <span aria-hidden="true">{{ flag(row.location) }}</span> {{ row.location }}
+                  </template>
+                  <span v-else class="spd-mute">—</span>
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -267,11 +278,10 @@
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span class="spd-tag is-nonbranded">non-branded</span>
                   <span class="spd-tag" :class="`is-${row.intent_bucket}`">{{ row.intent_bucket }}</span>
                 </TableCell>
                 <TableCell class="num spd-mute">{{ relTime(row.suggested_at) }}</TableCell>
-                <TableCell class="num spd-loc"><span aria-hidden="true">🇺🇸</span> US</TableCell>
+                <TableCell class="num spd-mute">—</TableCell>
                 <TableCell class="spd-act">
                   <button class="spd-act-btn spd-act-reject" title="Reject" @click.stop="rejectOne(row)">
                     <X :size="14" :stroke-width="2.2"/>
@@ -312,6 +322,110 @@
         </footer>
       </section>
     </div>
+    <!-- Add prompt / bulk upload modal -->
+    <div
+      v-if="showAdd"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="showAdd = false"
+    >
+      <div class="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl">
+        <!-- tab switch -->
+        <div class="mb-5 flex rounded-xl bg-secondary p-1">
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'add' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'add'"
+          >Add Prompt</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'bulk' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'bulk'"
+          >Bulk Upload</button>
+        </div>
+
+        <!-- ADD PROMPT -->
+        <template v-if="addTab === 'add'">
+          <h3 class="text-base font-semibold text-foreground">Add Prompt</h3>
+          <p class="mb-4 text-sm text-muted-foreground">Add your own prompts. Every line becomes a separate prompt.</p>
+
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-xs font-medium text-muted-foreground">Prompt</label>
+            <span class="text-xs text-muted-foreground">{{ promptCount }} prompt{{ promptCount === 1 ? '' : 's' }}</span>
+          </div>
+          <textarea
+            v-model="addText"
+            rows="3"
+            placeholder="e.g. any alternative to rocket money"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          ></textarea>
+
+          <label class="mb-1 block text-xs font-medium text-muted-foreground">Topic</label>
+          <input
+            v-model="addTopic"
+            list="spd-topic-options"
+            placeholder="No topic — pick or type one"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <datalist id="spd-topic-options">
+            <option v-for="t in topics" :key="t.name" :value="t.name" />
+          </datalist>
+
+          <label class="mb-1 block text-xs font-medium text-muted-foreground">Location</label>
+          <select
+            v-model="addLocation"
+            class="mb-4 w-full rounded-lg border border-border bg-background p-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option v-for="l in LOCATIONS" :key="l.code" :value="l.code">{{ l.name }}</option>
+          </select>
+
+          <label class="mb-1.5 block text-xs font-medium text-muted-foreground">Tags</label>
+          <div class="mb-5 flex flex-wrap gap-2">
+            <button
+              v-for="tag in TAG_PRESETS"
+              :key="tag"
+              type="button"
+              class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+              :class="addTags.includes(tag)
+                ? 'border-ring bg-secondary text-foreground'
+                : 'border-border text-muted-foreground hover:border-ring'"
+              @click="toggleTag(tag)"
+            >{{ tag }}</button>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="showAdd = false">Cancel</button>
+            <button
+              type="button"
+              class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              :disabled="addPending"
+              @click="submitAdd"
+            >{{ addPending ? 'Adding…' : 'Add Prompt' }}</button>
+          </div>
+        </template>
+
+        <!-- BULK UPLOAD -->
+        <template v-else>
+          <p class="mb-3 text-center text-sm text-muted-foreground">
+            Make sure your CSV follows the required format or
+            <button type="button" class="underline hover:text-foreground" @click="downloadCsvExample">download example</button>.
+          </p>
+          <label
+            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-6 py-10 text-center hover:border-ring"
+            @dragover.prevent
+            @drop.prevent="onCsvFile"
+          >
+            <Plus :size="22" :stroke-width="1.8" class="text-muted-foreground" />
+            <span class="text-sm text-foreground">Drag and drop your file here, or <span class="underline">click to browse</span></span>
+            <input type="file" accept=".csv,text/csv" class="hidden" @change="onCsvFile" />
+          </label>
+          <div class="mt-5 flex justify-end">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="showAdd = false">Cancel</button>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -328,11 +442,118 @@ import {
 // Plus stays imported even though it's only referenced from the
 // 'New topic' rail button; keeping it next to the other rail icons.
 
+import { useToast } from '@/composables/useToast'
+
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
+const toast = useToast()
 const websiteId = route.params.websiteId
 const websiteName = computed(() => appStore.activeWebsite?.name || '')
+
+/* ── Add prompt / new topic ── */
+const showAdd = ref(false)
+const addTab = ref('add')          // 'add' | 'bulk'
+const addText = ref('')
+const addTopic = ref('')
+const addLocation = ref('US')
+const addTags = ref([])
+const addPending = ref(false)
+
+const TAG_PRESETS = ['branded', 'non-branded', 'informational', 'transactional']
+// Countries the scan can route web search to, loaded from the backend
+// region catalog so the two never drift.
+const LOCATIONS = ref([{ code: 'US', name: 'United States' }])
+async function loadRegions() {
+  try {
+    const { data } = await promptLibrary.getRegions()
+    const list = (data?.data || data || {}).countries || []
+    if (list.length) LOCATIONS.value = list
+  } catch (_) { /* keep the default */ }
+}
+function flag(code) {
+  if (!code || code.length !== 2) return '🌐'
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)))
+}
+const promptCount = computed(() =>
+  addText.value.split('\n').map(l => l.trim()).filter(Boolean).length)
+
+function resetAddForm() {
+  addText.value = ''
+  addTags.value = []
+  addLocation.value = 'US'
+  addTab.value = 'add'
+}
+function openAddPrompt() {
+  resetAddForm()
+  addTopic.value = activeTopic.value || ''
+  showAdd.value = true
+}
+function openNewTopic() {
+  resetAddForm()
+  addTopic.value = ''
+  showAdd.value = true
+}
+function toggleTag(tag) {
+  const i = addTags.value.indexOf(tag)
+  if (i >= 0) addTags.value.splice(i, 1)
+  else addTags.value.push(tag)
+}
+
+async function submitAdd() {
+  const text = addText.value.trim()
+  if (!text) { toast.error('Enter at least one prompt.'); return }
+  addPending.value = true
+  try {
+    const res = await promptLibrary.createWebsitePrompt(websiteId, {
+      text,
+      topic: addTopic.value.trim(),
+      location: addLocation.value,
+      tags: addTags.value,
+      intent_bucket: 'category',
+      style: 'question',
+    })
+    const body = res?.data?.data || res?.data || {}
+    const n = body.created_count || promptCount.value
+    toast.success(`Added ${n} prompt${n === 1 ? '' : 's'} · scanning…`)
+    showAdd.value = false
+    const t = addTopic.value.trim()
+    if (t) activeTopic.value = t
+    await load()
+  } catch (e) {
+    toast.error(e?.displayMessage || 'Could not add prompt.')
+  } finally {
+    addPending.value = false
+  }
+}
+
+/* Bulk CSV: one prompt per row (a leading "prompt" header is ignored). */
+function downloadCsvExample() {
+  const sample = 'prompt\nbest budgeting apps in 2026\nalternatives to rocket money\nhow do I automate my savings\n'
+  const blob = new Blob([sample], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'prompts-example.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+function parseCsv(content) {
+  const rows = content.split(/\r?\n/).map(r => r.trim()).filter(Boolean)
+  if (rows.length && /^"?prompts?"?$/i.test(rows[0])) rows.shift()
+  // Take the first column of each row, stripping surrounding quotes.
+  return rows.map(r => r.split(',')[0].replace(/^"|"$/g, '').trim()).filter(Boolean)
+}
+async function onCsvFile(e) {
+  const file = (e.target.files || e.dataTransfer?.files || [])[0]
+  if (!file) return
+  const content = await file.text()
+  const prompts = parseCsv(content)
+  if (!prompts.length) { toast.error('No prompts found in that file.'); return }
+  addText.value = prompts.join('\n')
+  addTab.value = 'add'
+  toast.success(`Loaded ${prompts.length} prompts — review and add.`)
+}
 
 const rows = ref([])
 const topics = ref([])
@@ -364,7 +585,7 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+onMounted(() => { load(); loadRegions() })
 
 defineExpose({ load, get count() { return rows.value.length } })
 
@@ -914,6 +1135,22 @@ defineEmits(['go-search'])
 }
 .spd-suggest:hover { opacity: 0.92; }
 .spd-suggest:disabled { opacity: 0.55; cursor: progress; }
+.spd-add-prompt {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--foreground);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.spd-add-prompt:hover { opacity: 0.92; }
 
 .spd-subtab-count {
   display: inline-flex;

@@ -14,6 +14,11 @@ const api = axios.create({
 /* ── Request Interceptor ── */
 let isRefreshing = false
 let failedQueue = []
+// Set when a refresh attempt itself returns 401/403. Stops the storm of
+// follow-up requests from each kicking off their own refresh; cleared the
+// next time we see a fresh access token (i.e. after a successful login).
+let sessionDead = false
+let lastSeenToken = null
 
 const processQueue = (error, token = null) => {
     failedQueue.forEach(({ resolve, reject }) => {
@@ -25,6 +30,12 @@ const processQueue = (error, token = null) => {
 
 api.interceptors.request.use((config) => {
     const auth = useAuthStore()
+    if (auth.accessToken && auth.accessToken !== lastSeenToken) {
+        // A new access token means the user logged back in; re-arm the
+        // refresh flow so future 401s can attempt a refresh again.
+        sessionDead = false
+        lastSeenToken = auth.accessToken
+    }
     if (auth.accessToken) {
         config.headers.Authorization = `Bearer ${auth.accessToken}`
     }
@@ -65,6 +76,12 @@ api.interceptors.response.use(
 
         // 401 — try to refresh (silently, no toast)
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // If a previous refresh already failed, don't keep banging on
+            // /auth/refresh/ — every queued component would otherwise kick
+            // off its own retry and we'd flood the server with 401s.
+            if (sessionDead) {
+                return Promise.reject(error)
+            }
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject })
@@ -82,6 +99,8 @@ api.interceptors.response.use(
                 const newToken = data.data?.access || data.access
                 const auth = useAuthStore()
                 auth.accessToken = newToken
+                lastSeenToken = newToken
+                sessionDead = false
 
                 processQueue(null, newToken)
                 originalRequest.headers.Authorization = `Bearer ${newToken}`
@@ -95,9 +114,14 @@ api.interceptors.response.use(
                 // request will simply fail and the user can retry.
                 const refreshStatus = refreshError?.response?.status
                 if (refreshStatus === 401 || refreshStatus === 403) {
+                    sessionDead = true
                     const auth = useAuthStore()
                     auth.clearAuth()
-                    router.push({ name: 'login' })
+                    // Don't pile up duplicate navigations if we're already
+                    // on /login (other in-flight requests may also 401).
+                    if (router.currentRoute.value?.name !== 'login') {
+                        router.push({ name: 'login' })
+                    }
                 }
                 return Promise.reject(refreshError)
             } finally {

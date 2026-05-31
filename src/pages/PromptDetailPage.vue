@@ -36,8 +36,11 @@
         </div>
       </div>
       <div class="pd-meta">
-        <div class="pd-meta-label"><Repeat :size="12" :stroke-width="2"/>Runs</div>
-        <div class="pd-meta-val">{{ detail?.prompt?.runs_count || 0 }}</div>
+        <div class="pd-meta-label"><Globe :size="12" :stroke-width="2"/>Location</div>
+        <div class="pd-meta-val">
+          <template v-if="detail?.prompt?.location">{{ flag(detail.prompt.location) }} {{ detail.prompt.location }}</template>
+          <template v-else>Global</template>
+        </div>
       </div>
       <div class="pd-meta">
         <div class="pd-meta-label"><CircleDot :size="12" :stroke-width="2"/>Status</div>
@@ -48,6 +51,12 @@
           </span>
         </div>
       </div>
+    </div>
+
+    <!-- No scan data yet for this prompt. -->
+    <div v-if="detail && !detail.total_responses" class="pd-empty-banner">
+      <strong>No scan data for this prompt yet.</strong>
+      <span>Charts and brands populate once a scan runs. New prompts are scanned automatically — this needs at least one configured model with web search enabled. Check back in a moment.</span>
     </div>
 
     <!-- Overview: Visibility chart + Top brands table -->
@@ -128,6 +137,31 @@
       </div>
     </div>
 
+    <!-- Visibility by model -->
+    <section class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <BarChart3 :size="16" :stroke-width="2"/>
+        Visibility by model
+      </h2>
+      <p class="pd-section-sub">How often {{ brandLabel }} appears in each model's answers to this prompt.</p>
+    </section>
+
+    <div class="pd-card">
+      <div class="pd-bymodel">
+        <div v-for="m in (detail?.by_model || [])" :key="m.provider" class="pd-bymodel-row">
+          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+          <span class="pd-bymodel-name">{{ m.label }}</span>
+          <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
+          <template v-else-if="m.responses">
+            <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
+            <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
+          </template>
+          <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
+        </div>
+        <div v-if="!(detail?.by_model || []).length" class="pd-mute" style="padding: 8px 0">No model data yet.</div>
+      </div>
+    </div>
+
     <!-- Top Domains + Domain type breakdown -->
     <section class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
@@ -200,64 +234,93 @@
       </div>
     </div>
 
-    <!-- Fanout Queries — sub-queries the AI engines run to gather
-         context for this prompt. Populated by the crawler. -->
+    <!-- Recent Chats — one row per AI answer to this prompt. -->
     <section class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
-        <Workflow :size="16" :stroke-width="2"/>
-        Fanout queries
+        <MessageSquare :size="16" :stroke-width="2"/>
+        Recent chats
       </h2>
-      <p class="pd-section-sub">Additional queries AI engines run to gather context for this prompt.</p>
+      <p class="pd-section-sub">Recent chats for this prompt, and whether {{ brandLabel }} was mentioned.</p>
     </section>
 
-    <div class="pd-card pd-fanout-card">
-      <div class="pd-card-head">
-        <h3>
-          <Sparkles :size="14" :stroke-width="2"/>
-          Captured sub-queries
-        </h3>
-        <div class="pd-fanout-meta">
-          <span v-if="fanoutLastRun" class="pd-card-meta">
-            Last crawled {{ relativeTime(fanoutLastRun.completed_at || fanoutLastRun.started_at) }}
-            · {{ fanoutLastRun.source_count }} model {{ fanoutLastRun.source_count === 1 ? 'response' : 'responses' }}
-          </span>
-          <button
-            class="pd-crawl-btn"
-            type="button"
-            :disabled="crawling"
-            @click="onRunCrawler"
+    <div class="pd-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead style="width: 44%">Chat</TableHead>
+            <TableHead>{{ brandLabel }} mentioned</TableHead>
+            <TableHead class="num">Position</TableHead>
+            <TableHead>Mentions</TableHead>
+            <TableHead>Sources</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead class="num">Created</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="(c, ci) in recentChats"
+            :key="c.result_id"
+            class="pd-chat-row"
+            @click="openChat(ci)"
           >
-            <Radar :size="14" :stroke-width="2"/>
-            {{ crawling ? 'Crawling…' : (fanoutLastRun ? 'Re-crawl' : 'Run crawler') }}
-          </button>
-        </div>
-      </div>
-
-      <div v-if="fanouts.length" class="pd-fanout-list">
-        <div
-          v-for="f in fanouts"
-          :key="f.id"
-          class="pd-fanout-row"
-        >
-          <span class="pd-fanout-dot" aria-hidden="true"></span>
-          <span class="pd-fanout-text">{{ f.text }}</span>
-          <span v-if="f.provider" class="pd-fanout-prov">{{ f.provider }}</span>
-        </div>
-      </div>
-
-      <div v-else-if="crawling" class="pd-empty-inline">
-        <div class="pd-spinner" aria-hidden="true"></div>
-        <p>Running the crawler — sub-queries will land here as each model responds.</p>
-      </div>
-
-      <div v-else class="pd-empty-inline">
-        <Workflow :size="32" :stroke-width="1.5"/>
-        <p>No fanout captured yet. Click <strong>Run crawler</strong> to fan this prompt out across every configured model.</p>
-      </div>
+            <TableCell>
+              <span v-if="c.status === 'pending'" class="pd-chat-pending">Pending</span>
+              <span v-else class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
+            </TableCell>
+            <TableCell>
+              <span :class="c.brand_mentioned ? 'pd-yes' : 'pd-no'">{{ c.brand_mentioned ? 'Yes' : 'No' }}</span>
+            </TableCell>
+            <TableCell class="num">{{ c.position ?? '—' }}</TableCell>
+            <TableCell>
+              <span class="pd-icon-row">
+                <span
+                  v-for="m in c.models"
+                  :key="m"
+                  class="pd-model-dot"
+                  :style="{ background: modelStyle(m).color }"
+                  :title="modelStyle(m).label"
+                >{{ modelStyle(m).label[0] }}</span>
+              </span>
+            </TableCell>
+            <TableCell>
+              <span class="pd-icon-row">
+                <img
+                  v-for="(s, si) in c.sources.slice(0, 4)"
+                  :key="si"
+                  :src="faviconFor(s)"
+                  alt=""
+                  class="pd-fav"
+                  @error="(e) => onFaviconError(e, { apex_domain: s })"
+                />
+                <span v-if="c.sources.length > 4" class="pd-more">+{{ c.sources.length - 4 }}</span>
+                <span v-if="!c.sources.length" class="pd-muted">—</span>
+              </span>
+            </TableCell>
+            <TableCell>{{ c.country ? flag(c.country) + ' ' + c.country : '—' }}</TableCell>
+            <TableCell class="num">{{ c.created_at ? relativeTime(c.created_at) : '—' }}</TableCell>
+          </TableRow>
+          <TableRow v-if="!recentChats.length">
+            <TableCell colspan="7" style="text-align:center; color: var(--muted-foreground); padding: 28px 0">
+              No chats yet for this prompt.
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
 
     <div v-if="loading && !detail" class="pd-loading">Loading prompt analytics…</div>
     <div v-if="error" class="pd-error">{{ error }}</div>
+
+    <ChatDetailModal
+      :open="chatOpen"
+      :website-id="websiteId"
+      :result-id="currentChatId"
+      :has-prev="chatIndex > 0"
+      :has-next="chatIndex < recentChats.length - 1"
+      @close="chatOpen = false"
+      @prev="prevChat"
+      @next="nextChat"
+    />
   </div>
 </template>
 
@@ -271,12 +334,33 @@ import {
 } from 'chart.js'
 import {
   Activity, BarChart3, ChartLine, ChevronLeft, CircleDot, Clock,
-  Globe, Inbox, Link2, PieChart, Radar, Repeat, Sparkles, Tag, Trophy,
-  Workflow,
+  Globe, Inbox, Link2, MessageSquare, PieChart, Repeat, Sparkles, Tag, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
+import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+
+const MODELS = {
+  chatgpt: { label: 'ChatGPT', color: '#10a37f' },
+  perplexity: { label: 'Perplexity', color: '#8b5cf6' },
+  gemini: { label: 'Gemini', color: '#5b8def' },
+  claude: { label: 'Claude', color: '#f97316' },
+  copilot: { label: 'Copilot', color: '#06b6d4' },
+  grok: { label: 'Grok', color: '#0f172a' },
+  deepseek: { label: 'DeepSeek', color: '#2563eb' },
+  mistral: { label: 'Mistral', color: '#ef4444' },
+  cohere: { label: 'Cohere', color: '#d946ef' },
+  llama: { label: 'Llama', color: '#0ea5e9' },
+  nova: { label: 'Nova', color: '#64748b' },
+}
+function modelStyle(key) {
+  return MODELS[key] || { label: key || 'Model', color: '#94a3b8' }
+}
+function flag(code) {
+  if (!code || code.length !== 2) return '🌐'
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)))
+}
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
@@ -300,47 +384,15 @@ async function load() {
     loading.value = false
   }
 }
-const fanouts = ref([])
-const fanoutLastRun = ref(null)
-const crawling = ref(false)
-let crawlPoll = null
-
-async function loadFanouts() {
-  try {
-    const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
-    const body = data?.data || data || {}
-    fanouts.value = body.fanouts || []
-    fanoutLastRun.value = body.last_run || null
-    // Keep polling while the run is still in flight.
-    if (fanoutLastRun.value && fanoutLastRun.value.status === 'running') {
-      crawling.value = true
-      if (!crawlPoll) crawlPoll = setInterval(loadFanouts, 4000)
-    } else {
-      crawling.value = false
-      if (crawlPoll) { clearInterval(crawlPoll); crawlPoll = null }
-    }
-  } catch (_) {
-    /* leave previous state in place */
-  }
-}
-
-async function onRunCrawler() {
-  crawling.value = true
-  try {
-    await promptLibrary.crawlPrompt(websiteId, promptId)
-    // The crawler can run sync if Celery isn't up; either way we
-    // re-poll to pick up whatever it produced.
-    await loadFanouts()
-    await load()
-    if (!crawlPoll) crawlPoll = setInterval(async () => {
-      await loadFanouts()
-      await load()
-    }, 4000)
-  } catch (e) {
-    error.value = e?.displayMessage || 'Could not start the crawler.'
-    crawling.value = false
-  }
-}
+/* ── Recent chats + chat modal ── */
+const brandLabel = computed(() => detail.value?.brand_label || 'your brand')
+const recentChats = computed(() => detail.value?.recent_chats || [])
+const chatOpen = ref(false)
+const chatIndex = ref(0)
+const currentChatId = computed(() => recentChats.value[chatIndex.value]?.result_id || '')
+function openChat(i) { chatIndex.value = i; chatOpen.value = true }
+function prevChat() { if (chatIndex.value > 0) chatIndex.value -= 1 }
+function nextChat() { if (chatIndex.value < recentChats.value.length - 1) chatIndex.value += 1 }
 
 function relativeTime(iso) {
   if (!iso) return '—'
@@ -355,7 +407,7 @@ function relativeTime(iso) {
   return `${d}d ago`
 }
 
-onMounted(() => { load(); loadFanouts() })
+onMounted(load)
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
 const promptTextShort = computed(() => {
@@ -757,6 +809,50 @@ function onFaviconError(ev, d) {
 }
 @keyframes pd-spin { to { transform: rotate(360deg); } }
 [data-theme="dark"] .pd-fanout-prov { background: var(--accent); }
+
+/* Empty banner */
+.pd-empty-banner {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--muted);
+  font-size: 0.88rem; color: var(--muted-foreground);
+}
+.pd-empty-banner strong { color: var(--foreground); }
+
+/* Visibility by model */
+.pd-bymodel { display: flex; flex-direction: column; gap: 10px; }
+.pd-bymodel-row { display: flex; align-items: center; gap: 10px; }
+.pd-bymodel-name { width: 110px; font-size: 0.88rem; color: var(--foreground); }
+.pd-bymodel-bar {
+  flex: 1; height: 8px; border-radius: 9999px; background: var(--muted);
+  overflow: hidden;
+}
+.pd-bymodel-bar > span {
+  display: block; height: 100%; border-radius: 9999px;
+  background: var(--chart-1, #5b8def);
+}
+.pd-bymodel-val { width: 48px; text-align: right; font-size: 0.85rem; font-variant-numeric: tabular-nums; color: var(--foreground); }
+.pd-bymodel-na { flex: 1; font-size: 0.82rem; color: var(--muted-foreground); }
+.pd-bymodel-nodata { font-style: italic; }
+
+/* Recent chats */
+.pd-chat-row { cursor: pointer; }
+.pd-chat-row:hover { background: var(--muted); }
+.pd-chat-preview {
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden; color: var(--foreground); font-size: 0.88rem;
+}
+.pd-chat-pending { font-size: 0.8rem; color: var(--muted-foreground); }
+.pd-yes { color: var(--chart-2, #22c55e); font-weight: 600; font-size: 0.82rem; }
+.pd-no { color: #ef4444; font-weight: 600; font-size: 0.82rem; }
+.pd-icon-row { display: inline-flex; align-items: center; gap: 4px; }
+.pd-model-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 9999px; color: #fff;
+  font-size: 9px; font-weight: 700;
+}
+.pd-fav { width: 16px; height: 16px; border-radius: 3px; }
+.pd-more, .pd-muted { font-size: 0.75rem; color: var(--muted-foreground); }
 .pd-error { padding: 20px; text-align: center; color: var(--destructive); }
 .text-muted { color: var(--muted-foreground); }
 

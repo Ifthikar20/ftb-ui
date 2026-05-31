@@ -139,6 +139,8 @@ const routes = [
         path: '/llm-ranking/:websiteId/saved-prompts',
         redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/prompts`, query: { tab: 'saved' } }),
     },
+    protect('/llm-ranking/:websiteId/urls', 'sources-urls', () => import('@/pages/SourcesUrlsPage.vue'), true),
+    protect('/llm-ranking/:websiteId/urls/detail', 'sources-url-detail', () => import('@/pages/SourcesUrlDetailPage.vue'), true),
     protect('/llm-ranking/:websiteId/source-influence', 'source-influence', () => import('@/pages/SourceInfluencePage.vue'), true),
     protect('/llm-ranking/:websiteId/brand-vault', 'brand-vault', () => import('@/pages/BrandVaultPage.vue'), true),
     protect('/llm-ranking/:websiteId/content', 'content-studio', () => import('@/pages/ContentStudioPage.vue'), true),
@@ -269,7 +271,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Guard: project-specific pages require an active project
-    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'source-influence', 'prompt-library', 'brand-vault', 'content-studio', 'content-studio-draft']
+    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'source-influence', 'sources-urls', 'prompt-library', 'brand-vault', 'content-studio', 'content-studio-draft']
     if (projectPages.includes(to.name) && auth.isAuthenticated) {
         const app = useAppStore()
         if (!app.activeWebsite) {

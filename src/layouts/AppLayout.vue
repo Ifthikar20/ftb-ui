@@ -48,7 +48,7 @@
                     </router-link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuSub v-if="item.children && isActive(item)">
+                <SidebarMenuSub v-if="item.children && (item.alwaysOpen || isActive(item))">
                   <SidebarMenuSubItem v-for="child in item.children" :key="child.title">
                     <SidebarMenuSubButton as-child :is-active="isChildActive(child)">
                       <router-link :to="child.to">
@@ -434,6 +434,7 @@ const analyticsRoute = computed(() => websiteId.value ? `/analytics/${websiteId.
 const llmRankingRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}` : '/websites')
 const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/prompts` : '/websites')
 const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/source-influence` : '/websites')
+const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 
@@ -451,7 +452,9 @@ const navMain = computed(() => [
       { title: 'Analytics', to: analyticsRoute.value, icon: BarChart3, match: '/analytics' },
       {
         title: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain, match: '/llm-ranking',
+        alwaysOpen: true,
         children: [
+          { title: 'URLs', to: sourcesUrlsRoute.value, match: '/urls' },
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Model Test', to: sourceInfluenceRoute.value, match: '/source-influence' },
           { title: 'Brand Vault', to: brandVaultRoute.value, match: '/brand-vault' },
