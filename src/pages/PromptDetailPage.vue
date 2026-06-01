@@ -539,8 +539,27 @@ async function load() {
 // fires at most once per mount and never loops on a prompt whose scan
 // completed with no brands or failed.
 const autoScanDone = ref(false)
+const backfillDone = ref(false)
+const backfilling = ref(false)
 async function loadThenMaybeScan() {
   await load()
+
+  // Backfill: if we already have responses captured but some were never
+  // run through brand extraction (old crawler rows), re-extract them once
+  // so the brand table fills in from data we already have — no re-query.
+  if (!backfillDone.value && (detail.value?.unextracted_count || 0) > 0) {
+    backfillDone.value = true
+    backfilling.value = true
+    try {
+      await promptLibrary.reextractPrompt(websiteId, promptId)
+      await load()
+    } catch {
+      /* non-fatal — leave the existing data in place */
+    } finally {
+      backfilling.value = false
+    }
+  }
+
   if (autoScanDone.value || scanInFlight.value) return
   const d = detail.value
   if (!d) return
