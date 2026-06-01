@@ -295,12 +295,20 @@
         </span>
       </div>
       <div v-if="fanouts.length" class="pd-fanout-list">
-        <div v-for="(f, i) in fanouts" :key="f.id" class="pd-fanout-item">
-          <span class="pd-fanout-num">{{ i + 1 }}</span>
+        <div v-for="f in pagedFanouts" :key="f.id" class="pd-fanout-item">
+          <span class="pd-fanout-num">{{ f._n }}</span>
           <span class="pd-fanout-text">{{ f.text }}</span>
         </div>
       </div>
-      <div v-else class="pd-empty-inline" style="padding: 20px 0">
+      <div v-if="fanoutPageCount > 1" class="pd-pager">
+        <button class="pd-pager-btn" :disabled="fanoutPage === 0" @click="fanoutPage--">‹ Prev</button>
+        <span class="pd-pager-info">
+          {{ fanoutPage * FANOUT_PAGE_SIZE + 1 }}–{{ Math.min((fanoutPage + 1) * FANOUT_PAGE_SIZE, fanouts.length) }}
+          of {{ fanouts.length }}
+        </span>
+        <button class="pd-pager-btn" :disabled="fanoutPage >= fanoutPageCount - 1" @click="fanoutPage++">Next ›</button>
+      </div>
+      <div v-if="!fanouts.length" class="pd-empty-inline" style="padding: 20px 0">
         <Inbox :size="28" :stroke-width="1.5"/>
         <p>No fan-out queries captured yet.</p>
       </div>
@@ -613,6 +621,17 @@ async function loadThenMaybeScan() {
 /* ── Fanouts ── */
 const fanouts = ref([])
 const lastFanoutRun = ref(null)
+
+/* Fan-out pagination — keep the list short, page through the rest. */
+const FANOUT_PAGE_SIZE = 5
+const fanoutPage = ref(0)
+const fanoutPageCount = computed(() => Math.ceil(fanouts.value.length / FANOUT_PAGE_SIZE) || 1)
+const pagedFanouts = computed(() => {
+  const start = fanoutPage.value * FANOUT_PAGE_SIZE
+  return fanouts.value
+    .slice(start, start + FANOUT_PAGE_SIZE)
+    .map((f, i) => ({ ...f, _n: start + i + 1 }))
+})
 async function loadFanouts() {
   try {
     const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
@@ -627,9 +646,11 @@ async function loadFanouts() {
       return true
     })
     lastFanoutRun.value = payload.last_run || null
+    fanoutPage.value = 0
   } catch {
     fanouts.value = []
     lastFanoutRun.value = null
+    fanoutPage.value = 0
   }
 }
 
@@ -1451,6 +1472,18 @@ function onFaviconError(ev, d) {
   border-radius: 6px;
   flex: 0 0 auto;
 }
+.pd-pager {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 12px; padding: 10px 8px 2px;
+}
+.pd-pager-info { font-size: 0.78rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.pd-pager-btn {
+  font-size: 0.8rem; padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--panel, transparent); color: var(--foreground); cursor: pointer;
+}
+.pd-pager-btn:hover:not(:disabled) { background: var(--muted); }
+.pd-pager-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* Domain drill-through */
 .pd-domain-row.is-clickable { cursor: pointer; }
