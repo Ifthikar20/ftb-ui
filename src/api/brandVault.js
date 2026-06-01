@@ -53,4 +53,18 @@ export default {
     api.post(`/brand-vault/websites/${websiteId}/tone-samples/create/`, { text }),
   deleteToneSample: (id) =>
     api.delete(`/brand-vault/tone-samples/${id}/`),
+
+  // AI Brand Safety -------------------------------------------------------
+  safetyMetrics: (websiteId) =>
+    api.get(`/brand-vault/websites/${websiteId}/safety/metrics/`),
+  safetyPrompts: (websiteId, params = {}) =>
+    api.get(`/brand-vault/websites/${websiteId}/safety/prompts/`, { params }),
+  addSafetyPrompt: (websiteId, text) =>
+    api.post(`/brand-vault/websites/${websiteId}/safety/prompts/`, { text }),
+  deleteSafetyPrompt: (id) =>
+    api.delete(`/brand-vault/safety/prompts/${id}/`),
+  safetyAlerts: (websiteId, params = {}) =>
+    api.get(`/brand-vault/websites/${websiteId}/safety/alerts/`, { params }),
+  resolveSafetyAlert: (id, action = 'resolve') =>
+    api.post(`/brand-vault/safety/alerts/${id}/resolve/`, { action }),
 }

@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import brandVault from '@/api/brandVault'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -238,66 +239,147 @@ function copyKeyword(k) {
 }
 
 /* ── AI Brand Safety ────────────────────────────────────────────────── */
-const safetyScore = ref(92)
+const ISSUE_LABELS = {
+  hallucination: 'Hallucination',
+  unverified: 'Unverified claim',
+  outdated: 'Outdated info',
+  harmful: 'Harmful mention',
+  negative: 'Negative mention',
+}
 
-const safetyAlerts = ref([
-  {
-    id: 'a1',
-    severity: 'high',
-    model: 'ChatGPT',
-    prompt: 'Is treasury safe for storing payroll funds?',
-    snippet: 'treasury is not FDIC-insured for amounts over $50k…',
-    issue: 'Hallucination',
-    detail: 'Incorrect insurance claim. Actual coverage: $250k via partner banks.',
-    seenAt: '2h ago',
-  },
-  {
-    id: 'a2',
-    severity: 'medium',
-    model: 'Perplexity',
-    prompt: 'Has treasury had any data breaches?',
-    snippet: '…reports of a 2024 breach at treasury circulated on Reddit…',
-    issue: 'Unverified claim',
-    detail: 'No breach on public record. Source: r/fintech speculation thread.',
-    seenAt: '6h ago',
-  },
-  {
-    id: 'a3',
-    severity: 'low',
-    model: 'Grok',
-    prompt: 'Compare treasury to Mint',
-    snippet: '…treasury only supports US banks…',
-    issue: 'Outdated info',
-    detail: 'EU + UK rolled out Mar 2026.',
-    seenAt: '1d ago',
-  },
-])
+const safetyMetricsData = ref({
+  reputation_health: 100,
+  hallucinations: 0,
+  harmful_mentions: 0,
+  prompts_monitored: 0,
+  open_alerts: 0,
+})
+const safetyAlertsRaw = ref([])
+const safetyPrompts = ref([])
+const safetyLoading = ref(false)
 
-const safetyPrompts = ref([
-  { id: 'p1', text: 'Is treasury safe to use?',                     hits: 18, status: 'active' },
-  { id: 'p2', text: 'treasury data breach',                         hits:  6, status: 'active' },
-  { id: 'p3', text: 'treasury FDIC insurance coverage',             hits: 11, status: 'active' },
-  { id: 'p4', text: 'treasury vs YNAB security',                    hits:  4, status: 'active' },
-])
+const safetyAlerts = computed(() => safetyAlertsRaw.value.map(a => ({
+  id: a.id,
+  severity: a.severity,
+  model: a.model,
+  prompt: a.prompt_text,
+  snippet: a.snippet,
+  issue: ISSUE_LABELS[a.issue] || a.issue,
+  detail: a.detail || '',
+  seenAt: timeAgo(a.detected_at || a.created_at),
+})))
 
-const safetyMetrics = computed(() => [
-  { key: 'health',    label: 'Reputation health', value: safetyScore.value + '/100',          tone: 'good',    delta: '+3 this week' },
-  { key: 'halluc',    label: 'Hallucinations',    value: '4',                                 tone: 'warn',    delta: '2 unresolved' },
-  { key: 'harmful',   label: 'Harmful mentions',  value: '1',                                 tone: 'bad',     delta: 'new today' },
-  { key: 'monitored', label: 'Prompts monitored', value: String(safetyPrompts.value.length),  tone: 'neutral', delta: 'across 3 models' },
-])
+const safetyMetrics = computed(() => {
+  const m = safetyMetricsData.value
+  return [
+    {
+      key: 'health',
+      label: 'Reputation health',
+      value: m.reputation_health + '/100',
+      tone: m.reputation_health >= 80 ? 'good' : m.reputation_health >= 50 ? 'warn' : 'bad',
+      delta: m.open_alerts ? `${m.open_alerts} open` : 'clear',
+    },
+    {
+      key: 'halluc',
+      label: 'Hallucinations',
+      value: String(m.hallucinations),
+      tone: m.hallucinations ? 'warn' : 'good',
+      delta: m.hallucinations ? 'review' : 'none',
+    },
+    {
+      key: 'harmful',
+      label: 'Harmful mentions',
+      value: String(m.harmful_mentions),
+      tone: m.harmful_mentions ? 'bad' : 'good',
+      delta: m.harmful_mentions ? 'action needed' : 'clear',
+    },
+    {
+      key: 'monitored',
+      label: 'Prompts monitored',
+      value: String(m.prompts_monitored),
+      tone: 'neutral',
+      delta: 'across 3 models',
+    },
+  ]
+})
+
+function timeAgo(iso) {
+  if (!iso) return ''
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
+}
 
 const newPrompt = ref('')
-function addSafetyPrompt() {
+const websiteId = computed(() => appStore.activeWebsite?.id || null)
+
+async function loadSafety() {
+  if (!websiteId.value) return
+  safetyLoading.value = true
+  try {
+    const [metrics, prompts, alerts] = await Promise.all([
+      brandVault.safetyMetrics(websiteId.value),
+      brandVault.safetyPrompts(websiteId.value),
+      brandVault.safetyAlerts(websiteId.value, { status: 'open' }),
+    ])
+    safetyMetricsData.value = metrics.data
+    safetyPrompts.value = prompts.data.results || prompts.data || []
+    safetyAlertsRaw.value = alerts.data.results || alerts.data || []
+  } catch (err) {
+    // Keep the panel usable in dev/offline by silently degrading to empty state.
+    console.warn('Failed to load brand safety data', err)
+  } finally {
+    safetyLoading.value = false
+  }
+}
+
+async function addSafetyPrompt() {
   const text = newPrompt.value.trim()
-  if (!text) return
-  safetyPrompts.value.push({ id: 'p' + Date.now(), text, hits: 0, status: 'active' })
-  newPrompt.value = ''
-  toast.success('Tracking prompt added')
+  if (!text || !websiteId.value) return
+  try {
+    const { data } = await brandVault.addSafetyPrompt(websiteId.value, text)
+    const existing = safetyPrompts.value.find(p => p.id === data.id)
+    if (!existing) safetyPrompts.value.unshift(data)
+    newPrompt.value = ''
+    toast.success('Tracking prompt added')
+    safetyMetricsData.value.prompts_monitored += existing ? 0 : 1
+  } catch (err) {
+    toast.error(err?.response?.data?.detail || 'Could not add prompt')
+  }
 }
-function removeSafetyPrompt(id) {
-  safetyPrompts.value = safetyPrompts.value.filter(p => p.id !== id)
+
+async function removeSafetyPrompt(id) {
+  const prev = safetyPrompts.value
+  safetyPrompts.value = prev.filter(p => p.id !== id)
+  try {
+    await brandVault.deleteSafetyPrompt(id)
+    safetyMetricsData.value.prompts_monitored = Math.max(
+      0, safetyMetricsData.value.prompts_monitored - 1,
+    )
+  } catch (err) {
+    safetyPrompts.value = prev
+    toast.error('Could not remove prompt')
+  }
 }
+
+async function resolveAlert(id, action = 'resolve') {
+  const prev = safetyAlertsRaw.value
+  safetyAlertsRaw.value = prev.filter(a => a.id !== id)
+  try {
+    await brandVault.resolveSafetyAlert(id, action)
+    safetyMetricsData.value.open_alerts = Math.max(
+      0, safetyMetricsData.value.open_alerts - 1,
+    )
+  } catch (err) {
+    safetyAlertsRaw.value = prev
+    toast.error('Could not update alert')
+  }
+}
+
+onMounted(loadSafety)
+watch(websiteId, loadSafety)
 
 function severityClass(s) {
   return {
@@ -620,6 +702,7 @@ function safetyToneClass(t) {
                 <th class="py-2 pr-3">Model · prompt</th>
                 <th class="py-2 pr-3">Detected</th>
                 <th class="py-2 pr-3">Seen</th>
+                <th class="py-2 pr-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -638,9 +721,26 @@ function safetyToneClass(t) {
                 </td>
                 <td class="py-3 pr-3 italic text-muted-foreground">"{{ a.snippet }}"</td>
                 <td class="py-3 pr-3 whitespace-nowrap text-xs text-muted-foreground">{{ a.seenAt }}</td>
+                <td class="py-3 pr-3 whitespace-nowrap text-right">
+                  <button
+                    class="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Mark resolved"
+                    @click="resolveAlert(a.id, 'resolve')"
+                  >Resolve</button>
+                  <button
+                    class="ml-1 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Dismiss"
+                    @click="resolveAlert(a.id, 'dismiss')"
+                  >
+                    <X class="size-3.5" />
+                  </button>
+                </td>
               </tr>
-              <tr v-if="!safetyAlerts.length">
-                <td colspan="5" class="py-8 text-center text-sm text-muted-foreground">No alerts in the last 7 days. You're clear.</td>
+              <tr v-if="!safetyAlerts.length && !safetyLoading">
+                <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">No open alerts. You're clear.</td>
+              </tr>
+              <tr v-if="safetyLoading && !safetyAlerts.length">
+                <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">Loading alerts...</td>
               </tr>
             </tbody>
           </table>
