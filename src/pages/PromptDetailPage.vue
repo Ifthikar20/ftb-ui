@@ -162,6 +162,9 @@
                 <TableHead class="num">
                   <span class="pd-th-help" :title="HELP.sov">SOV<sup>?</sup></span>
                 </TableHead>
+                <TableHead>
+                  <span class="pd-th-help" :title="HELP.models">Models<sup>?</sup></span>
+                </TableHead>
                 <TableHead class="num">
                   <span class="pd-th-help" :title="HELP.sentiment">Sentiment<sup>?</sup></span>
                 </TableHead>
@@ -182,6 +185,19 @@
                 </TableCell>
                 <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
                 <TableCell class="num">{{ b.sov_pct }}%</TableCell>
+                <TableCell>
+                  <span class="pd-models-cell" :title="modelsTip(b.models)">
+                    <span
+                      v-for="mk in (b.models || [])"
+                      :key="mk"
+                      class="pd-model-dot pd-model-dot-sm"
+                      :style="{ background: modelStyle(mk).color }"
+                      :title="modelStyle(mk).label"
+                    >{{ modelStyle(mk).label[0] }}</span>
+                    <span v-if="(b.model_count || 0) > 1" class="pd-models-count">×{{ b.model_count }}</span>
+                    <span v-if="!(b.models || []).length" class="text-muted">—</span>
+                  </span>
+                </TableCell>
                 <TableCell class="num">
                   <span v-if="b.sentiment_score != null" class="pd-sent" :title="sentimentTip(b.sentiment_score)">
                     <span class="pd-sent-dot" :class="sentimentClass(b.sentiment_score)"></span>
@@ -923,6 +939,12 @@ function sentimentClass(score) {
   return 'is-neg'
 }
 
+function modelsTip(models) {
+  const names = (models || []).map((mk) => modelStyle(mk).label)
+  if (!names.length) return 'Not named by any model'
+  return `Named by ${names.length} model${names.length === 1 ? '' : 's'}: ${names.join(', ')}`
+}
+
 function sentimentTip(score) {
   const tone = score >= 70 ? 'positive' : score >= 50 ? 'neutral' : 'negative'
   return `Sentiment ${score}/100 (${tone}). Averaged from how each model talks about this brand: `
@@ -937,6 +959,9 @@ const HELP = {
   sov:
     'Share of Voice: this brand’s mentions as a percentage of all brand mentions across every '
     + 'model answer for this prompt. Shows how much of the conversation the brand owns vs. competitors.',
+  models:
+    'Models: which AI models named this brand for this prompt, and how many. A brand named by '
+    + 'more models has broader AI visibility and is harder to displace.',
   sentiment:
     'Sentiment: a 0–100 score for how models portray the brand. Each mention is scored '
     + 'positive (85), neutral (55) or negative (25) by the analyzer and averaged. Higher is better.',
@@ -1588,6 +1613,8 @@ function onFaviconError(ev, d) {
   width: 18px; height: 18px; border-radius: 9999px; color: #fff;
   font-size: 9px; font-weight: 700;
 }
+.pd-models-cell { display: inline-flex; align-items: center; gap: 3px; }
+.pd-models-count { font-size: 0.72rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; margin-left: 2px; }
 .pd-fav { width: 16px; height: 16px; border-radius: 3px; }
 .pd-more, .pd-muted { font-size: 0.75rem; color: var(--muted-foreground); }
 .pd-error { padding: 20px; text-align: center; color: var(--destructive); }
