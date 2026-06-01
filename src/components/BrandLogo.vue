@@ -5,6 +5,10 @@ import { brandColor, brandInitial } from '@/lib/brandLogo'
 const props = defineProps({
   name: { type: String, required: true },
   size: { type: Number, default: 20 },
+  // Real website logo resolved server-side from a cited domain. When
+  // present it is used directly; on error we fall through to the name
+  // lookup below.
+  logo: { type: String, default: '' },
 })
 
 // Resolve a brand name to a real logo via Clearbit's autocomplete API
@@ -24,24 +28,50 @@ function saveLS(obj) {
 
 const logoUrl = ref('')
 const failed = ref(false)
+const triedServerLogo = ref(false)
 
 async function resolve(name) {
   logoUrl.value = ''
   failed.value = false
+  triedServerLogo.value = false
+
+  // Prefer the server-resolved website logo (from a cited domain).
+  if (props.logo) {
+    triedServerLogo.value = true
+    logoUrl.value = props.logo
+    return
+  }
+  resolveByName(name)
+}
+
+function applyResolved(url) {
+  if (url) { logoUrl.value = url; failed.value = false }
+  else { logoUrl.value = ''; failed.value = true }
+}
+
+function onImgError() {
+  // The server logo 404'd — fall through to the name-based lookup before
+  // giving up to the badge.
+  if (triedServerLogo.value) {
+    triedServerLogo.value = false
+    logoUrl.value = ''
+    resolveByName(props.name)
+    return
+  }
+  failed.value = true
+  logoUrl.value = ''
+}
+
+// Name-lookup path, split out so onImgError can invoke it after a failed
+// server logo without re-checking props.logo.
+async function resolveByName(name) {
   const key = String(name || '').trim().toLowerCase()
   if (!key) { failed.value = true; return }
-
-  if (MEM.has(key)) {
-    applyResolved(MEM.get(key))
-    return
-  }
+  if (MEM.has(key)) { applyResolved(MEM.get(key)); return }
   const ls = loadLS()
   if (Object.prototype.hasOwnProperty.call(ls, key)) {
-    MEM.set(key, ls[key])
-    applyResolved(ls[key])
-    return
+    MEM.set(key, ls[key]); applyResolved(ls[key]); return
   }
-
   try {
     const res = await fetch(
       `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(name)}`,
@@ -53,22 +83,11 @@ async function resolve(name) {
     const next = loadLS(); next[key] = url; saveLS(next)
     applyResolved(url)
   } catch {
-    MEM.set(key, '')
-    applyResolved('')
+    MEM.set(key, ''); applyResolved('')
   }
 }
 
-function applyResolved(url) {
-  if (url) { logoUrl.value = url; failed.value = false }
-  else { logoUrl.value = ''; failed.value = true }
-}
-
-function onImgError() {
-  failed.value = true
-  logoUrl.value = ''
-}
-
-watch(() => props.name, resolve, { immediate: true })
+watch(() => [props.name, props.logo], () => resolve(props.name), { immediate: true })
 </script>
 
 <template>
