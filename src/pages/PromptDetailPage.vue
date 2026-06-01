@@ -201,7 +201,12 @@
         <BarChart3 :size="16" :stroke-width="2"/>
         Visibility by model
       </h2>
-      <p class="pd-section-sub">How often {{ brandLabel }} appears in each model's answers to this prompt.</p>
+      <p class="pd-section-sub">
+        How often {{ brandLabel }} appears in each model's answers to this prompt.
+        <span v-if="modelCompletion" class="pd-completion" :class="{ 'is-busy': scanStatusKind === 'running' }">
+          · {{ modelCompletion }}
+        </span>
+      </p>
     </section>
 
     <div class="pd-card">
@@ -216,9 +221,13 @@
           <span v-else-if="!m.responses && m.failed" class="pd-bymodel-na pd-bymodel-unavail">
             Couldn't reach model — will retry
           </span>
+          <span v-else-if="!m.responses && scanStatusKind === 'running'" class="pd-bymodel-na pd-bymodel-scanning">
+            Scanning…
+          </span>
           <template v-else-if="m.responses">
             <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
             <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
+            <span class="pd-bymodel-done" title="Model answered">✓ answered</span>
           </template>
           <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
         </div>
@@ -631,6 +640,19 @@ const modelsWithRanks = computed(() => {
     if (!m.rank_buckets) return false
     return rankBucketOrder.some((r) => (m.rank_buckets[r] || 0) > 0)
   })
+})
+
+// Completion summary for the Visibility-by-model section: how many of the
+// configured models have actually answered this prompt. Makes "0%"
+// unambiguous (answered, not mentioned) vs. work still in progress.
+const modelCompletion = computed(() => {
+  const models = (detail.value?.by_model || []).filter((m) => m.configured)
+  if (!models.length) return ''
+  const answered = models.filter((m) => (m.responses || 0) > 0).length
+  if (scanStatusKind.value === 'running') {
+    return `Scanning… ${answered}/${models.length} models answered`
+  }
+  return `${answered}/${models.length} models answered`
 })
 
 /* ── Domain drill-through ── */
@@ -1472,6 +1494,14 @@ function onFaviconError(ev, d) {
 .pd-bymodel-val { width: 48px; text-align: right; font-size: 0.85rem; font-variant-numeric: tabular-nums; color: var(--foreground); }
 .pd-bymodel-na { flex: 1; font-size: 0.82rem; color: var(--muted-foreground); }
 .pd-bymodel-nodata { font-style: italic; }
+.pd-bymodel-scanning { color: var(--chart-1, #5b8def); font-style: italic; }
+.pd-bymodel-done {
+  font-size: 0.72rem;
+  color: var(--chart-2, #22c55e);
+  white-space: nowrap;
+}
+.pd-completion { color: var(--muted-foreground); }
+.pd-completion.is-busy { color: var(--chart-1, #5b8def); }
 
 /* Recent chats */
 .pd-chat-row.is-clickable { cursor: pointer; }
