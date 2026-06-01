@@ -9,6 +9,7 @@ import {
 import {
   ChevronRight, ChevronDown, Info, MoreHorizontal, Vault,
   Search, Copy, Check, Sparkles,
+  ShieldCheck, AlertTriangle, Plus, X, Bell,
 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
@@ -234,6 +235,84 @@ function copyKeyword(k) {
   copiedKey.value = k.keyword
   toast.success('Keyword copied')
   setTimeout(() => { if (copiedKey.value === k.keyword) copiedKey.value = '' }, 1500)
+}
+
+/* ── AI Brand Safety ────────────────────────────────────────────────── */
+const safetyScore = ref(92)
+
+const safetyAlerts = ref([
+  {
+    id: 'a1',
+    severity: 'high',
+    model: 'ChatGPT',
+    prompt: 'Is treasury safe for storing payroll funds?',
+    snippet: 'treasury is not FDIC-insured for amounts over $50k…',
+    issue: 'Hallucination',
+    detail: 'Incorrect insurance claim. Actual coverage: $250k via partner banks.',
+    seenAt: '2h ago',
+  },
+  {
+    id: 'a2',
+    severity: 'medium',
+    model: 'Perplexity',
+    prompt: 'Has treasury had any data breaches?',
+    snippet: '…reports of a 2024 breach at treasury circulated on Reddit…',
+    issue: 'Unverified claim',
+    detail: 'No breach on public record. Source: r/fintech speculation thread.',
+    seenAt: '6h ago',
+  },
+  {
+    id: 'a3',
+    severity: 'low',
+    model: 'Grok',
+    prompt: 'Compare treasury to Mint',
+    snippet: '…treasury only supports US banks…',
+    issue: 'Outdated info',
+    detail: 'EU + UK rolled out Mar 2026.',
+    seenAt: '1d ago',
+  },
+])
+
+const safetyPrompts = ref([
+  { id: 'p1', text: 'Is treasury safe to use?',                     hits: 18, status: 'active' },
+  { id: 'p2', text: 'treasury data breach',                         hits:  6, status: 'active' },
+  { id: 'p3', text: 'treasury FDIC insurance coverage',             hits: 11, status: 'active' },
+  { id: 'p4', text: 'treasury vs YNAB security',                    hits:  4, status: 'active' },
+])
+
+const safetyMetrics = computed(() => [
+  { key: 'health',    label: 'Reputation health', value: safetyScore.value + '/100',          tone: 'good',    delta: '+3 this week' },
+  { key: 'halluc',    label: 'Hallucinations',    value: '4',                                 tone: 'warn',    delta: '2 unresolved' },
+  { key: 'harmful',   label: 'Harmful mentions',  value: '1',                                 tone: 'bad',     delta: 'new today' },
+  { key: 'monitored', label: 'Prompts monitored', value: String(safetyPrompts.value.length),  tone: 'neutral', delta: 'across 3 models' },
+])
+
+const newPrompt = ref('')
+function addSafetyPrompt() {
+  const text = newPrompt.value.trim()
+  if (!text) return
+  safetyPrompts.value.push({ id: 'p' + Date.now(), text, hits: 0, status: 'active' })
+  newPrompt.value = ''
+  toast.success('Tracking prompt added')
+}
+function removeSafetyPrompt(id) {
+  safetyPrompts.value = safetyPrompts.value.filter(p => p.id !== id)
+}
+
+function severityClass(s) {
+  return {
+    high:   'bg-[color:var(--destructive)]/15 text-[color:var(--destructive)]',
+    medium: 'bg-[color:var(--chart-3)]/15 text-[color:var(--chart-3)]',
+    low:    'bg-secondary text-muted-foreground',
+  }[s] || 'bg-secondary text-muted-foreground'
+}
+function safetyToneClass(t) {
+  return {
+    good:    'text-[color:var(--chart-2)]',
+    warn:    'text-[color:var(--chart-3)]',
+    bad:     'text-[color:var(--destructive)]',
+    neutral: 'text-muted-foreground',
+  }[t] || 'text-muted-foreground'
 }
 </script>
 
@@ -483,6 +562,135 @@ function copyKeyword(k) {
             </tbody>
           </table>
         </div>
+      </CardContent>
+    </Card>
+
+    <!-- ── AI Brand Safety ── -->
+    <div>
+      <h2 class="inline-flex items-center gap-2 text-lg font-bold text-foreground">
+        <ShieldCheck class="size-4 text-[color:var(--chart-2)]" /> AI Brand Safety
+      </h2>
+      <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+        Protect your reputation in an era of AI hallucinations.
+        <strong class="font-semibold text-foreground">Bluefish</strong> continuously monitors for risks,
+        flags inaccurate or harmful mentions, and equips you with actionable controls to ensure
+        accurate and safe brand representation.
+      </p>
+      <ul class="mt-3 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-3">
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Protect reputation across AI channels
+        </li>
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Detect negative mentions & hallucinations
+        </li>
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Track any topic with custom prompts
+        </li>
+      </ul>
+    </div>
+
+    <Card>
+      <CardContent class="grid grid-cols-2 gap-px overflow-hidden p-0 sm:grid-cols-4">
+        <div v-for="c in safetyMetrics" :key="c.key" class="flex flex-col gap-1 bg-card p-4">
+          <span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            {{ c.label }} <Info class="size-3 opacity-60" />
+          </span>
+          <span class="text-lg font-bold" :class="safetyToneClass(c.tone)">{{ c.value }}</span>
+          <span class="text-xs text-muted-foreground">{{ c.delta }}</span>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader class="flex-row items-center justify-between gap-3 space-y-0">
+        <div class="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <AlertTriangle class="size-4 text-[color:var(--chart-3)]" /> Active alerts
+        </div>
+        <button class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <Bell class="size-3.5" /> Alert settings
+        </button>
+      </CardHeader>
+      <CardContent>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                <th class="py-2 pr-3">Severity</th>
+                <th class="py-2 pr-3">Issue</th>
+                <th class="py-2 pr-3">Model · prompt</th>
+                <th class="py-2 pr-3">Detected</th>
+                <th class="py-2 pr-3">Seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in safetyAlerts" :key="a.id" class="border-b border-border/60 align-top hover:bg-muted/50">
+                <td class="py-3 pr-3">
+                  <span class="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                    :class="severityClass(a.severity)">{{ a.severity }}</span>
+                </td>
+                <td class="py-3 pr-3">
+                  <div class="font-medium text-foreground">{{ a.issue }}</div>
+                  <div class="text-xs text-muted-foreground">{{ a.detail }}</div>
+                </td>
+                <td class="py-3 pr-3">
+                  <div class="font-medium text-foreground">{{ a.model }}</div>
+                  <div class="text-xs text-muted-foreground">"{{ a.prompt }}"</div>
+                </td>
+                <td class="py-3 pr-3 italic text-muted-foreground">"{{ a.snippet }}"</td>
+                <td class="py-3 pr-3 whitespace-nowrap text-xs text-muted-foreground">{{ a.seenAt }}</td>
+              </tr>
+              <tr v-if="!safetyAlerts.length">
+                <td colspan="5" class="py-8 text-center text-sm text-muted-foreground">No alerts in the last 7 days. You're clear.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader class="space-y-1">
+        <div class="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Sparkles class="size-4 text-[color:var(--chart-1)]" /> Custom safety prompts
+        </div>
+        <p class="text-xs text-muted-foreground">
+          Add any prompt you want monitored continuously across Grok, ChatGPT, and Perplexity.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <form class="mb-4 flex gap-2" @submit.prevent="addSafetyPrompt">
+          <input
+            v-model="newPrompt"
+            placeholder="e.g. Is treasury secure for payroll storage?"
+            class="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <button
+            type="submit"
+            :disabled="!newPrompt.trim()"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--chart-1)] px-3 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus class="size-3.5" /> Track prompt
+          </button>
+        </form>
+
+        <ul class="divide-y divide-border/60">
+          <li v-for="p in safetyPrompts" :key="p.id" class="flex items-center justify-between gap-3 py-2.5">
+            <div class="min-w-0">
+              <div class="truncate text-sm font-medium text-foreground" :title="p.text">{{ p.text }}</div>
+              <div class="text-xs text-muted-foreground">{{ p.hits }} hit{{ p.hits === 1 ? '' : 's' }} in the last 30 days</div>
+            </div>
+            <button
+              class="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              title="Remove"
+              @click="removeSafetyPrompt(p.id)"
+            >
+              <X class="size-4" />
+            </button>
+          </li>
+          <li v-if="!safetyPrompts.length" class="py-6 text-center text-sm text-muted-foreground">
+            No custom prompts yet. Add one above to start monitoring.
+          </li>
+        </ul>
       </CardContent>
     </Card>
   </div>
