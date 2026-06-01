@@ -158,6 +158,12 @@ const baseDataset = {
   pointHoverBorderColor: '#fff',
 }
 
+// Distinct colors for per-competitor lines on the "Competitors" tab.
+// Brand + competitor-avg already use the two strong tones above; these are
+// muted enough that the avg line still reads as the primary.
+const COMPETITOR_PALETTE = ['#FC642D', '#5B8DEF', '#A36BE5', '#0F8F76', '#D03A6B']
+const competitorList = computed(() => overview.value?.competitors || [])
+
 const chartData = computed(() => {
   const datasets = []
   if (view.value === 'both' || view.value === 'brand') {
@@ -170,6 +176,24 @@ const chartData = computed(() => {
     datasets.push({
       ...baseDataset, label: 'Competitor Avg', data: compSeries.value,
       borderColor: COMP_COLOR, backgroundColor: gradientFor(COMP_COLOR), pointHoverBackgroundColor: COMP_COLOR,
+    })
+  }
+  // Drill down to per-competitor lines only on the dedicated tab. On
+  // "Both" we keep just the avg to avoid drowning out the brand line.
+  if (view.value === 'competitors' && competitorList.value.length) {
+    competitorList.value.forEach((c, i) => {
+      const color = COMPETITOR_PALETTE[i % COMPETITOR_PALETTE.length]
+      datasets.push({
+        ...baseDataset,
+        label: c.name,
+        data: c.series,
+        borderColor: color,
+        backgroundColor: 'transparent',
+        pointHoverBackgroundColor: color,
+        fill: false,
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+      })
     })
   }
   return { labels: labels.value, datasets }
@@ -288,6 +312,23 @@ const chartOptions = computed(() => {
     <div class="py-4 pl-0 pr-2">
       <div class="h-[300px]">
         <Line :data="chartData" :options="chartOptions" />
+      </div>
+      <div
+        v-if="view === 'competitors' && competitorList.length"
+        class="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-7"
+      >
+        <span
+          v-for="(c, i) in competitorList"
+          :key="c.name"
+          class="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+        >
+          <span
+            class="size-2 rounded-full"
+            :style="{ background: COMPETITOR_PALETTE[i % COMPETITOR_PALETTE.length] }"
+          />
+          <span class="font-medium text-foreground">{{ c.name }}</span>
+          <span class="tabular-nums">{{ c.current }}%</span>
+        </span>
       </div>
     </div>
   </Card>
