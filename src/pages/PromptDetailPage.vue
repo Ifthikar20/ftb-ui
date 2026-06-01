@@ -82,6 +82,24 @@
           </span>
         </div>
       </div>
+      <div v-if="detail?.prompt?.effectiveness_score != null" class="pd-meta">
+        <div class="pd-meta-label"><Trophy :size="12" :stroke-width="2"/>Effectiveness</div>
+        <div class="pd-meta-val">{{ detail.prompt.effectiveness_score }}<span class="pd-mute"> / 100</span></div>
+      </div>
+    </div>
+
+    <!-- Tags + template -->
+    <div v-if="promptTags.length || detail?.prompt?.template_text" class="pd-meta-extra">
+      <div v-if="promptTags.length" class="pd-tag-row">
+        <span v-for="t in promptTags" :key="t" class="pd-tag-chip">{{ t }}</span>
+      </div>
+      <div
+        v-if="detail?.prompt?.template_text && detail.prompt.template_text !== detail.prompt.text"
+        class="pd-template-row"
+      >
+        <span class="pd-template-label">Template</span>
+        <code class="pd-template-text">{{ detail.prompt.template_text }}</code>
+      </div>
     </div>
 
     <!-- No scan data yet for this prompt. -->
@@ -183,6 +201,9 @@
           <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
           <span class="pd-bymodel-name">{{ m.label }}</span>
           <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
+          <span v-else-if="!m.responses && m.unavailable" class="pd-bymodel-na pd-bymodel-unavail">
+            Service unavailable
+          </span>
           <template v-else-if="m.responses">
             <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
             <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
@@ -190,6 +211,73 @@
           <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
         </div>
         <div v-if="!(detail?.by_model || []).length" class="pd-mute" style="padding: 8px 0">No model data yet.</div>
+      </div>
+
+      <!-- Per-model rank distribution -->
+      <div v-if="modelsWithRanks.length" class="pd-rank-dist">
+        <div class="pd-rank-dist-head">Rank distribution per model</div>
+        <div v-for="m in modelsWithRanks" :key="m.provider" class="pd-rank-row">
+          <span class="pd-rank-row-label">
+            <span class="pd-model-dot pd-model-dot-sm" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+            {{ m.label }}
+            <span v-if="m.avg_rank != null" class="pd-mute">· avg #{{ m.avg_rank }}</span>
+          </span>
+          <div class="pd-rank-stack">
+            <span
+              v-for="r in rankBucketOrder"
+              :key="r"
+              class="pd-rank-seg"
+              :class="rankBucketClass(r)"
+              :style="{ flexGrow: m.rank_buckets[r] || 0 }"
+              :title="`Rank ${r}: ${m.rank_buckets[r] || 0}`"
+            >
+              <span v-if="m.rank_buckets[r]">{{ m.rank_buckets[r] }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="pd-rank-legend">
+          <span v-for="r in rankBucketOrder" :key="r" class="pd-rank-legend-item">
+            <span class="pd-rank-legend-dot" :class="rankBucketClass(r)" />
+            Rank {{ r }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fanout queries -->
+    <section v-if="fanouts.length || lastFanoutRun" class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <Repeat :size="16" :stroke-width="2"/>
+        Fanout queries
+      </h2>
+      <p class="pd-section-sub">Sub-queries each model generated to research this prompt.</p>
+    </section>
+
+    <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
+      <div v-if="lastFanoutRun" class="pd-fanout-meta">
+        <span class="pd-mute">Last fan-out:</span>
+        <span class="pd-status" :class="`is-${lastFanoutRun.status === 'completed' ? 'active' : 'inactive'}`">
+          <span class="pd-status-dot"></span>
+          {{ lastFanoutRun.status }}
+        </span>
+        <span class="pd-mute">
+          · {{ lastFanoutRun.fanout_count || 0 }} sub-queries
+          · {{ lastFanoutRun.source_count || 0 }} sources
+        </span>
+      </div>
+      <div v-if="fanouts.length" class="pd-fanout-list">
+        <div v-for="f in fanouts" :key="f.id" class="pd-fanout-item">
+          <span class="pd-fanout-provider">{{ modelStyle(f.provider).label }}</span>
+          <span class="pd-fanout-text">{{ f.text }}</span>
+          <span v-if="f.source" class="pd-fanout-source">{{ f.source }}</span>
+          <span v-if="f.confidence != null" class="pd-fanout-conf" :title="`Confidence ${f.confidence}`">
+            {{ Math.round(f.confidence * 100) }}%
+          </span>
+        </div>
+      </div>
+      <div v-else class="pd-empty-inline" style="padding: 20px 0">
+        <Inbox :size="28" :stroke-width="1.5"/>
+        <p>No fan-out queries captured yet.</p>
       </div>
     </div>
 
@@ -222,11 +310,23 @@
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="(d, i) in topDomains" :key="d.apex_domain">
+              <TableRow
+                v-for="(d, i) in topDomains"
+                :key="d.apex_domain"
+                class="pd-domain-row"
+                :class="{ 'is-clickable': (d.sample_result_ids || []).length }"
+                @click="openCitingChats(d)"
+              >
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
                   <img :src="faviconFor(d.apex_domain)" :alt="d.domain" class="pd-favicon" @error="onFaviconError($event, d)"/>
-                  <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener">{{ d.apex_domain }}</a>
+                  <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener" @click.stop>{{ d.apex_domain }}</a>
+                  <span
+                    v-if="(d.sample_result_ids || []).length"
+                    class="pd-domain-cited"
+                  >
+                    · {{ d.sample_result_ids.length }} {{ d.sample_result_ids.length === 1 ? 'chat' : 'chats' }}
+                  </span>
                 </TableCell>
                 <TableCell class="num">{{ d.retrieved_pct }}%</TableCell>
                 <TableCell class="num">{{ d.citation_rate.toFixed(1) }}</TableCell>
@@ -414,6 +514,49 @@ async function load() {
   } finally {
     loading.value = false
   }
+  // Fan-outs are an independent endpoint; ignore failures here so a
+  // missing crawl doesn't blank the rest of the page.
+  loadFanouts()
+}
+
+/* ── Fanouts ── */
+const fanouts = ref([])
+const lastFanoutRun = ref(null)
+async function loadFanouts() {
+  try {
+    const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
+    const payload = data?.data || data || {}
+    fanouts.value = payload.fanouts || []
+    lastFanoutRun.value = payload.last_run || null
+  } catch {
+    fanouts.value = []
+    lastFanoutRun.value = null
+  }
+}
+
+/* ── Prompt metadata derivations ── */
+const promptTags = computed(() => {
+  const raw = detail.value?.prompt?.tags || []
+  return Array.isArray(raw) ? raw.filter(Boolean) : []
+})
+
+/* ── Rank distribution view-model ── */
+const rankBucketOrder = ['1', '2-3', '4-10', '11+']
+const rankBucketClassMap = { '1': 'is-1', '2-3': 'is-2-3', '4-10': 'is-4-10', '11+': 'is-11plus' }
+function rankBucketClass(r) { return rankBucketClassMap[r] || 'is-other' }
+const modelsWithRanks = computed(() => {
+  return (detail.value?.by_model || []).filter((m) => {
+    if (!m.rank_buckets) return false
+    return rankBucketOrder.some((r) => (m.rank_buckets[r] || 0) > 0)
+  })
+})
+
+/* ── Domain drill-through ── */
+function openCitingChats(domain) {
+  const ids = domain?.sample_result_ids || []
+  if (!ids.length) return
+  const i = recentChats.value.findIndex((c) => c.result_id === ids[0])
+  if (i >= 0) openChat(i)
 }
 
 /* ── Run scan ── */
@@ -961,6 +1104,152 @@ function onFaviconError(ev, d) {
 @keyframes pdScanPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+/* Effectiveness + tags + template metadata */
+.pd-meta-extra {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pd-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pd-tag-chip {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+.pd-template-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+.pd-template-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+.pd-template-text {
+  padding: 3px 8px;
+  background: var(--muted);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+/* Service-unavailable cell */
+.pd-bymodel-unavail {
+  color: color-mix(in oklab, var(--destructive, #ef4444) 70%, var(--foreground)) !important;
+  font-style: italic;
+}
+
+/* Rank distribution */
+.pd-rank-dist {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pd-rank-dist-head {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.pd-rank-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.pd-rank-row-label {
+  font-size: 0.82rem;
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pd-model-dot-sm {
+  width: 16px;
+  height: 16px;
+  font-size: 0.6rem;
+}
+.pd-rank-stack {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--muted);
+}
+.pd-rank-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 0;
+}
+.pd-rank-seg.is-1     { background: color-mix(in oklab, var(--chart-2, #22c55e) 100%, transparent); }
+.pd-rank-seg.is-2-3   { background: color-mix(in oklab, var(--chart-2, #22c55e)  65%, transparent); }
+.pd-rank-seg.is-4-10  { background: color-mix(in oklab, var(--chart-3, #f59e0b)  75%, transparent); }
+.pd-rank-seg.is-11plus { background: color-mix(in oklab, var(--muted-foreground)  70%, transparent); }
+.pd-rank-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+.pd-rank-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.pd-rank-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+.pd-rank-legend-dot.is-1     { background: var(--chart-2, #22c55e); }
+.pd-rank-legend-dot.is-2-3   { background: color-mix(in oklab, var(--chart-2, #22c55e) 65%, transparent); }
+.pd-rank-legend-dot.is-4-10  { background: var(--chart-3, #f59e0b); }
+.pd-rank-legend-dot.is-11plus { background: var(--muted-foreground); }
+
+/* Fanout items */
+.pd-fanout-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pd-fanout-item:last-child { border-bottom: none; }
+.pd-fanout-provider {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  padding: 2px 8px;
+  background: var(--muted);
+  border-radius: 999px;
+}
+.pd-fanout-source {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+.pd-fanout-conf {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+/* Domain drill-through */
+.pd-domain-row.is-clickable { cursor: pointer; }
+.pd-domain-row.is-clickable:hover { background: var(--muted); }
+.pd-domain-cited {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
 }
 
 .pd-fanout-list { display: flex; flex-direction: column; gap: 2px; }
