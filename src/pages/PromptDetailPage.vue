@@ -156,10 +156,18 @@
               <TableRow>
                 <TableHead class="num">#</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead class="num">Visibility</TableHead>
-                <TableHead class="num">SOV</TableHead>
-                <TableHead class="num">Sentiment</TableHead>
-                <TableHead class="num">Position</TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.visibility">Visibility<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.sov">SOV<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.sentiment">Sentiment<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.position">Position<sup>?</sup></span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,7 +183,7 @@
                 <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
                 <TableCell class="num">{{ b.sov_pct }}%</TableCell>
                 <TableCell class="num">
-                  <span v-if="b.sentiment_score != null" class="pd-sent">
+                  <span v-if="b.sentiment_score != null" class="pd-sent" :title="sentimentTip(b.sentiment_score)">
                     <span class="pd-sent-dot" :class="sentimentClass(b.sentiment_score)"></span>
                     {{ b.sentiment_score }}
                   </span>
@@ -894,6 +902,28 @@ function sentimentClass(score) {
   return 'is-neg'
 }
 
+function sentimentTip(score) {
+  const tone = score >= 70 ? 'positive' : score >= 50 ? 'neutral' : 'negative'
+  return `Sentiment ${score}/100 (${tone}). Averaged from how each model talks about this brand: `
+    + `positive mention = 85, neutral = 55, negative = 25.`
+}
+
+// Column-header explanations shown on hover.
+const HELP = {
+  visibility:
+    'Visibility: the share of answered model responses that mention this brand. '
+    + 'Example: named in 1 of 2 model answers = 50%. Failed/unavailable models are not counted.',
+  sov:
+    'Share of Voice: this brand’s mentions as a percentage of all brand mentions across every '
+    + 'model answer for this prompt. Shows how much of the conversation the brand owns vs. competitors.',
+  sentiment:
+    'Sentiment: a 0–100 score for how models portray the brand. Each mention is scored '
+    + 'positive (85), neutral (55) or negative (25) by the analyzer and averaged. Higher is better.',
+  position:
+    'Position: the brand’s average rank when it appears in a model’s ranked list '
+    + '(#1 = listed first). Lower is better. Blank when no model ranked it in a list.',
+}
+
 const BRAND_COLORS = [
   '#10b981', '#374151', '#f59e0b', '#ec4899', '#a3e635', '#06b6d4', '#6366f1', '#94a3b8',
 ]
@@ -1115,6 +1145,8 @@ function onFaviconError(ev, d) {
   border-bottom: 1px solid var(--border);
 }
 .pd-table th.num, .pd-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pd-th-help { cursor: help; border-bottom: 1px dotted var(--muted-foreground); }
+.pd-th-help sup { font-size: 0.7em; opacity: 0.6; margin-left: 1px; }
 .pd-table td {
   padding: 10px;
   color: var(--foreground);
