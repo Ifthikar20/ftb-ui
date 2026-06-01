@@ -218,6 +218,9 @@
           <span v-else-if="!m.responses && m.unavailable" class="pd-bymodel-na pd-bymodel-unavail">
             Service unavailable
           </span>
+          <span v-else-if="!m.responses && m.failed" class="pd-bymodel-na pd-bymodel-unavail">
+            Couldn't reach model — will retry
+          </span>
           <template v-else-if="m.responses">
             <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
             <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
@@ -585,9 +588,15 @@ async function loadThenMaybeScan() {
     return
   }
 
-  const hasResponses = (d.by_model || []).some((m) => (m.responses || 0) > 0)
-  const everScanned = !!d.latest_scan
-  if (!hasResponses && !everScanned) {
+  // Auto-fill gaps: scan when any configured model still has no answer
+  // for this prompt. The crawler skips models that already answered and
+  // retries a missing one once, so this only queries what's missing and
+  // stops once every configured model has responded. Bounded to once per
+  // mount so it can't loop on a genuinely broken model.
+  const missingConfigured = (d.by_model || []).some(
+    (m) => m.configured && (m.responses || 0) === 0,
+  )
+  if (missingConfigured) {
     autoScanDone.value = true
     runScan()
   }
