@@ -193,7 +193,7 @@
                       class="pd-model-dot pd-model-dot-sm"
                       :style="{ background: modelStyle(mk).color }"
                       :title="modelStyle(mk).label"
-                    >{{ modelStyle(mk).label[0] }}</span>
+                    >{{ modelStyle(mk).abbr }}</span>
                     <span v-if="(b.model_count || 0) > 1" class="pd-models-count">×{{ b.model_count }}</span>
                     <span v-if="!(b.models || []).length" class="text-muted">—</span>
                   </span>
@@ -236,7 +236,7 @@
     <div class="pd-card">
       <div class="pd-bymodel">
         <div v-for="m in (detail?.by_model || [])" :key="m.provider" class="pd-bymodel-row">
-          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
           <span class="pd-bymodel-name">{{ m.label }}</span>
           <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
           <span v-else-if="!m.responses && m.unavailable" class="pd-bymodel-na pd-bymodel-unavail">
@@ -263,7 +263,7 @@
         <div class="pd-rank-dist-head">Rank distribution per model</div>
         <div v-for="m in modelsWithRanks" :key="m.provider" class="pd-rank-row">
           <span class="pd-rank-row-label">
-            <span class="pd-model-dot pd-model-dot-sm" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+            <span class="pd-model-dot pd-model-dot-sm" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
             {{ m.label }}
             <span v-if="m.avg_rank != null" class="pd-mute">· avg #{{ m.avg_rank }}</span>
           </span>
@@ -466,7 +466,7 @@
                   class="pd-model-dot"
                   :style="{ background: modelStyle(m).color }"
                   :title="modelStyle(m).label"
-                >{{ modelStyle(m).label[0] }}</span>
+                >{{ modelStyle(m).abbr }}</span>
               </span>
             </TableCell>
             <TableCell>
@@ -530,20 +530,23 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import BrandLogo from '@/components/BrandLogo.vue'
 
 const MODELS = {
-  chatgpt: { label: 'ChatGPT', color: '#10a37f' },
-  perplexity: { label: 'Perplexity', color: '#8b5cf6' },
-  gemini: { label: 'Gemini', color: '#5b8def' },
-  claude: { label: 'Claude', color: '#f97316' },
-  copilot: { label: 'Copilot', color: '#06b6d4' },
-  grok: { label: 'Grok', color: '#0f172a' },
-  deepseek: { label: 'DeepSeek', color: '#2563eb' },
-  mistral: { label: 'Mistral', color: '#ef4444' },
-  cohere: { label: 'Cohere', color: '#d946ef' },
-  llama: { label: 'Llama', color: '#0ea5e9' },
-  nova: { label: 'Nova', color: '#64748b' },
+  chatgpt: { label: 'ChatGPT', abbr: 'GP', color: '#10a37f' },
+  perplexity: { label: 'Perplexity', abbr: 'Px', color: '#8b5cf6' },
+  gemini: { label: 'Gemini', abbr: 'Ge', color: '#5b8def' },
+  claude: { label: 'Claude', abbr: 'Cl', color: '#f97316' },
+  copilot: { label: 'Copilot', abbr: 'Co', color: '#06b6d4' },
+  grok: { label: 'Grok', abbr: 'Gk', color: '#0f172a' },
+  deepseek: { label: 'DeepSeek', abbr: 'Ds', color: '#2563eb' },
+  mistral: { label: 'Mistral', abbr: 'Mi', color: '#ef4444' },
+  cohere: { label: 'Cohere', abbr: 'Ch', color: '#d946ef' },
+  llama: { label: 'Llama', abbr: 'La', color: '#0ea5e9' },
+  nova: { label: 'Nova', abbr: 'No', color: '#64748b' },
 }
 function modelStyle(key) {
-  return MODELS[key] || { label: key || 'Model', color: '#94a3b8' }
+  const m = MODELS[key]
+  if (m) return m
+  const label = key || 'Model'
+  return { label, abbr: label.slice(0, 2), color: '#94a3b8' }
 }
 function flag(code) {
   if (!code || code.length !== 2) return '🌐'
@@ -1440,9 +1443,9 @@ function onFaviconError(ev, d) {
   gap: 6px;
 }
 .pd-model-dot-sm {
-  width: 16px;
-  height: 16px;
-  font-size: 0.6rem;
+  width: 18px;
+  height: 18px;
+  font-size: 7.5px;
 }
 .pd-rank-stack {
   display: flex;
@@ -1610,8 +1613,8 @@ function onFaviconError(ev, d) {
 .pd-icon-row { display: inline-flex; align-items: center; gap: 4px; }
 .pd-model-dot {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 9999px; color: #fff;
-  font-size: 9px; font-weight: 700;
+  width: 20px; height: 20px; border-radius: 9999px; color: #fff;
+  font-size: 8.5px; font-weight: 700; letter-spacing: -0.02em;
 }
 .pd-models-cell { display: inline-flex; align-items: center; gap: 3px; }
 .pd-models-count { font-size: 0.72rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; margin-left: 2px; }
