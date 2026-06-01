@@ -156,7 +156,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
               class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm"
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
               <span class="flex min-w-0 items-center gap-2">
-                <img :src="brandLogoUrl(b.name)" :alt="b.name"
+                <img :src="brandLogoUrl(b.name)" alt=""
                   class="size-5 shrink-0 rounded-md bg-muted object-contain"
                   @error="(e) => onBrandLogoError(e, b.name)" />
                 <span class="truncate text-foreground">{{ b.name }}</span>

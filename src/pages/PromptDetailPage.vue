@@ -169,7 +169,7 @@
                   <span class="pd-brand-cell">
                     <img
                       :src="brandLogoUrl(b.name)"
-                      :alt="b.name"
+                      alt=""
                       class="pd-brand-logo"
                       @error="(e) => onBrandLogoError(e, b.name)"
                     />
