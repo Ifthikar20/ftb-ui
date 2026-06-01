@@ -5,6 +5,7 @@ import {
   Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement,
   CategoryScale, LinearScale, Filler,
 } from 'chart.js'
+import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import { fallbackBrands } from './placeholders'
 
@@ -66,8 +67,50 @@ const compSeries = computed(() => {
 })
 
 const avg = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0)
-const brandAvg = computed(() => Math.round(avg(brandSeries.value)))
-const compAvg = computed(() => Math.round(avg(compSeries.value)))
+
+// Headline value is the *current* month, not a 12-month average — that's
+// what the percentage above the chart should represent.
+const brandCurrent = computed(() => {
+  const s = brandSeries.value
+  return s.length ? Math.round(s[s.length - 1]) : 0
+})
+const compCurrent = computed(() => {
+  const s = compSeries.value
+  return s.length ? Math.round(s[s.length - 1]) : 0
+})
+
+// Delta = last 3-month mean vs prior 3-month mean, as a percentage of the
+// prior window. Falls back to a simple first-vs-last delta when the
+// series is shorter than six points. Returned as a signed number so the
+// template can pick the badge color from the sign.
+function trendDelta(series) {
+  if (!series || series.length < 2) return 0
+  if (series.length >= 6) {
+    const tail = series.slice(-3)
+    const prev = series.slice(-6, -3)
+    const tailAvg = avg(tail)
+    const prevAvg = avg(prev)
+    if (prevAvg === 0) return 0
+    return ((tailAvg - prevAvg) / prevAvg) * 100
+  }
+  const first = series[0] || 1
+  const last = series[series.length - 1]
+  return ((last - first) / Math.abs(first)) * 100
+}
+
+const brandDelta = computed(() => trendDelta(brandSeries.value))
+const compDelta = computed(() => trendDelta(compSeries.value))
+
+function fmtDelta(d) {
+  if (!Number.isFinite(d) || d === 0) return '0%'
+  const sign = d > 0 ? '+' : '−'
+  return `${sign}${Math.abs(d).toFixed(1)}%`
+}
+
+const showBrand = computed(() => view.value === 'both' || view.value === 'brand')
+const showComp = computed(() => view.value === 'both' || view.value === 'competitors')
+
+const usingSampleData = computed(() => !props.brands?.length)
 
 const baseDataset = {
   fill: true,
@@ -139,8 +182,22 @@ const chartOptions = computed(() => {
     <div class="px-7 pt-6">
       <div class="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 class="text-[22px] font-extrabold leading-tight tracking-tight text-foreground">Visibility Overview</h2>
-          <p class="mt-1 text-sm text-muted-foreground">Showing brand visibility for the last 12 months</p>
+          <h2 class="inline-flex items-center gap-1.5 text-[22px] font-extrabold leading-tight tracking-tight text-foreground">
+            Visibility Overview
+            <span
+              class="inline-flex"
+              title="Visibility = share of scanned AI answers that mention your brand. Measured across Claude, GPT-4, Gemini, and Perplexity for prompts in your tracked categories."
+            >
+              <Info class="size-4 text-muted-foreground" />
+            </span>
+          </h2>
+          <p class="mt-1 text-sm text-muted-foreground">
+            % of scanned AI answers mentioning your brand · last 12 months
+            <span
+              v-if="usingSampleData"
+              class="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+            >Sample data</span>
+          </p>
         </div>
         <div class="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
           <button
@@ -155,19 +212,37 @@ const chartOptions = computed(() => {
       </div>
 
       <div class="mb-1 flex gap-6">
-        <div>
+        <div v-if="showBrand">
           <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brand Visibility</p>
           <div class="mt-0.5 flex items-baseline gap-2">
-            <span class="text-[28px] font-extrabold text-foreground">{{ brandAvg }}%</span>
-            <span class="rounded-md bg-[#E8F5E9] px-2 py-0.5 text-[13px] font-bold text-[#008A05]">+14.2%</span>
+            <span class="text-[28px] font-extrabold text-foreground">{{ brandCurrent }}%</span>
+            <span
+              class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
+              :class="brandDelta >= 0
+                ? 'bg-[#E8F5E9] text-[#008A05]'
+                : 'bg-[#FDECEA] text-[#C02926]'"
+            >
+              <TrendingUp v-if="brandDelta >= 0" class="size-3.5" />
+              <TrendingDown v-else class="size-3.5" />
+              {{ fmtDelta(brandDelta) }}
+            </span>
           </div>
         </div>
-        <div class="w-px bg-border" />
-        <div>
+        <div v-if="showBrand && showComp" class="w-px bg-border" />
+        <div v-if="showComp">
           <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Competitor Avg</p>
           <div class="mt-0.5 flex items-baseline gap-2">
-            <span class="text-[28px] font-extrabold text-foreground">{{ compAvg }}%</span>
-            <span class="rounded-md bg-[#E8F5E9] px-2 py-0.5 text-[13px] font-bold text-[#008A05]">+3.1%</span>
+            <span class="text-[28px] font-extrabold text-foreground">{{ compCurrent }}%</span>
+            <span
+              class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
+              :class="compDelta >= 0
+                ? 'bg-[#E8F5E9] text-[#008A05]'
+                : 'bg-[#FDECEA] text-[#C02926]'"
+            >
+              <TrendingUp v-if="compDelta >= 0" class="size-3.5" />
+              <TrendingDown v-else class="size-3.5" />
+              {{ fmtDelta(compDelta) }}
+            </span>
           </div>
         </div>
       </div>
