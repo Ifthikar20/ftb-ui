@@ -41,6 +41,16 @@
             mentions your brand. Find the prompts you're missing from. Generate the
             content to close the gap.
           </p>
+
+          <figure class="hero-manifest anim" data-anim="fade-up" data-delay="120">
+            <span class="hero-manifest-mark" aria-hidden="true">&ldquo;</span>
+            <blockquote class="hero-manifest-text">
+              We were measuring SEO every week and missing the entire AI side of search.
+              Within two weeks of running this we found three Reddit threads where
+              competitors had locked us out &mdash; and shipped fixes.
+            </blockquote>
+            <figcaption class="hero-manifest-attr">Internal pilot &middot; Q1 2026</figcaption>
+          </figure>
         </div>
 
         <!-- Framer-style animated visualisation -->
@@ -1799,6 +1809,42 @@ em { color: #5B8DEF; font-style: italic; }
 }
 
 .hero-p { font-size: 16px; color: #6e6a65; line-height: 1.7; max-width: 480px; margin-bottom: 32px; }
+
+.hero-manifest {
+  position: relative;
+  max-width: 480px;
+  margin: 0 0 32px;
+  padding: 20px 22px 18px;
+  border-left: 3px solid #ff6b35;
+  background: linear-gradient(180deg, rgba(255, 107, 53, 0.06), rgba(255, 107, 53, 0));
+  border-radius: 4px 10px 10px 4px;
+}
+.hero-manifest-mark {
+  position: absolute;
+  top: -6px; left: 14px;
+  font-family: Georgia, serif;
+  font-size: 42px;
+  line-height: 1;
+  color: #ff6b35;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.hero-manifest-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1f2937;
+  font-weight: 500;
+  font-style: italic;
+}
+.hero-manifest-attr {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6e6a65;
+}
 .hero-ctas { display: flex; gap: 12px; }
 .btn-primary {
   padding: 14px 32px; background: #131718; color: #fff;
