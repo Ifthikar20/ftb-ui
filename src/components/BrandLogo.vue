@@ -1,47 +1,87 @@
 <script setup>
 import { ref, watch } from 'vue'
+import promptLibrary from '@/api/promptLibrary'
 import { brandColor, brandInitial } from '@/lib/brandLogo'
 
 const props = defineProps({
   name: { type: String, required: true },
   size: { type: Number, default: 20 },
-  // Real website logo resolved server-side from a cited domain. When
-  // present it is used directly; on error we fall through to the name
-  // lookup below.
-  logo: { type: String, default: '' },
+  // Domain matched to this brand from cited sources. When present we ask
+  // the backend logo crawler for the site's real logo.
+  domain: { type: String, default: '' },
 })
 
-// Resolve a brand name to a real logo via Clearbit's autocomplete API
-// (name -> {domain, logo}). Results are cached in-memory and in
-// localStorage so we hit the network at most once per brand name. On any
-// miss/failure we fall back to a deterministic colored initial badge.
+// Logo resolution order:
+//   1. crawl the brand's domain (backend /logo/) for the real site logo
+//   2. Clearbit autocomplete by name (known companies)
+//   3. deterministic colored initial badge
+// Every resolved URL is cached in-memory + localStorage so each
+// domain/name hits the network at most once.
 
-const MEM = new Map()       // name(lower) -> logo url | '' (no logo)
-const LS_KEY = 'brandLogoCache.v1'
-
+const MEM = new Map()
+const LS_KEY = 'brandLogoCache.v2'
 function loadLS() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} }
 }
 function saveLS(obj) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(obj)) } catch { /* ignore quota */ }
 }
+function cacheGet(key) {
+  if (MEM.has(key)) return MEM.get(key)
+  const ls = loadLS()
+  if (Object.prototype.hasOwnProperty.call(ls, key)) { MEM.set(key, ls[key]); return ls[key] }
+  return undefined
+}
+function cacheSet(key, val) {
+  MEM.set(key, val)
+  const ls = loadLS(); ls[key] = val; saveLS(ls)
+}
 
 const logoUrl = ref('')
 const failed = ref(false)
-const triedServerLogo = ref(false)
+const triedName = ref(false)   // have we already fallen back to the name lookup?
 
-async function resolve(name) {
+async function resolve() {
   logoUrl.value = ''
   failed.value = false
-  triedServerLogo.value = false
+  triedName.value = false
 
-  // Prefer the server-resolved website logo (from a cited domain).
-  if (props.logo) {
-    triedServerLogo.value = true
-    logoUrl.value = props.logo
-    return
+  if (props.domain) {
+    const key = `d:${props.domain.toLowerCase()}`
+    const cached = cacheGet(key)
+    if (cached !== undefined) {
+      if (cached) { logoUrl.value = cached; return }
+    } else {
+      try {
+        const { data } = await promptLibrary.brandLogo(props.domain)
+        const url = (data?.data || data)?.logo || ''
+        cacheSet(key, url)
+        if (url) { logoUrl.value = url; return }
+      } catch { /* fall through to name lookup */ }
+    }
   }
-  resolveByName(name)
+  resolveByName(props.name)
+}
+
+async function resolveByName(name) {
+  triedName.value = true
+  const key = `n:${String(name || '').trim().toLowerCase()}`
+  if (key === 'n:') { failed.value = true; return }
+  const cached = cacheGet(key)
+  if (cached !== undefined) { applyResolved(cached); return }
+  try {
+    const res = await fetch(
+      `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(name)}`,
+    )
+    const list = res.ok ? await res.json() : []
+    const best = Array.isArray(list) && list.length ? list[0] : null
+    const url = best?.logo || (best?.domain ? `https://logo.clearbit.com/${best.domain}` : '')
+    cacheSet(key, url)
+    applyResolved(url)
+  } catch {
+    cacheSet(key, '')
+    applyResolved('')
+  }
 }
 
 function applyResolved(url) {
@@ -50,44 +90,14 @@ function applyResolved(url) {
 }
 
 function onImgError() {
-  // The server logo 404'd — fall through to the name-based lookup before
-  // giving up to the badge.
-  if (triedServerLogo.value) {
-    triedServerLogo.value = false
-    logoUrl.value = ''
-    resolveByName(props.name)
-    return
-  }
-  failed.value = true
+  // A crawled/Clearbit URL 404'd. If we haven't tried the name lookup
+  // yet, do that before giving up to the badge.
   logoUrl.value = ''
+  if (!triedName.value) { resolveByName(props.name); return }
+  failed.value = true
 }
 
-// Name-lookup path, split out so onImgError can invoke it after a failed
-// server logo without re-checking props.logo.
-async function resolveByName(name) {
-  const key = String(name || '').trim().toLowerCase()
-  if (!key) { failed.value = true; return }
-  if (MEM.has(key)) { applyResolved(MEM.get(key)); return }
-  const ls = loadLS()
-  if (Object.prototype.hasOwnProperty.call(ls, key)) {
-    MEM.set(key, ls[key]); applyResolved(ls[key]); return
-  }
-  try {
-    const res = await fetch(
-      `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(name)}`,
-    )
-    const list = res.ok ? await res.json() : []
-    const best = Array.isArray(list) && list.length ? list[0] : null
-    const url = best?.logo || (best?.domain ? `https://logo.clearbit.com/${best.domain}` : '')
-    MEM.set(key, url)
-    const next = loadLS(); next[key] = url; saveLS(next)
-    applyResolved(url)
-  } catch {
-    MEM.set(key, ''); applyResolved('')
-  }
-}
-
-watch(() => [props.name, props.logo], () => resolve(props.name), { immediate: true })
+watch(() => [props.name, props.domain], resolve, { immediate: true })
 </script>
 
 <template>

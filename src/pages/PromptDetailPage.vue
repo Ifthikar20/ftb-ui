@@ -178,7 +178,7 @@
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
                   <span class="pd-brand-cell">
-                    <BrandLogo :name="b.name" :logo="b.logo" :size="20" />
+                    <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
                     <span class="pd-brand-name">{{ b.name }}</span>
                     <span v-if="b.is_self" class="pd-self-pill">you</span>
                   </span>
