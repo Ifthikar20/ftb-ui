@@ -167,12 +167,7 @@
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
                   <span class="pd-brand-cell">
-                    <img
-                      :src="brandLogoUrl(b.name)"
-                      alt=""
-                      class="pd-brand-logo"
-                      @error="(e) => onBrandLogoError(e, b.name)"
-                    />
+                    <BrandLogo :name="b.name" :size="20" />
                     <span class="pd-brand-name">{{ b.name }}</span>
                     <span v-if="b.is_self" class="pd-self-pill">you</span>
                   </span>
@@ -495,7 +490,7 @@ import promptLibrary from '@/api/promptLibrary'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { brandLogoUrl, onBrandLogoError } from '@/lib/brandLogo'
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const MODELS = {
   chatgpt: { label: 'ChatGPT', color: '#10a37f' },

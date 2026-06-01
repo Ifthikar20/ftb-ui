@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
 import citationsApi from '@/api/citations'
-import { brandLogoUrl, onBrandLogoError } from '@/lib/brandLogo'
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -156,9 +156,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
               class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm"
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
               <span class="flex min-w-0 items-center gap-2">
-                <img :src="brandLogoUrl(b.name)" alt=""
-                  class="size-5 shrink-0 rounded-md bg-muted object-contain"
-                  @error="(e) => onBrandLogoError(e, b.name)" />
+                <BrandLogo :name="b.name" :size="20" />
                 <span class="truncate text-foreground">{{ b.name }}</span>
                 <span v-if="b.name === detail.brand"
                   class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">you</span>
