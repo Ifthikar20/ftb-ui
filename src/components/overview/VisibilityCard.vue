@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement,
@@ -8,12 +8,14 @@ import {
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import { fallbackBrands } from './placeholders'
+import llmRanking from '@/api/llm_ranking'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
 const props = defineProps({
   brands: { type: Array, default: null },
   activeName: { type: String, default: '' },
+  websiteId: { type: String, default: '' },
 })
 
 const view = ref('both')
@@ -51,7 +53,26 @@ function gradientFor(color) {
 
 const brandList = computed(() => (props.brands?.length ? props.brands : fallbackBrands(props.activeName)))
 
-function series(base, seed) {
+// Real series from the backend, when a websiteId is supplied. Shape:
+// { labels, brand[], competitor[], brand_current, competitor_current,
+//   brand_delta_pct, competitor_delta_pct, has_data }
+const overview = ref(null)
+
+async function loadOverview() {
+  if (!props.websiteId) return
+  try {
+    const { data } = await llmRanking.visibilityOverview(props.websiteId)
+    overview.value = data
+  } catch (err) {
+    overview.value = null
+    console.warn('Failed to load visibility overview', err)
+  }
+}
+
+onMounted(loadOverview)
+watch(() => props.websiteId, loadOverview)
+
+function syntheticSeries(base, seed) {
   return Array.from({ length: POINTS }, (_, i) => {
     const drift = (i / (POINTS - 1)) * base * 0.18
     const wobble = Math.sin((i + seed) * 0.8) * Math.min(2.5, base * 0.06)
@@ -59,30 +80,38 @@ function series(base, seed) {
   })
 }
 
-const brandSeries = computed(() => series(brandList.value[0]?.visibility ?? 60, 1))
+const labels = computed(() => overview.value?.labels?.length ? overview.value.labels : LABELS.slice(0, POINTS))
+
+const brandSeries = computed(() => {
+  if (overview.value?.has_data) return overview.value.brand
+  return syntheticSeries(brandList.value[0]?.visibility ?? 60, 1)
+})
 const compSeries = computed(() => {
+  if (overview.value?.has_data) return overview.value.competitor
   const rest = brandList.value.slice(1)
-  const avg = rest.length ? rest.reduce((s, b) => s + b.visibility, 0) / rest.length : 4
-  return series(avg, 4)
+  const compAvg = rest.length ? rest.reduce((s, b) => s + b.visibility, 0) / rest.length : 4
+  return syntheticSeries(compAvg, 4)
 })
 
 const avg = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0)
 
-// Headline value is the *current* month, not a 12-month average — that's
-// what the percentage above the chart should represent.
+// Headline value is the current month — what readers expect above a trendline.
+// Backend hands us a computed `brand_current` already; fall back to the last
+// series point when there's no real data.
 const brandCurrent = computed(() => {
+  if (overview.value?.has_data) return Math.round(overview.value.brand_current)
   const s = brandSeries.value
   return s.length ? Math.round(s[s.length - 1]) : 0
 })
 const compCurrent = computed(() => {
+  if (overview.value?.has_data) return Math.round(overview.value.competitor_current)
   const s = compSeries.value
   return s.length ? Math.round(s[s.length - 1]) : 0
 })
 
-// Delta = last 3-month mean vs prior 3-month mean, as a percentage of the
-// prior window. Falls back to a simple first-vs-last delta when the
-// series is shorter than six points. Returned as a signed number so the
-// template can pick the badge color from the sign.
+// Delta = last 3-month mean vs prior 3-month mean, as a % change of the
+// prior window. Falls back to first-vs-last for shorter series. Sign drives
+// the badge color and arrow direction in the template.
 function trendDelta(series) {
   if (!series || series.length < 2) return 0
   if (series.length >= 6) {
@@ -98,8 +127,14 @@ function trendDelta(series) {
   return ((last - first) / Math.abs(first)) * 100
 }
 
-const brandDelta = computed(() => trendDelta(brandSeries.value))
-const compDelta = computed(() => trendDelta(compSeries.value))
+const brandDelta = computed(() => {
+  if (overview.value?.has_data) return overview.value.brand_delta_pct ?? 0
+  return trendDelta(brandSeries.value)
+})
+const compDelta = computed(() => {
+  if (overview.value?.has_data) return overview.value.competitor_delta_pct ?? 0
+  return trendDelta(compSeries.value)
+})
 
 function fmtDelta(d) {
   if (!Number.isFinite(d) || d === 0) return '0%'
@@ -110,7 +145,7 @@ function fmtDelta(d) {
 const showBrand = computed(() => view.value === 'both' || view.value === 'brand')
 const showComp = computed(() => view.value === 'both' || view.value === 'competitors')
 
-const usingSampleData = computed(() => !props.brands?.length)
+const usingSampleData = computed(() => !overview.value?.has_data)
 
 const baseDataset = {
   fill: true,
@@ -137,7 +172,7 @@ const chartData = computed(() => {
       borderColor: COMP_COLOR, backgroundColor: gradientFor(COMP_COLOR), pointHoverBackgroundColor: COMP_COLOR,
     })
   }
-  return { labels: LABELS.slice(0, POINTS), datasets }
+  return { labels: labels.value, datasets }
 })
 
 const chartOptions = computed(() => {

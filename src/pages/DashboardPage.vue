@@ -36,7 +36,7 @@
           </TabsList>
 
           <TabsContent value="overview" class="space-y-6">
-            <OverviewSection :active-name="activeName" />
+            <OverviewSection :active-name="activeName" :website-id="activeWebsiteId" />
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
@@ -115,6 +115,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const activeName = computed(() => appStore.activeWebsite?.name || '')
+const activeWebsiteId = computed(() => appStore.activeWebsite?.id || '')
 const firstName = computed(() => (authStore.user?.full_name || 'there').split(' ')[0])
 
 // First-run onboarding shows as an overlay over the dashboard rather
