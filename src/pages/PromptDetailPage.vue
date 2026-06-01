@@ -12,11 +12,42 @@
 
     <!-- Header -->
     <header class="pd-header">
-      <div class="pd-header-eyebrow">
-        <Sparkles :size="12" :stroke-width="2" />
-        <span>Prompt</span>
+      <div class="pd-header-top">
+        <div>
+          <div class="pd-header-eyebrow">
+            <Sparkles :size="12" :stroke-width="2" />
+            <span>Prompt</span>
+          </div>
+          <h1 class="pd-title">{{ promptText || 'Loading…' }}</h1>
+        </div>
+        <div v-if="detail" class="pd-header-actions">
+          <button
+            type="button"
+            class="pd-crawl-btn"
+            :disabled="scanInFlight || !!scanQueued"
+            @click="runScan"
+          >
+            <Repeat :size="14" :stroke-width="2" />
+            <span v-if="scanInFlight">Scanning…</span>
+            <span v-else-if="scanQueued">Scan queued</span>
+            <span v-else>Run scan</span>
+          </button>
+          <button
+            type="button"
+            class="pd-toggle-btn"
+            :class="{ 'is-active': detail?.status === 'active' }"
+            :disabled="toggleInFlight"
+            @click="togglePromptActive"
+          >
+            {{ toggleInFlight ? '…' : (detail?.status === 'active' ? 'Disable prompt' : 'Enable prompt') }}
+          </button>
+        </div>
       </div>
-      <h1 class="pd-title">{{ promptText || 'Loading…' }}</h1>
+      <div v-if="scanStatusLine" class="pd-scan-status" :class="`is-${scanStatusKind}`">
+        <span class="pd-scan-dot" />
+        <span>{{ scanStatusLine }}</span>
+        <span v-if="scanErrorLine" class="pd-scan-error">— {{ scanErrorLine }}</span>
+      </div>
     </header>
 
     <!-- Metadata strip -->
@@ -325,7 +356,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bar } from 'vue-chartjs'
 import {
@@ -384,6 +415,98 @@ async function load() {
     loading.value = false
   }
 }
+
+/* ── Run scan ── */
+const scanInFlight = ref(false)
+const scanQueued = ref(false)
+let scanPollTimer = null
+
+async function runScan() {
+  if (scanInFlight.value) return
+  scanInFlight.value = true
+  try {
+    const { data } = await promptLibrary.crawlPrompt(websiteId, promptId)
+    scanQueued.value = !!data?.queued
+    // Refresh the detail (the synchronous fallback path writes results
+    // immediately; the queued path needs polling until completed_at is set).
+    await load()
+    if (scanQueued.value) startScanPoll()
+  } catch (e) {
+    error.value = e?.displayMessage || 'Could not start the scan.'
+  } finally {
+    scanInFlight.value = false
+  }
+}
+
+function startScanPoll() {
+  stopScanPoll()
+  let elapsed = 0
+  scanPollTimer = setInterval(async () => {
+    elapsed += 1
+    try { await load() } catch { /* ignore polling failures */ }
+    const latest = detail.value?.latest_scan
+    const done = latest && (latest.status === 'completed' || latest.status === 'failed')
+    if (done || elapsed > 24) {  // give up after ~2 minutes (24 x 5s)
+      scanQueued.value = false
+      stopScanPoll()
+    }
+  }, 5000)
+}
+
+function stopScanPoll() {
+  if (scanPollTimer) { clearInterval(scanPollTimer); scanPollTimer = null }
+}
+
+/* ── Enable / disable ── */
+const toggleInFlight = ref(false)
+
+async function togglePromptActive() {
+  if (toggleInFlight.value) return
+  toggleInFlight.value = true
+  try {
+    if (detail.value?.status === 'active') {
+      await promptLibrary.disable(promptId)
+    } else {
+      await promptLibrary.enable(promptId)
+    }
+    await load()
+  } catch (e) {
+    error.value = e?.displayMessage || 'Could not update the prompt status.'
+  } finally {
+    toggleInFlight.value = false
+  }
+}
+
+/* ── Scan status line ── */
+const scanStatusKind = computed(() => {
+  if (scanInFlight.value) return 'running'
+  const s = detail.value?.latest_scan?.status
+  if (s === 'running' || s === 'pending') return 'running'
+  if (s === 'failed') return 'failed'
+  if (s === 'completed') return 'ok'
+  return ''
+})
+
+const scanStatusLine = computed(() => {
+  if (scanInFlight.value) return 'Triggering scan…'
+  const ls = detail.value?.latest_scan
+  if (!ls) return ''
+  if (ls.status === 'running' || ls.status === 'pending') {
+    return `Scan ${ls.status === 'pending' ? 'queued' : 'running'}${ls.started_at ? ' · started ' + relativeTime(ls.started_at) : ''}`
+  }
+  if (ls.status === 'completed') {
+    return `Last scan completed ${relativeTime(ls.completed_at)}`
+  }
+  if (ls.status === 'failed') {
+    return `Last scan failed ${relativeTime(ls.completed_at || ls.started_at)}`
+  }
+  return ''
+})
+
+const scanErrorLine = computed(() => {
+  const ls = detail.value?.latest_scan
+  return ls?.status === 'failed' ? (ls.error || 'unknown error') : ''
+})
 /* ── Recent chats + chat modal ── */
 const brandLabel = computed(() => detail.value?.brand_label || 'your brand')
 const recentChats = computed(() => detail.value?.recent_chats || [])
@@ -408,6 +531,7 @@ function relativeTime(iso) {
 }
 
 onMounted(load)
+onBeforeUnmount(stopScanPoll)
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
 const promptTextShort = computed(() => {
@@ -773,6 +897,71 @@ function onFaviconError(ev, d) {
 }
 .pd-crawl-btn:hover { opacity: 0.92; }
 .pd-crawl-btn:disabled { opacity: 0.55; cursor: progress; }
+
+.pd-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pd-toggle-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pd-toggle-btn:hover { background: var(--muted); }
+.pd-toggle-btn:disabled { opacity: 0.55; cursor: progress; }
+.pd-toggle-btn.is-active {
+  color: color-mix(in oklab, var(--destructive, #ef4444) 80%, var(--foreground));
+  border-color: color-mix(in oklab, var(--destructive, #ef4444) 35%, var(--border));
+}
+
+.pd-scan-status {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 999px;
+}
+.pd-scan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+.pd-scan-status.is-running .pd-scan-dot {
+  background: var(--chart-1, #5b8def);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--chart-1, #5b8def) 20%, transparent);
+  animation: pdScanPulse 1.6s ease-in-out infinite;
+}
+.pd-scan-status.is-ok .pd-scan-dot { background: var(--chart-2, #22c55e); }
+.pd-scan-status.is-failed .pd-scan-dot { background: var(--destructive, #ef4444); }
+.pd-scan-status.is-failed { color: color-mix(in oklab, var(--destructive, #ef4444) 70%, var(--foreground)); }
+.pd-scan-error { font-style: italic; opacity: 0.85; }
+@keyframes pdScanPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
 
 .pd-fanout-list { display: flex; flex-direction: column; gap: 2px; }
 .pd-fanout-row {
