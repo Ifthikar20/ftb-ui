@@ -518,8 +518,11 @@ function flag(code) {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
 const route = useRoute()
-const websiteId = route.params.websiteId
-const promptId = route.params.promptId
+// Read fresh from the route each access: Vue Router reuses this component
+// when navigating between two prompt-detail URLs (same route, different
+// param), so these must not be captured once at setup.
+let websiteId = route.params.websiteId
+let promptId = route.params.promptId
 
 const detail = ref(null)
 const loading = ref(true)
@@ -799,6 +802,30 @@ onMounted(loadThenMaybeScan)
 onBeforeUnmount(() => {
   stopScanPoll()
   stopElapsedTimer()
+})
+
+// Navigating between two prompt-detail URLs reuses this component, so
+// onMounted won't refire. Watch the route param and reload from scratch
+// when it changes (this is why a freshly created prompt kept showing the
+// previously-open prompt's data).
+watch(() => route.params.promptId, (newId, oldId) => {
+  if (!newId || newId === oldId) return
+  websiteId = route.params.websiteId
+  promptId = newId
+  // Reset per-prompt state so nothing leaks from the previous prompt.
+  detail.value = null
+  error.value = ''
+  fanouts.value = []
+  lastFanoutRun.value = null
+  autoScanDone.value = false
+  backfillDone.value = false
+  backfilling.value = false
+  scanQueued.value = false
+  chatOpen.value = false
+  chatIndex.value = 0
+  stopScanPoll()
+  stopElapsedTimer()
+  loadThenMaybeScan()
 })
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
