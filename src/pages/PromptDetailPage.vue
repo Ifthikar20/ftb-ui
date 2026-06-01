@@ -463,7 +463,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bar } from 'vue-chartjs'
 import {
@@ -627,7 +627,33 @@ async function togglePromptActive() {
   }
 }
 
-/* ── Scan status line ── */
+/* ── Scan status line ──
+ * `nowTick` re-renders the elapsed duration once a second while a scan
+ * is running so the user sees the timer move without waiting for the
+ * 5s poll. The interval starts when the status enters running/pending
+ * and stops when it resolves.
+ */
+const nowTick = ref(Date.now())
+let elapsedTimer = null
+function startElapsedTimer() {
+  if (elapsedTimer) return
+  elapsedTimer = setInterval(() => { nowTick.value = Date.now() }, 1000)
+}
+function stopElapsedTimer() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null }
+}
+
+function formatDuration(seconds) {
+  if (seconds < 0 || !Number.isFinite(seconds)) return '0s'
+  if (seconds < 60) return `${Math.floor(seconds)}s`
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`
+  const h = Math.floor(m / 60)
+  const rm = m % 60
+  return rm ? `${h}h ${rm}m` : `${h}h`
+}
+
 const scanStatusKind = computed(() => {
   if (scanInFlight.value) return 'running'
   const s = detail.value?.latest_scan?.status
@@ -642,10 +668,19 @@ const scanStatusLine = computed(() => {
   const ls = detail.value?.latest_scan
   if (!ls) return ''
   if (ls.status === 'running' || ls.status === 'pending') {
-    return `Scan ${ls.status === 'pending' ? 'queued' : 'running'}${ls.started_at ? ' · started ' + relativeTime(ls.started_at) : ''}`
+    const started = ls.started_at ? new Date(ls.started_at).getTime() : null
+    const elapsed = started ? Math.max(0, Math.floor((nowTick.value - started) / 1000)) : null
+    const label = ls.status === 'pending' ? 'queued' : 'running'
+    return elapsed != null
+      ? `Scan ${label} · ${formatDuration(elapsed)} elapsed`
+      : `Scan ${label}`
   }
   if (ls.status === 'completed') {
-    return `Last scan completed ${relativeTime(ls.completed_at)}`
+    const ran = ls.started_at && ls.completed_at
+      ? Math.max(0, (new Date(ls.completed_at) - new Date(ls.started_at)) / 1000)
+      : null
+    const took = ran != null ? ` in ${formatDuration(ran)}` : ''
+    return `Last scan completed ${relativeTime(ls.completed_at)}${took}`
   }
   if (ls.status === 'failed') {
     return `Last scan failed ${relativeTime(ls.completed_at || ls.started_at)}`
@@ -657,6 +692,11 @@ const scanErrorLine = computed(() => {
   const ls = detail.value?.latest_scan
   return ls?.status === 'failed' ? (ls.error || 'unknown error') : ''
 })
+
+watch(scanStatusKind, (kind) => {
+  if (kind === 'running') startElapsedTimer()
+  else stopElapsedTimer()
+}, { immediate: true })
 /* ── Recent chats + chat modal ── */
 const brandLabel = computed(() => detail.value?.brand_label || 'your brand')
 const recentChats = computed(() => detail.value?.recent_chats || [])
@@ -681,7 +721,10 @@ function relativeTime(iso) {
 }
 
 onMounted(load)
-onBeforeUnmount(stopScanPoll)
+onBeforeUnmount(() => {
+  stopScanPoll()
+  stopElapsedTimer()
+})
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
 const promptTextShort = computed(() => {
