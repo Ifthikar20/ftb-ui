@@ -166,8 +166,16 @@
               <TableRow v-for="(b, i) in topBrands" :key="b.name" :class="{ 'is-self': b.is_self }">
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
-                  <span class="pd-brand-name">{{ b.name }}</span>
-                  <span v-if="b.is_self" class="pd-self-pill">you</span>
+                  <span class="pd-brand-cell">
+                    <img
+                      :src="brandLogoUrl(b.name)"
+                      :alt="b.name"
+                      class="pd-brand-logo"
+                      @error="(e) => onBrandLogoError(e, b.name)"
+                    />
+                    <span class="pd-brand-name">{{ b.name }}</span>
+                    <span v-if="b.is_self" class="pd-self-pill">you</span>
+                  </span>
                 </TableCell>
                 <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
                 <TableCell class="num">{{ b.sov_pct }}%</TableCell>
@@ -484,6 +492,7 @@ import promptLibrary from '@/api/promptLibrary'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { brandLogoUrl, onBrandLogoError } from '@/lib/brandLogo'
 
 const MODELS = {
   chatgpt: { label: 'ChatGPT', color: '#10a37f' },
@@ -578,7 +587,15 @@ async function loadFanouts() {
   try {
     const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
     const payload = data?.data || data || {}
-    fanouts.value = payload.fanouts || []
+    // Re-crawls append a fresh PromptFanout set, so the same sub-query
+    // text can repeat. De-dupe by normalised text, keeping first seen.
+    const seen = new Set()
+    fanouts.value = (payload.fanouts || []).filter((f) => {
+      const key = (f.text || '').trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
     lastFanoutRun.value = payload.last_run || null
   } catch {
     fanouts.value = []
@@ -1057,6 +1074,11 @@ function onFaviconError(ev, d) {
 .pd-table a { color: var(--foreground); text-decoration: none; border-bottom: 1px solid transparent; }
 .pd-table a:hover { border-bottom-color: var(--muted-foreground); }
 
+.pd-brand-cell { display: inline-flex; align-items: center; gap: 8px; }
+.pd-brand-logo {
+  width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto;
+  object-fit: contain; background: var(--muted);
+}
 .pd-brand-name { font-weight: 500; }
 .pd-self-pill {
   display: inline-block;

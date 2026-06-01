@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
 import citationsApi from '@/api/citations'
+import { brandLogoUrl, onBrandLogoError } from '@/lib/brandLogo'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -43,6 +44,17 @@ function faviconFor(domain) {
 function onFaviconError(e) { e.target.style.visibility = 'hidden' }
 
 const modelLabel = computed(() => modelStyle(detail.value?.model).label)
+
+// Order brands the way the model surfaced them: by position ascending,
+// with un-positioned brands last but the tracked brand kept visible.
+const rankedBrands = computed(() => {
+  const brands = [...(detail.value?.brands || [])]
+  return brands.sort((a, b) => {
+    const pa = a.position == null ? Infinity : a.position
+    const pb = b.position == null ? Infinity : b.position
+    return pa - pb
+  })
+})
 
 /* Highlight the tracked brand (green) and competitors (amber) in any text.
    Escapes HTML first, then wraps whole-word brand matches in <mark>. */
@@ -137,14 +149,23 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
         </div>
 
         <template v-if="detail">
-          <!-- Brands -->
+          <!-- Brands (ordered by the rank the model returned) -->
           <div class="mb-5">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brands</div>
-            <div v-for="(b, i) in detail.brands" :key="i"
-              class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm"
+            <div v-for="(b, i) in rankedBrands" :key="i"
+              class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm"
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
-              <span class="truncate text-foreground">{{ b.name }}</span>
-              <span class="text-xs text-muted-foreground">{{ b.position ?? '—' }}</span>
+              <span class="flex min-w-0 items-center gap-2">
+                <img :src="brandLogoUrl(b.name)" :alt="b.name"
+                  class="size-5 shrink-0 rounded-md bg-muted object-contain"
+                  @error="(e) => onBrandLogoError(e, b.name)" />
+                <span class="truncate text-foreground">{{ b.name }}</span>
+                <span v-if="b.name === detail.brand"
+                  class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">you</span>
+              </span>
+              <span class="shrink-0 text-xs font-medium text-muted-foreground">
+                {{ b.position != null ? '#' + b.position : '—' }}
+              </span>
             </div>
             <div v-if="!detail.brands.length" class="text-xs text-muted-foreground">No brands detected.</div>
           </div>
