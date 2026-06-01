@@ -532,6 +532,26 @@ async function load() {
   loadFanouts()
 }
 
+// First visit behaviour: if the prompt already has results, read them
+// straight from the DB. If it has never been scanned (no responses AND
+// no prior crawl run), trigger exactly one scan automatically so the
+// page fills itself instead of showing an empty state. Guarded so it
+// fires at most once per mount and never loops on a prompt whose scan
+// completed with no brands or failed.
+const autoScanDone = ref(false)
+async function loadThenMaybeScan() {
+  await load()
+  if (autoScanDone.value || scanInFlight.value) return
+  const d = detail.value
+  if (!d) return
+  const hasResponses = (d.by_model || []).some((m) => (m.responses || 0) > 0)
+  const everScanned = !!d.latest_scan
+  if (!hasResponses && !everScanned) {
+    autoScanDone.value = true
+    runScan()
+  }
+}
+
 /* ── Fanouts ── */
 const fanouts = ref([])
 const lastFanoutRun = ref(null)
@@ -726,7 +746,7 @@ function relativeTime(iso) {
   return `${d}d ago`
 }
 
-onMounted(load)
+onMounted(loadThenMaybeScan)
 onBeforeUnmount(() => {
   stopScanPoll()
   stopElapsedTimer()
