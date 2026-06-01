@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import promptLibrary from '@/api/promptLibrary'
-import { brandColor, brandInitial } from '@/lib/brandLogo'
+import { brandColor, brandInitial, brandDomainGuess } from '@/lib/brandLogo'
 
 const props = defineProps({
   name: { type: String, required: true },
@@ -14,7 +14,8 @@ const props = defineProps({
 // Logo resolution order:
 //   1. crawl the brand's domain (backend /logo/) for the real site logo
 //   2. Clearbit autocomplete by name (known companies)
-//   3. deterministic colored initial badge
+//   3. Google favicon for a guessed domain (squashed brand name + .com)
+//   4. deterministic colored initial badge
 // Every resolved URL is cached in-memory + localStorage so each
 // domain/name hits the network at most once.
 
@@ -40,11 +41,13 @@ function cacheSet(key, val) {
 const logoUrl = ref('')
 const failed = ref(false)
 const triedName = ref(false)   // have we already fallen back to the name lookup?
+const triedGuess = ref(false)  // have we tried the squashed-name domain guess?
 
 async function resolve() {
   logoUrl.value = ''
   failed.value = false
   triedName.value = false
+  triedGuess.value = false
 
   if (props.domain) {
     const key = `d:${props.domain.toLowerCase()}`
@@ -85,15 +88,23 @@ async function resolveByName(name) {
 }
 
 function applyResolved(url) {
-  if (url) { logoUrl.value = url; failed.value = false }
-  else { logoUrl.value = ''; failed.value = true }
+  if (url) { logoUrl.value = url; failed.value = false; return }
+  logoUrl.value = ''
+  if (!triedGuess.value) { tryGuessedDomain(); return }
+  failed.value = true
+}
+
+function tryGuessedDomain() {
+  triedGuess.value = true
+  const guess = brandDomainGuess(props.name)
+  if (!guess) { failed.value = true; return }
+  logoUrl.value = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(guess)}&sz=64`
 }
 
 function onImgError() {
-  // A crawled/Clearbit URL 404'd. If we haven't tried the name lookup
-  // yet, do that before giving up to the badge.
   logoUrl.value = ''
   if (!triedName.value) { resolveByName(props.name); return }
+  if (!triedGuess.value) { tryGuessedDomain(); return }
   failed.value = true
 }
 
