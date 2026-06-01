@@ -262,7 +262,7 @@
         <Repeat :size="16" :stroke-width="2"/>
         Fanout queries
       </h2>
-      <p class="pd-section-sub">Sub-queries each model generated to research this prompt.</p>
+      <p class="pd-section-sub">Related sub-queries a search-augmented model would run to research this prompt.</p>
     </section>
 
     <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
@@ -278,13 +278,9 @@
         </span>
       </div>
       <div v-if="fanouts.length" class="pd-fanout-list">
-        <div v-for="f in fanouts" :key="f.id" class="pd-fanout-item">
-          <span class="pd-fanout-provider">{{ modelStyle(f.provider).label }}</span>
+        <div v-for="(f, i) in fanouts" :key="f.id" class="pd-fanout-item">
+          <span class="pd-fanout-num">{{ i + 1 }}</span>
           <span class="pd-fanout-text">{{ f.text }}</span>
-          <span v-if="f.source" class="pd-fanout-source">{{ f.source }}</span>
-          <span v-if="f.confidence != null" class="pd-fanout-conf" :title="`Confidence ${f.confidence}`">
-            {{ Math.round(f.confidence * 100) }}%
-          </span>
         </div>
       </div>
       <div v-else class="pd-empty-inline" style="padding: 20px 0">
@@ -1385,30 +1381,21 @@ function onFaviconError(ev, d) {
 /* Fanout items */
 .pd-fanout-item {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 10px;
   padding: 10px 8px;
   border-bottom: 1px solid var(--border);
 }
 .pd-fanout-item:last-child { border-bottom: none; }
-.pd-fanout-provider {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.pd-fanout-num {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
-  padding: 2px 8px;
   background: var(--muted);
-  border-radius: 999px;
-}
-.pd-fanout-source {
-  font-size: 0.72rem;
-  color: var(--muted-foreground);
-}
-.pd-fanout-conf {
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground);
+  border-radius: 6px;
+  flex: 0 0 auto;
 }
 
 /* Domain drill-through */
