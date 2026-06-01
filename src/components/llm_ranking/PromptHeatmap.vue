@@ -113,7 +113,11 @@ function cellLabel(cell) {
 
 function cellTitle(cell) {
   if (!cell) return 'No result'
-  if (!cell.query_succeeded) return `Error: ${cell.error_message || 'API failed'}`
+  if (!cell.query_succeeded) {
+    const err = cell.error_message || ''
+    if (err.startsWith('service_unavailable')) return 'Service unavailable for this provider'
+    return `Error: ${err || 'API failed'}`
+  }
   if (!cell.is_mentioned) return 'Not mentioned in this response'
   const len = (cell.response_text || '').length
   return `Rank #${cell.mention_rank || '?'} — ${len.toLocaleString()} chars in response`

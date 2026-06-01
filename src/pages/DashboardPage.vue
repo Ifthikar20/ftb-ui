@@ -40,6 +40,18 @@
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
+            <AnalyticsFilters
+              v-model="filters"
+              :available-prompts="availablePrompts"
+              @apply="refetchDashboard"
+            />
+
+            <KpiCards :stats="stats" />
+
+            <MetricBreakdowns v-if="analyticsBreakdowns" :breakdowns="analyticsBreakdowns" />
+
+            <MetricDeepDive v-if="analyticsDeepDive" :deep-dive="analyticsDeepDive" />
+
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
               <div class="lg:col-span-4">
                 <VisibilityChart :series="chartSeries" />
@@ -52,11 +64,9 @@
             <PromptsTable :prompts="prompts" />
 
             <div class="grid gap-4 lg:grid-cols-2">
-              <MorningBrief :brief="brief" />
               <QuickActions :actions="quickActions" />
               <WeeklyTasks :tasks="actions" />
               <TrendInsights />
-              <IntegrationStatus :integrations="integrations" />
             </div>
           </TabsContent>
 
@@ -85,14 +95,16 @@ import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
 import OverviewSection from '@/components/overview/OverviewSection.vue'
 
+import AnalyticsFilters from '@/components/dashboard/AnalyticsFilters.vue'
+import KpiCards from '@/components/dashboard/KpiCards.vue'
+import MetricBreakdowns from '@/components/dashboard/MetricBreakdowns.vue'
+import MetricDeepDive from '@/components/dashboard/MetricDeepDive.vue'
 import VisibilityChart from '@/components/dashboard/VisibilityChart.vue'
 import PromptsTable from '@/components/dashboard/PromptsTable.vue'
-import MorningBrief from '@/components/dashboard/MorningBrief.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
 import WeeklyTasks from '@/components/dashboard/WeeklyTasks.vue'
 import RecentActivity from '@/components/dashboard/RecentActivity.vue'
 import TrendInsights from '@/components/dashboard/TrendInsights.vue'
-import IntegrationStatus from '@/components/dashboard/IntegrationStatus.vue'
 import OnboardingModal from '@/components/onboarding/OnboardingModal.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -125,42 +137,61 @@ const timeOfDay = computed(() => hour < 12 ? 'morning' : hour < 17 ? 'afternoon'
 
 const loading = ref(true)
 const stats = ref([])
-const brief = ref('')
 const actions = ref([])
 const activity = ref([])
 const quickActions = ref([])
 const prompts = ref([])
 const chartSeries = ref(null)
+const analyticsBreakdowns = ref(null)
+const analyticsDeepDive = ref(null)
+const availablePrompts = ref([])
+const filters = ref({ range: '30d', start: '', end: '', prompts: [] })
 
-const DEFAULT_INTEGRATIONS = {
-  pixel: { installed: false, verified: false, verified_at: null, pixel_key: null },
-  services: [
-    { type: 'ga', label: 'Google Analytics', connected: false, connected_at: null },
-    { type: 'gsc', label: 'Google Search Console', connected: false, connected_at: null },
-    { type: 'facebook', label: 'Facebook Ads', connected: false, connected_at: null },
-  ],
+function buildParams() {
+  const params = {}
+  if (filters.value.range) params.range = filters.value.range
+  if (filters.value.range === 'custom') {
+    if (filters.value.start) params.start = filters.value.start
+    if (filters.value.end) params.end = filters.value.end
+  }
+  if (filters.value.prompts?.length) params.prompts = filters.value.prompts
+  return params
 }
-const integrations = ref({ ...DEFAULT_INTEGRATIONS })
 
-onMounted(async () => {
+async function refetchDashboard() {
   try {
-    const dashRes = await dashboardApi.get()
+    loading.value = true
+    const dashRes = await dashboardApi.get(buildParams())
     const d = dashRes.data?.data || dashRes.data
     stats.value = d.stats || []
-    brief.value = d.brief || 'Your visibility is trending up this week. FetchBot surfaced 3 new prompt opportunities and your brand moved up 2 positions across tracked queries.'
     actions.value = d.actions || []
     activity.value = d.activity || []
     quickActions.value = d.quick_actions || []
     prompts.value = d.prompts || []
+    analyticsBreakdowns.value = d.analytics_breakdowns || null
+    analyticsDeepDive.value = d.analytics_deep_dive || null
+    availablePrompts.value = d.analytics_deep_dive?.available_prompts || availablePrompts.value
     chartSeries.value = d.visibility_series || null
-    integrations.value = d.integrations
-      ? {
-          pixel: { ...DEFAULT_INTEGRATIONS.pixel, ...d.integrations.pixel },
-          services: d.integrations.services?.length
-            ? d.integrations.services
-            : DEFAULT_INTEGRATIONS.services,
-        }
-      : { ...DEFAULT_INTEGRATIONS }
+  } catch (e) {
+    console.error('Dashboard load error', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    const dashRes = await dashboardApi.get(buildParams())
+    const d = dashRes.data?.data || dashRes.data
+    stats.value = d.stats || []
+    actions.value = d.actions || []
+    activity.value = d.activity || []
+    quickActions.value = d.quick_actions || []
+    prompts.value = d.prompts || []
+    analyticsBreakdowns.value = d.analytics_breakdowns || null
+    analyticsDeepDive.value = d.analytics_deep_dive || null
+    availablePrompts.value = d.analytics_deep_dive?.available_prompts || []
+    chartSeries.value = d.visibility_series || null
   } catch (e) {
     console.error('Dashboard load error', e)
   } finally {

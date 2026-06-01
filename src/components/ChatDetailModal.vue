@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
 import citationsApi from '@/api/citations'
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -13,20 +14,20 @@ const props = defineProps({
 const emit = defineEmits(['close', 'prev', 'next'])
 
 const MODELS = {
-  chatgpt: { label: 'ChatGPT', color: '#10a37f' },
-  perplexity: { label: 'Perplexity', color: '#8b5cf6' },
-  gemini: { label: 'Gemini', color: '#5b8def' },
-  claude: { label: 'Claude', color: '#f97316' },
-  copilot: { label: 'Copilot', color: '#06b6d4' },
-  grok: { label: 'Grok', color: '#0f172a' },
-  deepseek: { label: 'DeepSeek', color: '#2563eb' },
-  mistral: { label: 'Mistral', color: '#ef4444' },
-  cohere: { label: 'Cohere', color: '#d946ef' },
-  llama: { label: 'Llama', color: '#0ea5e9' },
-  nova: { label: 'Nova', color: '#64748b' },
+  chatgpt: { label: 'ChatGPT', abbr: 'GP', color: '#10a37f' },
+  perplexity: { label: 'Perplexity', abbr: 'Px', color: '#8b5cf6' },
+  gemini: { label: 'Gemini', abbr: 'Ge', color: '#5b8def' },
+  claude: { label: 'Claude', abbr: 'Cl', color: '#f97316' },
+  copilot: { label: 'Copilot', abbr: 'Co', color: '#06b6d4' },
+  grok: { label: 'Grok', abbr: 'Gk', color: '#0f172a' },
+  deepseek: { label: 'DeepSeek', abbr: 'Ds', color: '#2563eb' },
+  mistral: { label: 'Mistral', abbr: 'Mi', color: '#ef4444' },
+  cohere: { label: 'Cohere', abbr: 'Ch', color: '#d946ef' },
+  llama: { label: 'Llama', abbr: 'La', color: '#0ea5e9' },
+  nova: { label: 'Nova', abbr: 'No', color: '#64748b' },
 }
 function modelStyle(key) {
-  return MODELS[key] || { label: key || 'Model', color: '#94a3b8' }
+  return MODELS[key] || { label: key || 'Model', abbr: (key || 'M').slice(0, 2), color: '#94a3b8' }
 }
 
 const loading = ref(false)
@@ -43,6 +44,17 @@ function faviconFor(domain) {
 function onFaviconError(e) { e.target.style.visibility = 'hidden' }
 
 const modelLabel = computed(() => modelStyle(detail.value?.model).label)
+
+// Order brands the way the model surfaced them: by position ascending,
+// with un-positioned brands last but the tracked brand kept visible.
+const rankedBrands = computed(() => {
+  const brands = [...(detail.value?.brands || [])]
+  return brands.sort((a, b) => {
+    const pa = a.position == null ? Infinity : a.position
+    const pb = b.position == null ? Infinity : b.position
+    return pa - pb
+  })
+})
 
 /* Highlight the tracked brand (green) and competitors (amber) in any text.
    Escapes HTML first, then wraps whole-word brand matches in <mark>. */
@@ -94,7 +106,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
         <header class="flex items-center justify-between border-b border-border px-5 py-3">
           <div class="flex items-center gap-2 text-sm font-medium text-foreground">
             <span class="flex size-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
-              :style="{ background: modelStyle(detail?.model).color }">{{ modelLabel[0] }}</span>
+              :style="{ background: modelStyle(detail?.model).color }">{{ modelStyle(detail?.model).abbr }}</span>
             {{ modelLabel }}
             <span v-if="detail?.country" class="ml-1 text-base leading-none">{{ flag(detail.country) }}</span>
             <span v-if="detail?.country" class="text-xs text-muted-foreground">{{ detail.country }}</span>
@@ -137,14 +149,21 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
         </div>
 
         <template v-if="detail">
-          <!-- Brands -->
+          <!-- Brands (ordered by the rank the model returned) -->
           <div class="mb-5">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brands</div>
-            <div v-for="(b, i) in detail.brands" :key="i"
-              class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm"
+            <div v-for="(b, i) in rankedBrands" :key="i"
+              class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm"
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
-              <span class="truncate text-foreground">{{ b.name }}</span>
-              <span class="text-xs text-muted-foreground">{{ b.position ?? '—' }}</span>
+              <span class="flex min-w-0 items-center gap-2">
+                <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
+                <span class="truncate text-foreground">{{ b.name }}</span>
+                <span v-if="b.name === detail.brand"
+                  class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">you</span>
+              </span>
+              <span class="shrink-0 text-xs font-medium text-muted-foreground">
+                {{ b.position != null ? '#' + b.position : '—' }}
+              </span>
             </div>
             <div v-if="!detail.brands.length" class="text-xs text-muted-foreground">No brands detected.</div>
           </div>

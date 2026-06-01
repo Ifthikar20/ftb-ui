@@ -32,6 +32,12 @@ export default {
     crawlPrompt: (websiteId, promptId) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`),
 
+    reextractPrompt: (websiteId, promptId) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/reextract/`),
+
+    brandLogo: (domain) =>
+        api.get('/prompt-library/logo/', { params: { domain } }),
+
     savedPromptsAgg: (websiteId) =>
         api.get(`/prompt-library/websites/${websiteId}/saved-prompts/agg/`),
 

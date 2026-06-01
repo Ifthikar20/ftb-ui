@@ -428,8 +428,15 @@ const sessionNeedsOnboarding = computed(
 const websiteId = computed(() => appStore.activeWebsite?.id)
 
 // Cache key: one keep-alive instance per page type + website.
-// Same page + same website = instant (no reload). Different website = fresh instance.
-const pageKey = computed(() => `${route.name || 'page'}-${route.params.websiteId || ''}`)
+// Same page + same website = instant (no reload). Different website = fresh
+// instance. Per-resource detail routes also key on their record id so e.g.
+// two prompt-detail pages don't share one cached keep-alive instance (which
+// made a freshly-opened prompt show the previously-viewed prompt's data).
+const pageKey = computed(() => {
+  const base = `${route.name || 'page'}-${route.params.websiteId || ''}`
+  const recordId = route.params.promptId || route.params.id || ''
+  return recordId ? `${base}-${recordId}` : base
+})
 const analyticsRoute = computed(() => websiteId.value ? `/analytics/${websiteId.value}` : '/websites')
 const llmRankingRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}` : '/websites')
 const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/prompts` : '/websites')

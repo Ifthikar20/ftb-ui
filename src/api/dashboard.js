@@ -1,5 +1,5 @@
 import api from './client'
 
 export default {
-    get: () => api.get('/websites/dashboard/'),
+    get: (params) => api.get('/websites/dashboard/', { params }),
 }

@@ -12,11 +12,42 @@
 
     <!-- Header -->
     <header class="pd-header">
-      <div class="pd-header-eyebrow">
-        <Sparkles :size="12" :stroke-width="2" />
-        <span>Prompt</span>
+      <div class="pd-header-top">
+        <div>
+          <div class="pd-header-eyebrow">
+            <Sparkles :size="12" :stroke-width="2" />
+            <span>Prompt</span>
+          </div>
+          <h1 class="pd-title">{{ promptText || 'Loading…' }}</h1>
+        </div>
+        <div v-if="detail" class="pd-header-actions">
+          <button
+            type="button"
+            class="pd-crawl-btn"
+            :disabled="scanInFlight || !!scanQueued"
+            @click="runScan"
+          >
+            <Repeat :size="14" :stroke-width="2" />
+            <span v-if="scanInFlight">Scanning…</span>
+            <span v-else-if="scanQueued">Scan queued</span>
+            <span v-else>Run scan</span>
+          </button>
+          <button
+            type="button"
+            class="pd-toggle-btn"
+            :class="{ 'is-active': detail?.status === 'active' }"
+            :disabled="toggleInFlight"
+            @click="togglePromptActive"
+          >
+            {{ toggleInFlight ? '…' : (detail?.status === 'active' ? 'Disable prompt' : 'Enable prompt') }}
+          </button>
+        </div>
       </div>
-      <h1 class="pd-title">{{ promptText || 'Loading…' }}</h1>
+      <div v-if="scanStatusLine" class="pd-scan-status" :class="`is-${scanStatusKind}`">
+        <span class="pd-scan-dot" />
+        <span>{{ scanStatusLine }}</span>
+        <span v-if="scanErrorLine" class="pd-scan-error">— {{ scanErrorLine }}</span>
+      </div>
     </header>
 
     <!-- Metadata strip -->
@@ -51,12 +82,33 @@
           </span>
         </div>
       </div>
+      <div v-if="detail?.prompt?.effectiveness_score != null" class="pd-meta">
+        <div class="pd-meta-label"><Trophy :size="12" :stroke-width="2"/>Effectiveness</div>
+        <div class="pd-meta-val">{{ detail.prompt.effectiveness_score }}<span class="pd-mute"> / 100</span></div>
+      </div>
     </div>
 
-    <!-- No scan data yet for this prompt. -->
-    <div v-if="detail && !detail.total_responses" class="pd-empty-banner">
+    <!-- Tags + template -->
+    <div v-if="promptTags.length || detail?.prompt?.template_text" class="pd-meta-extra">
+      <div v-if="promptTags.length" class="pd-tag-row">
+        <span v-for="t in promptTags" :key="t" class="pd-tag-chip">{{ t }}</span>
+      </div>
+      <div
+        v-if="detail?.prompt?.template_text && detail.prompt.template_text !== detail.prompt.text"
+        class="pd-template-row"
+      >
+        <span class="pd-template-label">Template</span>
+        <code class="pd-template-text">{{ detail.prompt.template_text }}</code>
+      </div>
+    </div>
+
+    <!-- Empty / extractor-blanked banners -->
+    <div v-if="detail && !succeededResponses" class="pd-empty-banner">
       <strong>No scan data for this prompt yet.</strong>
-      <span>Charts and brands populate once a scan runs. New prompts are scanned automatically — this needs at least one configured model with web search enabled. Check back in a moment.</span>
+      <span>Charts and brands populate once a scan runs. Triggering one above will query every configured model with this prompt.</span>
+    </div>
+    <div v-else-if="detail && !topBrands.length" class="pd-empty-note">
+      {{ succeededResponses }} {{ succeededResponses === 1 ? 'response' : 'responses' }} captured — no known brand named. See Recent chats below.
     </div>
 
     <!-- Overview: Visibility chart + Top brands table -->
@@ -83,7 +135,10 @@
           <Bar v-if="chartData" :data="chartData" :options="chartOptions" />
           <div v-else class="pd-empty-inline">
             <Inbox :size="32" :stroke-width="1.5"/>
-            <p>No model responses yet for this prompt.</p>
+            <p v-if="succeededResponses">
+              {{ succeededResponses }} response{{ succeededResponses === 1 ? '' : 's' }} captured, but no brand was named in any of them.
+            </p>
+            <p v-else>No model responses yet for this prompt.</p>
           </div>
         </div>
       </div>
@@ -101,23 +156,50 @@
               <TableRow>
                 <TableHead class="num">#</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead class="num">Visibility</TableHead>
-                <TableHead class="num">SOV</TableHead>
-                <TableHead class="num">Sentiment</TableHead>
-                <TableHead class="num">Position</TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.visibility">Visibility<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.sov">SOV<sup>?</sup></span>
+                </TableHead>
+                <TableHead>
+                  <span class="pd-th-help" :title="HELP.models">Models<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.sentiment">Sentiment<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.position">Position<sup>?</sup></span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="(b, i) in topBrands" :key="b.name" :class="{ 'is-self': b.is_self }">
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
-                  <span class="pd-brand-name">{{ b.name }}</span>
-                  <span v-if="b.is_self" class="pd-self-pill">you</span>
+                  <span class="pd-brand-cell">
+                    <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
+                    <span class="pd-brand-name">{{ b.name }}</span>
+                    <span v-if="b.is_self" class="pd-self-pill">you</span>
+                  </span>
                 </TableCell>
                 <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
                 <TableCell class="num">{{ b.sov_pct }}%</TableCell>
+                <TableCell>
+                  <span class="pd-models-cell" :title="modelsTip(b.models)">
+                    <span
+                      v-for="mk in (b.models || [])"
+                      :key="mk"
+                      class="pd-model-dot pd-model-dot-sm"
+                      :style="{ background: modelStyle(mk).color }"
+                      :title="modelStyle(mk).label"
+                    >{{ modelStyle(mk).abbr }}</span>
+                    <span v-if="(b.model_count || 0) > 1" class="pd-models-count">×{{ b.model_count }}</span>
+                    <span v-if="!(b.models || []).length" class="text-muted">—</span>
+                  </span>
+                </TableCell>
                 <TableCell class="num">
-                  <span v-if="b.sentiment_score != null" class="pd-sent">
+                  <span v-if="b.sentiment_score != null" class="pd-sent" :title="sentimentTip(b.sentiment_score)">
                     <span class="pd-sent-dot" :class="sentimentClass(b.sentiment_score)"></span>
                     {{ b.sentiment_score }}
                   </span>
@@ -143,22 +225,108 @@
         <BarChart3 :size="16" :stroke-width="2"/>
         Visibility by model
       </h2>
-      <p class="pd-section-sub">How often {{ brandLabel }} appears in each model's answers to this prompt.</p>
+      <p class="pd-section-sub">
+        How often {{ brandLabel }} appears in each model's answers to this prompt.
+        <span v-if="modelCompletion" class="pd-completion" :class="{ 'is-busy': scanStatusKind === 'running' }">
+          · {{ modelCompletion }}
+        </span>
+      </p>
     </section>
 
     <div class="pd-card">
       <div class="pd-bymodel">
         <div v-for="m in (detail?.by_model || [])" :key="m.provider" class="pd-bymodel-row">
-          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).label[0] }}</span>
+          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
           <span class="pd-bymodel-name">{{ m.label }}</span>
           <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
+          <span v-else-if="!m.responses && m.unavailable" class="pd-bymodel-na pd-bymodel-unavail">
+            Service unavailable
+          </span>
+          <span v-else-if="!m.responses && m.failed" class="pd-bymodel-na pd-bymodel-unavail">
+            Couldn't reach model — will retry
+          </span>
+          <span v-else-if="!m.responses && scanStatusKind === 'running'" class="pd-bymodel-na pd-bymodel-scanning">
+            Scanning…
+          </span>
           <template v-else-if="m.responses">
             <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
             <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
+            <span class="pd-bymodel-done" title="Model answered">✓ answered</span>
           </template>
           <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
         </div>
         <div v-if="!(detail?.by_model || []).length" class="pd-mute" style="padding: 8px 0">No model data yet.</div>
+      </div>
+
+      <!-- Per-model rank distribution -->
+      <div v-if="modelsWithRanks.length" class="pd-rank-dist">
+        <div class="pd-rank-dist-head">Rank distribution per model</div>
+        <div v-for="m in modelsWithRanks" :key="m.provider" class="pd-rank-row">
+          <span class="pd-rank-row-label">
+            <span class="pd-model-dot pd-model-dot-sm" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
+            {{ m.label }}
+            <span v-if="m.avg_rank != null" class="pd-mute">· avg #{{ m.avg_rank }}</span>
+          </span>
+          <div class="pd-rank-stack">
+            <span
+              v-for="r in rankBucketOrder"
+              :key="r"
+              class="pd-rank-seg"
+              :class="rankBucketClass(r)"
+              :style="{ flexGrow: m.rank_buckets[r] || 0 }"
+              :title="`Rank ${r}: ${m.rank_buckets[r] || 0}`"
+            >
+              <span v-if="m.rank_buckets[r]">{{ m.rank_buckets[r] }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="pd-rank-legend">
+          <span v-for="r in rankBucketOrder" :key="r" class="pd-rank-legend-item">
+            <span class="pd-rank-legend-dot" :class="rankBucketClass(r)" />
+            Rank {{ r }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fanout queries -->
+    <section v-if="fanouts.length || lastFanoutRun" class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <Repeat :size="16" :stroke-width="2"/>
+        Fanout queries
+      </h2>
+      <p class="pd-section-sub">Related sub-queries a search-augmented model would run to research this prompt.</p>
+    </section>
+
+    <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
+      <div v-if="lastFanoutRun" class="pd-fanout-meta">
+        <span class="pd-mute">Last fan-out:</span>
+        <span class="pd-status" :class="`is-${lastFanoutRun.status === 'completed' ? 'active' : 'inactive'}`">
+          <span class="pd-status-dot"></span>
+          {{ lastFanoutRun.status }}
+        </span>
+        <span class="pd-mute">
+          · {{ lastFanoutRun.fanout_count || 0 }} sub-queries
+          · {{ lastFanoutRun.source_count || 0 }} sources
+        </span>
+      </div>
+      <div v-if="fanouts.length" class="pd-fanout-list">
+        <div v-for="f in pagedFanouts" :key="f.id" class="pd-fanout-item">
+          <span class="pd-fanout-num">{{ f._n }}</span>
+          <span class="pd-fanout-text">{{ f.text }}</span>
+        </div>
+      </div>
+      <div v-if="fanoutPageCount > 1" class="pd-pager">
+        <button class="pd-pager-btn" :disabled="fanoutPage === 0" @click="fanoutPage--">‹ Prev</button>
+        <span class="pd-pager-info">
+          {{ fanoutPage * FANOUT_PAGE_SIZE + 1 }}–{{ Math.min((fanoutPage + 1) * FANOUT_PAGE_SIZE, fanouts.length) }}
+          of {{ fanouts.length }}
+        </span>
+        <button class="pd-pager-btn" :disabled="fanoutPage >= fanoutPageCount - 1" @click="fanoutPage++">Next ›</button>
+      </div>
+      <div v-if="!fanouts.length" class="pd-empty-inline" style="padding: 20px 0">
+        <Inbox :size="28" :stroke-width="1.5"/>
+        <p>No fan-out queries captured yet.</p>
       </div>
     </div>
 
@@ -191,11 +359,23 @@
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="(d, i) in topDomains" :key="d.apex_domain">
+              <TableRow
+                v-for="(d, i) in topDomains"
+                :key="d.apex_domain"
+                class="pd-domain-row"
+                :class="{ 'is-clickable': (d.sample_result_ids || []).length }"
+                @click="openCitingChats(d)"
+              >
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
                   <img :src="faviconFor(d.apex_domain)" :alt="d.domain" class="pd-favicon" @error="onFaviconError($event, d)"/>
-                  <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener">{{ d.apex_domain }}</a>
+                  <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener" @click.stop>{{ d.apex_domain }}</a>
+                  <span
+                    v-if="(d.sample_result_ids || []).length"
+                    class="pd-domain-cited"
+                  >
+                    · {{ d.sample_result_ids.length }} {{ d.sample_result_ids.length === 1 ? 'chat' : 'chats' }}
+                  </span>
                 </TableCell>
                 <TableCell class="num">{{ d.retrieved_pct }}%</TableCell>
                 <TableCell class="num">{{ d.citation_rate.toFixed(1) }}</TableCell>
@@ -261,11 +441,18 @@
             v-for="(c, ci) in recentChats"
             :key="c.result_id"
             class="pd-chat-row"
-            @click="openChat(ci)"
+            :class="{ 'is-clickable': c.status === 'complete' }"
+            @click="c.status === 'complete' && openChat(ci)"
           >
             <TableCell>
-              <span v-if="c.status === 'pending'" class="pd-chat-pending">Pending</span>
-              <span v-else class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
+              <span v-if="c.status === 'complete'" class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
+              <span v-else-if="c.status === 'unavailable'" class="pd-chat-state is-unavail">
+                Service unavailable<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
+              </span>
+              <span v-else-if="c.status === 'failed'" class="pd-chat-state is-failed">
+                Failed<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
+              </span>
+              <span v-else class="pd-chat-state is-pending">Awaiting response…</span>
             </TableCell>
             <TableCell>
               <span :class="c.brand_mentioned ? 'pd-yes' : 'pd-no'">{{ c.brand_mentioned ? 'Yes' : 'No' }}</span>
@@ -279,7 +466,7 @@
                   class="pd-model-dot"
                   :style="{ background: modelStyle(m).color }"
                   :title="modelStyle(m).label"
-                >{{ modelStyle(m).label[0] }}</span>
+                >{{ modelStyle(m).abbr }}</span>
               </span>
             </TableCell>
             <TableCell>
@@ -325,7 +512,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bar } from 'vue-chartjs'
 import {
@@ -340,22 +527,26 @@ import promptLibrary from '@/api/promptLibrary'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const MODELS = {
-  chatgpt: { label: 'ChatGPT', color: '#10a37f' },
-  perplexity: { label: 'Perplexity', color: '#8b5cf6' },
-  gemini: { label: 'Gemini', color: '#5b8def' },
-  claude: { label: 'Claude', color: '#f97316' },
-  copilot: { label: 'Copilot', color: '#06b6d4' },
-  grok: { label: 'Grok', color: '#0f172a' },
-  deepseek: { label: 'DeepSeek', color: '#2563eb' },
-  mistral: { label: 'Mistral', color: '#ef4444' },
-  cohere: { label: 'Cohere', color: '#d946ef' },
-  llama: { label: 'Llama', color: '#0ea5e9' },
-  nova: { label: 'Nova', color: '#64748b' },
+  chatgpt: { label: 'ChatGPT', abbr: 'GP', color: '#10a37f' },
+  perplexity: { label: 'Perplexity', abbr: 'Px', color: '#8b5cf6' },
+  gemini: { label: 'Gemini', abbr: 'Ge', color: '#5b8def' },
+  claude: { label: 'Claude', abbr: 'Cl', color: '#f97316' },
+  copilot: { label: 'Copilot', abbr: 'Co', color: '#06b6d4' },
+  grok: { label: 'Grok', abbr: 'Gk', color: '#0f172a' },
+  deepseek: { label: 'DeepSeek', abbr: 'Ds', color: '#2563eb' },
+  mistral: { label: 'Mistral', abbr: 'Mi', color: '#ef4444' },
+  cohere: { label: 'Cohere', abbr: 'Ch', color: '#d946ef' },
+  llama: { label: 'Llama', abbr: 'La', color: '#0ea5e9' },
+  nova: { label: 'Nova', abbr: 'No', color: '#64748b' },
 }
 function modelStyle(key) {
-  return MODELS[key] || { label: key || 'Model', color: '#94a3b8' }
+  const m = MODELS[key]
+  if (m) return m
+  const label = key || 'Model'
+  return { label, abbr: label.slice(0, 2), color: '#94a3b8' }
 }
 function flag(code) {
   if (!code || code.length !== 2) return '🌐'
@@ -365,8 +556,11 @@ function flag(code) {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
 const route = useRoute()
-const websiteId = route.params.websiteId
-const promptId = route.params.promptId
+// Read fresh from the route each access: Vue Router reuses this component
+// when navigating between two prompt-detail URLs (same route, different
+// param), so these must not be captured once at setup.
+let websiteId = route.params.websiteId
+let promptId = route.params.promptId
 
 const detail = ref(null)
 const loading = ref(true)
@@ -383,7 +577,274 @@ async function load() {
   } finally {
     loading.value = false
   }
+  // Fan-outs are an independent endpoint; ignore failures here so a
+  // missing crawl doesn't blank the rest of the page.
+  loadFanouts()
 }
+
+// First visit behaviour: if the prompt already has results, read them
+// straight from the DB. If it has never been scanned (no responses AND
+// no prior crawl run), trigger exactly one scan automatically so the
+// page fills itself instead of showing an empty state. Guarded so it
+// fires at most once per mount and never loops on a prompt whose scan
+// completed with no brands or failed.
+const autoScanDone = ref(false)
+const backfillDone = ref(false)
+const backfilling = ref(false)
+async function loadThenMaybeScan() {
+  await load()
+
+  // Backfill: if we already have responses captured but some were never
+  // run through brand extraction (old crawler rows), re-extract them once
+  // so the brand table fills in from data we already have — no re-query.
+  if (!backfillDone.value && (detail.value?.unextracted_count || 0) > 0) {
+    backfillDone.value = true
+    backfilling.value = true
+    try {
+      await promptLibrary.reextractPrompt(websiteId, promptId)
+      await load()
+    } catch {
+      /* non-fatal — leave the existing data in place */
+    } finally {
+      backfilling.value = false
+    }
+  }
+
+  if (autoScanDone.value || scanInFlight.value) return
+  const d = detail.value
+  if (!d) return
+
+  // If we land on a scan that's still running (e.g. one kicked off from
+  // another tab), poll so it resolves on screen and gets healed if stale,
+  // rather than ticking forever. We do NOT start a new scan here.
+  const liveStatus = d.latest_scan?.status
+  if (liveStatus === 'running' || liveStatus === 'pending') {
+    startScanPoll()
+    return
+  }
+
+  // Auto-fill gaps: scan when any configured model still has no answer
+  // for this prompt. The crawler skips models that already answered and
+  // retries a missing one once, so this only queries what's missing and
+  // stops once every configured model has responded. Bounded to once per
+  // mount so it can't loop on a genuinely broken model.
+  const missingConfigured = (d.by_model || []).some(
+    (m) => m.configured && (m.responses || 0) === 0,
+  )
+  if (missingConfigured) {
+    autoScanDone.value = true
+    runScan()
+  }
+}
+
+/* ── Fanouts ── */
+const fanouts = ref([])
+const lastFanoutRun = ref(null)
+
+/* Fan-out pagination — keep the list short, page through the rest. */
+const FANOUT_PAGE_SIZE = 5
+const fanoutPage = ref(0)
+const fanoutPageCount = computed(() => Math.ceil(fanouts.value.length / FANOUT_PAGE_SIZE) || 1)
+const pagedFanouts = computed(() => {
+  const start = fanoutPage.value * FANOUT_PAGE_SIZE
+  return fanouts.value
+    .slice(start, start + FANOUT_PAGE_SIZE)
+    .map((f, i) => ({ ...f, _n: start + i + 1 }))
+})
+async function loadFanouts() {
+  try {
+    const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
+    const payload = data?.data || data || {}
+    // Re-crawls append a fresh PromptFanout set, so the same sub-query
+    // text can repeat. De-dupe by normalised text, keeping first seen.
+    const seen = new Set()
+    fanouts.value = (payload.fanouts || []).filter((f) => {
+      const key = (f.text || '').trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    lastFanoutRun.value = payload.last_run || null
+    fanoutPage.value = 0
+  } catch {
+    fanouts.value = []
+    lastFanoutRun.value = null
+    fanoutPage.value = 0
+  }
+}
+
+/* ── Prompt metadata derivations ── */
+const promptTags = computed(() => {
+  const raw = detail.value?.prompt?.tags || []
+  return Array.isArray(raw) ? raw.filter(Boolean) : []
+})
+
+/* ── Rank distribution view-model ── */
+const rankBucketOrder = ['1', '2-3', '4-10', '11+']
+const rankBucketClassMap = { '1': 'is-1', '2-3': 'is-2-3', '4-10': 'is-4-10', '11+': 'is-11plus' }
+function rankBucketClass(r) { return rankBucketClassMap[r] || 'is-other' }
+const modelsWithRanks = computed(() => {
+  return (detail.value?.by_model || []).filter((m) => {
+    if (!m.rank_buckets) return false
+    return rankBucketOrder.some((r) => (m.rank_buckets[r] || 0) > 0)
+  })
+})
+
+// Completion summary for the Visibility-by-model section: how many of the
+// configured models have actually answered this prompt. Makes "0%"
+// unambiguous (answered, not mentioned) vs. work still in progress.
+const modelCompletion = computed(() => {
+  const models = (detail.value?.by_model || []).filter((m) => m.configured)
+  if (!models.length) return ''
+  const answered = models.filter((m) => (m.responses || 0) > 0).length
+  if (scanStatusKind.value === 'running') {
+    return `Scanning… ${answered}/${models.length} models answered`
+  }
+  return `${answered}/${models.length} models answered`
+})
+
+/* ── Domain drill-through ── */
+function openCitingChats(domain) {
+  const ids = domain?.sample_result_ids || []
+  if (!ids.length) return
+  const i = recentChats.value.findIndex((c) => c.result_id === ids[0])
+  if (i >= 0) openChat(i)
+}
+
+/* ── Run scan ── */
+const scanInFlight = ref(false)
+const scanQueued = ref(false)
+let scanPollTimer = null
+
+async function runScan() {
+  if (scanInFlight.value) return
+  scanInFlight.value = true
+  try {
+    const { data } = await promptLibrary.crawlPrompt(websiteId, promptId)
+    scanQueued.value = !!data?.queued
+    // Refresh the detail (the synchronous fallback path writes results
+    // immediately; the queued path needs polling until completed_at is set).
+    await load()
+    if (scanQueued.value) startScanPoll()
+  } catch (e) {
+    error.value = e?.displayMessage || 'Could not start the scan.'
+  } finally {
+    scanInFlight.value = false
+  }
+}
+
+function startScanPoll() {
+  stopScanPoll()
+  let elapsed = 0
+  scanPollTimer = setInterval(async () => {
+    elapsed += 1
+    try { await load() } catch { /* ignore polling failures */ }
+    const latest = detail.value?.latest_scan
+    const done = latest && (latest.status === 'completed' || latest.status === 'failed')
+    // Poll until the run resolves. The cap is past the backend's 10-minute
+    // staleness window (6s x 110 ≈ 11 min) so a scan that dies mid-run gets
+    // healed to "failed" on one of these reloads instead of ticking forever.
+    if (done || elapsed > 110) {
+      scanQueued.value = false
+      stopScanPoll()
+    }
+  }, 6000)
+}
+
+function stopScanPoll() {
+  if (scanPollTimer) { clearInterval(scanPollTimer); scanPollTimer = null }
+}
+
+/* ── Enable / disable ── */
+const toggleInFlight = ref(false)
+
+async function togglePromptActive() {
+  if (toggleInFlight.value) return
+  toggleInFlight.value = true
+  try {
+    if (detail.value?.status === 'active') {
+      await promptLibrary.disable(promptId)
+    } else {
+      await promptLibrary.enable(promptId)
+    }
+    await load()
+  } catch (e) {
+    error.value = e?.displayMessage || 'Could not update the prompt status.'
+  } finally {
+    toggleInFlight.value = false
+  }
+}
+
+/* ── Scan status line ──
+ * `nowTick` re-renders the elapsed duration once a second while a scan
+ * is running so the user sees the timer move without waiting for the
+ * 5s poll. The interval starts when the status enters running/pending
+ * and stops when it resolves.
+ */
+const nowTick = ref(Date.now())
+let elapsedTimer = null
+function startElapsedTimer() {
+  if (elapsedTimer) return
+  elapsedTimer = setInterval(() => { nowTick.value = Date.now() }, 1000)
+}
+function stopElapsedTimer() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null }
+}
+
+function formatDuration(seconds) {
+  if (seconds < 0 || !Number.isFinite(seconds)) return '0s'
+  if (seconds < 60) return `${Math.floor(seconds)}s`
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`
+  const h = Math.floor(m / 60)
+  const rm = m % 60
+  return rm ? `${h}h ${rm}m` : `${h}h`
+}
+
+const scanStatusKind = computed(() => {
+  if (scanInFlight.value) return 'running'
+  const s = detail.value?.latest_scan?.status
+  if (s === 'running' || s === 'pending') return 'running'
+  if (s === 'failed') return 'failed'
+  if (s === 'completed') return 'ok'
+  return ''
+})
+
+const scanStatusLine = computed(() => {
+  if (scanInFlight.value) return 'Triggering scan…'
+  const ls = detail.value?.latest_scan
+  if (!ls) return ''
+  if (ls.status === 'running' || ls.status === 'pending') {
+    const started = ls.started_at ? new Date(ls.started_at).getTime() : null
+    const elapsed = started ? Math.max(0, Math.floor((nowTick.value - started) / 1000)) : null
+    const label = ls.status === 'pending' ? 'queued' : 'running'
+    return elapsed != null
+      ? `Scan ${label} · ${formatDuration(elapsed)} elapsed`
+      : `Scan ${label}`
+  }
+  if (ls.status === 'completed') {
+    const ran = ls.started_at && ls.completed_at
+      ? Math.max(0, (new Date(ls.completed_at) - new Date(ls.started_at)) / 1000)
+      : null
+    const took = ran != null ? ` in ${formatDuration(ran)}` : ''
+    return `Last scan completed ${relativeTime(ls.completed_at)}${took}`
+  }
+  if (ls.status === 'failed') {
+    return `Last scan failed ${relativeTime(ls.completed_at || ls.started_at)}`
+  }
+  return ''
+})
+
+const scanErrorLine = computed(() => {
+  const ls = detail.value?.latest_scan
+  return ls?.status === 'failed' ? (ls.error || 'unknown error') : ''
+})
+
+watch(scanStatusKind, (kind) => {
+  if (kind === 'running') startElapsedTimer()
+  else stopElapsedTimer()
+}, { immediate: true })
 /* ── Recent chats + chat modal ── */
 const brandLabel = computed(() => detail.value?.brand_label || 'your brand')
 const recentChats = computed(() => detail.value?.recent_chats || [])
@@ -407,7 +868,35 @@ function relativeTime(iso) {
   return `${d}d ago`
 }
 
-onMounted(load)
+onMounted(loadThenMaybeScan)
+onBeforeUnmount(() => {
+  stopScanPoll()
+  stopElapsedTimer()
+})
+
+// Navigating between two prompt-detail URLs reuses this component, so
+// onMounted won't refire. Watch the route param and reload from scratch
+// when it changes (this is why a freshly created prompt kept showing the
+// previously-open prompt's data).
+watch(() => route.params.promptId, (newId, oldId) => {
+  if (!newId || newId === oldId) return
+  websiteId = route.params.websiteId
+  promptId = newId
+  // Reset per-prompt state so nothing leaks from the previous prompt.
+  detail.value = null
+  error.value = ''
+  fanouts.value = []
+  lastFanoutRun.value = null
+  autoScanDone.value = false
+  backfillDone.value = false
+  backfilling.value = false
+  scanQueued.value = false
+  chatOpen.value = false
+  chatIndex.value = 0
+  stopScanPoll()
+  stopElapsedTimer()
+  loadThenMaybeScan()
+})
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
 const promptTextShort = computed(() => {
@@ -424,6 +913,13 @@ const demandLevel = computed(() => {
 })
 
 const topBrands = computed(() => (detail.value?.brands || []).slice(0, 7))
+const succeededResponses = computed(() => {
+  // Sum of provider.responses across by_model — counts only cells that
+  // returned text, not failed/unavailable ones, so the banner accurately
+  // distinguishes "nothing has been tried" from "responses came back but
+  // no brand was extracted".
+  return (detail.value?.by_model || []).reduce((n, m) => n + (m.responses || 0), 0)
+})
 const topDomains = computed(() => detail.value?.top_domains || [])
 const domainTypes = computed(() => detail.value?.domain_types || [])
 
@@ -444,6 +940,37 @@ function sentimentClass(score) {
   if (score >= 70) return 'is-pos'
   if (score >= 50) return 'is-neu'
   return 'is-neg'
+}
+
+function modelsTip(models) {
+  const names = (models || []).map((mk) => modelStyle(mk).label)
+  if (!names.length) return 'Not named by any model'
+  return `Named by ${names.length} model${names.length === 1 ? '' : 's'}: ${names.join(', ')}`
+}
+
+function sentimentTip(score) {
+  const tone = score >= 70 ? 'positive' : score >= 50 ? 'neutral' : 'negative'
+  return `Sentiment ${score}/100 (${tone}). Averaged from how each model talks about this brand: `
+    + `positive mention = 85, neutral = 55, negative = 25.`
+}
+
+// Column-header explanations shown on hover.
+const HELP = {
+  visibility:
+    'Visibility: the share of answered model responses that mention this brand. '
+    + 'Example: named in 1 of 2 model answers = 50%. Failed/unavailable models are not counted.',
+  sov:
+    'Share of Voice: this brand’s mentions as a percentage of all brand mentions across every '
+    + 'model answer for this prompt. Shows how much of the conversation the brand owns vs. competitors.',
+  models:
+    'Models: which AI models named this brand for this prompt, and how many. A brand named by '
+    + 'more models has broader AI visibility and is harder to displace.',
+  sentiment:
+    'Sentiment: a 0–100 score for how models portray the brand. Each mention is scored '
+    + 'positive (85), neutral (55) or negative (25) by the analyzer and averaged. Higher is better.',
+  position:
+    'Position: the brand’s average rank when it appears in a model’s ranked list '
+    + '(#1 = listed first). Lower is better. Blank when no model ranked it in a list.',
 }
 
 const BRAND_COLORS = [
@@ -667,6 +1194,8 @@ function onFaviconError(ev, d) {
   border-bottom: 1px solid var(--border);
 }
 .pd-table th.num, .pd-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pd-th-help { cursor: help; border-bottom: 1px dotted var(--muted-foreground); }
+.pd-th-help sup { font-size: 0.7em; opacity: 0.6; margin-left: 1px; }
 .pd-table td {
   padding: 10px;
   color: var(--foreground);
@@ -688,6 +1217,11 @@ function onFaviconError(ev, d) {
 .pd-table a { color: var(--foreground); text-decoration: none; border-bottom: 1px solid transparent; }
 .pd-table a:hover { border-bottom-color: var(--muted-foreground); }
 
+.pd-brand-cell { display: inline-flex; align-items: center; gap: 8px; }
+.pd-brand-logo {
+  width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto;
+  object-fit: contain; background: var(--muted);
+}
 .pd-brand-name { font-weight: 500; }
 .pd-self-pill {
   display: inline-block;
@@ -774,6 +1308,220 @@ function onFaviconError(ev, d) {
 .pd-crawl-btn:hover { opacity: 0.92; }
 .pd-crawl-btn:disabled { opacity: 0.55; cursor: progress; }
 
+.pd-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pd-toggle-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pd-toggle-btn:hover { background: var(--muted); }
+.pd-toggle-btn:disabled { opacity: 0.55; cursor: progress; }
+.pd-toggle-btn.is-active {
+  color: color-mix(in oklab, var(--destructive, #ef4444) 80%, var(--foreground));
+  border-color: color-mix(in oklab, var(--destructive, #ef4444) 35%, var(--border));
+}
+
+.pd-scan-status {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 999px;
+}
+.pd-scan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+.pd-scan-status.is-running .pd-scan-dot {
+  background: var(--chart-1, #5b8def);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--chart-1, #5b8def) 20%, transparent);
+  animation: pdScanPulse 1.6s ease-in-out infinite;
+}
+.pd-scan-status.is-ok .pd-scan-dot { background: var(--chart-2, #22c55e); }
+.pd-scan-status.is-failed .pd-scan-dot { background: var(--destructive, #ef4444); }
+.pd-scan-status.is-failed { color: color-mix(in oklab, var(--destructive, #ef4444) 70%, var(--foreground)); }
+.pd-scan-error { font-style: italic; opacity: 0.85; }
+@keyframes pdScanPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Effectiveness + tags + template metadata */
+.pd-meta-extra {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pd-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pd-tag-chip {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+.pd-template-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+.pd-template-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+.pd-template-text {
+  padding: 3px 8px;
+  background: var(--muted);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+/* Service-unavailable cell */
+.pd-bymodel-unavail {
+  color: color-mix(in oklab, var(--destructive, #ef4444) 70%, var(--foreground)) !important;
+  font-style: italic;
+}
+
+/* Rank distribution */
+.pd-rank-dist {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pd-rank-dist-head {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.pd-rank-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.pd-rank-row-label {
+  font-size: 0.82rem;
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pd-model-dot-sm {
+  width: 18px;
+  height: 18px;
+  font-size: 7.5px;
+}
+.pd-rank-stack {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--muted);
+}
+.pd-rank-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 0;
+}
+.pd-rank-seg.is-1     { background: color-mix(in oklab, var(--chart-2, #22c55e) 100%, transparent); }
+.pd-rank-seg.is-2-3   { background: color-mix(in oklab, var(--chart-2, #22c55e)  65%, transparent); }
+.pd-rank-seg.is-4-10  { background: color-mix(in oklab, var(--chart-3, #f59e0b)  75%, transparent); }
+.pd-rank-seg.is-11plus { background: color-mix(in oklab, var(--muted-foreground)  70%, transparent); }
+.pd-rank-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+.pd-rank-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.pd-rank-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+.pd-rank-legend-dot.is-1     { background: var(--chart-2, #22c55e); }
+.pd-rank-legend-dot.is-2-3   { background: color-mix(in oklab, var(--chart-2, #22c55e) 65%, transparent); }
+.pd-rank-legend-dot.is-4-10  { background: var(--chart-3, #f59e0b); }
+.pd-rank-legend-dot.is-11plus { background: var(--muted-foreground); }
+
+/* Fanout items */
+.pd-fanout-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pd-fanout-item:last-child { border-bottom: none; }
+.pd-fanout-num {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+.pd-pager {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 12px; padding: 10px 8px 2px;
+}
+.pd-pager-info { font-size: 0.78rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.pd-pager-btn {
+  font-size: 0.8rem; padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--panel, transparent); color: var(--foreground); cursor: pointer;
+}
+.pd-pager-btn:hover:not(:disabled) { background: var(--muted); }
+.pd-pager-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Domain drill-through */
+.pd-domain-row.is-clickable { cursor: pointer; }
+.pd-domain-row.is-clickable:hover { background: var(--muted); }
+.pd-domain-cited {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
 .pd-fanout-list { display: flex; flex-direction: column; gap: 2px; }
 .pd-fanout-row {
   display: grid;
@@ -818,6 +1566,11 @@ function onFaviconError(ev, d) {
   font-size: 0.88rem; color: var(--muted-foreground);
 }
 .pd-empty-banner strong { color: var(--foreground); }
+.pd-empty-note {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  padding: 2px 2px 6px;
+}
 
 /* Visibility by model */
 .pd-bymodel { display: flex; flex-direction: column; gap: 10px; }
@@ -834,23 +1587,37 @@ function onFaviconError(ev, d) {
 .pd-bymodel-val { width: 48px; text-align: right; font-size: 0.85rem; font-variant-numeric: tabular-nums; color: var(--foreground); }
 .pd-bymodel-na { flex: 1; font-size: 0.82rem; color: var(--muted-foreground); }
 .pd-bymodel-nodata { font-style: italic; }
+.pd-bymodel-scanning { color: var(--chart-1, #5b8def); font-style: italic; }
+.pd-bymodel-done {
+  font-size: 0.72rem;
+  color: var(--chart-2, #22c55e);
+  white-space: nowrap;
+}
+.pd-completion { color: var(--muted-foreground); }
+.pd-completion.is-busy { color: var(--chart-1, #5b8def); }
 
 /* Recent chats */
-.pd-chat-row { cursor: pointer; }
-.pd-chat-row:hover { background: var(--muted); }
+.pd-chat-row.is-clickable { cursor: pointer; }
+.pd-chat-row.is-clickable:hover { background: var(--muted); }
 .pd-chat-preview {
-  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
-  overflow: hidden; color: var(--foreground); font-size: 0.88rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: var(--foreground); font-size: 0.88rem; line-height: 1.4;
 }
-.pd-chat-pending { font-size: 0.8rem; color: var(--muted-foreground); }
+.pd-chat-state { font-size: 0.8rem; }
+.pd-chat-state.is-pending { color: var(--muted-foreground); font-style: italic; }
+.pd-chat-state.is-unavail { color: color-mix(in oklab, #f59e0b 75%, var(--foreground)); }
+.pd-chat-state.is-failed { color: #ef4444; }
+.pd-chat-state-detail { color: var(--muted-foreground); font-style: italic; }
 .pd-yes { color: var(--chart-2, #22c55e); font-weight: 600; font-size: 0.82rem; }
 .pd-no { color: #ef4444; font-weight: 600; font-size: 0.82rem; }
 .pd-icon-row { display: inline-flex; align-items: center; gap: 4px; }
 .pd-model-dot {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 9999px; color: #fff;
-  font-size: 9px; font-weight: 700;
+  width: 20px; height: 20px; border-radius: 9999px; color: #fff;
+  font-size: 8.5px; font-weight: 700; letter-spacing: -0.02em;
 }
+.pd-models-cell { display: inline-flex; align-items: center; gap: 3px; }
+.pd-models-count { font-size: 0.72rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; margin-left: 2px; }
 .pd-fav { width: 16px; height: 16px; border-radius: 3px; }
 .pd-more, .pd-muted { font-size: 0.75rem; color: var(--muted-foreground); }
 .pd-error { padding: 20px; text-align: center; color: var(--destructive); }

@@ -183,8 +183,6 @@
           <span class="marquee-sep">·</span>
           <span class="marquee-item">Perplexity</span>
           <span class="marquee-sep">·</span>
-          <span class="marquee-item">DeepSeek (synthesis)</span>
-          <span class="marquee-sep">·</span>
           <!-- duplicate for seamless loop -->
           <span class="marquee-item is-label">Trusted Probes</span>
           <span class="marquee-sep">·</span>
@@ -195,8 +193,6 @@
           <span class="marquee-item">Google Gemini</span>
           <span class="marquee-sep">·</span>
           <span class="marquee-item">Perplexity</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">DeepSeek (synthesis)</span>
           <span class="marquee-sep">·</span>
         </div>
       </div>
@@ -1034,9 +1030,10 @@ const features = [
 ]
 
 const steps = [
-  { title: 'Add Your Website', desc: 'Enter your domain and we generate a tracking pixel instantly.' },
-  { title: 'Install the Pixel', desc: 'Copy one line of JavaScript into your site header — takes 30 seconds.' },
-  { title: 'Watch Insights Flow', desc: 'Real-time analytics and AI insights appear immediately.' },
+  { title: 'Add Your Brand', desc: 'Drop in your domain and the competitors you want to track. We map your category instantly.' },
+  { title: 'Pick Your Prompts', desc: 'We mine real buyer questions from Reddit, Quora, and search trends — you approve the set you want to rank for.' },
+  { title: 'Watch LLM Visibility', desc: 'We run those prompts across every major LLM and stream back where you show up, where competitors win, and which sources shape the answers.' },
+  { title: 'Export & Share', desc: 'Push clean .csv exports, refresh-on-demand Looker Studio dashboards, or pipe everything through the API into your stack.' },
 ]
 
 const plans = [
@@ -1081,12 +1078,12 @@ const showcaseFeatures = [
   {
     key: 'prompt',
     eyebrow: 'PROMPT LIBRARY',
-    headline: 'Test what your customers actually ask AI.',
-    desc: "We mine real demand from Reddit, Quora, and search trends, then let DeepSeek paraphrase variations. Your audit set looks like real user questions, not SEO listicles.",
+    headline: 'Rank where your buyers actually ask.',
+    desc: "GEO is the new SEO. Large language models don't rank pages — they rank mentions. Prompt Library gives you the exact prompts your customers type into AI, weighted by real demand, so you optimize for what's actually being asked.",
     bullets: [
-      'Real demand mined from Reddit, Quora, and Google Trends',
-      'DeepSeek-generated paraphrase variants for coverage',
-      'Style + length chips to match how buyers actually search',
+      'Demand-weighted prompts pulled from real buyer signal',
+      'Full variant coverage — comparisons, how-tos, vs, local intent',
+      'Live visibility scoring across every major LLM',
     ],
   },
   {
@@ -1104,22 +1101,22 @@ const showcaseFeatures = [
     key: 'source',
     eyebrow: 'SOURCE INFLUENCE',
     headline: 'See exactly where each LLM gets its answers in your category.',
-    desc: "Perplexity reads from Reddit. Gemini leans on news. Claude favours Wikipedia. Knowing which source a model trusts is half the battle.",
+    desc: "Every model has a personality — Perplexity leans on Reddit, Gemini reaches for news, Claude trusts Wikipedia. Source Influence maps the citation footprint behind every answer in your space, so you know where to show up and where you're invisible.",
     bullets: [
       'Per-provider source mix breakdown',
       'Citation confidence scoring',
-      'Spot which Reddit threads or articles dominate',
+      'Dominant Reddit threads and articles surfaced',
     ],
   },
   {
     key: 'studio',
     eyebrow: 'CONTENT STUDIO',
-    headline: 'Auto-draft the content that closes your gaps. Publish in one click.',
-    desc: "We turn each visibility gap into a brief, draft it grounded in your verified Brand Vault facts, and publish to WordPress / Webflow / Shopify / HubSpot. Re-probe in 14 days, attribute the lift.",
+    headline: 'Turn AI search data into reports people actually read.',
+    desc: "Group every brand in your category into Leaders, Niche Players, Laggers, and Controversial. Visibility, sentiment, and position on one canvas — the shape of the market at a glance, ready to share with your team or your clients.",
     bullets: [
-      'Brand Vault-grounded drafts (no hallucinations)',
-      'One-click publish to WordPress, Webflow, Shopify, HubSpot',
-      'Re-probe in 14 days to attribute the lift',
+      'Clean .csv exports in seconds',
+      'Looker Studio connector for client-ready dashboards',
+      'API access to pipe insights into your stack',
     ],
   },
 ]
@@ -1199,16 +1196,20 @@ const sourceShares = [
 
 /* ── FAQ items ── */
 const faqItems = [
-  { q: 'Is this just SEO with extra steps?',
-    a: 'No. SEO measures Google rankings; we measure how often AI assistants like ChatGPT mention you in their answers. Separate signal, separate playbook.' },
-  { q: 'How is this different from Bluefish or Evertune?',
-    a: 'We measure AND generate the content to close gaps. They diagnose, you hire writers. We give you SMB-friendly pricing and the full loop.' },
-  { q: 'Will using DeepSeek for synthesis affect the audit results?',
-    a: 'No. Audits run only against the four target LLMs (Claude, GPT-4, Gemini, Perplexity). DeepSeek is used purely for cheap offline tooling.' },
-  { q: 'Do I need to install a tracking pixel?',
-    a: 'No. We probe LLMs directly via API. Connect your website URL and we crawl it for Brand Vault facts, but no script lives on your site.' },
+  { q: 'Is GEO just SEO with extra steps?',
+    a: 'No. SEO ranks pages on Google. GEO ranks mentions inside LLM answers — different signals, different sources, different playbook.' },
+  { q: 'How is this different from other GEO tools?',
+    a: 'Most tools track rankings. We mine the prompts buyers actually ask, score the sources each LLM trusts, and show you exactly where to win citations — not just where you sit today.' },
+  { q: 'Which LLMs do you track?',
+    a: 'All the major ones your buyers are actually asking. New providers get added as they hit real usage.' },
+  { q: 'Do I need to install anything on my site?',
+    a: 'No pixel, no script, no code. Add your domain and we start tracking visibility from the outside in — the same way an LLM sees you.' },
+  { q: 'How often is the data refreshed?',
+    a: "Prompts are re-run continuously, so visibility, sentiment, and citations reflect what LLMs are saying right now — not a snapshot from last week." },
   { q: 'How accurate are the citations?',
-    a: 'Perplexity and Gemini grounded mode return native citations, so 100% accurate there. Claude and GPT-4 are extracted via regex + LLM-assisted parsing; we mark each citation with a confidence score.' },
+    a: "Every cited source is captured directly from the model's response and scored by influence, so you see not just what's cited but how much weight it carries." },
+  { q: 'Can I share the data with my team or clients?',
+    a: 'Yes — export to .csv, plug into Looker Studio, or pull through the API into whatever stack you already report in.' },
 ]
 
 /* ── Animated count-up stats ── */

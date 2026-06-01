@@ -18,26 +18,6 @@ const props = defineProps({
 
 const resolution = ref('day')
 
-// Placeholder series shaped like a visibility-over-time view.
-// Replaced by `series` prop once the analytics chart endpoint is wired.
-const SAMPLE = {
-  day: {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    brand: [38, 41, 39, 44, 47, 45, 48],
-    competitor: [52, 50, 51, 49, 48, 47, 46],
-  },
-  week: {
-    labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'],
-    brand: [31, 34, 36, 35, 39, 42, 44, 47],
-    competitor: [55, 54, 52, 53, 50, 49, 48, 46],
-  },
-  month: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    brand: [22, 27, 31, 36, 41, 47],
-    competitor: [58, 56, 53, 51, 49, 46],
-  },
-}
-
 function cssVar(name, fallback) {
   if (typeof window === 'undefined') return fallback
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -62,7 +42,12 @@ function gradientFor(color) {
   }
 }
 
-const active = computed(() => (props.series?.[resolution.value]) || SAMPLE[resolution.value])
+const active = computed(() => props.series?.[resolution.value] || null)
+
+const hasData = computed(() => {
+  const a = active.value
+  return Boolean(a && Array.isArray(a.brand) && a.brand.length > 0)
+})
 
 const chartData = computed(() => {
   const c1 = cssVar('--chart-1', '#5b8def')
@@ -138,7 +123,7 @@ const chartOptions = computed(() => {
 
 // Trend summary for the footer (shadcn area-chart pattern).
 const trend = computed(() => {
-  const b = active.value.brand
+  const b = active.value?.brand
   if (!b?.length) return { dir: 'up', pct: '0.0' }
   const first = b[0] || 1
   const last = b[b.length - 1]
@@ -170,10 +155,16 @@ const rangeLabel = computed(() => ({
     </CardHeader>
     <CardContent>
       <div class="h-72">
-        <Line :data="chartData" :options="chartOptions" />
+        <Line v-if="hasData" :data="chartData" :options="chartOptions" />
+        <div v-else class="flex h-full flex-col items-center justify-center text-center">
+          <div class="text-sm font-medium text-card-foreground">Nothing to show yet</div>
+          <div class="mt-1 max-w-xs text-xs text-muted-foreground">
+            We need at least one completed audit to chart your visibility over time. Run an audit and your share of AI answers will start appearing here.
+          </div>
+        </div>
       </div>
     </CardContent>
-    <CardFooter class="flex-col items-start gap-2 text-sm">
+    <CardFooter v-if="hasData" class="flex-col items-start gap-2 text-sm">
       <div class="flex items-center gap-1.5 font-medium text-card-foreground">
         <template v-if="trend.dir === 'up'">
           Trending up by {{ trend.pct }}% this period <TrendingUp class="size-4" />

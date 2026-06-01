@@ -1,19 +1,9 @@
 <script setup>
-import { computed } from 'vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const props = defineProps({
   activity: { type: Array, default: () => [] },
 })
-
-const FALLBACK = [
-  { text: 'Brand mentioned in 12 new AI answers', time: '2 hours ago', color: 'var(--chart-2)' },
-  { text: 'Visibility up 6.2% week-over-week', time: '5 hours ago', color: 'var(--chart-1)' },
-  { text: 'New competitor prompt detected', time: 'Yesterday', color: 'var(--chart-3)' },
-  { text: 'Content draft generated for review', time: '2 days ago', color: 'var(--chart-4)' },
-]
-
-const items = computed(() => (props.activity?.length ? props.activity : FALLBACK))
 </script>
 
 <template>
@@ -22,9 +12,9 @@ const items = computed(() => (props.activity?.length ? props.activity : FALLBACK
       <CardTitle class="text-base">Recent Activity</CardTitle>
     </CardHeader>
     <CardContent class="pt-0">
-      <div class="flex flex-col">
+      <div v-if="props.activity.length" class="flex flex-col">
         <div
-          v-for="item in items"
+          v-for="item in props.activity"
           :key="item.text"
           class="flex items-start gap-3 border-b border-border py-3 last:border-0"
         >
@@ -36,6 +26,12 @@ const items = computed(() => (props.activity?.length ? props.activity : FALLBACK
             <div class="text-sm font-semibold text-card-foreground">{{ item.text }}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{{ item.time }}</div>
           </div>
+        </div>
+      </div>
+      <div v-else class="py-8 text-center">
+        <div class="text-sm font-medium text-card-foreground">No activity yet</div>
+        <div class="mt-1 text-xs text-muted-foreground">
+          Run your first audit and events will land here.
         </div>
       </div>
     </CardContent>
