@@ -107,9 +107,8 @@
       <strong>No scan data for this prompt yet.</strong>
       <span>Charts and brands populate once a scan runs. Triggering one above will query every configured model with this prompt.</span>
     </div>
-    <div v-else-if="detail && !topBrands.length" class="pd-empty-banner is-soft">
-      <strong>{{ succeededResponses }} model {{ succeededResponses === 1 ? 'response' : 'responses' }} captured, but the extractor didn't find any known brand in them.</strong>
-      <span>This usually means the answers were generic or your brand and competitors weren't named. Open Recent chats below to read the raw responses.</span>
+    <div v-else-if="detail && !topBrands.length" class="pd-empty-note">
+      {{ succeededResponses }} {{ succeededResponses === 1 ? 'response' : 'responses' }} captured — no known brand named. See Recent chats below.
     </div>
 
     <!-- Overview: Visibility chart + Top brands table -->
@@ -1353,9 +1352,10 @@ function onFaviconError(ev, d) {
   font-size: 0.88rem; color: var(--muted-foreground);
 }
 .pd-empty-banner strong { color: var(--foreground); }
-.pd-empty-banner.is-soft {
-  background: color-mix(in oklab, var(--chart-1, #5b8def) 8%, transparent);
-  border-color: color-mix(in oklab, var(--chart-1, #5b8def) 25%, var(--border));
+.pd-empty-note {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  padding: 2px 2px 6px;
 }
 
 /* Visibility by model */
