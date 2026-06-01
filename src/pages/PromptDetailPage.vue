@@ -572,6 +572,16 @@ async function loadThenMaybeScan() {
   if (autoScanDone.value || scanInFlight.value) return
   const d = detail.value
   if (!d) return
+
+  // If we land on a scan that's still running (e.g. one kicked off from
+  // another tab), poll so it resolves on screen and gets healed if stale,
+  // rather than ticking forever. We do NOT start a new scan here.
+  const liveStatus = d.latest_scan?.status
+  if (liveStatus === 'running' || liveStatus === 'pending') {
+    startScanPoll()
+    return
+  }
+
   const hasResponses = (d.by_model || []).some((m) => (m.responses || 0) > 0)
   const everScanned = !!d.latest_scan
   if (!hasResponses && !everScanned) {
@@ -658,11 +668,14 @@ function startScanPoll() {
     try { await load() } catch { /* ignore polling failures */ }
     const latest = detail.value?.latest_scan
     const done = latest && (latest.status === 'completed' || latest.status === 'failed')
-    if (done || elapsed > 24) {  // give up after ~2 minutes (24 x 5s)
+    // Poll until the run resolves. The cap is past the backend's 10-minute
+    // staleness window (6s x 110 ≈ 11 min) so a scan that dies mid-run gets
+    // healed to "failed" on one of these reloads instead of ticking forever.
+    if (done || elapsed > 110) {
       scanQueued.value = false
       stopScanPoll()
     }
-  }, 5000)
+  }, 6000)
 }
 
 function stopScanPoll() {
