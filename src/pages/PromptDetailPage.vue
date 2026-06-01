@@ -398,11 +398,18 @@
             v-for="(c, ci) in recentChats"
             :key="c.result_id"
             class="pd-chat-row"
-            @click="openChat(ci)"
+            :class="{ 'is-clickable': c.status === 'complete' }"
+            @click="c.status === 'complete' && openChat(ci)"
           >
             <TableCell>
-              <span v-if="c.status === 'pending'" class="pd-chat-pending">Pending</span>
-              <span v-else class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
+              <span v-if="c.status === 'complete'" class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
+              <span v-else-if="c.status === 'unavailable'" class="pd-chat-state is-unavail">
+                Service unavailable<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
+              </span>
+              <span v-else-if="c.status === 'failed'" class="pd-chat-state is-failed">
+                Failed<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
+              </span>
+              <span v-else class="pd-chat-state is-pending">Awaiting response…</span>
             </TableCell>
             <TableCell>
               <span :class="c.brand_mentioned ? 'pd-yes' : 'pd-no'">{{ c.brand_mentioned ? 'Yes' : 'No' }}</span>
@@ -1375,13 +1382,17 @@ function onFaviconError(ev, d) {
 .pd-bymodel-nodata { font-style: italic; }
 
 /* Recent chats */
-.pd-chat-row { cursor: pointer; }
-.pd-chat-row:hover { background: var(--muted); }
+.pd-chat-row.is-clickable { cursor: pointer; }
+.pd-chat-row.is-clickable:hover { background: var(--muted); }
 .pd-chat-preview {
-  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
-  overflow: hidden; color: var(--foreground); font-size: 0.88rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: var(--foreground); font-size: 0.88rem; line-height: 1.4;
 }
-.pd-chat-pending { font-size: 0.8rem; color: var(--muted-foreground); }
+.pd-chat-state { font-size: 0.8rem; }
+.pd-chat-state.is-pending { color: var(--muted-foreground); font-style: italic; }
+.pd-chat-state.is-unavail { color: color-mix(in oklab, #f59e0b 75%, var(--foreground)); }
+.pd-chat-state.is-failed { color: #ef4444; }
+.pd-chat-state-detail { color: var(--muted-foreground); font-style: italic; }
 .pd-yes { color: var(--chart-2, #22c55e); font-weight: 600; font-size: 0.82rem; }
 .pd-no { color: #ef4444; font-weight: 600; font-size: 0.82rem; }
 .pd-icon-row { display: inline-flex; align-items: center; gap: 4px; }
