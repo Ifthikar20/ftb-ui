@@ -102,10 +102,14 @@
       </div>
     </div>
 
-    <!-- No scan data yet for this prompt. -->
-    <div v-if="detail && !detail.total_responses" class="pd-empty-banner">
+    <!-- Empty / extractor-blanked banners -->
+    <div v-if="detail && !succeededResponses" class="pd-empty-banner">
       <strong>No scan data for this prompt yet.</strong>
-      <span>Charts and brands populate once a scan runs. New prompts are scanned automatically — this needs at least one configured model with web search enabled. Check back in a moment.</span>
+      <span>Charts and brands populate once a scan runs. Triggering one above will query every configured model with this prompt.</span>
+    </div>
+    <div v-else-if="detail && !topBrands.length" class="pd-empty-banner is-soft">
+      <strong>{{ succeededResponses }} model {{ succeededResponses === 1 ? 'response' : 'responses' }} captured, but the extractor didn't find any known brand in them.</strong>
+      <span>This usually means the answers were generic or your brand and competitors weren't named. Open Recent chats below to read the raw responses.</span>
     </div>
 
     <!-- Overview: Visibility chart + Top brands table -->
@@ -132,7 +136,10 @@
           <Bar v-if="chartData" :data="chartData" :options="chartOptions" />
           <div v-else class="pd-empty-inline">
             <Inbox :size="32" :stroke-width="1.5"/>
-            <p>No model responses yet for this prompt.</p>
+            <p v-if="succeededResponses">
+              {{ succeededResponses }} response{{ succeededResponses === 1 ? '' : 's' }} captured, but no brand was named in any of them.
+            </p>
+            <p v-else>No model responses yet for this prompt.</p>
           </div>
         </div>
       </div>
@@ -691,6 +698,13 @@ const demandLevel = computed(() => {
 })
 
 const topBrands = computed(() => (detail.value?.brands || []).slice(0, 7))
+const succeededResponses = computed(() => {
+  // Sum of provider.responses across by_model — counts only cells that
+  // returned text, not failed/unavailable ones, so the banner accurately
+  // distinguishes "nothing has been tried" from "responses came back but
+  // no brand was extracted".
+  return (detail.value?.by_model || []).reduce((n, m) => n + (m.responses || 0), 0)
+})
 const topDomains = computed(() => detail.value?.top_domains || [])
 const domainTypes = computed(() => detail.value?.domain_types || [])
 
@@ -1296,6 +1310,10 @@ function onFaviconError(ev, d) {
   font-size: 0.88rem; color: var(--muted-foreground);
 }
 .pd-empty-banner strong { color: var(--foreground); }
+.pd-empty-banner.is-soft {
+  background: color-mix(in oklab, var(--chart-1, #5b8def) 8%, transparent);
+  border-color: color-mix(in oklab, var(--chart-1, #5b8def) 25%, var(--border));
+}
 
 /* Visibility by model */
 .pd-bymodel { display: flex; flex-direction: column; gap: 10px; }
