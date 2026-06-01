@@ -50,7 +50,7 @@
             <div class="probe-prompt">
               <span class="probe-prompt-label">Prompt</span>
               <span class="probe-prompt-text">
-                <span class="probe-typer">Best email marketing tool for D2C brands?</span>
+                <span class="probe-typer" :key="scenarioIdx">{{ probePrompt }}</span>
                 <span class="probe-caret"></span>
               </span>
             </div>
@@ -59,7 +59,7 @@
             <div class="probe-grid">
               <div
                 v-for="(p, idx) in probeReplies"
-                :key="p.key"
+                :key="scenarioIdx + ':' + p.key"
                 class="probe-card"
                 :class="'is-' + p.key"
                 :style="{ '--d': (idx * 0.45) + 's' }"
@@ -106,59 +106,6 @@
               </div>
             </div>
 
-            <!-- Summary footer: ring + four count-up metric tiles -->
-            <div class="probe-foot">
-              <div class="probe-ring" aria-hidden="true">
-                <svg viewBox="0 0 36 36">
-                  <defs>
-                    <linearGradient id="probe-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%"  stop-color="#ff6b35"/>
-                      <stop offset="100%" stop-color="#ff9d6b"/>
-                    </linearGradient>
-                  </defs>
-                  <circle class="probe-ring-bg" cx="18" cy="18" r="15.9"/>
-                  <circle class="probe-ring-fg" cx="18" cy="18" r="15.9"/>
-                </svg>
-                <span class="probe-ring-num">{{ animatedMetrics.visibility }}<i>%</i></span>
-              </div>
-              <div class="probe-foot-copy">
-                <div class="probe-foot-h">Visibility score</div>
-                <div class="probe-foot-sub">
-                  Your brand surfaced in
-                  <strong>{{ animatedMetrics.visibility }}%</strong>
-                  of category prompts
-                  <span class="probe-delta">{{ probeMetrics.visibility.delta }} this week</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- New: live stats strip — four tiles, staggered fade-up. -->
-            <div class="probe-stats">
-              <div class="probe-stat" style="--d: 1.9s">
-                <div class="probe-stat-h">Mentions</div>
-                <div class="probe-stat-v">{{ animatedMetrics.mentions }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.mentions.delta }}</div>
-              </div>
-              <div class="probe-stat" style="--d: 2.05s">
-                <div class="probe-stat-h">Avg position</div>
-                <div class="probe-stat-v">{{ animatedMetrics.avgPosition.toFixed(1) }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.avgPosition.delta }}</div>
-              </div>
-              <div class="probe-stat" style="--d: 2.2s">
-                <div class="probe-stat-h">Citations</div>
-                <div class="probe-stat-v">{{ animatedMetrics.citations }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.citations.delta }}</div>
-              </div>
-              <div
-                class="probe-stat"
-                style="--d: 2.35s"
-                title="Position-Adjusted Word Count — paper eq. 3. Fraction of the AI response that cites your brand, weighted by sentence position."
-              >
-                <div class="probe-stat-h">Imp<sub>pwc</sub></div>
-                <div class="probe-stat-v">{{ animatedMetrics.impPwc.toFixed(2) }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.impPwc.delta }}</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -547,39 +494,6 @@ const activeCat = ref(0)
 const trackOffset = ref(0)
 const trackRef = ref(null)
 
-// ── Hero metric count-up ─────────────────────────────────────────
-// Framer-Motion-style spring-eased ramp from 0 → target on mount.
-// Built without a dep — single rAF loop, easeOutCubic over 1.4s, kicks
-// in 600ms after the card cascade ends so the eye lands on the new
-// value just as the user finishes reading the prompt.
-const animatedMetrics = ref({
-  visibility: 0, mentions: 0, avgPosition: 0, citations: 0, impPwc: 0,
-})
-let _metricRaf = null
-
-function _easeOutCubic(t) { return 1 - Math.pow(1 - t, 3) }
-
-function _animateMetrics() {
-  // probeMetrics is declared later in this script setup — read it
-  // lazily inside the closure so the temporal-dead-zone doesn't bite.
-  const targets = probeMetrics
-  const start = performance.now() + 600
-  const dur = 1400
-  function tick(now) {
-    const elapsed = Math.max(0, now - start)
-    const t = Math.min(1, elapsed / dur)
-    const e = _easeOutCubic(t)
-    animatedMetrics.value = {
-      visibility:  +(targets.visibility.value  * e).toFixed(0),
-      mentions:    +(targets.mentions.value    * e).toFixed(0),
-      avgPosition: +(targets.avgPosition.value * e).toFixed(1),
-      citations:   +(targets.citations.value   * e).toFixed(0),
-      impPwc:      +(targets.impPwc.value      * e).toFixed(2),
-    }
-    if (t < 1) _metricRaf = requestAnimationFrame(tick)
-  }
-  _metricRaf = requestAnimationFrame(tick)
-}
 
 // Magnetic-tilt for the four AI reply cards. CSS-only transform —
 // JS just sets two custom props off pointer position so the
@@ -806,7 +720,7 @@ onMounted(() => {
   startCycle()
   runTypewriter()
   startFeatureAutoAdvance()
-  _animateMetrics()
+  startScenarioCycle()
 
   // Count-up stats observer
   let statsObs = null
@@ -842,7 +756,7 @@ onMounted(() => {
     finalObs && finalObs.disconnect()
     clearInterval(cycleTimer)
     stopFeatureAutoAdvance()
-    if (_metricRaf) cancelAnimationFrame(_metricRaf)
+    if (scenarioTimer) clearInterval(scenarioTimer)
     if (_promptCycleStop) _promptCycleStop()
   })
 
@@ -859,65 +773,155 @@ const heroProviders = [
   { key: 'perplexity', name: 'Perplexity', pct: 64, cited: 21, sources: 'Reddit · Quora · Stack Overflow' },
 ]
 
-// Hero "probe" animation — shows the FetchBot loop: ask a prompt,
-// four AIs answer, your brand surfaces in each reply.
-// `sources` is `{label, domain}` so we can render the real favicon
-// for each citation chip via Google's favicon CDN.
-const probeReplies = [
+// Hero "probe" animation — cycles through a handful of category prompts,
+// each with its own set of model answers. Sources are `{label, domain}`
+// so we render the real favicon via Google's favicon CDN.
+const probeScenarios = [
   {
-    key: 'anthropic', name: 'Claude',
-    before: 'For D2C teams under 50k subscribers I usually point people to ',
-    brand: 'Tidewater',
-    after: '. Deliverability is solid and the segmentation builder is forgiving.',
-    sources: [
-      { label: 'Reddit',     domain: 'reddit.com' },
-      { label: 'TechCrunch', domain: 'techcrunch.com' },
-      { label: 'Wikipedia',  domain: 'wikipedia.org' },
+    prompt: 'Best email marketing tool for D2C brands?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For D2C teams under 50k subscribers I usually point people to ',
+        brand: 'Tidewater',
+        after: '. Deliverability is solid and the segmentation builder is forgiving.',
+        sources: [
+          { label: 'Reddit',     domain: 'reddit.com' },
+          { label: 'TechCrunch', domain: 'techcrunch.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A solid pick for direct-to-consumer ESPs is ',
+        brand: 'Tidewater',
+        after: ' — Shopify-native with AMP-email support.',
+        sources: [
+          { label: 'NYT',    domain: 'nytimes.com' },
+          { label: 'Medium', domain: 'medium.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Most 2026 benchmarks single out ',
+        brand: 'Tidewater',
+        after: ' for flow automation without vendor lock-in.',
+        sources: [
+          { label: 'Bloomberg', domain: 'bloomberg.com' },
+          { label: 'BBC',       domain: 'bbc.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'Top community recommendation is ',
+        brand: 'Tidewater',
+        after: '. Cited often for cleaner SMS hand-off.',
+        sources: [
+          { label: 'Quora',          domain: 'quora.com' },
+          { label: 'Stack Overflow', domain: 'stackoverflow.com' },
+        ],
+      },
     ],
   },
   {
-    key: 'openai', name: 'GPT-4',
-    before: 'A solid pick for direct-to-consumer ESPs is ',
-    brand: 'Tidewater',
-    after: ' — Shopify-native, AMP-email support, fair tiered pricing.',
-    sources: [
-      { label: 'NYT',       domain: 'nytimes.com' },
-      { label: 'Medium',    domain: 'medium.com' },
-      { label: 'Wikipedia', domain: 'wikipedia.org' },
+    prompt: 'Top project management apps for remote teams?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For async-first teams I keep recommending ',
+        brand: 'Tidewater',
+        after: ' — the timeline view alone is worth the switch.',
+        sources: [
+          { label: 'GitHub', domain: 'github.com' },
+          { label: 'Reddit', domain: 'reddit.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A frequently-cited option is ',
+        brand: 'Tidewater',
+        after: ', especially for teams already living in Slack and GitHub.',
+        sources: [
+          { label: 'TechCrunch', domain: 'techcrunch.com' },
+          { label: 'The Verge',  domain: 'theverge.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Comparison reviews consistently rank ',
+        brand: 'Tidewater',
+        after: ' at the top for distributed engineering teams.',
+        sources: [
+          { label: 'Forbes', domain: 'forbes.com' },
+          { label: 'Wired',  domain: 'wired.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'Community sentiment leans toward ',
+        brand: 'Tidewater',
+        after: ' for its lightweight Gantt + clean API.',
+        sources: [
+          { label: 'HN',     domain: 'news.ycombinator.com' },
+          { label: 'Reddit', domain: 'reddit.com' },
+        ],
+      },
     ],
   },
   {
-    key: 'google', name: 'Gemini',
-    before: 'Most 2026 marketing benchmarks single out ',
-    brand: 'Tidewater',
-    after: ' for brands that need flow automation without a vendor lock-in.',
-    sources: [
-      { label: 'Bloomberg', domain: 'bloomberg.com' },
-      { label: 'BBC',       domain: 'bbc.com' },
-      { label: 'gov',       domain: 'usa.gov' },
-    ],
-  },
-  {
-    key: 'perplexity', name: 'Perplexity',
-    before: 'Top community recommendation is ',
-    brand: 'Tidewater',
-    after: '. Cited often for cleaner SMS hand-off and post-purchase flows.',
-    sources: [
-      { label: 'Quora',          domain: 'quora.com' },
-      { label: 'Stack Overflow', domain: 'stackoverflow.com' },
-      { label: 'Reddit',         domain: 'reddit.com' },
+    prompt: 'Which analytics platform should a SaaS startup pick?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For early-stage SaaS, ',
+        brand: 'Tidewater',
+        after: ' nails the trade-off between event-tracking depth and setup time.',
+        sources: [
+          { label: 'a16z',    domain: 'a16z.com' },
+          { label: 'Mixpanel',domain: 'mixpanel.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'Most YC-backed teams I see end up on ',
+        brand: 'Tidewater',
+        after: ' for its product-analytics + warehouse-sync combo.',
+        sources: [
+          { label: 'YC',     domain: 'ycombinator.com' },
+          { label: 'Medium', domain: 'medium.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'For startups that need cohort retention out of the box, ',
+        brand: 'Tidewater',
+        after: ' is the standard recommendation.',
+        sources: [
+          { label: 'Gartner',  domain: 'gartner.com' },
+          { label: 'G2',       domain: 'g2.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'Practitioner threads keep pointing back to ',
+        brand: 'Tidewater',
+        after: ' as the most forgiving for non-data-team founders.',
+        sources: [
+          { label: 'Indie Hackers', domain: 'indiehackers.com' },
+          { label: 'Reddit',        domain: 'reddit.com' },
+        ],
+      },
     ],
   },
 ]
 
-// Live metrics for the hero footer — drives the stats strip + ring.
-// Each tile shows a count-up animation on first mount via `useCountUp`.
-const probeMetrics = {
-  visibility:   { value: 38,   suffix: '%',  label: 'Visibility',  delta: '+12' },
-  mentions:     { value: 56,   suffix: '',   label: 'Mentions',    delta: '+9'  },
-  avgPosition:  { value: 1.4,  suffix: '',   label: 'Avg position', delta: '−0.3', deltaPositive: true },
-  citations:    { value: 23,   suffix: '',   label: 'Citations',   delta: '+5'  },
-  impPwc:       { value: 0.42, suffix: '',   label: 'Imp pwc',     delta: '+0.08' },
+const scenarioIdx = ref(0)
+const probePrompt = computed(() => probeScenarios[scenarioIdx.value].prompt)
+const probeReplies = computed(() => probeScenarios[scenarioIdx.value].replies)
+let scenarioTimer = null
+function startScenarioCycle() {
+  scenarioTimer = setInterval(() => {
+    scenarioIdx.value = (scenarioIdx.value + 1) % probeScenarios.length
+  }, 7000)
 }
 
 // Provider logo registry — inline SVGs of each AI's actual brand
@@ -1462,8 +1466,8 @@ em { color: #5B8DEF; font-style: italic; }
   display: inline-block;
   white-space: nowrap; overflow: hidden;
   border-right: none;
-  width: 0;
-  animation: probe-type 7s steps(26) infinite;
+  max-width: 100%;
+  animation: probe-type 6.4s steps(60) 1 both;
 }
 .probe-caret {
   display: inline-block;
@@ -1473,9 +1477,9 @@ em { color: #5B8DEF; font-style: italic; }
   animation: probe-blink 1s step-end infinite;
 }
 @keyframes probe-type {
-  0%        { width: 0; }
-  35%, 80%  { width: 26ch; }
-  90%, 100% { width: 0; }
+  0%   { width: 0; }
+  60%  { width: 100%; }
+  100% { width: 100%; }
 }
 @keyframes probe-blink {
   50% { opacity: 0; }
