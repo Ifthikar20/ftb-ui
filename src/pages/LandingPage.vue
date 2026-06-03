@@ -2977,18 +2977,19 @@ html:has(.lp) #app {
   box-shadow: 0 0 8px rgba(255, 107, 53, 0.45);
 }
 .why-h {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 600;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
   font-size: clamp(2.4rem, 5vw, 4.2rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
+  text-transform: uppercase;
   color: #0f172a;
   margin: 0 0 22px;
 }
 .why-h-quiet {
   display: block;
   color: #94a3b8;
-  font-weight: 500;
+  font-weight: 400;
 }
 .why-sub {
   font-size: 17px;
@@ -3062,11 +3063,12 @@ html:has(.lp) #app {
 }
 .why-card-h {
   position: relative; z-index: 1;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
+  font-weight: 400;
   font-size: clamp(1.3rem, 1.8vw, 1.6rem);
-  line-height: 1.22;
+  line-height: 1.18;
   letter-spacing: -0.02em;
+  text-transform: uppercase;
   color: #0f172a;
   margin: 0 0 12px;
 }
