@@ -2288,7 +2288,9 @@ em { color: #5B8DEF; font-style: italic; }
 
 /* ── How It Works ── */
 .how { padding: 96px 0; background: #ffffff; }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 960px)  { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .steps { grid-template-columns: 1fr; } }
 .step {
   background: #fff; border: 1px solid rgba(0,0,0,0.06);
   border-radius: 20px; padding: 32px 24px;
