@@ -211,36 +211,36 @@
         <div class="count-up-grid">
           <div class="count-up-card anim" data-anim="fade-up" data-delay="80">
             <div class="count-up-num">{{ stat0Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Buyers using LLMs to research</div>
-            <div class="count-up-note">of B2B buyers say AI assistants influence their purchase research</div>
+            <div class="count-up-label">Buyers research with LLMs</div>
+            <div class="count-up-note">of B2B buyers used LLMs during their buying process in 2025</div>
             <a
               class="count-up-cite"
-              href="https://www.gartner.com/en/newsroom/press-releases/2024-02-19-gartner-predicts-search-engine-volume-will-drop-25-percent-by-2026-due-to-ai-chatbots-and-other-virtual-agents"
+              href="https://6sense.com/science-of-b2b/buyer-experience-report-2025/"
               target="_blank"
               rel="noopener"
-            >Source: Gartner, 2024</a>
+            >Source: 6sense, 2025 Buyer Experience Report</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="160">
-            <div class="count-up-num">{{ stat1Display }}<span class="count-up-suffix">x</span></div>
-            <div class="count-up-label">Visibility gap</div>
-            <div class="count-up-note">average gap between dominant brand and tail brand in LLM citations</div>
+            <div class="count-up-num"><span class="count-up-prefix">+</span>{{ stat1Display }}<span class="count-up-suffix">%</span></div>
+            <div class="count-up-label">Visibility you can win</div>
+            <div class="count-up-note">lift in brand visibility from GEO-optimized content in AI answers</div>
             <a
               class="count-up-cite"
               href="https://arxiv.org/abs/2311.09735"
               target="_blank"
               rel="noopener"
-            >Source: Aggarwal et al., GEO (arXiv 2023)</a>
+            >Source: Aggarwal et al., GEO (KDD 2024)</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="240">
-            <div class="count-up-num"><span class="count-up-prefix">&lt;</span>{{ stat2Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Tracking GEO</div>
-            <div class="count-up-note">of brands actively measure their LLM presence today</div>
+            <div class="count-up-num">{{ stat2Display }}<span class="count-up-suffix">%</span></div>
+            <div class="count-up-label">Zero-click searches</div>
+            <div class="count-up-note">of searches now end without a click to another website</div>
             <a
               class="count-up-cite"
-              href="https://www.bain.com/insights/topics/generative-ai/"
+              href="https://www.bain.com/insights/goodbye-clicks-hello-ai-zero-click-search-redefines-marketing/"
               target="_blank"
               rel="noopener"
-            >Source: Bain &amp; Co., 2024</a>
+            >Source: Bain &amp; Company, 2025</a>
           </div>
         </div>
       </div>
@@ -1223,12 +1223,12 @@ const faqItems = [
 ]
 
 /* ── Animated count-up stats ── */
-const STAT_TARGETS = [74, 3.2, 10]
+const STAT_TARGETS = [94, 40, 60]
 const stat0 = ref(0)
 const stat1 = ref(0)
 const stat2 = ref(0)
 const stat0Display = computed(() => Math.round(stat0.value).toString())
-const stat1Display = computed(() => stat1.value.toFixed(1))
+const stat1Display = computed(() => Math.round(stat1.value).toString())
 const stat2Display = computed(() => Math.round(stat2.value).toString())
 const statsSection = ref(null)
 let statsAnimated = false
