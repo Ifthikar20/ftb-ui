@@ -1435,31 +1435,31 @@ em { color: #5B8DEF; font-style: italic; }
 .probe {
   position: relative;
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px rgba(15, 23, 42, 0.06);
+  border: none;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
 /* Prompt typing bar */
 .probe-prompt {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 12px;
-  background: #fbfaf7;
-  margin-bottom: 14px;
+  padding: 14px 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  background: #f7f7f7;
+  margin-bottom: 18px;
 }
 .probe-prompt-label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #ff6b35;
+  text-transform: uppercase; color: #ff385c;
   padding: 4px 8px; border-radius: 6px;
-  background: rgba(255, 107, 53, 0.10);
+  background: rgba(255, 56, 92, 0.10);
   flex-shrink: 0;
 }
 .probe-prompt-text {
-  font-size: 14px; color: #1f2937; font-weight: 500;
+  font-size: 15px; color: #222222; font-weight: 500;
   display: inline-flex; align-items: center; min-width: 0;
 }
 .probe-typer {
@@ -1471,8 +1471,8 @@ em { color: #5B8DEF; font-style: italic; }
 }
 .probe-caret {
   display: inline-block;
-  width: 2px; height: 16px;
-  background: #ff6b35;
+  width: 2px; height: 17px;
+  background: #ff385c;
   margin-left: 2px;
   animation: probe-blink 1s step-end infinite;
 }
@@ -1489,29 +1489,35 @@ em { color: #5B8DEF; font-style: italic; }
 .probe-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
   margin-bottom: 14px;
 }
 .probe-card {
   position: relative;
-  padding: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
   transform: translateY(8px);
   animation: probe-card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards;
   overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 @keyframes probe-card-in {
   to { opacity: 1; transform: translateY(0); }
 }
+.probe-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
 .probe-card-head {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
 }
 .probe-logo {
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 28px; height: 28px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   /* Brand mark uses currentColor; container provides the tinted bg. */
@@ -1519,17 +1525,17 @@ em { color: #5B8DEF; font-style: italic; }
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .probe-logo svg {
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   display: block;
 }
-.probe-card:hover .probe-logo { transform: scale(1.12) rotate(-3deg); }
+.probe-card:hover .probe-logo { transform: scale(1.08); }
 .probe-logo.is-anthropic  { background: #d97706; color: #fff; }
 .probe-logo.is-openai     { background: #0f1212; color: #fff; }
 /* Gemini logo is a gradient — keep container white so the gradient shows. */
-.probe-logo.is-google     { background: #ffffff; border: 1px solid rgba(15,23,42,0.08); }
+.probe-logo.is-google     { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); }
 .probe-logo.is-perplexity { background: #1fb8a8; color: #fff; }
 .probe-name {
-  font-size: 13px; font-weight: 600; color: #1f2937;
+  font-size: 14px; font-weight: 600; color: #222222;
   flex: 1;
 }
 .probe-status {
@@ -1549,15 +1555,15 @@ em { color: #5B8DEF; font-style: italic; }
 }
 
 .probe-stream {
-  font-size: 12.5px; line-height: 1.5; color: #4b5563;
-  margin-bottom: 8px;
+  font-size: 13px; line-height: 1.55; color: #484848;
+  margin-bottom: 12px;
 }
 .probe-mark {
-  background: rgba(255, 107, 53, 0.14);
-  color: #1f2937;
+  background: rgba(255, 56, 92, 0.12);
+  color: #222222;
   font-weight: 600;
-  padding: 1px 4px;
-  border-radius: 4px;
+  padding: 1px 5px;
+  border-radius: 5px;
 }
 
 .probe-tags {
@@ -1565,13 +1571,15 @@ em { color: #5B8DEF; font-style: italic; }
 }
 .probe-tag {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.05);
-  transition: background 0.2s ease, transform 0.2s ease;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .probe-tag:hover {
-  background: rgba(15, 23, 42, 0.09);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 .probe-tag-fav {
