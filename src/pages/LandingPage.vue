@@ -207,7 +207,7 @@
             <div class="count-up-note">of B2B buyers say AI assistants influence their purchase research</div>
             <a
               class="count-up-cite"
-              href="https://www.gartner.com/en/newsroom/press-releases/2024-12-02-gartner-predicts-search-engine-volume-will-drop-25-percent-by-2026-due-to-ai-chatbots-and-other-virtual-agents"
+              href="https://www.gartner.com/en/newsroom/press-releases/2024-02-19-gartner-predicts-search-engine-volume-will-drop-25-percent-by-2026-due-to-ai-chatbots-and-other-virtual-agents"
               target="_blank"
               rel="noopener"
             >Source: Gartner, 2024</a>
@@ -218,10 +218,10 @@
             <div class="count-up-note">average gap between dominant brand and tail brand in LLM citations</div>
             <a
               class="count-up-cite"
-              href="https://arxiv.org/abs/2404.10952"
+              href="https://arxiv.org/abs/2311.09735"
               target="_blank"
               rel="noopener"
-            >Source: Aggarwal et al., GEO (arXiv 2024)</a>
+            >Source: Aggarwal et al., GEO (arXiv 2023)</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="240">
             <div class="count-up-num"><span class="count-up-prefix">&lt;</span>{{ stat2Display }}<span class="count-up-suffix">%</span></div>
@@ -229,7 +229,7 @@
             <div class="count-up-note">of brands actively measure their LLM presence today</div>
             <a
               class="count-up-cite"
-              href="https://www.bain.com/insights/generative-ai-and-the-future-of-search/"
+              href="https://www.bain.com/insights/topics/generative-ai/"
               target="_blank"
               rel="noopener"
             >Source: Bain &amp; Co., 2024</a>
@@ -3013,6 +3013,9 @@ html:has(.lp) #app {
   gap: 32px;
   padding: 36px 0;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+.why-item:last-child {
+  border-bottom: none;
 }
 .why-item-num {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;

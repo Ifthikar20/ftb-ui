@@ -30,21 +30,34 @@
             <p class="auth-tagline">
               FetchBot is how modern brands measure and shape their presence inside ChatGPT, Claude, Gemini, and Perplexity.
             </p>
+            <span class="auth-version">v2.1</span>
           </div>
 
           <div class="auth-video-bottom">
             <ul class="auth-features">
               <li class="auth-feature">
-                <span class="auth-feature-dot"></span>Prompt library
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+                </span>
+                Prompt library
               </li>
               <li class="auth-feature">
-                <span class="auth-feature-dot"></span>Multi-LLM probing
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="5" height="5" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="2" y="10" width="5" height="3" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg>
+                </span>
+                Multi-LLM probing
               </li>
               <li class="auth-feature">
-                <span class="auth-feature-dot"></span>Source influence
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12" stroke-linecap="round"/></svg>
+                </span>
+                Source influence
               </li>
               <li class="auth-feature">
-                <span class="auth-feature-dot"></span>Content studio
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3M6 9h4M6 11h4" stroke-linecap="round"/></svg>
+                </span>
+                Content studio
               </li>
             </ul>
 
@@ -216,37 +229,46 @@ onUnmounted(() => {
   gap: 24px;
 }
 
+.auth-version {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 5px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 .auth-features {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 10px;
+  gap: 14px 28px;
 }
 
 .auth-feature {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 13px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 15px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
-.auth-feature-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ff9c70;
-  box-shadow: 0 0 6px rgba(255, 156, 112, 0.7);
+.auth-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .auth-brand {
