@@ -332,19 +332,6 @@
       </div>
     </section>
 
-    <!-- ═══ Quote / pilot ═══ -->
-    <section class="pull-quote anim" data-anim="fade-up">
-      <div class="wrap">
-        <blockquote class="pq-text">
-          <span class="pq-mark">&ldquo;</span>
-          We were measuring SEO every week and missing the entire AI side of search.
-          Within two weeks of running this we found three Reddit threads where
-          competitors had locked us out &mdash; and shipped fixes.
-        </blockquote>
-        <div class="pq-attr">Internal pilot &middot; Q1 2026</div>
-      </div>
-    </section>
-
     <!-- ═══ How It Works ═══ -->
     <section class="how" id="how">
       <div class="wrap">
