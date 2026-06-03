@@ -11,7 +11,6 @@
         <div class="nav-links">
           <a href="#features">Features</a>
           <a href="#how">How It Works</a>
-          <a href="#pricing">Pricing</a>
         </div>
         <div class="nav-right">
           <router-link to="/login" class="nav-link-text">Log In</router-link>
@@ -141,7 +140,6 @@
     <section class="why anim" data-anim="fade-up">
       <div class="wrap why-wrap">
         <div class="why-head">
-          <span class="why-eyebrow"><span class="why-eyebrow-dot"></span>Why this exists</span>
           <h2 class="why-h">
             Your customers stopped Googling.<br/>
             <span class="why-h-quiet">They started asking.</span>
@@ -157,9 +155,6 @@
           <article class="why-card anim" data-anim="fade-up" data-delay="60">
             <div class="why-card-top">
               <span class="why-card-num">01</span>
-              <span class="why-card-glyph" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              </span>
             </div>
             <h3 class="why-card-h">SEO ranks pages.<br/>AI ranks brands.</h3>
             <p class="why-card-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
@@ -168,9 +163,6 @@
           <article class="why-card anim" data-anim="fade-up" data-delay="140">
             <div class="why-card-top">
               <span class="why-card-num">02</span>
-              <span class="why-card-glyph" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
-              </span>
             </div>
             <h3 class="why-card-h">Every missed mention<br/>is a handed-over sale.</h3>
             <p class="why-card-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
@@ -179,9 +171,6 @@
           <article class="why-card anim" data-anim="fade-up" data-delay="220">
             <div class="why-card-top">
               <span class="why-card-num">03</span>
-              <span class="why-card-glyph" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              </span>
             </div>
             <h3 class="why-card-h">You can't fix<br/>what you can't see.</h3>
             <p class="why-card-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
@@ -358,30 +347,6 @@
       </div>
     </section>
 
-    <!-- ═══ Pricing ═══ -->
-    <section class="pricing" id="pricing">
-      <div class="wrap">
-        <h2 class="sec-h anim" data-anim="fade-up">Simple pricing,<br/><em>no surprises.</em></h2>
-        <div class="price-grid">
-          <div v-for="(plan, i) in plans" :key="plan.name"
-               class="price-card anim" data-anim="fade-up" :data-delay="i * 80"
-               :class="{ featured: plan.featured }">
-            <div class="pop" v-if="plan.featured">Popular</div>
-            <h3>{{ plan.name }}</h3>
-            <div class="price-amount">
-              <span class="price-big">{{ plan.price }}</span>
-              <span class="price-per" v-if="plan.per">/{{ plan.per }}</span>
-            </div>
-            <p class="price-desc">{{ plan.desc }}</p>
-            <ul>
-              <li v-for="f in plan.features" :key="f">{{ f }}</li>
-            </ul>
-            <router-link to="/login" class="price-btn" :class="{ dark: plan.featured }">{{ plan.cta }}</router-link>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ═══ FAQ ═══ -->
     <section class="faq anim" data-anim="fade-up">
       <div class="wrap faq-wrap">
@@ -455,7 +420,6 @@
             <div class="footer-col-title">Product</div>
             <a href="#features">Features</a>
             <a href="#how">How it works</a>
-            <a href="#pricing">Pricing</a>
             <a href="#faq">FAQ</a>
           </div>
 
