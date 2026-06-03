@@ -1,18 +1,6 @@
 <template>
   <div class="auth-layout">
-    <!-- Sign-in form lives on the left, untouched. -->
-    <div class="auth-left">
-      <div class="auth-form-container">
-        <div class="auth-form-header">
-          <h2 class="auth-title">{{ title }}</h2>
-          <p v-if="subtitle" class="auth-subtitle">{{ subtitle }}</p>
-        </div>
-        <slot />
-      </div>
-      <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
-    </div>
-
-    <!-- Right side: rounded video card with overlay copy and bottom-anchored logo. -->
+    <!-- Left side: rounded video card with overlay copy and bottom-anchored logo. -->
     <div class="auth-right">
       <div class="auth-video-card">
         <video class="auth-video-bg" autoplay muted loop playsinline>
@@ -68,6 +56,18 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Right side: sign-in form. -->
+    <div class="auth-left">
+      <div class="auth-form-container">
+        <div class="auth-form-header">
+          <h2 class="auth-title">{{ title }}</h2>
+          <p v-if="subtitle" class="auth-subtitle">{{ subtitle }}</p>
+        </div>
+        <slot />
+      </div>
+      <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
     </div>
   </div>
 </template>
@@ -152,7 +152,7 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   align-items: stretch;
-  padding: 24px 24px 24px 0;
+  padding: 24px 0 24px 24px;
 }
 
 .auth-video-card {
