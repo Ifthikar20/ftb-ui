@@ -1309,10 +1309,10 @@ em { color: #5B8DEF; font-style: italic; }
   background: #131718;
   color: #fcd34d;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 800;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  padding: 3px 8px;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
   border-radius: 999px;
   vertical-align: middle;
 }
