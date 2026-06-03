@@ -2946,12 +2946,12 @@ html:has(.lp) #app {
   to   { transform: translateX(-50%); }
 }
 
-/* ── Why this exists (editorial / dark) ── */
+/* ── Why this exists (editorial / light) ── */
 .why {
   position: relative;
   padding: 120px 0 96px;
-  background: #0a0e14;
-  color: #d6dbe2;
+  background: #ffffff;
+  color: #0f172a;
   overflow: hidden;
 }
 .why::before {
@@ -2959,8 +2959,8 @@ html:has(.lp) #app {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(900px circle at 12% 0%, rgba(255, 107, 53, 0.08), transparent 55%),
-    radial-gradient(700px circle at 88% 100%, rgba(59, 130, 246, 0.06), transparent 60%);
+    radial-gradient(900px circle at 12% 0%, rgba(255, 107, 53, 0.05), transparent 55%),
+    radial-gradient(700px circle at 88% 100%, rgba(59, 130, 246, 0.04), transparent 60%);
   pointer-events: none;
 }
 .why-wrap { max-width: 1080px; position: relative; z-index: 1; }
@@ -2977,7 +2977,7 @@ html:has(.lp) #app {
   width: 6px; height: 6px;
   background: #ff6b35;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.45);
 }
 .why-h {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -2985,18 +2985,18 @@ html:has(.lp) #app {
   font-size: clamp(2.4rem, 5vw, 4.2rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
-  color: #ffffff;
+  color: #0f172a;
   margin: 0 0 22px;
 }
 .why-h-quiet {
   display: block;
-  color: #64748b;
+  color: #94a3b8;
   font-weight: 500;
 }
 .why-sub {
   font-size: 17px;
   line-height: 1.65;
-  color: #94a3b8;
+  color: #475569;
   margin: 0;
 }
 
@@ -3004,7 +3004,7 @@ html:has(.lp) #app {
   list-style: none;
   margin: 0 0 80px;
   padding: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 .why-item {
   position: relative;
@@ -3012,7 +3012,7 @@ html:has(.lp) #app {
   grid-template-columns: 80px 1fr;
   gap: 32px;
   padding: 36px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 .why-item-num {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -3029,32 +3029,32 @@ html:has(.lp) #app {
   font-size: clamp(1.5rem, 2.4vw, 2rem);
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: #0f172a;
   margin: 0 0 12px;
 }
 .why-item-p {
   font-size: 15.5px;
   line-height: 1.65;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
   max-width: 620px;
 }
-.why-item:hover .why-item-num { color: #ffb38a; }
+.why-item:hover .why-item-num { color: #ff5722; }
 
 .why-cta {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 22px;
   padding: 26px 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 .why-cta-line {
   font-size: 17px;
-  color: #cbd5e1;
+  color: #475569;
   max-width: 580px;
   line-height: 1.45;
 }
 .why-cta-line strong {
-  color: #ffffff;
+  color: #0f172a;
   font-weight: 600;
 }
 .why-cta-btn {
@@ -3069,7 +3069,7 @@ html:has(.lp) #app {
   transition: background 0.18s ease, transform 0.18s ease;
 }
 .why-cta-btn:hover {
-  background: #ff7a47;
+  background: #ff5722;
   transform: translateX(2px);
 }
 
