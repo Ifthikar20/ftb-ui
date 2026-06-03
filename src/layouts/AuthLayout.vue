@@ -106,22 +106,22 @@ onUnmounted(() => {
 
 /* ── Left Panel — Sign-in form (unchanged) ── */
 .auth-left {
-  width: 640px;
+  width: 720px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 72px;
+  padding: 56px 88px;
   position: relative;
 }
 
 .auth-form-container {
   width: 100%;
-  max-width: 440px;
+  max-width: 500px;
 }
 
 .auth-form-header {
-  margin-bottom: 36px;
+  margin-bottom: 40px;
 }
 
 .auth-title {
