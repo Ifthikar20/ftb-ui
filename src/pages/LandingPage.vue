@@ -82,18 +82,17 @@
                     v-for="src in p.sources"
                     :key="src.domain"
                     class="probe-tag"
-                    :title="src.domain"
+                    :title="src.label"
                   >
                     <img
                       class="probe-tag-fav"
                       :src="faviconFor(src.domain)"
-                      :alt="''"
-                      width="14" height="14"
+                      :alt="src.label"
+                      width="18" height="18"
                       loading="lazy"
                       referrerpolicy="no-referrer"
                       @error="(e) => e.target.style.display = 'none'"
                     />
-                    {{ src.label }}
                   </span>
                 </div>
               </div>
@@ -1562,15 +1561,13 @@ em { color: #5B8DEF; font-style: italic; }
 }
 
 .probe-tags {
-  display: flex; flex-wrap: wrap; gap: 4px;
+  display: flex; flex-wrap: wrap; gap: 6px;
 }
 .probe-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10.5px; font-weight: 600;
-  padding: 2px 8px 2px 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
   border-radius: 9999px;
   background: rgba(15, 23, 42, 0.05);
-  color: #4b5563;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 .probe-tag:hover {
@@ -1578,7 +1575,7 @@ em { color: #5B8DEF; font-style: italic; }
   transform: translateY(-1px);
 }
 .probe-tag-fav {
-  width: 14px; height: 14px; border-radius: 3px;
+  width: 18px; height: 18px; border-radius: 4px;
   background: #fff;
   object-fit: contain;
   flex-shrink: 0;
