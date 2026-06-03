@@ -155,31 +155,40 @@
           </p>
         </div>
 
-        <ol class="why-list">
-          <li class="why-item anim" data-anim="fade-up" data-delay="60">
-            <div class="why-item-num">01</div>
-            <div class="why-item-body">
-              <h3 class="why-item-h">SEO ranks pages. AI ranks brands.</h3>
-              <p class="why-item-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+        <div class="why-grid">
+          <article class="why-card anim" data-anim="fade-up" data-delay="60">
+            <div class="why-card-top">
+              <span class="why-card-num">01</span>
+              <span class="why-card-glyph" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </span>
             </div>
-            <div class="why-item-rail" aria-hidden="true"></div>
-          </li>
-          <li class="why-item anim" data-anim="fade-up" data-delay="140">
-            <div class="why-item-num">02</div>
-            <div class="why-item-body">
-              <h3 class="why-item-h">Every missed mention is a handed-over sale.</h3>
-              <p class="why-item-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+            <h3 class="why-card-h">SEO ranks pages.<br/>AI ranks brands.</h3>
+            <p class="why-card-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+          </article>
+
+          <article class="why-card anim" data-anim="fade-up" data-delay="140">
+            <div class="why-card-top">
+              <span class="why-card-num">02</span>
+              <span class="why-card-glyph" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+              </span>
             </div>
-            <div class="why-item-rail" aria-hidden="true"></div>
-          </li>
-          <li class="why-item anim" data-anim="fade-up" data-delay="220">
-            <div class="why-item-num">03</div>
-            <div class="why-item-body">
-              <h3 class="why-item-h">You can't fix what you can't see.</h3>
-              <p class="why-item-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+            <h3 class="why-card-h">Every missed mention<br/>is a handed-over sale.</h3>
+            <p class="why-card-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+          </article>
+
+          <article class="why-card anim" data-anim="fade-up" data-delay="220">
+            <div class="why-card-top">
+              <span class="why-card-num">03</span>
+              <span class="why-card-glyph" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
             </div>
-          </li>
-        </ol>
+            <h3 class="why-card-h">You can't fix<br/>what you can't see.</h3>
+            <p class="why-card-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+          </article>
+        </div>
 
         <div class="why-cta anim" data-anim="fade-up" data-delay="300">
           <span class="why-cta-line">The brands winning AI search are the ones <strong>measuring it</strong>.</span>
@@ -2999,70 +3008,120 @@ html:has(.lp) #app {
   margin: 0;
 }
 
-.why-list {
-  list-style: none;
-  margin: 0 0 80px;
-  padding: 0;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-}
-.why-item {
-  position: relative;
+.why-grid {
   display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 32px;
-  padding: 36px 0;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin: 0 0 28px;
 }
-.why-item:last-child {
-  border-bottom: none;
+.why-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 28px 32px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s ease;
 }
-.why-item-num {
+.why-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% -10%, rgba(255, 107, 53, 0.07), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.why-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255, 107, 53, 0.30);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 24px 48px rgba(15, 23, 42, 0.10);
+}
+.why-card:hover::before { opacity: 1; }
+.why-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.why-card-num {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
   font-weight: 500;
-  color: #ff6b35;
   letter-spacing: 0.08em;
-  padding-top: 6px;
+  color: #ff6b35;
 }
-.why-item-body { max-width: 720px; }
-.why-item-h {
+.why-card-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.04);
+  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+.why-card:hover .why-card-glyph {
+  background: rgba(255, 107, 53, 0.12);
+  color: #ff5722;
+  transform: scale(1.06);
+}
+.why-card-h {
+  position: relative; z-index: 1;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  font-size: clamp(1.5rem, 2.4vw, 2rem);
-  line-height: 1.2;
+  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
+  line-height: 1.22;
   letter-spacing: -0.02em;
   color: #0f172a;
   margin: 0 0 12px;
 }
-.why-item-p {
-  font-size: 15.5px;
-  line-height: 1.65;
+.why-card-p {
+  position: relative; z-index: 1;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: #64748b;
   margin: 0;
-  max-width: 620px;
 }
-.why-item:hover .why-item-num { color: #ff5722; }
 
 .why-cta {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 22px;
-  padding: 26px 0 0;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
+  position: relative;
+  overflow: hidden;
+}
+.why-cta::after {
+  content: '';
+  position: absolute;
+  inset: -50% auto auto -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.22) 0%, transparent 60%);
+  pointer-events: none;
 }
 .why-cta-line {
+  position: relative; z-index: 1;
   font-size: 17px;
-  color: #475569;
+  color: #cbd5e1;
   max-width: 580px;
   line-height: 1.45;
 }
 .why-cta-line strong {
-  color: #0f172a;
+  color: #ffffff;
   font-weight: 600;
 }
 .why-cta-btn {
+  position: relative; z-index: 1;
   display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 22px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #ff6b35;
   color: #ffffff;
   font-weight: 600;
@@ -3078,9 +3137,7 @@ html:has(.lp) #app {
 @media (max-width: 880px) {
   .why { padding: 80px 0 64px; }
   .why-head { margin-bottom: 48px; }
-  .why-list { margin-bottom: 56px; }
-  .why-item { grid-template-columns: 1fr; gap: 12px; padding: 28px 0; }
-  .why-item-num { padding-top: 0; }
+  .why-grid { grid-template-columns: 1fr; gap: 16px; }
   .why-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
 }
 
