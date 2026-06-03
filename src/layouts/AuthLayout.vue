@@ -33,6 +33,21 @@
           </div>
 
           <div class="auth-video-bottom">
+            <ul class="auth-features">
+              <li class="auth-feature">
+                <span class="auth-feature-dot"></span>Prompt library
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-dot"></span>Multi-LLM probing
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-dot"></span>Source influence
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-dot"></span>Content studio
+              </li>
+            </ul>
+
             <div class="auth-brand">
               <img src="/images/fb-logo.png" alt="FetchBot" class="auth-brand-mark" />
               <span class="brand-name">FetchBot</span>
@@ -193,8 +208,42 @@ onUnmounted(() => {
 
 .auth-video-bottom {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.auth-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.auth-feature {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  gap: 8px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.auth-feature-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ff9c70;
+  box-shadow: 0 0 6px rgba(255, 156, 112, 0.7);
 }
 
 .auth-brand {
