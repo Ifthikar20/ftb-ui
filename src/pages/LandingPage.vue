@@ -24,7 +24,6 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-left">
-          <span class="hero-eyebrow anim" data-anim="fade-up">Generative Engine Optimization</span>
           <h1 class="hero-h anim" data-anim="fade-up">
             <span class="tw-line" ref="twLine1"></span><br/>
             <span class="tw-line" ref="twLine2"></span><br/>
@@ -41,16 +40,6 @@
             mentions your brand. Find the prompts you're missing from. Generate the
             content to close the gap.
           </p>
-
-          <figure class="hero-manifest anim" data-anim="fade-up" data-delay="120">
-            <span class="hero-manifest-mark" aria-hidden="true">&ldquo;</span>
-            <blockquote class="hero-manifest-text">
-              We were measuring SEO every week and missing the entire AI side of search.
-              Within two weeks of running this we found three Reddit threads where
-              competitors had locked us out &mdash; and shipped fixes.
-            </blockquote>
-            <figcaption class="hero-manifest-attr">Internal pilot &middot; Q1 2026</figcaption>
-          </figure>
         </div>
 
         <!-- Framer-style animated visualisation -->
@@ -210,16 +199,34 @@
             <div class="count-up-num">{{ stat0Display }}<span class="count-up-suffix">%</span></div>
             <div class="count-up-label">Buyers using LLMs to research</div>
             <div class="count-up-note">of B2B buyers say AI assistants influence their purchase research</div>
+            <a
+              class="count-up-cite"
+              href="https://www.gartner.com/en/newsroom/press-releases/2024-12-02-gartner-predicts-search-engine-volume-will-drop-25-percent-by-2026-due-to-ai-chatbots-and-other-virtual-agents"
+              target="_blank"
+              rel="noopener"
+            >Source: Gartner, 2024</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="160">
             <div class="count-up-num">{{ stat1Display }}<span class="count-up-suffix">x</span></div>
             <div class="count-up-label">Visibility gap</div>
             <div class="count-up-note">average gap between dominant brand and tail brand in LLM citations</div>
+            <a
+              class="count-up-cite"
+              href="https://arxiv.org/abs/2404.10952"
+              target="_blank"
+              rel="noopener"
+            >Source: Aggarwal et al., GEO (arXiv 2024)</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="240">
             <div class="count-up-num"><span class="count-up-prefix">&lt;</span>{{ stat2Display }}<span class="count-up-suffix">%</span></div>
             <div class="count-up-label">Tracking GEO</div>
             <div class="count-up-note">of brands actively measure their LLM presence today</div>
+            <a
+              class="count-up-cite"
+              href="https://www.bain.com/insights/generative-ai-and-the-future-of-search/"
+              target="_blank"
+              rel="noopener"
+            >Source: Bain &amp; Co., 2024</a>
           </div>
         </div>
       </div>
@@ -3145,6 +3152,20 @@ html:has(.lp) #app {
   font-size: 13.5px;
   color: #6b7680;
   line-height: 1.5;
+}
+.count-up-cite {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+  text-decoration: none;
+  border-bottom: 1px dotted #cbd5e1;
+}
+.count-up-cite:hover {
+  color: #475569;
+  border-bottom-color: #94a3b8;
 }
 
 /* ── Feature showcase ── */
