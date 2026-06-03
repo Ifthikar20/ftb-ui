@@ -73,10 +73,6 @@
                     v-html="providerLogo(p.key)"
                   ></span>
                   <span class="probe-name">{{ p.name }}</span>
-                  <span class="probe-status">
-                    <span class="probe-status-dot"></span>
-                    <span class="probe-status-txt">answered</span>
-                  </span>
                 </div>
                 <div class="probe-stream">
                   <span class="probe-stream-text">{{ p.before }}</span>
