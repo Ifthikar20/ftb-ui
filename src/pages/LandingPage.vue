@@ -28,7 +28,6 @@
             <span class="tw-line" ref="twLine1"></span><br/>
             <span class="tw-line" ref="twLine2"></span><br/>
             <em><span class="tw-line" ref="twLine3"></span></em>
-            <span class="tw-cursor" :class="{ 'tw-cursor--done': twDone }">|</span>
           </h1>
           <p class="hero-p anim" data-anim="fade-up" data-delay="60">
             See how often
