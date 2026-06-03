@@ -2979,29 +2979,21 @@ html:has(.lp) #app {
   flex-direction: column;
   padding: 30px 28px 32px;
   border-radius: 20px;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.07);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: none;
+  /* Soft tinted backgrounds, Airbnb-style. Per-card hue set below. */
+  background: #fbf7f4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.35s ease;
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.why-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(120% 80% at 50% -10%, rgba(255, 107, 53, 0.07), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  pointer-events: none;
-}
+.why-card:nth-child(1) { background: #fdf3ef; }
+.why-card:nth-child(2) { background: #f2f6fb; }
+.why-card:nth-child(3) { background: #f1f8f4; }
 .why-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(255, 107, 53, 0.30);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 24px 48px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
 }
-.why-card:hover::before { opacity: 1; }
 .why-card-top {
   display: flex;
   align-items: center;
@@ -3013,22 +3005,7 @@ html:has(.lp) #app {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: #ff6b35;
-}
-.why-card-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  color: #0f172a;
-  background: rgba(15, 23, 42, 0.04);
-  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
-}
-.why-card:hover .why-card-glyph {
-  background: rgba(255, 107, 53, 0.12);
-  color: #ff5722;
-  transform: scale(1.06);
+  color: #ff385c;
 }
 .why-card-h {
   position: relative; z-index: 1;
