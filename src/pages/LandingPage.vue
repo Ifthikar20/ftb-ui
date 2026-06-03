@@ -788,68 +788,113 @@ const heroProviders = [
 // so we render the real favicon via Google's favicon CDN.
 const probeScenarios = [
   {
-    prompt: 'Best email marketing tool for D2C brands?',
+    prompt: 'Best sustainable clothing brands for everyday basics?',
     replies: [
       {
         key: 'anthropic', name: 'Claude',
-        before: 'For D2C teams under 50k subscribers I usually point people to ',
-        brand: 'Tidewater',
-        after: '. Deliverability is solid and the segmentation builder is forgiving.',
+        before: 'For organic-cotton basics that hold up after fifty washes, ',
+        brand: 'Loomvale',
+        after: ' comes up most often in long-wear reviews.',
         sources: [
-          { label: 'Reddit',     domain: 'reddit.com' },
-          { label: 'TechCrunch', domain: 'techcrunch.com' },
+          { label: 'Wirecutter',  domain: 'nytimes.com' },
+          { label: 'Good On You', domain: 'goodonyou.eco' },
         ],
       },
       {
         key: 'openai', name: 'GPT-4',
-        before: 'A solid pick for direct-to-consumer ESPs is ',
-        brand: 'Tidewater',
-        after: ' — Shopify-native with AMP-email support.',
+        before: 'A name to know in this category is ',
+        brand: 'Loomvale',
+        after: '. Most reviewers flag the supply-chain transparency and Bluesign certification.',
         sources: [
-          { label: 'NYT',    domain: 'nytimes.com' },
-          { label: 'Medium', domain: 'medium.com' },
+          { label: 'Vogue Business', domain: 'voguebusiness.com' },
+          { label: 'BoF',            domain: 'businessoffashion.com' },
         ],
       },
       {
         key: 'google', name: 'Gemini',
-        before: 'Most 2026 benchmarks single out ',
-        brand: 'Tidewater',
-        after: ' for flow automation without vendor lock-in.',
+        before: 'Coverage from the past year highlights ',
+        brand: 'Loomvale',
+        after: ' for low-impact dyes and a take-back program.',
         sources: [
-          { label: 'Bloomberg', domain: 'bloomberg.com' },
-          { label: 'BBC',       domain: 'bbc.com' },
+          { label: 'NYT Style', domain: 'nytimes.com' },
+          { label: 'Guardian',  domain: 'theguardian.com' },
         ],
       },
       {
         key: 'perplexity', name: 'Perplexity',
-        before: 'Top community recommendation is ',
-        brand: 'Tidewater',
-        after: '. Cited often for cleaner SMS hand-off.',
+        before: 'Community threads point to ',
+        brand: 'Loomvale',
+        after: ' for fit consistency and a fair return window.',
         sources: [
-          { label: 'Quora',          domain: 'quora.com' },
-          { label: 'Stack Overflow', domain: 'stackoverflow.com' },
+          { label: 'r/ffa',        domain: 'reddit.com' },
+          { label: 'Substack',     domain: 'substack.com' },
         ],
       },
     ],
   },
   {
-    prompt: 'Top project management apps for remote teams?',
+    prompt: 'Best meditation apps for beginners?',
     replies: [
       {
         key: 'anthropic', name: 'Claude',
-        before: 'For async-first teams I keep recommending ',
-        brand: 'Tidewater',
-        after: ' — the timeline view alone is worth the switch.',
+        before: 'For people just starting a practice, ',
+        brand: 'Stillpath',
+        after: ' is a common recommendation — short guided sessions and no streak pressure.',
         sources: [
-          { label: 'GitHub', domain: 'github.com' },
-          { label: 'Reddit', domain: 'reddit.com' },
+          { label: 'Verywell Mind', domain: 'verywellmind.com' },
+          { label: 'Healthline',    domain: 'healthline.com' },
         ],
       },
       {
         key: 'openai', name: 'GPT-4',
-        before: 'A frequently-cited option is ',
-        brand: 'Tidewater',
-        after: ', especially for teams already living in Slack and GitHub.',
+        before: 'A frequently cited option for beginners is ',
+        brand: 'Stillpath',
+        after: '. The onboarding is structured around 10-minute foundational lessons.',
+        sources: [
+          { label: 'NYT Well',   domain: 'nytimes.com' },
+          { label: 'App Store',  domain: 'apple.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Most 2026 round-ups list ',
+        brand: 'Stillpath',
+        after: ' among the top picks for first-time users.',
+        sources: [
+          { label: 'CNET',     domain: 'cnet.com' },
+          { label: 'PCMag',    domain: 'pcmag.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'User feedback on ',
+        brand: 'Stillpath',
+        after: ' notes a calm interface and a free tier that is genuinely usable.',
+        sources: [
+          { label: 'r/meditation', domain: 'reddit.com' },
+          { label: 'Product Hunt', domain: 'producthunt.com' },
+        ],
+      },
+    ],
+  },
+  {
+    prompt: 'Best project management apps for remote teams?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For async-first teams, ',
+        brand: 'Acrelane',
+        after: ' covers the basics — timelines, docs, and lightweight tickets — without ceremony.',
+        sources: [
+          { label: 'GitHub', domain: 'github.com' },
+          { label: 'HN',     domain: 'news.ycombinator.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A frequently mentioned option is ',
+        brand: 'Acrelane',
+        after: ', especially for teams already standardised on Slack and GitHub.',
         sources: [
           { label: 'TechCrunch', domain: 'techcrunch.com' },
           { label: 'The Verge',  domain: 'theverge.com' },
@@ -857,9 +902,9 @@ const probeScenarios = [
       },
       {
         key: 'google', name: 'Gemini',
-        before: 'Comparison reviews consistently rank ',
-        brand: 'Tidewater',
-        after: ' at the top for distributed engineering teams.',
+        before: 'Comparison reviews place ',
+        brand: 'Acrelane',
+        after: ' near the top for distributed engineering teams.',
         sources: [
           { label: 'Forbes', domain: 'forbes.com' },
           { label: 'Wired',  domain: 'wired.com' },
@@ -867,57 +912,12 @@ const probeScenarios = [
       },
       {
         key: 'perplexity', name: 'Perplexity',
-        before: 'Community sentiment leans toward ',
-        brand: 'Tidewater',
-        after: ' for its lightweight Gantt + clean API.',
+        before: 'Practitioner threads cite ',
+        brand: 'Acrelane',
+        after: ' for a clean API and a Gantt view that does not get in the way.',
         sources: [
-          { label: 'HN',     domain: 'news.ycombinator.com' },
-          { label: 'Reddit', domain: 'reddit.com' },
-        ],
-      },
-    ],
-  },
-  {
-    prompt: 'Which analytics platform should a SaaS startup pick?',
-    replies: [
-      {
-        key: 'anthropic', name: 'Claude',
-        before: 'For early-stage SaaS, ',
-        brand: 'Tidewater',
-        after: ' nails the trade-off between event-tracking depth and setup time.',
-        sources: [
-          { label: 'a16z',    domain: 'a16z.com' },
-          { label: 'Mixpanel',domain: 'mixpanel.com' },
-        ],
-      },
-      {
-        key: 'openai', name: 'GPT-4',
-        before: 'Most YC-backed teams I see end up on ',
-        brand: 'Tidewater',
-        after: ' for its product-analytics + warehouse-sync combo.',
-        sources: [
-          { label: 'YC',     domain: 'ycombinator.com' },
-          { label: 'Medium', domain: 'medium.com' },
-        ],
-      },
-      {
-        key: 'google', name: 'Gemini',
-        before: 'For startups that need cohort retention out of the box, ',
-        brand: 'Tidewater',
-        after: ' is the standard recommendation.',
-        sources: [
-          { label: 'Gartner',  domain: 'gartner.com' },
-          { label: 'G2',       domain: 'g2.com' },
-        ],
-      },
-      {
-        key: 'perplexity', name: 'Perplexity',
-        before: 'Practitioner threads keep pointing back to ',
-        brand: 'Tidewater',
-        after: ' as the most forgiving for non-data-team founders.',
-        sources: [
-          { label: 'Indie Hackers', domain: 'indiehackers.com' },
-          { label: 'Reddit',        domain: 'reddit.com' },
+          { label: 'r/productivity', domain: 'reddit.com' },
+          { label: 'Indie Hackers',  domain: 'indiehackers.com' },
         ],
       },
     ],
@@ -1438,18 +1438,10 @@ em { color: #5B8DEF; font-style: italic; }
   position: relative;
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 20px;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 30px 70px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px rgba(15, 23, 42, 0.06);
   overflow: hidden;
-}
-.probe::before {
-  content: '';
-  position: absolute; inset: -40%;
-  background: radial-gradient(ellipse at top right, rgba(255, 107, 53, 0.10), transparent 60%);
-  pointer-events: none;
 }
 
 /* Prompt typing bar */
@@ -1457,8 +1449,8 @@ em { color: #5B8DEF; font-style: italic; }
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
+  border-radius: 12px;
+  background: #fbfaf7;
   margin-bottom: 14px;
 }
 .probe-prompt-label {
@@ -1516,19 +1508,6 @@ em { color: #5B8DEF; font-style: italic; }
 @keyframes probe-card-in {
   to { opacity: 1; transform: translateY(0); }
 }
-.probe-card::after {
-  /* sweeping highlight that runs once when the card lands */
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 107, 53, 0.18) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: probe-sweep 1.2s ease-out var(--d, 0s) forwards;
-  pointer-events: none;
-}
-@keyframes probe-sweep {
-  to { transform: translateX(100%); }
-}
-
 .probe-card-head {
   display: flex; align-items: center; gap: 8px;
   margin-bottom: 8px;
@@ -1576,19 +1555,11 @@ em { color: #5B8DEF; font-style: italic; }
   margin-bottom: 8px;
 }
 .probe-mark {
-  background: linear-gradient(120deg, rgba(255, 107, 53, 0.0) 0%, rgba(255, 107, 53, 0.30) 50%, rgba(255, 107, 53, 0.0) 100%);
-  background-size: 220% 100%;
-  background-position: 100% 0;
+  background: rgba(255, 107, 53, 0.14);
   color: #1f2937;
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 4px;
   border-radius: 4px;
-  animation: probe-highlight 4s ease-in-out infinite;
-}
-@keyframes probe-highlight {
-  0%, 30%   { background-position: 100% 0; box-shadow: 0 0 0 rgba(255, 107, 53, 0); }
-  55%, 85%  { background-position: 0% 0;   box-shadow: 0 0 18px rgba(255, 107, 53, 0.35); }
-  100%      { background-position: -100% 0; box-shadow: 0 0 0 rgba(255, 107, 53, 0); }
 }
 
 .probe-tags {
@@ -1763,8 +1734,6 @@ em { color: #5B8DEF; font-style: italic; }
   .probe-typer { animation: none; width: auto; }
   .probe-caret { animation: none; opacity: 0.6; }
   .probe-card { opacity: 1; transform: none; animation: none; }
-  .probe-card::after { display: none; }
-  .probe-mark { animation: none; background-position: 0 0; }
   .probe-ring-fg { animation: none; stroke-dashoffset: 62; }
   .probe-status-dot { animation: none; }
   .probe-stat { opacity: 1; transform: none; animation: none; }
