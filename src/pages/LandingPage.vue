@@ -140,43 +140,53 @@
       </div>
     </section>
 
-    <!-- ═══ Why you need this — ad-copy section ═══ -->
+    <!-- ═══ Why this exists — editorial / pam-style ═══ -->
     <section class="why anim" data-anim="fade-up">
       <div class="wrap why-wrap">
-        <span class="why-eyebrow">Why this exists</span>
-        <h2 class="why-h">
-          Your customers stopped Googling.<br/>
-          <em>They started <span class="why-h-pop">asking.</span></em>
-        </h2>
-        <p class="why-sub">
-          Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
-          Gemini, or Perplexity instead. The AI gives them one answer, two competitors,
-          and a recommendation. If your brand isn't in that answer — you weren't even in the room.
-        </p>
-
-        <div class="why-grid">
-          <div class="why-card anim" data-anim="fade-up" data-delay="60">
-            <div class="why-card-num">1</div>
-            <div class="why-card-h">SEO ranks pages.<br/>AI ranks <em>brands.</em></div>
-            <p>You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
-          </div>
-          <div class="why-card anim" data-anim="fade-up" data-delay="140">
-            <div class="why-card-num">2</div>
-            <div class="why-card-h">Every missed mention<br/>is a <em>handed-over</em> sale.</div>
-            <p>When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
-          </div>
-          <div class="why-card anim" data-anim="fade-up" data-delay="220">
-            <div class="why-card-num">3</div>
-            <div class="why-card-h">You can't fix<br/>what you can't <em>see.</em></div>
-            <p>Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
-          </div>
+        <div class="why-head">
+          <span class="why-eyebrow"><span class="why-eyebrow-dot"></span>Why this exists</span>
+          <h2 class="why-h">
+            Your customers stopped Googling.<br/>
+            <span class="why-h-quiet">They started asking.</span>
+          </h2>
+          <p class="why-sub">
+            Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
+            Gemini, or Perplexity instead. The model gives them one answer, two competitors,
+            and a recommendation. If your brand isn't in that answer — you weren't even in the room.
+          </p>
         </div>
+
+        <ol class="why-list">
+          <li class="why-item anim" data-anim="fade-up" data-delay="60">
+            <div class="why-item-num">01</div>
+            <div class="why-item-body">
+              <h3 class="why-item-h">SEO ranks pages. AI ranks brands.</h3>
+              <p class="why-item-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+            </div>
+            <div class="why-item-rail" aria-hidden="true"></div>
+          </li>
+          <li class="why-item anim" data-anim="fade-up" data-delay="140">
+            <div class="why-item-num">02</div>
+            <div class="why-item-body">
+              <h3 class="why-item-h">Every missed mention is a handed-over sale.</h3>
+              <p class="why-item-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+            </div>
+            <div class="why-item-rail" aria-hidden="true"></div>
+          </li>
+          <li class="why-item anim" data-anim="fade-up" data-delay="220">
+            <div class="why-item-num">03</div>
+            <div class="why-item-body">
+              <h3 class="why-item-h">You can't fix what you can't see.</h3>
+              <p class="why-item-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+            </div>
+          </li>
+        </ol>
 
         <div class="why-cta anim" data-anim="fade-up" data-delay="300">
           <span class="why-cta-line">The brands winning AI search are the ones <strong>measuring it</strong>.</span>
           <router-link to="/login" class="why-cta-btn">
             See where you stand
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </router-link>
         </div>
       </div>
@@ -2936,155 +2946,139 @@ html:has(.lp) #app {
   to   { transform: translateX(-50%); }
 }
 
-/* ── Why you need this ── */
+/* ── Why this exists (editorial / dark) ── */
 .why {
   position: relative;
-  padding: 100px 0 60px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  padding: 120px 0 96px;
+  background: #0a0e14;
+  color: #d6dbe2;
+  overflow: hidden;
 }
-.why-wrap { max-width: 1080px; }
+.why::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px circle at 12% 0%, rgba(255, 107, 53, 0.08), transparent 55%),
+    radial-gradient(700px circle at 88% 100%, rgba(59, 130, 246, 0.06), transparent 60%);
+  pointer-events: none;
+}
+.why-wrap { max-width: 1080px; position: relative; z-index: 1; }
+.why-head { max-width: 760px; margin-bottom: 72px; }
 .why-eyebrow {
-  display: inline-block;
-  font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #ff6b35;
-  padding: 5px 12px;
-  border-radius: 9999px;
-  background: rgba(255, 107, 53, 0.10);
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+}
+.why-eyebrow-dot {
+  width: 6px; height: 6px;
+  background: #ff6b35;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
 }
 .why-h {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
-  font-size: clamp(2.2rem, 4.5vw, 3.6rem);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  color: #0f172a;
-  margin-bottom: 18px;
+  font-weight: 600;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  margin: 0 0 22px;
 }
-.why-h em {
-  font-style: normal;
-  font-weight: 700;
-  color: #1f2937;
-}
-.why-h-pop {
-  background: linear-gradient(120deg, #ff6b35 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.why-h-quiet {
+  display: block;
+  color: #64748b;
+  font-weight: 500;
 }
 .why-sub {
-  max-width: 720px;
   font-size: 17px;
-  line-height: 1.6;
-  color: #475569;
-  margin-bottom: 56px;
-}
-.why-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  margin-bottom: 56px;
-}
-.why-card {
-  position: relative;
-  padding: 28px 24px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 40px rgba(15, 23, 42, 0.05);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-}
-.why-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 107, 53, 0.35);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 24px 60px rgba(15, 23, 42, 0.10);
-}
-.why-card-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  margin-bottom: 18px;
-  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.25);
-}
-.why-card-h {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  line-height: 1.25;
-  color: #0f172a;
-  margin-bottom: 10px;
-}
-.why-card-h em {
-  font-style: normal;
-  color: #ff6b35;
-}
-.why-card p {
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: #64748b;
+  line-height: 1.65;
+  color: #94a3b8;
   margin: 0;
 }
+
+.why-list {
+  list-style: none;
+  margin: 0 0 80px;
+  padding: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.why-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 32px;
+  padding: 36px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.why-item-num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ff6b35;
+  letter-spacing: 0.08em;
+  padding-top: 6px;
+}
+.why-item-body { max-width: 720px; }
+.why-item-h {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 12px;
+}
+.why-item-p {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: #94a3b8;
+  margin: 0;
+  max-width: 620px;
+}
+.why-item:hover .why-item-num { color: #ffb38a; }
+
 .why-cta {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 18px;
-  padding: 28px 32px;
-  border-radius: 18px;
-  background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
-  position: relative;
-  overflow: hidden;
-}
-.why-cta::before {
-  content: '';
-  position: absolute; inset: -50% -10% auto auto;
-  width: 60%; height: 200%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 65%);
-  pointer-events: none;
-}
-.why-cta::after {
-  content: '';
-  position: absolute; inset: auto auto -40% -10%;
-  width: 50%; height: 160%;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.30) 0%, transparent 65%);
-  pointer-events: none;
+  flex-wrap: wrap; gap: 22px;
+  padding: 26px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .why-cta-line {
-  position: relative; z-index: 1;
-  font-size: 18px;
-  color: #e2e8f0;
+  font-size: 17px;
+  color: #cbd5e1;
   max-width: 580px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 .why-cta-line strong {
-  color: #fff;
-  font-weight: 700;
+  color: #ffffff;
+  font-weight: 600;
 }
 .why-cta-btn {
-  position: relative; z-index: 1;
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 22px;
-  border-radius: 9999px;
+  border-radius: 8px;
   background: #ff6b35;
   color: #ffffff;
   font-weight: 600;
   font-size: 14.5px;
   text-decoration: none;
-  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-  box-shadow: 0 8px 22px rgba(255, 107, 53, 0.35);
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 .why-cta-btn:hover {
-  background: #ff5722;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(255, 107, 53, 0.45);
+  background: #ff7a47;
+  transform: translateX(2px);
 }
 
 @media (max-width: 880px) {
-  .why-grid { grid-template-columns: 1fr; }
-  .why { padding: 70px 0 40px; }
+  .why { padding: 80px 0 64px; }
+  .why-head { margin-bottom: 48px; }
+  .why-list { margin-bottom: 56px; }
+  .why-item { grid-template-columns: 1fr; gap: 12px; padding: 28px 0; }
+  .why-item-num { padding-top: 0; }
   .why-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
 }
 
