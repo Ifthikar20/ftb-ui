@@ -46,7 +46,6 @@
           <div class="probe">
             <!-- Prompt bar -->
             <div class="probe-prompt">
-              <span class="probe-prompt-label">Prompt</span>
               <span class="probe-prompt-text">
                 <span class="probe-typer" :key="scenarioIdx">{{ probePrompt }}</span>
                 <span class="probe-caret"></span>
@@ -1370,7 +1369,9 @@ em { color: #5B8DEF; font-style: italic; }
 .hero-word-cycler {
   display: inline-block;
   position: relative;
-  min-width: 4.5em;
+  /* Reserve the widest word ("Perplexity") so the following text never
+     reflows when the word cycles — kills the horizontal jitter. */
+  min-width: 6em;
   text-align: left;
   vertical-align: baseline;
 }
