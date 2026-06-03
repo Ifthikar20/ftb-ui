@@ -1381,13 +1381,15 @@ em { color: #5B8DEF; font-style: italic; }
 .hero-word-cycler {
   display: inline-block;
   position: relative;
-  min-width: 7.5em;
+  min-width: 4.5em;
+  text-align: left;
   vertical-align: baseline;
 }
 .hero-word {
   display: inline-block;
   color: var(--brand-accent, #ff6b35);
   font-weight: 600;
+  white-space: nowrap;
 }
 .hero-bullets {
   list-style: none;
