@@ -108,19 +108,22 @@ onUnmounted(() => {
 }
 
 .auth-form-header {
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
 .auth-title {
   font-family: var(--font-display);
-  font-size: var(--font-2xl);
-  font-weight: 600;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   color: var(--foreground);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .auth-subtitle {
-  font-size: var(--font-base);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   color: var(--muted-foreground);
 }
 
