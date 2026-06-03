@@ -1164,16 +1164,6 @@ function startPromptCycle() {
   let idx = 0
   let cancelled = false
   let timer = null
-  const tickIn = (text, target, speed) => new Promise(resolve => {
-    let i = target.length
-    typedPrompt.value = text
-    const t = setInterval(() => {
-      if (cancelled) { clearInterval(t); resolve(); return }
-      i--
-      typedPrompt.value = target.slice(0, i)
-      if (i <= 0) { clearInterval(t); resolve() }
-    }, speed)
-  })
   const typeIn = (target, speed) => new Promise(resolve => {
     let i = 0
     typedPrompt.value = ''
@@ -1189,19 +1179,17 @@ function startPromptCycle() {
   const loop = async () => {
     while (!cancelled) {
       const ex = PROMPT_EXAMPLES[idx]
-      // Type into the search bar
+      // Type the query into the search bar.
       await typeIn(ex.q, 45)
       if (cancelled) break
-      await wait(420)
-      // Push a new row at the top, keep last 3
+      await wait(520)
+      // "Submit": clear the bar and drop the query into the results list
+      // in the same tick, so the prompt is never shown in both places.
       const row = { ...ex, id: 'r-' + Date.now() + '-' + idx }
+      typedPrompt.value = ''
       visiblePromptRows.value = [row, ...visiblePromptRows.value].slice(0, 3)
-      await wait(1500)
+      await wait(1800)
       if (cancelled) break
-      // Backspace before the next prompt
-      await tickIn(ex.q, ex.q, 18)
-      if (cancelled) break
-      await wait(120)
       idx = (idx + 1) % PROMPT_EXAMPLES.length
     }
   }
