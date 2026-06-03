@@ -23,9 +23,9 @@
         <div class="auth-video-content">
           <div class="auth-video-top">
             <h1 class="auth-headline">
-              THE LEADING <strong>AI</strong><br/>
-              PLATFORM FOR<br/>
-              <strong>BRAND VISIBILITY</strong>
+              <strong>MARKETING</strong><br/>
+              INTELLIGENCE FOR<br/>
+              <strong>AI SEARCH</strong>
             </h1>
             <p class="auth-tagline">
               FetchBot is how modern brands measure and shape their presence inside ChatGPT, Claude, Gemini, and Perplexity.
