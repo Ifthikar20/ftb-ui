@@ -1211,7 +1211,7 @@ const faqItems = [
   { q: 'Which LLMs do you track?',
     a: 'All the major ones your buyers are actually asking. New providers get added as they hit real usage.' },
   { q: 'Do I need to install anything on my site?',
-    a: 'No pixel, no script, no code. Add your domain and we start tracking visibility from the outside in — the same way an LLM sees you.' },
+    a: 'For LLM visibility tracking, no — add your domain and we start measuring from the outside in, the same way an LLM sees you. If you also want our web analytics (visitors, sessions, sources, conversions), drop in our lightweight pixel — it is one snippet and takes a minute. The pixel is optional and only powers the analytics side.' },
   { q: 'How often is the data refreshed?',
     a: "Prompts are re-run continuously, so visibility, sentiment, and citations reflect what LLMs are saying right now — not a snapshot from last week." },
   { q: 'How accurate are the citations?',
