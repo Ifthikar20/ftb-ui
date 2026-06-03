@@ -3104,7 +3104,8 @@ html:has(.lp) #app {
   border-color: #d9cfbb;
 }
 .count-up-num {
-  font-family: 'DM Serif Display', 'Plus Jakarta Sans', serif;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
   font-size: 64px;
   line-height: 1;
   color: #131718;
@@ -3115,6 +3116,7 @@ html:has(.lp) #app {
 }
 .count-up-prefix, .count-up-suffix {
   font-size: 36px;
+  font-weight: 700;
   color: var(--brand-accent, #ff6b35);
 }
 .count-up-label {
