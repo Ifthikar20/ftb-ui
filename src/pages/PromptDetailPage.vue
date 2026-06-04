@@ -179,7 +179,23 @@
                 <TableCell>
                   <span class="pd-brand-cell">
                     <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
-                    <span class="pd-brand-name">{{ b.name }}</span>
+                    <a
+                      v-if="b.domain"
+                      :href="`https://${b.domain}`"
+                      target="_blank"
+                      rel="noopener"
+                      class="pd-brand-name pd-brand-link"
+                      @click.stop
+                    >{{ b.name }}</a>
+                    <span v-else class="pd-brand-name">{{ b.name }}</span>
+                    <a
+                      v-if="b.domain"
+                      :href="`https://${b.domain}`"
+                      target="_blank"
+                      rel="noopener"
+                      class="pd-brand-domain"
+                      @click.stop
+                    >{{ b.domain }}</a>
                     <span v-if="b.is_self" class="pd-self-pill">you</span>
                   </span>
                 </TableCell>
@@ -1223,6 +1239,18 @@ function onFaviconError(ev, d) {
   object-fit: contain; background: var(--muted);
 }
 .pd-brand-name { font-weight: 500; }
+.pd-brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+.pd-brand-link:hover { color: var(--primary); text-decoration: underline; }
+.pd-brand-domain {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  color: var(--muted-foreground, #64748b);
+  text-decoration: none;
+}
+.pd-brand-domain:hover { text-decoration: underline; }
 .pd-self-pill {
   display: inline-block;
   margin-left: 6px;

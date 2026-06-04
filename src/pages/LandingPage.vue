@@ -11,7 +11,6 @@
         <div class="nav-links">
           <a href="#features">Features</a>
           <a href="#how">How It Works</a>
-          <a href="#pricing">Pricing</a>
         </div>
         <div class="nav-right">
           <router-link to="/login" class="nav-link-text">Log In</router-link>
@@ -24,12 +23,10 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-left">
-          <span class="hero-eyebrow anim" data-anim="fade-up">Generative Engine Optimization</span>
           <h1 class="hero-h anim" data-anim="fade-up">
             <span class="tw-line" ref="twLine1"></span><br/>
             <span class="tw-line" ref="twLine2"></span><br/>
             <em><span class="tw-line" ref="twLine3"></span></em>
-            <span class="tw-cursor" :class="{ 'tw-cursor--done': twDone }">|</span>
           </h1>
           <p class="hero-p anim" data-anim="fade-up" data-delay="60">
             See how often
@@ -48,9 +45,8 @@
           <div class="probe">
             <!-- Prompt bar -->
             <div class="probe-prompt">
-              <span class="probe-prompt-label">Prompt</span>
               <span class="probe-prompt-text">
-                <span class="probe-typer">Best email marketing tool for D2C brands?</span>
+                <span class="probe-typer" :key="scenarioIdx">{{ probePrompt }}</span>
                 <span class="probe-caret"></span>
               </span>
             </div>
@@ -59,7 +55,7 @@
             <div class="probe-grid">
               <div
                 v-for="(p, idx) in probeReplies"
-                :key="p.key"
+                :key="scenarioIdx + ':' + p.key"
                 class="probe-card"
                 :class="'is-' + p.key"
                 :style="{ '--d': (idx * 0.45) + 's' }"
@@ -74,10 +70,6 @@
                     v-html="providerLogo(p.key)"
                   ></span>
                   <span class="probe-name">{{ p.name }}</span>
-                  <span class="probe-status">
-                    <span class="probe-status-dot"></span>
-                    <span class="probe-status-txt">answered</span>
-                  </span>
                 </div>
                 <div class="probe-stream">
                   <span class="probe-stream-text">{{ p.before }}</span>
@@ -89,76 +81,22 @@
                     v-for="src in p.sources"
                     :key="src.domain"
                     class="probe-tag"
-                    :title="src.domain"
+                    :title="src.label"
                   >
                     <img
                       class="probe-tag-fav"
                       :src="faviconFor(src.domain)"
-                      :alt="''"
-                      width="14" height="14"
+                      :alt="src.label"
+                      width="18" height="18"
                       loading="lazy"
                       referrerpolicy="no-referrer"
                       @error="(e) => e.target.style.display = 'none'"
                     />
-                    {{ src.label }}
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- Summary footer: ring + four count-up metric tiles -->
-            <div class="probe-foot">
-              <div class="probe-ring" aria-hidden="true">
-                <svg viewBox="0 0 36 36">
-                  <defs>
-                    <linearGradient id="probe-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%"  stop-color="#ff6b35"/>
-                      <stop offset="100%" stop-color="#ff9d6b"/>
-                    </linearGradient>
-                  </defs>
-                  <circle class="probe-ring-bg" cx="18" cy="18" r="15.9"/>
-                  <circle class="probe-ring-fg" cx="18" cy="18" r="15.9"/>
-                </svg>
-                <span class="probe-ring-num">{{ animatedMetrics.visibility }}<i>%</i></span>
-              </div>
-              <div class="probe-foot-copy">
-                <div class="probe-foot-h">Visibility score</div>
-                <div class="probe-foot-sub">
-                  Your brand surfaced in
-                  <strong>{{ animatedMetrics.visibility }}%</strong>
-                  of category prompts
-                  <span class="probe-delta">{{ probeMetrics.visibility.delta }} this week</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- New: live stats strip — four tiles, staggered fade-up. -->
-            <div class="probe-stats">
-              <div class="probe-stat" style="--d: 1.9s">
-                <div class="probe-stat-h">Mentions</div>
-                <div class="probe-stat-v">{{ animatedMetrics.mentions }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.mentions.delta }}</div>
-              </div>
-              <div class="probe-stat" style="--d: 2.05s">
-                <div class="probe-stat-h">Avg position</div>
-                <div class="probe-stat-v">{{ animatedMetrics.avgPosition.toFixed(1) }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.avgPosition.delta }}</div>
-              </div>
-              <div class="probe-stat" style="--d: 2.2s">
-                <div class="probe-stat-h">Citations</div>
-                <div class="probe-stat-v">{{ animatedMetrics.citations }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.citations.delta }}</div>
-              </div>
-              <div
-                class="probe-stat"
-                style="--d: 2.35s"
-                title="Position-Adjusted Word Count — paper eq. 3. Fraction of the AI response that cites your brand, weighted by sentence position."
-              >
-                <div class="probe-stat-h">Imp<sub>pwc</sub></div>
-                <div class="probe-stat-v">{{ animatedMetrics.impPwc.toFixed(2) }}</div>
-                <div class="probe-stat-d is-up">{{ probeMetrics.impPwc.delta }}</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -198,43 +136,52 @@
       </div>
     </section>
 
-    <!-- ═══ Why you need this — ad-copy section ═══ -->
+    <!-- ═══ Why this exists — editorial / pam-style ═══ -->
     <section class="why anim" data-anim="fade-up">
       <div class="wrap why-wrap">
-        <span class="why-eyebrow">Why this exists</span>
-        <h2 class="why-h">
-          Your customers stopped Googling.<br/>
-          <em>They started <span class="why-h-pop">asking.</span></em>
-        </h2>
-        <p class="why-sub">
-          Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
-          Gemini, or Perplexity instead. The AI gives them one answer, two competitors,
-          and a recommendation. If your brand isn't in that answer — you weren't even in the room.
-        </p>
+        <div class="why-head">
+          <h2 class="why-h">
+            Your customers stopped Googling.<br/>
+            <span class="why-h-quiet">They started asking.</span>
+          </h2>
+          <p class="why-sub">
+            Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
+            Gemini, or Perplexity instead. The model gives them one answer, two competitors,
+            and a recommendation. If your brand isn't in that answer — you weren't even in the room.
+          </p>
+        </div>
 
         <div class="why-grid">
-          <div class="why-card anim" data-anim="fade-up" data-delay="60">
-            <div class="why-card-num">1</div>
-            <div class="why-card-h">SEO ranks pages.<br/>AI ranks <em>brands.</em></div>
-            <p>You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
-          </div>
-          <div class="why-card anim" data-anim="fade-up" data-delay="140">
-            <div class="why-card-num">2</div>
-            <div class="why-card-h">Every missed mention<br/>is a <em>handed-over</em> sale.</div>
-            <p>When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
-          </div>
-          <div class="why-card anim" data-anim="fade-up" data-delay="220">
-            <div class="why-card-num">3</div>
-            <div class="why-card-h">You can't fix<br/>what you can't <em>see.</em></div>
-            <p>Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
-          </div>
+          <article class="why-card anim" data-anim="fade-up" data-delay="60">
+            <div class="why-card-top">
+              <span class="why-card-num">01</span>
+            </div>
+            <h3 class="why-card-h">SEO ranks pages.<br/>AI ranks brands.</h3>
+            <p class="why-card-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+          </article>
+
+          <article class="why-card anim" data-anim="fade-up" data-delay="140">
+            <div class="why-card-top">
+              <span class="why-card-num">02</span>
+            </div>
+            <h3 class="why-card-h">Every missed mention<br/>is a handed-over sale.</h3>
+            <p class="why-card-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+          </article>
+
+          <article class="why-card anim" data-anim="fade-up" data-delay="220">
+            <div class="why-card-top">
+              <span class="why-card-num">03</span>
+            </div>
+            <h3 class="why-card-h">You can't fix<br/>what you can't see.</h3>
+            <p class="why-card-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+          </article>
         </div>
 
         <div class="why-cta anim" data-anim="fade-up" data-delay="300">
           <span class="why-cta-line">The brands winning AI search are the ones <strong>measuring it</strong>.</span>
           <router-link to="/login" class="why-cta-btn">
             See where you stand
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </router-link>
         </div>
       </div>
@@ -251,18 +198,36 @@
         <div class="count-up-grid">
           <div class="count-up-card anim" data-anim="fade-up" data-delay="80">
             <div class="count-up-num">{{ stat0Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Buyers using LLMs to research</div>
-            <div class="count-up-note">of B2B buyers say AI assistants influence their purchase research</div>
+            <div class="count-up-label">Buyers research with LLMs</div>
+            <div class="count-up-note">of B2B buyers used LLMs during their buying process in 2025</div>
+            <a
+              class="count-up-cite"
+              href="https://6sense.com/science-of-b2b/buyer-experience-report-2025/"
+              target="_blank"
+              rel="noopener"
+            >Source: 6sense, 2025 Buyer Experience Report</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="160">
-            <div class="count-up-num">{{ stat1Display }}<span class="count-up-suffix">x</span></div>
-            <div class="count-up-label">Visibility gap</div>
-            <div class="count-up-note">average gap between dominant brand and tail brand in LLM citations</div>
+            <div class="count-up-num"><span class="count-up-prefix">+</span>{{ stat1Display }}<span class="count-up-suffix">%</span></div>
+            <div class="count-up-label">Visibility you can win</div>
+            <div class="count-up-note">lift in brand visibility from GEO-optimized content in AI answers</div>
+            <a
+              class="count-up-cite"
+              href="https://arxiv.org/abs/2311.09735"
+              target="_blank"
+              rel="noopener"
+            >Source: Aggarwal et al., GEO (KDD 2024)</a>
           </div>
           <div class="count-up-card anim" data-anim="fade-up" data-delay="240">
-            <div class="count-up-num"><span class="count-up-prefix">&lt;</span>{{ stat2Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Tracking GEO</div>
-            <div class="count-up-note">of brands actively measure their LLM presence today</div>
+            <div class="count-up-num">{{ stat2Display }}<span class="count-up-suffix">%</span></div>
+            <div class="count-up-label">Zero-click searches</div>
+            <div class="count-up-note">of searches now end without a click to another website</div>
+            <a
+              class="count-up-cite"
+              href="https://www.bain.com/insights/goodbye-clicks-hello-ai-zero-click-search-redefines-marketing/"
+              target="_blank"
+              rel="noopener"
+            >Source: Bain &amp; Company, 2025</a>
           </div>
         </div>
       </div>
@@ -368,19 +333,6 @@
       </div>
     </section>
 
-    <!-- ═══ Quote / pilot ═══ -->
-    <section class="pull-quote anim" data-anim="fade-up">
-      <div class="wrap">
-        <blockquote class="pq-text">
-          <span class="pq-mark">&ldquo;</span>
-          We were measuring SEO every week and missing the entire AI side of search.
-          Within two weeks of running this we found three Reddit threads where
-          competitors had locked us out &mdash; and shipped fixes.
-        </blockquote>
-        <div class="pq-attr">Internal pilot &middot; Q1 2026</div>
-      </div>
-    </section>
-
     <!-- ═══ How It Works ═══ -->
     <section class="how" id="how">
       <div class="wrap">
@@ -390,30 +342,6 @@
             <div class="step-num">{{ i + 1 }}</div>
             <h3>{{ s.title }}</h3>
             <p>{{ s.desc }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Pricing ═══ -->
-    <section class="pricing" id="pricing">
-      <div class="wrap">
-        <h2 class="sec-h anim" data-anim="fade-up">Simple pricing,<br/><em>no surprises.</em></h2>
-        <div class="price-grid">
-          <div v-for="(plan, i) in plans" :key="plan.name"
-               class="price-card anim" data-anim="fade-up" :data-delay="i * 80"
-               :class="{ featured: plan.featured }">
-            <div class="pop" v-if="plan.featured">Popular</div>
-            <h3>{{ plan.name }}</h3>
-            <div class="price-amount">
-              <span class="price-big">{{ plan.price }}</span>
-              <span class="price-per" v-if="plan.per">/{{ plan.per }}</span>
-            </div>
-            <p class="price-desc">{{ plan.desc }}</p>
-            <ul>
-              <li v-for="f in plan.features" :key="f">{{ f }}</li>
-            </ul>
-            <router-link to="/login" class="price-btn" :class="{ dark: plan.featured }">{{ plan.cta }}</router-link>
           </div>
         </div>
       </div>
@@ -492,7 +420,6 @@
             <div class="footer-col-title">Product</div>
             <a href="#features">Features</a>
             <a href="#how">How it works</a>
-            <a href="#pricing">Pricing</a>
             <a href="#faq">FAQ</a>
           </div>
 
@@ -547,39 +474,6 @@ const activeCat = ref(0)
 const trackOffset = ref(0)
 const trackRef = ref(null)
 
-// ── Hero metric count-up ─────────────────────────────────────────
-// Framer-Motion-style spring-eased ramp from 0 → target on mount.
-// Built without a dep — single rAF loop, easeOutCubic over 1.4s, kicks
-// in 600ms after the card cascade ends so the eye lands on the new
-// value just as the user finishes reading the prompt.
-const animatedMetrics = ref({
-  visibility: 0, mentions: 0, avgPosition: 0, citations: 0, impPwc: 0,
-})
-let _metricRaf = null
-
-function _easeOutCubic(t) { return 1 - Math.pow(1 - t, 3) }
-
-function _animateMetrics() {
-  // probeMetrics is declared later in this script setup — read it
-  // lazily inside the closure so the temporal-dead-zone doesn't bite.
-  const targets = probeMetrics
-  const start = performance.now() + 600
-  const dur = 1400
-  function tick(now) {
-    const elapsed = Math.max(0, now - start)
-    const t = Math.min(1, elapsed / dur)
-    const e = _easeOutCubic(t)
-    animatedMetrics.value = {
-      visibility:  +(targets.visibility.value  * e).toFixed(0),
-      mentions:    +(targets.mentions.value    * e).toFixed(0),
-      avgPosition: +(targets.avgPosition.value * e).toFixed(1),
-      citations:   +(targets.citations.value   * e).toFixed(0),
-      impPwc:      +(targets.impPwc.value      * e).toFixed(2),
-    }
-    if (t < 1) _metricRaf = requestAnimationFrame(tick)
-  }
-  _metricRaf = requestAnimationFrame(tick)
-}
 
 // Magnetic-tilt for the four AI reply cards. CSS-only transform —
 // JS just sets two custom props off pointer position so the
@@ -806,7 +700,7 @@ onMounted(() => {
   startCycle()
   runTypewriter()
   startFeatureAutoAdvance()
-  _animateMetrics()
+  startScenarioCycle()
 
   // Count-up stats observer
   let statsObs = null
@@ -842,7 +736,7 @@ onMounted(() => {
     finalObs && finalObs.disconnect()
     clearInterval(cycleTimer)
     stopFeatureAutoAdvance()
-    if (_metricRaf) cancelAnimationFrame(_metricRaf)
+    if (scenarioTimer) clearInterval(scenarioTimer)
     if (_promptCycleStop) _promptCycleStop()
   })
 
@@ -859,65 +753,155 @@ const heroProviders = [
   { key: 'perplexity', name: 'Perplexity', pct: 64, cited: 21, sources: 'Reddit · Quora · Stack Overflow' },
 ]
 
-// Hero "probe" animation — shows the FetchBot loop: ask a prompt,
-// four AIs answer, your brand surfaces in each reply.
-// `sources` is `{label, domain}` so we can render the real favicon
-// for each citation chip via Google's favicon CDN.
-const probeReplies = [
+// Hero "probe" animation — cycles through a handful of category prompts,
+// each with its own set of model answers. Sources are `{label, domain}`
+// so we render the real favicon via Google's favicon CDN.
+const probeScenarios = [
   {
-    key: 'anthropic', name: 'Claude',
-    before: 'For D2C teams under 50k subscribers I usually point people to ',
-    brand: 'Tidewater',
-    after: '. Deliverability is solid and the segmentation builder is forgiving.',
-    sources: [
-      { label: 'Reddit',     domain: 'reddit.com' },
-      { label: 'TechCrunch', domain: 'techcrunch.com' },
-      { label: 'Wikipedia',  domain: 'wikipedia.org' },
+    prompt: 'Best sustainable clothing brands for everyday basics?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For organic-cotton basics that hold up after fifty washes, ',
+        brand: 'Loomvale',
+        after: ' comes up most often in long-wear reviews.',
+        sources: [
+          { label: 'Wirecutter',  domain: 'nytimes.com' },
+          { label: 'Good On You', domain: 'goodonyou.eco' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A name to know in this category is ',
+        brand: 'Loomvale',
+        after: '. Most reviewers flag the supply-chain transparency and Bluesign certification.',
+        sources: [
+          { label: 'Vogue Business', domain: 'voguebusiness.com' },
+          { label: 'BoF',            domain: 'businessoffashion.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Coverage from the past year highlights ',
+        brand: 'Loomvale',
+        after: ' for low-impact dyes and a take-back program.',
+        sources: [
+          { label: 'NYT Style', domain: 'nytimes.com' },
+          { label: 'Guardian',  domain: 'theguardian.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'Community threads point to ',
+        brand: 'Loomvale',
+        after: ' for fit consistency and a fair return window.',
+        sources: [
+          { label: 'r/ffa',        domain: 'reddit.com' },
+          { label: 'Substack',     domain: 'substack.com' },
+        ],
+      },
     ],
   },
   {
-    key: 'openai', name: 'GPT-4',
-    before: 'A solid pick for direct-to-consumer ESPs is ',
-    brand: 'Tidewater',
-    after: ' — Shopify-native, AMP-email support, fair tiered pricing.',
-    sources: [
-      { label: 'NYT',       domain: 'nytimes.com' },
-      { label: 'Medium',    domain: 'medium.com' },
-      { label: 'Wikipedia', domain: 'wikipedia.org' },
+    prompt: 'Best meditation apps for beginners?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For people just starting a practice, ',
+        brand: 'Stillpath',
+        after: ' is a common recommendation — short guided sessions and no streak pressure.',
+        sources: [
+          { label: 'Verywell Mind', domain: 'verywellmind.com' },
+          { label: 'Healthline',    domain: 'healthline.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A frequently cited option for beginners is ',
+        brand: 'Stillpath',
+        after: '. The onboarding is structured around 10-minute foundational lessons.',
+        sources: [
+          { label: 'NYT Well',   domain: 'nytimes.com' },
+          { label: 'App Store',  domain: 'apple.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Most 2026 round-ups list ',
+        brand: 'Stillpath',
+        after: ' among the top picks for first-time users.',
+        sources: [
+          { label: 'CNET',     domain: 'cnet.com' },
+          { label: 'PCMag',    domain: 'pcmag.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'User feedback on ',
+        brand: 'Stillpath',
+        after: ' notes a calm interface and a free tier that is genuinely usable.',
+        sources: [
+          { label: 'r/meditation', domain: 'reddit.com' },
+          { label: 'Product Hunt', domain: 'producthunt.com' },
+        ],
+      },
     ],
   },
   {
-    key: 'google', name: 'Gemini',
-    before: 'Most 2026 marketing benchmarks single out ',
-    brand: 'Tidewater',
-    after: ' for brands that need flow automation without a vendor lock-in.',
-    sources: [
-      { label: 'Bloomberg', domain: 'bloomberg.com' },
-      { label: 'BBC',       domain: 'bbc.com' },
-      { label: 'gov',       domain: 'usa.gov' },
-    ],
-  },
-  {
-    key: 'perplexity', name: 'Perplexity',
-    before: 'Top community recommendation is ',
-    brand: 'Tidewater',
-    after: '. Cited often for cleaner SMS hand-off and post-purchase flows.',
-    sources: [
-      { label: 'Quora',          domain: 'quora.com' },
-      { label: 'Stack Overflow', domain: 'stackoverflow.com' },
-      { label: 'Reddit',         domain: 'reddit.com' },
+    prompt: 'Best project management apps for remote teams?',
+    replies: [
+      {
+        key: 'anthropic', name: 'Claude',
+        before: 'For async-first teams, ',
+        brand: 'Acrelane',
+        after: ' covers the basics — timelines, docs, and lightweight tickets — without ceremony.',
+        sources: [
+          { label: 'GitHub', domain: 'github.com' },
+          { label: 'HN',     domain: 'news.ycombinator.com' },
+        ],
+      },
+      {
+        key: 'openai', name: 'GPT-4',
+        before: 'A frequently mentioned option is ',
+        brand: 'Acrelane',
+        after: ', especially for teams already standardised on Slack and GitHub.',
+        sources: [
+          { label: 'TechCrunch', domain: 'techcrunch.com' },
+          { label: 'The Verge',  domain: 'theverge.com' },
+        ],
+      },
+      {
+        key: 'google', name: 'Gemini',
+        before: 'Comparison reviews place ',
+        brand: 'Acrelane',
+        after: ' near the top for distributed engineering teams.',
+        sources: [
+          { label: 'Forbes', domain: 'forbes.com' },
+          { label: 'Wired',  domain: 'wired.com' },
+        ],
+      },
+      {
+        key: 'perplexity', name: 'Perplexity',
+        before: 'Practitioner threads cite ',
+        brand: 'Acrelane',
+        after: ' for a clean API and a Gantt view that does not get in the way.',
+        sources: [
+          { label: 'r/productivity', domain: 'reddit.com' },
+          { label: 'Indie Hackers',  domain: 'indiehackers.com' },
+        ],
+      },
     ],
   },
 ]
 
-// Live metrics for the hero footer — drives the stats strip + ring.
-// Each tile shows a count-up animation on first mount via `useCountUp`.
-const probeMetrics = {
-  visibility:   { value: 38,   suffix: '%',  label: 'Visibility',  delta: '+12' },
-  mentions:     { value: 56,   suffix: '',   label: 'Mentions',    delta: '+9'  },
-  avgPosition:  { value: 1.4,  suffix: '',   label: 'Avg position', delta: '−0.3', deltaPositive: true },
-  citations:    { value: 23,   suffix: '',   label: 'Citations',   delta: '+5'  },
-  impPwc:       { value: 0.42, suffix: '',   label: 'Imp pwc',     delta: '+0.08' },
+const scenarioIdx = ref(0)
+const probePrompt = computed(() => probeScenarios[scenarioIdx.value].prompt)
+const probeReplies = computed(() => probeScenarios[scenarioIdx.value].replies)
+let scenarioTimer = null
+function startScenarioCycle() {
+  scenarioTimer = setInterval(() => {
+    scenarioIdx.value = (scenarioIdx.value + 1) % probeScenarios.length
+  }, 7000)
 }
 
 // Provider logo registry — inline SVGs of each AI's actual brand
@@ -1142,16 +1126,6 @@ function startPromptCycle() {
   let idx = 0
   let cancelled = false
   let timer = null
-  const tickIn = (text, target, speed) => new Promise(resolve => {
-    let i = target.length
-    typedPrompt.value = text
-    const t = setInterval(() => {
-      if (cancelled) { clearInterval(t); resolve(); return }
-      i--
-      typedPrompt.value = target.slice(0, i)
-      if (i <= 0) { clearInterval(t); resolve() }
-    }, speed)
-  })
   const typeIn = (target, speed) => new Promise(resolve => {
     let i = 0
     typedPrompt.value = ''
@@ -1167,19 +1141,17 @@ function startPromptCycle() {
   const loop = async () => {
     while (!cancelled) {
       const ex = PROMPT_EXAMPLES[idx]
-      // Type into the search bar
+      // Type the query into the search bar.
       await typeIn(ex.q, 45)
       if (cancelled) break
-      await wait(420)
-      // Push a new row at the top, keep last 3
+      await wait(520)
+      // "Submit": clear the bar and drop the query into the results list
+      // in the same tick, so the prompt is never shown in both places.
       const row = { ...ex, id: 'r-' + Date.now() + '-' + idx }
+      typedPrompt.value = ''
       visiblePromptRows.value = [row, ...visiblePromptRows.value].slice(0, 3)
-      await wait(1500)
+      await wait(1800)
       if (cancelled) break
-      // Backspace before the next prompt
-      await tickIn(ex.q, ex.q, 18)
-      if (cancelled) break
-      await wait(120)
       idx = (idx + 1) % PROMPT_EXAMPLES.length
     }
   }
@@ -1203,7 +1175,7 @@ const faqItems = [
   { q: 'Which LLMs do you track?',
     a: 'All the major ones your buyers are actually asking. New providers get added as they hit real usage.' },
   { q: 'Do I need to install anything on my site?',
-    a: 'No pixel, no script, no code. Add your domain and we start tracking visibility from the outside in — the same way an LLM sees you.' },
+    a: 'For LLM visibility tracking, no — add your domain and we start measuring from the outside in, the same way an LLM sees you. If you also want our web analytics (visitors, sessions, sources, conversions), drop in our lightweight pixel — it is one snippet and takes a minute. The pixel is optional and only powers the analytics side.' },
   { q: 'How often is the data refreshed?',
     a: "Prompts are re-run continuously, so visibility, sentiment, and citations reflect what LLMs are saying right now — not a snapshot from last week." },
   { q: 'How accurate are the citations?',
@@ -1213,12 +1185,12 @@ const faqItems = [
 ]
 
 /* ── Animated count-up stats ── */
-const STAT_TARGETS = [74, 3.2, 10]
+const STAT_TARGETS = [94, 40, 60]
 const stat0 = ref(0)
 const stat1 = ref(0)
 const stat2 = ref(0)
 const stat0Display = computed(() => Math.round(stat0.value).toString())
-const stat1Display = computed(() => stat1.value.toFixed(1))
+const stat1Display = computed(() => Math.round(stat1.value).toString())
 const stat2Display = computed(() => Math.round(stat2.value).toString())
 const statsSection = ref(null)
 let statsAnimated = false
@@ -1301,10 +1273,10 @@ em { color: #5B8DEF; font-style: italic; }
   background: #131718;
   color: #fcd34d;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 800;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  padding: 3px 8px;
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
   border-radius: 999px;
   vertical-align: middle;
 }
@@ -1360,13 +1332,17 @@ em { color: #5B8DEF; font-style: italic; }
 .hero-word-cycler {
   display: inline-block;
   position: relative;
-  min-width: 7.5em;
+  /* Reserve the widest word ("Perplexity") so the following text never
+     reflows when the word cycles — kills the horizontal jitter. */
+  min-width: 6em;
+  text-align: left;
   vertical-align: baseline;
 }
 .hero-word {
   display: inline-block;
   color: var(--brand-accent, #ff6b35);
   font-weight: 600;
+  white-space: nowrap;
 }
 .hero-bullets {
   list-style: none;
@@ -1423,59 +1399,51 @@ em { color: #5B8DEF; font-style: italic; }
 .probe {
   position: relative;
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: none;
   border-radius: 24px;
-  padding: 20px;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 30px 70px rgba(15, 23, 42, 0.12);
+  padding: 24px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-}
-.probe::before {
-  content: '';
-  position: absolute; inset: -40%;
-  background: radial-gradient(ellipse at top right, rgba(255, 107, 53, 0.10), transparent 60%);
-  pointer-events: none;
 }
 
 /* Prompt typing bar */
 .probe-prompt {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
-  margin-bottom: 14px;
+  padding: 14px 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  background: #f7f7f7;
+  margin-bottom: 18px;
 }
 .probe-prompt-label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #ff6b35;
+  text-transform: uppercase; color: #ff385c;
   padding: 4px 8px; border-radius: 6px;
-  background: rgba(255, 107, 53, 0.10);
+  background: rgba(255, 56, 92, 0.10);
   flex-shrink: 0;
 }
 .probe-prompt-text {
-  font-size: 14px; color: #1f2937; font-weight: 500;
+  font-size: 15px; color: #222222; font-weight: 500;
   display: inline-flex; align-items: center; min-width: 0;
 }
 .probe-typer {
   display: inline-block;
   white-space: nowrap; overflow: hidden;
   border-right: none;
-  width: 0;
-  animation: probe-type 7s steps(26) infinite;
+  max-width: 100%;
+  animation: probe-type 6.4s steps(60) 1 both;
 }
 .probe-caret {
   display: inline-block;
-  width: 2px; height: 16px;
-  background: #ff6b35;
+  width: 2px; height: 17px;
+  background: #ff385c;
   margin-left: 2px;
   animation: probe-blink 1s step-end infinite;
 }
 @keyframes probe-type {
-  0%        { width: 0; }
-  35%, 80%  { width: 26ch; }
-  90%, 100% { width: 0; }
+  0%   { width: 0; }
+  60%  { width: 100%; }
+  100% { width: 100%; }
 }
 @keyframes probe-blink {
   50% { opacity: 0; }
@@ -1485,42 +1453,35 @@ em { color: #5B8DEF; font-style: italic; }
 .probe-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
   margin-bottom: 14px;
 }
 .probe-card {
   position: relative;
-  padding: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
   transform: translateY(8px);
   animation: probe-card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards;
   overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 @keyframes probe-card-in {
   to { opacity: 1; transform: translateY(0); }
 }
-.probe-card::after {
-  /* sweeping highlight that runs once when the card lands */
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 107, 53, 0.18) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: probe-sweep 1.2s ease-out var(--d, 0s) forwards;
-  pointer-events: none;
+.probe-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
-@keyframes probe-sweep {
-  to { transform: translateX(100%); }
-}
-
 .probe-card-head {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
 }
 .probe-logo {
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 28px; height: 28px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   /* Brand mark uses currentColor; container provides the tinted bg. */
@@ -1528,17 +1489,17 @@ em { color: #5B8DEF; font-style: italic; }
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .probe-logo svg {
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   display: block;
 }
-.probe-card:hover .probe-logo { transform: scale(1.12) rotate(-3deg); }
+.probe-card:hover .probe-logo { transform: scale(1.08); }
 .probe-logo.is-anthropic  { background: #d97706; color: #fff; }
 .probe-logo.is-openai     { background: #0f1212; color: #fff; }
 /* Gemini logo is a gradient — keep container white so the gradient shows. */
-.probe-logo.is-google     { background: #ffffff; border: 1px solid rgba(15,23,42,0.08); }
+.probe-logo.is-google     { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); }
 .probe-logo.is-perplexity { background: #1fb8a8; color: #fff; }
 .probe-name {
-  font-size: 13px; font-weight: 600; color: #1f2937;
+  font-size: 14px; font-weight: 600; color: #222222;
   flex: 1;
 }
 .probe-status {
@@ -1558,43 +1519,35 @@ em { color: #5B8DEF; font-style: italic; }
 }
 
 .probe-stream {
-  font-size: 12.5px; line-height: 1.5; color: #4b5563;
-  margin-bottom: 8px;
+  font-size: 13px; line-height: 1.55; color: #484848;
+  margin-bottom: 12px;
 }
 .probe-mark {
-  background: linear-gradient(120deg, rgba(255, 107, 53, 0.0) 0%, rgba(255, 107, 53, 0.30) 50%, rgba(255, 107, 53, 0.0) 100%);
-  background-size: 220% 100%;
-  background-position: 100% 0;
-  color: #1f2937;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: 4px;
-  animation: probe-highlight 4s ease-in-out infinite;
-}
-@keyframes probe-highlight {
-  0%, 30%   { background-position: 100% 0; box-shadow: 0 0 0 rgba(255, 107, 53, 0); }
-  55%, 85%  { background-position: 0% 0;   box-shadow: 0 0 18px rgba(255, 107, 53, 0.35); }
-  100%      { background-position: -100% 0; box-shadow: 0 0 0 rgba(255, 107, 53, 0); }
+  background: rgba(255, 56, 92, 0.12);
+  color: #222222;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 5px;
 }
 
 .probe-tags {
-  display: flex; flex-wrap: wrap; gap: 4px;
+  display: flex; flex-wrap: wrap; gap: 6px;
 }
 .probe-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10.5px; font-weight: 600;
-  padding: 2px 8px 2px 4px;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.05);
-  color: #4b5563;
-  transition: background 0.2s ease, transform 0.2s ease;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .probe-tag:hover {
-  background: rgba(15, 23, 42, 0.09);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 .probe-tag-fav {
-  width: 14px; height: 14px; border-radius: 3px;
+  width: 18px; height: 18px; border-radius: 4px;
   background: #fff;
   object-fit: contain;
   flex-shrink: 0;
@@ -1749,8 +1702,6 @@ em { color: #5B8DEF; font-style: italic; }
   .probe-typer { animation: none; width: auto; }
   .probe-caret { animation: none; opacity: 0.6; }
   .probe-card { opacity: 1; transform: none; animation: none; }
-  .probe-card::after { display: none; }
-  .probe-mark { animation: none; background-position: 0 0; }
   .probe-ring-fg { animation: none; stroke-dashoffset: 62; }
   .probe-status-dot { animation: none; }
   .probe-stat { opacity: 1; transform: none; animation: none; }
@@ -1795,6 +1746,42 @@ em { color: #5B8DEF; font-style: italic; }
 }
 
 .hero-p { font-size: 16px; color: #6e6a65; line-height: 1.7; max-width: 480px; margin-bottom: 32px; }
+
+.hero-manifest {
+  position: relative;
+  max-width: 480px;
+  margin: 0 0 32px;
+  padding: 20px 22px 18px;
+  border-left: 3px solid #ff6b35;
+  background: linear-gradient(180deg, rgba(255, 107, 53, 0.06), rgba(255, 107, 53, 0));
+  border-radius: 4px 10px 10px 4px;
+}
+.hero-manifest-mark {
+  position: absolute;
+  top: -6px; left: 14px;
+  font-family: Georgia, serif;
+  font-size: 42px;
+  line-height: 1;
+  color: #ff6b35;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.hero-manifest-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1f2937;
+  font-weight: 500;
+  font-style: italic;
+}
+.hero-manifest-attr {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6e6a65;
+}
 .hero-ctas { display: flex; gap: 12px; }
 .btn-primary {
   padding: 14px 32px; background: #131718; color: #fff;
@@ -2260,7 +2247,9 @@ em { color: #5B8DEF; font-style: italic; }
 
 /* ── How It Works ── */
 .how { padding: 96px 0; background: #ffffff; }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 960px)  { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .steps { grid-template-columns: 1fr; } }
 .step {
   background: #fff; border: 1px solid rgba(0,0,0,0.06);
   border-radius: 20px; padding: 32px 24px;
@@ -2923,155 +2912,169 @@ html:has(.lp) #app {
   to   { transform: translateX(-50%); }
 }
 
-/* ── Why you need this ── */
+/* ── Why this exists (editorial / light) ── */
 .why {
   position: relative;
-  padding: 100px 0 60px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  padding: 120px 0 96px;
+  background: #ffffff;
+  color: #0f172a;
+  overflow: hidden;
 }
-.why-wrap { max-width: 1080px; }
+.why::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px circle at 12% 0%, rgba(255, 107, 53, 0.05), transparent 55%),
+    radial-gradient(700px circle at 88% 100%, rgba(59, 130, 246, 0.04), transparent 60%);
+  pointer-events: none;
+}
+.why-wrap { max-width: 1080px; position: relative; z-index: 1; }
+.why-head { max-width: 760px; margin-bottom: 72px; }
 .why-eyebrow {
-  display: inline-block;
-  font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #ff6b35;
-  padding: 5px 12px;
-  border-radius: 9999px;
-  background: rgba(255, 107, 53, 0.10);
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+}
+.why-eyebrow-dot {
+  width: 6px; height: 6px;
+  background: #ff6b35;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.45);
 }
 .why-h {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
-  font-size: clamp(2.2rem, 4.5vw, 3.6rem);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
   color: #0f172a;
-  margin-bottom: 18px;
+  margin: 0 0 22px;
 }
-.why-h em {
-  font-style: normal;
-  font-weight: 700;
-  color: #1f2937;
-}
-.why-h-pop {
-  background: linear-gradient(120deg, #ff6b35 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.why-h-quiet {
+  display: block;
+  color: #94a3b8;
+  font-weight: 400;
 }
 .why-sub {
-  max-width: 720px;
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: #475569;
-  margin-bottom: 56px;
+  margin: 0;
 }
+
 .why-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  margin-bottom: 56px;
+  gap: 20px;
+  margin: 0 0 28px;
 }
 .why-card {
   position: relative;
-  padding: 28px 24px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 40px rgba(15, 23, 42, 0.05);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 28px 32px;
+  border-radius: 20px;
+  border: none;
+  /* Soft tinted backgrounds, Airbnb-style. Per-card hue set below. */
+  background: #fbf7f4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.why-card:nth-child(1) { background: #fdf3ef; }
+.why-card:nth-child(2) { background: #f2f6fb; }
+.why-card:nth-child(3) { background: #f1f8f4; }
 .why-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 107, 53, 0.35);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 24px 60px rgba(15, 23, 42, 0.10);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+}
+.why-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
 }
 .why-card-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  margin-bottom: 18px;
-  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.25);
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #ff385c;
 }
 .why-card-h {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  line-height: 1.25;
+  position: relative; z-index: 1;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
   color: #0f172a;
-  margin-bottom: 10px;
+  margin: 0 0 12px;
 }
-.why-card-h em {
-  font-style: normal;
-  color: #ff6b35;
-}
-.why-card p {
+.why-card-p {
+  position: relative; z-index: 1;
   font-size: 14.5px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: #64748b;
   margin: 0;
 }
+
 .why-cta {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 18px;
+  flex-wrap: wrap; gap: 22px;
   padding: 28px 32px;
-  border-radius: 18px;
+  border-radius: 20px;
   background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
   position: relative;
   overflow: hidden;
 }
-.why-cta::before {
-  content: '';
-  position: absolute; inset: -50% -10% auto auto;
-  width: 60%; height: 200%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 65%);
-  pointer-events: none;
-}
 .why-cta::after {
   content: '';
-  position: absolute; inset: auto auto -40% -10%;
-  width: 50%; height: 160%;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.30) 0%, transparent 65%);
+  position: absolute;
+  inset: -50% auto auto -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.22) 0%, transparent 60%);
   pointer-events: none;
 }
 .why-cta-line {
   position: relative; z-index: 1;
-  font-size: 18px;
-  color: #e2e8f0;
+  font-size: 17px;
+  color: #cbd5e1;
   max-width: 580px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 .why-cta-line strong {
-  color: #fff;
-  font-weight: 700;
+  color: #ffffff;
+  font-weight: 600;
 }
 .why-cta-btn {
   position: relative; z-index: 1;
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 22px;
-  border-radius: 9999px;
+  border-radius: 10px;
   background: #ff6b35;
   color: #ffffff;
   font-weight: 600;
   font-size: 14.5px;
   text-decoration: none;
-  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-  box-shadow: 0 8px 22px rgba(255, 107, 53, 0.35);
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 .why-cta-btn:hover {
   background: #ff5722;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(255, 107, 53, 0.45);
+  transform: translateX(2px);
 }
 
 @media (max-width: 880px) {
-  .why-grid { grid-template-columns: 1fr; }
-  .why { padding: 70px 0 40px; }
+  .why { padding: 80px 0 64px; }
+  .why-head { margin-bottom: 48px; }
+  .why-grid { grid-template-columns: 1fr; gap: 16px; }
   .why-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
 }
 
@@ -3101,7 +3104,8 @@ html:has(.lp) #app {
   border-color: #d9cfbb;
 }
 .count-up-num {
-  font-family: 'DM Serif Display', 'Plus Jakarta Sans', serif;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
   font-size: 64px;
   line-height: 1;
   color: #131718;
@@ -3112,6 +3116,7 @@ html:has(.lp) #app {
 }
 .count-up-prefix, .count-up-suffix {
   font-size: 36px;
+  font-weight: 700;
   color: var(--brand-accent, #ff6b35);
 }
 .count-up-label {
@@ -3126,6 +3131,20 @@ html:has(.lp) #app {
   font-size: 13.5px;
   color: #6b7680;
   line-height: 1.5;
+}
+.count-up-cite {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+  text-decoration: none;
+  border-bottom: 1px dotted #cbd5e1;
+}
+.count-up-cite:hover {
+  color: #475569;
+  border-bottom-color: #94a3b8;
 }
 
 /* ── Feature showcase ── */

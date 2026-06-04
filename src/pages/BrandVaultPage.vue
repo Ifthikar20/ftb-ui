@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import brandVault from '@/api/brandVault'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -9,6 +10,7 @@ import {
 import {
   ChevronRight, ChevronDown, Info, MoreHorizontal, Vault,
   Search, Copy, Check, Sparkles,
+  ShieldCheck, AlertTriangle, Plus, X, Bell,
 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
@@ -234,6 +236,165 @@ function copyKeyword(k) {
   copiedKey.value = k.keyword
   toast.success('Keyword copied')
   setTimeout(() => { if (copiedKey.value === k.keyword) copiedKey.value = '' }, 1500)
+}
+
+/* ── AI Brand Safety ────────────────────────────────────────────────── */
+const ISSUE_LABELS = {
+  hallucination: 'Hallucination',
+  unverified: 'Unverified claim',
+  outdated: 'Outdated info',
+  harmful: 'Harmful mention',
+  negative: 'Negative mention',
+}
+
+const safetyMetricsData = ref({
+  reputation_health: 100,
+  hallucinations: 0,
+  harmful_mentions: 0,
+  prompts_monitored: 0,
+  open_alerts: 0,
+})
+const safetyAlertsRaw = ref([])
+const safetyPrompts = ref([])
+const safetyLoading = ref(false)
+
+const safetyAlerts = computed(() => safetyAlertsRaw.value.map(a => ({
+  id: a.id,
+  severity: a.severity,
+  model: a.model,
+  prompt: a.prompt_text,
+  snippet: a.snippet,
+  issue: ISSUE_LABELS[a.issue] || a.issue,
+  detail: a.detail || '',
+  seenAt: timeAgo(a.detected_at || a.created_at),
+})))
+
+const safetyMetrics = computed(() => {
+  const m = safetyMetricsData.value
+  return [
+    {
+      key: 'health',
+      label: 'Reputation health',
+      value: m.reputation_health + '/100',
+      tone: m.reputation_health >= 80 ? 'good' : m.reputation_health >= 50 ? 'warn' : 'bad',
+      delta: m.open_alerts ? `${m.open_alerts} open` : 'clear',
+    },
+    {
+      key: 'halluc',
+      label: 'Hallucinations',
+      value: String(m.hallucinations),
+      tone: m.hallucinations ? 'warn' : 'good',
+      delta: m.hallucinations ? 'review' : 'none',
+    },
+    {
+      key: 'harmful',
+      label: 'Harmful mentions',
+      value: String(m.harmful_mentions),
+      tone: m.harmful_mentions ? 'bad' : 'good',
+      delta: m.harmful_mentions ? 'action needed' : 'clear',
+    },
+    {
+      key: 'monitored',
+      label: 'Prompts monitored',
+      value: String(m.prompts_monitored),
+      tone: 'neutral',
+      delta: 'across 3 models',
+    },
+  ]
+})
+
+function timeAgo(iso) {
+  if (!iso) return ''
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
+}
+
+const newPrompt = ref('')
+const websiteId = computed(() => appStore.activeWebsite?.id || null)
+
+async function loadSafety() {
+  if (!websiteId.value) return
+  safetyLoading.value = true
+  try {
+    const [metrics, prompts, alerts] = await Promise.all([
+      brandVault.safetyMetrics(websiteId.value),
+      brandVault.safetyPrompts(websiteId.value),
+      brandVault.safetyAlerts(websiteId.value, { status: 'open' }),
+    ])
+    safetyMetricsData.value = metrics.data
+    safetyPrompts.value = prompts.data.results || prompts.data || []
+    safetyAlertsRaw.value = alerts.data.results || alerts.data || []
+  } catch (err) {
+    // Keep the panel usable in dev/offline by silently degrading to empty state.
+    console.warn('Failed to load brand safety data', err)
+  } finally {
+    safetyLoading.value = false
+  }
+}
+
+async function addSafetyPrompt() {
+  const text = newPrompt.value.trim()
+  if (!text || !websiteId.value) return
+  try {
+    const { data } = await brandVault.addSafetyPrompt(websiteId.value, text)
+    const existing = safetyPrompts.value.find(p => p.id === data.id)
+    if (!existing) safetyPrompts.value.unshift(data)
+    newPrompt.value = ''
+    toast.success('Tracking prompt added')
+    safetyMetricsData.value.prompts_monitored += existing ? 0 : 1
+  } catch (err) {
+    toast.error(err?.response?.data?.detail || 'Could not add prompt')
+  }
+}
+
+async function removeSafetyPrompt(id) {
+  const prev = safetyPrompts.value
+  safetyPrompts.value = prev.filter(p => p.id !== id)
+  try {
+    await brandVault.deleteSafetyPrompt(id)
+    safetyMetricsData.value.prompts_monitored = Math.max(
+      0, safetyMetricsData.value.prompts_monitored - 1,
+    )
+  } catch (err) {
+    safetyPrompts.value = prev
+    toast.error('Could not remove prompt')
+  }
+}
+
+async function resolveAlert(id, action = 'resolve') {
+  const prev = safetyAlertsRaw.value
+  safetyAlertsRaw.value = prev.filter(a => a.id !== id)
+  try {
+    await brandVault.resolveSafetyAlert(id, action)
+    safetyMetricsData.value.open_alerts = Math.max(
+      0, safetyMetricsData.value.open_alerts - 1,
+    )
+  } catch (err) {
+    safetyAlertsRaw.value = prev
+    toast.error('Could not update alert')
+  }
+}
+
+onMounted(loadSafety)
+watch(websiteId, loadSafety)
+
+function severityClass(s) {
+  return {
+    high:   'bg-[color:var(--destructive)]/15 text-[color:var(--destructive)]',
+    medium: 'bg-[color:var(--chart-3)]/15 text-[color:var(--chart-3)]',
+    low:    'bg-secondary text-muted-foreground',
+  }[s] || 'bg-secondary text-muted-foreground'
+}
+function safetyToneClass(t) {
+  return {
+    good:    'text-[color:var(--chart-2)]',
+    warn:    'text-[color:var(--chart-3)]',
+    bad:     'text-[color:var(--destructive)]',
+    neutral: 'text-muted-foreground',
+  }[t] || 'text-muted-foreground'
 }
 </script>
 
@@ -483,6 +644,153 @@ function copyKeyword(k) {
             </tbody>
           </table>
         </div>
+      </CardContent>
+    </Card>
+
+    <!-- ── AI Brand Safety ── -->
+    <div>
+      <h2 class="inline-flex items-center gap-2 text-lg font-bold text-foreground">
+        <ShieldCheck class="size-4 text-[color:var(--chart-2)]" /> AI Brand Safety
+      </h2>
+      <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+        Protect your reputation in an era of AI hallucinations.
+        <strong class="font-semibold text-foreground">Bluefish</strong> continuously monitors for risks,
+        flags inaccurate or harmful mentions, and equips you with actionable controls to ensure
+        accurate and safe brand representation.
+      </p>
+      <ul class="mt-3 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-3">
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Protect reputation across AI channels
+        </li>
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Detect negative mentions & hallucinations
+        </li>
+        <li class="inline-flex items-center gap-1.5">
+          <Check class="size-3.5 text-[color:var(--chart-2)]" /> Track any topic with custom prompts
+        </li>
+      </ul>
+    </div>
+
+    <Card>
+      <CardContent class="grid grid-cols-2 gap-px overflow-hidden p-0 sm:grid-cols-4">
+        <div v-for="c in safetyMetrics" :key="c.key" class="flex flex-col gap-1 bg-card p-4">
+          <span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            {{ c.label }} <Info class="size-3 opacity-60" />
+          </span>
+          <span class="text-lg font-bold" :class="safetyToneClass(c.tone)">{{ c.value }}</span>
+          <span class="text-xs text-muted-foreground">{{ c.delta }}</span>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader class="flex-row items-center justify-between gap-3 space-y-0">
+        <div class="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <AlertTriangle class="size-4 text-[color:var(--chart-3)]" /> Active alerts
+        </div>
+        <button class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <Bell class="size-3.5" /> Alert settings
+        </button>
+      </CardHeader>
+      <CardContent>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                <th class="py-2 pr-3">Severity</th>
+                <th class="py-2 pr-3">Issue</th>
+                <th class="py-2 pr-3">Model · prompt</th>
+                <th class="py-2 pr-3">Detected</th>
+                <th class="py-2 pr-3">Seen</th>
+                <th class="py-2 pr-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in safetyAlerts" :key="a.id" class="border-b border-border/60 align-top hover:bg-muted/50">
+                <td class="py-3 pr-3">
+                  <span class="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                    :class="severityClass(a.severity)">{{ a.severity }}</span>
+                </td>
+                <td class="py-3 pr-3">
+                  <div class="font-medium text-foreground">{{ a.issue }}</div>
+                  <div class="text-xs text-muted-foreground">{{ a.detail }}</div>
+                </td>
+                <td class="py-3 pr-3">
+                  <div class="font-medium text-foreground">{{ a.model }}</div>
+                  <div class="text-xs text-muted-foreground">"{{ a.prompt }}"</div>
+                </td>
+                <td class="py-3 pr-3 italic text-muted-foreground">"{{ a.snippet }}"</td>
+                <td class="py-3 pr-3 whitespace-nowrap text-xs text-muted-foreground">{{ a.seenAt }}</td>
+                <td class="py-3 pr-3 whitespace-nowrap text-right">
+                  <button
+                    class="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Mark resolved"
+                    @click="resolveAlert(a.id, 'resolve')"
+                  >Resolve</button>
+                  <button
+                    class="ml-1 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Dismiss"
+                    @click="resolveAlert(a.id, 'dismiss')"
+                  >
+                    <X class="size-3.5" />
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!safetyAlerts.length && !safetyLoading">
+                <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">No open alerts. You're clear.</td>
+              </tr>
+              <tr v-if="safetyLoading && !safetyAlerts.length">
+                <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">Loading alerts...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader class="space-y-1">
+        <div class="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Sparkles class="size-4 text-[color:var(--chart-1)]" /> Custom safety prompts
+        </div>
+        <p class="text-xs text-muted-foreground">
+          Add any prompt you want monitored continuously across Grok, ChatGPT, and Perplexity.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <form class="mb-4 flex gap-2" @submit.prevent="addSafetyPrompt">
+          <input
+            v-model="newPrompt"
+            placeholder="e.g. Is treasury secure for payroll storage?"
+            class="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <button
+            type="submit"
+            :disabled="!newPrompt.trim()"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--chart-1)] px-3 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus class="size-3.5" /> Track prompt
+          </button>
+        </form>
+
+        <ul class="divide-y divide-border/60">
+          <li v-for="p in safetyPrompts" :key="p.id" class="flex items-center justify-between gap-3 py-2.5">
+            <div class="min-w-0">
+              <div class="truncate text-sm font-medium text-foreground" :title="p.text">{{ p.text }}</div>
+              <div class="text-xs text-muted-foreground">{{ p.hits }} hit{{ p.hits === 1 ? '' : 's' }} in the last 30 days</div>
+            </div>
+            <button
+              class="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              title="Remove"
+              @click="removeSafetyPrompt(p.id)"
+            >
+              <X class="size-4" />
+            </button>
+          </li>
+          <li v-if="!safetyPrompts.length" class="py-6 text-center text-sm text-muted-foreground">
+            No custom prompts yet. Add one above to start monitoring.
+          </li>
+        </ul>
       </CardContent>
     </Card>
   </div>

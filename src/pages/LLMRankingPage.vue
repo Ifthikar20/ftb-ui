@@ -170,7 +170,7 @@
       </div>
 
       <div class="my-6">
-        <OverviewSection :active-name="websiteName" :show-filters="false" />
+        <OverviewSection :active-name="websiteName" :website-id="websiteId" :show-filters="false" />
       </div>
 
       <!-- Trend + model coverage -->

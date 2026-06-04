@@ -1,20 +1,20 @@
 <template>
   <AuthLayout title="Welcome back" subtitle="Sign in to your FetchBot account.">
-    <form @submit.prevent="handleLogin" class="flex flex-col gap-[18px]">
-      <div v-if="error" class="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{{ error }}</div>
+    <form @submit.prevent="handleLogin" class="auth-form flex flex-col gap-6">
+      <div v-if="error" class="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3.5 text-base font-medium text-destructive">{{ error }}</div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
-        <input v-model="email" type="email" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="you@company.com" required />
+        <label class="mb-2.5 block text-base font-semibold text-foreground">Email</label>
+        <input v-model="email" type="email" class="h-14 w-full rounded-xl border border-input bg-background px-4 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="you@company.com" required />
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-foreground">Password</label>
+        <label class="mb-2.5 block text-base font-semibold text-foreground">Password</label>
         <div class="relative flex">
           <input
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
-            class="h-9 w-full rounded-lg border border-input bg-background pl-3 pr-11 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            class="h-14 w-full rounded-xl border border-input bg-background pl-4 pr-12 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
             placeholder="••••••••"
             required
             autocomplete="current-password"
@@ -23,36 +23,36 @@
             type="button"
             variant="ghost"
             size="icon"
-            class="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground"
+            class="absolute right-1.5 top-1/2 h-10 w-10 -translate-y-1/2 text-muted-foreground"
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
             :aria-pressed="showPassword"
             @click="showPassword = !showPassword"
           >
-            <EyeOff v-if="showPassword" class="size-[18px]" />
-            <Eye v-else class="size-[18px]" />
+            <EyeOff v-if="showPassword" class="size-5" />
+            <Eye v-else class="size-5" />
           </Button>
         </div>
       </div>
 
-      <div class="flex flex-col items-start gap-2.5 text-sm">
-        <label class="flex cursor-pointer items-center gap-1.5 text-muted-foreground">
-          <input type="checkbox" v-model="remember" class="accent-foreground" />
+      <div class="flex flex-col items-start gap-3 text-base">
+        <label class="flex cursor-pointer items-center gap-2.5 text-muted-foreground">
+          <input type="checkbox" v-model="remember" class="size-4 accent-foreground" />
           <span>Remember me</span>
         </label>
         <router-link to="/forgot-password" class="font-medium text-muted-foreground hover:text-foreground">Forgot password?</router-link>
       </div>
 
-      <Button type="submit" size="lg" class="w-full" :disabled="loading">
+      <Button type="submit" size="lg" class="h-14 w-full text-base" :disabled="loading">
         {{ loading ? 'Signing in...' : 'Sign In' }}
       </Button>
 
-      <div class="flex items-center gap-4 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"><span>or</span></div>
+      <div class="flex items-center gap-4 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"><span>or</span></div>
 
-      <Button type="button" variant="outline" class="w-full" @click="handleGoogleLogin">
+      <Button type="button" variant="outline" class="h-14 w-full text-base" @click="handleGoogleLogin">
         Continue with Google
       </Button>
 
-      <p class="-mt-2 text-center text-sm text-muted-foreground">
+      <p class="text-center text-base text-muted-foreground">
         <router-link to="/" class="font-medium text-foreground">← Back to Home</router-link>
       </p>
     </form>
@@ -126,3 +126,15 @@ function handleGoogleLogin() {
   // OAuth redirect placeholder
 }
 </script>
+
+<style scoped>
+/* Use the same display font as the hero ("AI VISIBILITY, MEASURED.") across
+   the sign-in form so the auth screen matches the landing page typography. */
+.auth-form,
+.auth-form :deep(input),
+.auth-form :deep(button),
+.auth-form :deep(label),
+.auth-form :deep(a) {
+  font-family: var(--font-display);
+}
+</style>

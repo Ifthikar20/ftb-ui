@@ -1,48 +1,65 @@
 <template>
   <div class="auth-layout">
-    <div class="auth-left">
-      <!-- Watercolor video background -->
-      <video class="auth-video-bg" autoplay muted loop playsinline>
-        <source src="/videos/watercolor-main.mp4" type="video/mp4" />
-      </video>
-      <div class="auth-video-overlay"></div>
+    <!-- Left side: rounded video card with overlay copy and bottom-anchored logo. -->
+    <div class="auth-right">
+      <div class="auth-video-card">
+        <video class="auth-video-bg" autoplay muted loop playsinline>
+          <source src="/videos/watercolor-main.mp4" type="video/mp4" />
+        </video>
+        <div class="auth-video-tint"></div>
 
-      <div class="auth-left-content">
-        <div class="auth-brand">
-          <div class="brand-logo">
-            <img src="/images/fb-logo.png" alt="FetchBot" style="width:32px;height:32px;object-fit:contain;filter:brightness(10)" />
+        <div class="auth-video-content">
+          <div class="auth-video-top">
+            <h1 class="auth-headline">
+              <strong>MARKETING</strong><br/>
+              INTELLIGENCE FOR<br/>
+              <strong>AI SEARCH</strong>
+            </h1>
+            <p class="auth-tagline">
+              FetchBot is how modern brands measure and shape their presence inside ChatGPT, Claude, Gemini, and Perplexity.
+            </p>
+            <span class="auth-version">v2.1</span>
           </div>
-          <span class="brand-name">FetchBot</span>
-        </div>
 
-        <div class="auth-hero">
-          <h1 class="auth-headline">Marketing Intelligence, <br/><em>Simplified.</em></h1>
-          <p class="auth-tagline">Track visitors, score leads, audit your site, and grow with AI — all in one platform.</p>
-          <span class="version-badge">v2.1</span>
-        </div>
+          <div class="auth-video-bottom">
+            <ul class="auth-features">
+              <li class="auth-feature">
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+                </span>
+                Prompt library
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="5" height="5" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="2" y="10" width="5" height="3" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg>
+                </span>
+                Multi-LLM probing
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12" stroke-linecap="round"/></svg>
+                </span>
+                Source influence
+              </li>
+              <li class="auth-feature">
+                <span class="auth-feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3M6 9h4M6 11h4" stroke-linecap="round"/></svg>
+                </span>
+                Content studio
+              </li>
+            </ul>
 
-        <div class="auth-features">
-          <div class="feature-item">
-            <span class="feature-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg></span>
-            <span>Prompt library</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="5" height="5" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="2" y="10" width="5" height="3" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg></span>
-            <span>Multi-LLM probing</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 2v12" stroke-linecap="round"/><circle cx="8" cy="8" r="6"/></svg></span>
-            <span>Source influence</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3M6 9h4M6 11h4" stroke-linecap="round"/></svg></span>
-            <span>Content studio</span>
+            <div class="auth-brand">
+              <img src="/images/fb-logo.png" alt="FetchBot" class="auth-brand-mark" />
+              <span class="brand-name">FetchBot</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="auth-right">
+    <!-- Right side: sign-in form. -->
+    <div class="auth-left">
       <div class="auth-form-container">
         <div class="auth-form-header">
           <h2 class="auth-title">{{ title }}</h2>
@@ -50,7 +67,6 @@
         </div>
         <slot />
       </div>
-
       <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
     </div>
   </div>
@@ -85,157 +101,42 @@ onUnmounted(() => {
 .auth-layout {
   display: flex;
   min-height: 100vh;
-}
-
-/* ── Left Panel — Video Background ── */
-.auth-left {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.auth-video-bg {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-}
-
-.auth-video-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: linear-gradient(
-    160deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.35) 40%,
-    rgba(0, 0, 0, 0.20) 100%
-  );
-  z-index: 1;
-}
-
-.auth-left-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100%;
-  padding: 48px 56px;
-}
-
-.auth-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: absolute;
-  top: 32px;
-  left: 48px;
-}
-
-.brand-name {
-  font-family: var(--font-display);
-  font-size: var(--font-xl);
-  color: #ffffff;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
-}
-
-.auth-hero {
-  max-width: 480px;
-}
-
-.auth-headline {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 400;
-  line-height: 1.15;
-  color: #ffffff;
-  margin-bottom: 20px;
-  text-shadow: 0 2px 16px rgba(0,0,0,0.3);
-}
-
-.auth-headline em {
-  font-style: italic;
-  color: #c4dafe;
-}
-
-.auth-tagline {
-  font-size: var(--font-md);
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.7;
-  max-width: 420px;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.2);
-}
-
-.version-badge {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.auth-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  margin-top: 40px;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-sm);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.feature-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* ── Right Panel ── */
-.auth-right {
-  width: 480px;
   background: var(--card);
+}
+
+/* ── Left Panel — Sign-in form (unchanged) ── */
+.auth-left {
+  width: 720px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 56px;
-  border-left: 1px solid var(--border);
+  padding: 56px 88px;
   position: relative;
 }
 
 .auth-form-container {
   width: 100%;
-  max-width: 360px;
+  max-width: 500px;
 }
 
 .auth-form-header {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .auth-title {
   font-family: var(--font-display);
-  font-size: var(--font-2xl);
-  font-weight: 400;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   color: var(--foreground);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .auth-subtitle {
-  font-size: var(--font-base);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   color: var(--muted-foreground);
 }
 
@@ -246,15 +147,162 @@ onUnmounted(() => {
   color: var(--muted-foreground);
 }
 
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .auth-left {
-    display: none;
-  }
+/* ── Right Panel — rounded video card ── */
+.auth-right {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  padding: 24px 0 24px 24px;
+}
 
-  .auth-right {
-    width: 100%;
-    border-left: none;
-  }
+.auth-video-card {
+  position: relative;
+  flex: 1;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #1a1a2e;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 24px 60px rgba(15, 23, 42, 0.10);
+}
+
+.auth-video-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.auth-video-tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.25) 70%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+  z-index: 1;
+}
+
+.auth-video-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 56px 56px 40px;
+}
+
+.auth-video-top {
+  max-width: 640px;
+}
+
+.auth-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.2vw, 3.6rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  margin: 0 0 24px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+}
+
+.auth-headline strong {
+  font-weight: 800;
+}
+
+.auth-tagline {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 460px;
+  margin: 0;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+.auth-video-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.auth-version {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 5px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.auth-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+}
+
+.auth-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.auth-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-brand-mark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .auth-layout { flex-direction: column; }
+  .auth-left { width: 100%; padding: 48px 32px; order: 1; }
+  .auth-right { padding: 0 16px 24px; order: 2; }
+  .auth-video-card { min-height: 320px; }
+  .auth-video-content { padding: 40px 32px 28px; }
+}
+
+@media (max-width: 640px) {
+  .auth-right { display: none; }
 }
 </style>

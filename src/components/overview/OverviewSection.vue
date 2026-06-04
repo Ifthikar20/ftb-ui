@@ -9,6 +9,7 @@ import DomainTypesCard from './DomainTypesCard.vue'
 
 defineProps({
   activeName: { type: String, default: '' },
+  websiteId: { type: String, default: '' },
   brands: { type: Array, default: null },
   domains: { type: Array, default: null },
   domainTypes: { type: Object, default: null },
@@ -29,7 +30,7 @@ defineProps({
         <p class="text-sm text-muted-foreground">How your brand metrics change over time</p>
       </div>
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <VisibilityCard :brands="brands" :active-name="activeName" />
+        <VisibilityCard :brands="brands" :active-name="activeName" :website-id="websiteId" />
         <TopBrandsCard :brands="brands" :active-name="activeName" />
       </div>
     </section>

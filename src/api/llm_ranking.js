@@ -46,4 +46,7 @@ export default {
     // 7 sub-metrics (Relevance, Influence, Uniqueness, Diversity,
     // FollowUp, Subjective Position, Subjective Count).
     geoJudge: (wid, payload) => api.post(`/llm-ranking/${wid}/geo/judge/`, payload),
+    // 12-month visibility series + headline values for the dashboard
+    // Visibility Overview card.
+    visibilityOverview: (wid) => api.get(`/llm-ranking/${wid}/visibility-overview/`),
 }
