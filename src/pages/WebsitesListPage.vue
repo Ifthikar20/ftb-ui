@@ -233,7 +233,7 @@ const platforms = [
 
 const pixelSnippet = computed(() => {
   if (!createdSite.value) return ''
-  return `<script src="https://fetchbot.ai/pixel/growthpilot.min.js" data-key="${createdSite.value.pixel_key}"><\/script>`
+  return `<script src="https://fetchbot.ai/p.js" data-key="${createdSite.value.pixel_key}"><\/script>`
 })
 
 onMounted(async () => {
