@@ -19,6 +19,15 @@
       </div>
     </div>
 
+    <div class="retention-note" role="note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>We retain analytics and event logs for the most recent <strong>{{ RETENTION_LIMIT_LABEL }}</strong>. Older data is automatically purged.</span>
+    </div>
+
     <!-- Tabs -->
     <div class="analytics-tabs">
       <button v-for="tab in tabs" :key="tab.id" class="atab" :class="{ active: activeTab === tab.id }" @click="switchTab(tab.id)">
@@ -1022,6 +1031,7 @@ const periods = [
   { label: '7d', value: '7d' },
   { label: '30d', value: '30d' },
   { label: '90d', value: '90d' },
+  { label: '6mo', value: '6mo' },
 ]
 
 // ── Bind to store ──
@@ -1043,7 +1053,10 @@ const noData = computed(() => cached.value.noData)
 // ── Integration status ──
 const integrationStatus = ref({ pixel: false, ga: false, gsc: false, facebook: false })
 
-const PERIOD_LABELS = { '5m': '5 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days' }
+const PERIOD_LABELS = { '5m': '5 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days', '6mo': '6 months' }
+// Retention cap. Anything older than this is purged on the backend, so the
+// time-range picker tops out at 6 months and the UI states it plainly.
+const RETENTION_LIMIT_LABEL = '6 months'
 const periodLabel = computed(() => PERIOD_LABELS[period.value] || period.value)
 
 onMounted(async () => {
@@ -2008,6 +2021,19 @@ onBeforeUnmount(() => {
 .period-tab { padding: 6px 14px; font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); background: transparent; border: none; cursor: pointer; transition: all var(--transition-fast); font-family: var(--font-family); }
 .period-tab:hover { color: var(--foreground); }
 .period-tab.active { background: var(--primary); color: #1a1a2e; }
+
+.retention-note {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 10px 0 18px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
+  border-radius: 999px;
+  width: fit-content;
+}
+.retention-note strong { color: var(--foreground); font-weight: 600; }
+.retention-note svg { opacity: 0.7; flex-shrink: 0; }
 
 /* ── Funnels ── */
 .funnel-list { display: flex; flex-direction: column; gap: 8px; }
