@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Analytics</h1>
-        <p class="page-subtitle">Product analytics, funnels, retention, and AI insights.</p>
+        <h1 class="page-title">SEO Analytics</h1>
+        <p class="page-subtitle">Search performance, funnels, retention, and AI insights.</p>
       </div>
       <div class="flex gap-8 items-center">
         <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">

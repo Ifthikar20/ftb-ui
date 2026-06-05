@@ -45,7 +45,7 @@
               @click="$router.push(`/analytics/${id}`)"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21V9l6-6 6 6 6-6v18"/></svg>
-              <span class="font-semibold">Analytics</span>
+              <span class="font-semibold">SEO Analytics</span>
             </button>
           </div>
         </CardContent>
