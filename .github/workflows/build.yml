@@ -9,6 +9,12 @@ permissions:
   contents: read
   packages: write
 
+# Cancel an in-progress deploy if a newer commit lands on main. The
+# trailing main wins; we never let two deploys race against the same EC2.
+concurrency:
+  group: deploy-prod-ui
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/ftb-ui
@@ -45,3 +51,63 @@ jobs:
             CACHE_DATE=${{ github.run_id }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to prod
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only auto-deploy on a real push to main or a manual dispatch.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Configure SSH
+        # EC2_SSH_KEY is the contents of fynda-deploy.pem stored as a
+        # repository secret. EC2_HOST defaults to 100.31.135.211 but
+        # can be overridden via the same-name secret if the box moves.
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST || '100.31.135.211' }}
+        run: |
+          if [[ -z "$EC2_SSH_KEY" ]]; then
+            echo "::error::Missing EC2_SSH_KEY repository secret. Add it under Settings > Secrets > Actions."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s' "$EC2_SSH_KEY" > ~/.ssh/fynda-deploy.pem
+          chmod 600 ~/.ssh/fynda-deploy.pem
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Pull fresh image and refresh the frontend bundle on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST || '100.31.135.211' }}
+          EC2_USER: ${{ secrets.EC2_USER || 'ubuntu' }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR || '/opt/fetchbot/ftb-api-26' }}
+        # The prod compose lives in the API repo on EC2. The frontend
+        # service is a one-shot that copies the freshly pulled image's
+        # /build into the shared frontend_dist volume nginx reads from.
+        # Restarting nginx is cosmetic — the volume is already updated —
+        # but it forces any in-flight workers to re-stat the new index.
+        run: |
+          ssh -i ~/.ssh/fynda-deploy.pem \
+              -o StrictHostKeyChecking=accept-new \
+              -o LogLevel=ERROR \
+              "$EC2_USER@$EC2_HOST" \
+              "REMOTE_DIR='$REMOTE_DIR' bash -s" <<'EOF'
+          set -euo pipefail
+          cd "$REMOTE_DIR"
+          COMPOSE="docker compose -f docker/docker-compose.prod.yml"
+          $COMPOSE pull frontend
+          $COMPOSE rm -f frontend 2>/dev/null || true
+          $COMPOSE run --rm frontend
+          $COMPOSE restart nginx
+          EOF
+
+      - name: Smoke test
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://fetchbot.ai/ || echo "000")
+            echo "attempt $i: $code"
+            if [[ "$code" == "200" ]]; then exit 0; fi
+            sleep 6
+          done
+          echo "::warning::Smoke test did not return 200 after retries"
