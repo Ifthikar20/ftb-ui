@@ -23,7 +23,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             cache.value[k] = {
                 stats: [], chartData: [], topPages: [], sources: [], devices: [], browserData: [], operatingSystems: [],
                 countries: [], realtimeVisitors: 0, noData: false,
-                funnelList: [], funnelResult: null,
                 retentionData: {}, engagementData: {}, flowData: {}, entryExitData: {},
                 journeys: [], liveEvents: [],
                 insightsData: {}, visitorList: [], timelineEvents: [],
@@ -117,31 +116,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         }
     }
 
-    async function fetchFunnels(wid) {
-        wid = wid || activeWebsiteId.value
-        if (!wid || !isStale('funnels', wid)) return
-        try {
-            const res = await analyticsApi.funnels(wid)
-            _key(wid).funnelList = res.data?.data || res.data || []
-            _key(wid)._ts.funnels = Date.now()
-        } catch { /* keep cached */ }
-    }
-
-    async function runFunnel(wid, fid, period) {
-        wid = wid || activeWebsiteId.value
-        try {
-            const res = await analyticsApi.calculateFunnel(wid, fid, { period: period || activePeriod.value })
-            _key(wid).funnelResult = res.data?.data || res.data || null
-        } catch { /* keep cached */ }
-    }
-
-    async function createFunnel(wid, payload) {
-        wid = wid || activeWebsiteId.value
-        await analyticsApi.createFunnel(wid, payload)
-        _key(wid)._ts.funnels = 0 // force re-fetch
-        await fetchFunnels(wid)
-    }
-
     async function fetchRetention(wid, period) {
         wid = wid || activeWebsiteId.value
         period = period || activePeriod.value
@@ -226,7 +200,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         if (!wid) return
         try {
             if (tab === 'overview') await fetchOverview(wid, period)
-            else if (tab === 'funnels') await fetchFunnels(wid)
             else if (tab === 'retention') await fetchRetention(wid, period)
             else if (tab === 'flows') await fetchFlows(wid, period)
             else if (tab === 'insights') await fetchInsights(wid, period)
@@ -313,7 +286,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         cache, activeWebsiteId, activePeriod, activeTab,
         initialLoading, refreshing, data,
         init, switchTab, changePeriod, loadTabBackground,
-        fetchOverview, fetchFunnels, runFunnel, createFunnel,
+        fetchOverview,
         fetchRetention, fetchFlows, fetchInsights, fetchVisitors,
         fetchLiveEvents, loadTimeline, saveToSession, forceRefresh, startPolling, stopPolling,
     }

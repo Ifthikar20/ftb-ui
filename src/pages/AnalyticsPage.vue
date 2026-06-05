@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">SEO Analytics</h1>
-        <p class="page-subtitle">Search performance, funnels, retention, and AI insights.</p>
+        <p class="page-subtitle">Search performance, retention, flows, and AI insights.</p>
       </div>
       <div class="flex gap-8 items-center">
         <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">
@@ -285,66 +285,7 @@
         </div>
       </div>
 
-      <!-- ═══════════ TAB 2: Funnels ═══════════ -->
-      <div v-show="activeTab === 'funnels'">
-        <Card class="mb-5">
-          <CardHeader class="flex-row items-center justify-between space-y-0">
-            <CardTitle>Conversion Funnels</CardTitle>
-            <Button size="sm" @click="showCreateFunnel = true">+ New Funnel</Button>
-          </CardHeader>
-          <CardContent>
-            <!-- Saved funnels -->
-            <div v-if="funnelList.length" class="funnel-list">
-              <div v-for="f in funnelList" :key="f.id" class="funnel-item" @click="runFunnel(f.id)">
-                <span class="font-semibold">{{ f.name }}</span>
-                <span class="text-xs text-muted">{{ f.steps?.length || 0 }} steps</span>
-              </div>
-            </div>
-            <div v-else class="empty-inline">No funnels yet. Create one to track conversions.</div>
-          </CardContent>
-        </Card>
-
-        <!-- Funnel result -->
-        <Card v-if="funnelResult">
-          <CardHeader class="flex-row items-center justify-between space-y-0">
-            <CardTitle>{{ funnelResult.name }}</CardTitle>
-            <Badge variant="success">{{ funnelResult.overall_conversion_pct }}% conversion</Badge>
-          </CardHeader>
-          <CardContent>
-          <div class="funnel-viz">
-            <div v-for="(step, i) in funnelResult.steps" :key="i" class="funnel-step">
-              <div class="funnel-bar" :style="{ height: step.conversion_pct + '%' }">
-                <div class="funnel-bar-fill"></div>
-              </div>
-              <div class="funnel-step-info">
-                <div class="font-semibold text-sm">{{ step.name }}</div>
-                <div class="text-xs text-muted">{{ step.visitors }} visitors</div>
-                <div v-if="step.drop_off_pct > 0" class="text-xs text-danger">-{{ step.drop_off_pct }}% drop</div>
-              </div>
-            </div>
-          </div>
-          </CardContent>
-        </Card>
-
-        <!-- Create Funnel Modal -->
-        <div v-if="showCreateFunnel" class="modal-overlay" @click.self="showCreateFunnel = false">
-          <div class="modal-card" style="max-width:500px">
-            <h3 class="card-title" style="margin-bottom:16px">Create Funnel</h3>
-            <div class="form-group"><label class="form-label">Name</label><input v-model="newFunnel.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="e.g. Signup Flow" /></div>
-            <div v-for="(step, i) in newFunnel.steps" :key="i" class="form-group" style="display:flex;gap:8px">
-              <input v-model="step.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'Step ' + (i+1) + ' name'" style="flex:1" />
-              <input v-model="step.value" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'URL contains...'" style="flex:1" />
-            </div>
-            <Button variant="outline" size="sm" class="mb-4" @click="newFunnel.steps.push({name:'',type:'url',value:''})">+ Add Step</Button>
-            <div class="flex gap-8">
-              <Button @click="createFunnel">Create</Button>
-              <Button variant="secondary" @click="showCreateFunnel = false">Cancel</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ═══════════ TAB 3: Retention ═══════════ -->
+      <!-- ═══════════ TAB 2: Retention ═══════════ -->
       <div v-show="activeTab === 'retention'" @click.self="showCardPicker = false">
 
         <!-- Empty State -->
@@ -1052,7 +993,6 @@ const websiteId = route.params.websiteId
 
 const tabs = [
   { id: 'overview', svg: '<path d="M2 14V6l4-4 4 4 4-4v12" stroke-linejoin="round"/>', label: 'Overview' },
-  { id: 'funnels', svg: '<path d="M2 2h12l-3 5v5l-2 2V7z"/>', label: 'Funnels' },
   { id: 'retention', svg: '<path d="M1 8a7 7 0 0114 0M12 5l3 3-3 3"/><circle cx="8" cy="8" r="2"/>', label: 'Retention' },
   { id: 'flows', svg: '<path d="M1 4h4l3 4-3 4H1M15 4h-4l-3 4 3 4h4"/>', label: 'Flows' },
   { id: 'insights', svg: '<circle cx="8" cy="6" r="4"/><path d="M5 10v1a3 3 0 006 0v-1"/><line x1="8" y1="14" x2="8" y2="15"/>', label: 'AI Insights' },
@@ -1114,8 +1054,6 @@ onMounted(async () => {
   } catch { /* silently fail — icon bar will show all gray */ }
 })
 
-const funnelList = computed(() => cached.value.funnelList || [])
-const funnelResult = computed(() => cached.value.funnelResult)
 const retentionData = computed(() => cached.value.retentionData || {})
 const engagementData = computed(() => cached.value.engagementData || {})
 
@@ -1334,8 +1272,6 @@ const conversionRate = computed(() => cached.value.conversionRate || 0)
 const avgLoadTime = computed(() => cached.value.avgLoadTime || 0)
 
 // Local UI state
-const showCreateFunnel = ref(false)
-const newFunnel = ref({ name: '', steps: [{ name: '', type: 'url', value: '' }, { name: '', type: 'url', value: '' }] })
 const showTooltip = ref(null)
 
 // ── Filter state ──
@@ -1948,16 +1884,6 @@ function changePeriod(p) {
   store.changePeriod(p)
 }
 
-async function runFunnel(fid) {
-  await store.runFunnel(websiteId, fid, period.value)
-}
-
-async function createFunnel() {
-  await store.createFunnel(websiteId, { name: newFunnel.value.name, steps: newFunnel.value.steps })
-  showCreateFunnel.value = false
-  newFunnel.value = { name: '', steps: [{ name: '', type: 'url', value: '' }, { name: '', type: 'url', value: '' }] }
-}
-
 async function loadTimeline(vid) {
   await store.loadTimeline(websiteId, vid)
 }
@@ -2123,15 +2049,6 @@ onBeforeUnmount(() => {
 .retention-note strong { color: var(--foreground); font-weight: 600; }
 .retention-note svg { opacity: 0.7; flex-shrink: 0; }
 
-/* ── Funnels ── */
-.funnel-list { display: flex; flex-direction: column; gap: 8px; }
-.funnel-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--muted); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
-.funnel-item:hover { background: var(--card); border: 1px solid var(--input); }
-.funnel-viz { display: flex; gap: 4px; align-items: flex-end; padding: 20px 0; height: 200px; }
-.funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
-.funnel-bar { width: 100%; background: rgba(91,141,239,0.08); border-radius: var(--radius-md) var(--radius-md) 0 0; position: relative; min-height: 20px; transition: height 0.5s; display: flex; align-items: flex-end; }
-.funnel-bar-fill { width: 100%; height: 100%; background: linear-gradient(180deg, var(--primary), rgba(91,141,239,0.3)); border-radius: var(--radius-md) var(--radius-md) 0 0; }
-.funnel-step-info { text-align: center; }
 .text-danger { color: var(--destructive); }
 
 /* ── Retention ── */

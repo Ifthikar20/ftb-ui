@@ -12,11 +12,6 @@ export default {
     devices: (wid, params) => api.get(`/analytics/${wid}/devices/`, { params }),
     countries: (wid, params) => api.get(`/analytics/${wid}/countries/`, { params }),
 
-    // Funnels
-    funnels: (wid) => api.get(`/analytics/${wid}/funnels/`),
-    createFunnel: (wid, data) => api.post(`/analytics/${wid}/funnels/`, data),
-    calculateFunnel: (wid, fid, params) => api.get(`/analytics/${wid}/funnels/${fid}/calculate/`, { params }),
-
     // Retention
     retention: (wid, params) => api.get(`/analytics/${wid}/retention/`, { params }),
     retentionCurve: (wid, params) => api.get(`/analytics/${wid}/retention/curve/`, { params }),
