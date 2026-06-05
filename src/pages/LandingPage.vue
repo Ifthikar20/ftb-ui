@@ -141,13 +141,13 @@
       <div class="wrap why-wrap">
         <div class="why-head">
           <h2 class="why-h">
-            Your customers stopped Googling.<br/>
-            <span class="why-h-quiet">They started asking.</span>
+            AI is the new homepage.<br/>
+            <span class="why-h-quiet">Your buyers ask before they Google.</span>
           </h2>
           <p class="why-sub">
-            Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
-            Gemini, or Perplexity instead. The model gives them one answer, two competitors,
-            and a recommendation. If your brand isn't in that answer — you weren't even in the room.
+            More than half of B2B buyers now research vendors inside ChatGPT, Claude, Gemini, and
+            Perplexity before they ever land on a website. Whatever those four models say about you
+            is, for a lot of people, the only thing they will hear.
           </p>
         </div>
 
@@ -156,24 +156,24 @@
             <div class="why-card-top">
               <span class="why-card-num">01</span>
             </div>
-            <h3 class="why-card-h">SEO ranks pages.<br/>AI ranks brands.</h3>
-            <p class="why-card-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+            <h3 class="why-card-h">Google ranks pages.<br/>AI ranks brands.</h3>
+            <p class="why-card-p">You can hold position one on Google and still be missing from the answer a buyer reads inside ChatGPT. Same buyer, but the SEO playbook does not move that number.</p>
           </article>
 
           <article class="why-card anim" data-anim="fade-up" data-delay="140">
             <div class="why-card-top">
               <span class="why-card-num">02</span>
             </div>
-            <h3 class="why-card-h">Every missed mention<br/>is a handed-over sale.</h3>
-            <p class="why-card-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+            <h3 class="why-card-h">If you are not in the answer, you are not in the deal.</h3>
+            <p class="why-card-p">When a model lists three vendors, most buyers pick one of the three. There is no scroll to position twelve, no second-page click. Made the shortlist or you did not.</p>
           </article>
 
           <article class="why-card anim" data-anim="fade-up" data-delay="220">
             <div class="why-card-top">
               <span class="why-card-num">03</span>
             </div>
-            <h3 class="why-card-h">You can't fix<br/>what you can't see.</h3>
-            <p class="why-card-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+            <h3 class="why-card-h">Most teams have no idea what the models say about them.</h3>
+            <p class="why-card-p">Ask a founder this week and you will get a guess. We pull the actual answers from all four models on a schedule, so you can stop guessing and start fixing the prompts where the answer goes to a competitor.</p>
           </article>
         </div>
 
