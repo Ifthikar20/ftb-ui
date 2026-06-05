@@ -37,6 +37,13 @@ export default {
     // Live
     liveEvents: (wid) => api.get(`/analytics/${wid}/live/`),
 
+    // Persisted event log (last 6 months, paginated)
+    eventLog: (wid, params = {}) => api.get(`/analytics/${wid}/event-log/`, { params }),
+    eventLogCsvUrl: (wid, params = {}) => {
+      const qs = new URLSearchParams({ ...params, format: 'csv' }).toString()
+      return `/api/v1/analytics/${wid}/event-log/?${qs}`
+    },
+
     // Dynamic SEO
     seoEmbed: (wid) => api.get(`/analytics/${wid}/seo-embed/`),
 }

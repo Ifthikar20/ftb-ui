@@ -919,6 +919,51 @@
             <button class="chip-remove" @click="removeFilter(i)">&times;</button>
           </span>
         </TransitionGroup>
+        <Card class="mb-5">
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Event Log</CardTitle>
+              <CardDescription>Persisted for the last 6 months. Older events are automatically purged.</CardDescription>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted">{{ eventLogTotal.toLocaleString() }} events</span>
+              <a class="btn-sm" :href="eventLogCsvHref" target="_blank" rel="noopener" :class="{ 'opacity-50 pointer-events-none': !eventLogTotal }">Download CSV</a>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table v-if="eventLogRows.length">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Device</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Visitor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="e in eventLogRows" :key="e.id">
+                  <TableCell class="text-xs text-muted whitespace-nowrap">{{ formatTime(e.timestamp) }}</TableCell>
+                  <TableCell><span class="badge badge-sm" :class="eventBadge(e.event_type)">{{ e.event_type }}</span></TableCell>
+                  <TableCell class="truncate" style="max-width: 360px" :title="e.url">{{ e.url }}</TableCell>
+                  <TableCell>{{ e.visitor__device_type || '--' }}</TableCell>
+                  <TableCell>{{ e.visitor__geo_country || '--' }}</TableCell>
+                  <TableCell class="font-mono text-xs text-muted">{{ (e.visitor__fingerprint_hash || '').substring(0, 8) }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <div v-else-if="eventLogLoading" class="empty-inline">Loading event log...</div>
+            <div v-else class="empty-inline">No events captured yet for this window.</div>
+
+            <div v-if="eventLogTotalPages > 1" class="event-log-pager">
+              <button class="btn-sm" :disabled="eventLogPage <= 1" @click="loadEventLog(eventLogPage - 1)">Prev</button>
+              <span class="text-xs text-muted">Page {{ eventLogPage }} of {{ eventLogTotalPages }}</span>
+              <button class="btn-sm" :disabled="eventLogPage >= eventLogTotalPages" @click="loadEventLog(eventLogPage + 1)">Next</button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader class="flex-row items-center justify-between space-y-0">
             <CardTitle>Visitor Profiles</CardTitle>
@@ -1299,6 +1344,55 @@ const filterEvent = ref('')
 const filterDevice = ref('')
 const filterCountry = ref('')
 const activeFilters = ref([])
+
+// ── Persisted event log (Events tab) ──
+const EVENT_LOG_PAGE_SIZE = 50
+const eventLogRows = ref([])
+const eventLogTotal = ref(0)
+const eventLogPage = ref(1)
+const eventLogLoading = ref(false)
+const eventLogTotalPages = computed(() =>
+  Math.max(1, Math.ceil(eventLogTotal.value / EVENT_LOG_PAGE_SIZE)),
+)
+
+function _eventLogParams(page) {
+  const params = { page, page_size: EVENT_LOG_PAGE_SIZE }
+  if (filterEvent.value) params.event_type = filterEvent.value
+  if (filterDevice.value) params.device = filterDevice.value
+  if (filterCountry.value) params.country = filterCountry.value
+  const q = searchQuery.value.trim()
+  if (q) params.q = q
+  return params
+}
+
+const eventLogCsvHref = computed(() => {
+  if (!websiteId) return '#'
+  return analyticsApi.eventLogCsvUrl(websiteId, _eventLogParams(1))
+})
+
+async function loadEventLog(page = 1) {
+  if (!websiteId) return
+  eventLogLoading.value = true
+  try {
+    const { data } = await analyticsApi.eventLog(websiteId, _eventLogParams(page))
+    eventLogRows.value = data?.results || []
+    eventLogTotal.value = data?.total || 0
+    eventLogPage.value = data?.page || page
+  } catch (err) {
+    console.warn('Event log fetch failed', err)
+    eventLogRows.value = []
+    eventLogTotal.value = 0
+  } finally {
+    eventLogLoading.value = false
+  }
+}
+
+// Re-fetch the log when the user switches into the Events tab, and when any
+// of the four filters change while it's already open.
+watch(activeTab, (tab) => { if (tab === 'events') loadEventLog(1) })
+watch([searchQuery, filterEvent, filterDevice, filterCountry], () => {
+  if (activeTab.value === 'events') loadEventLog(1)
+})
 
 // ── Flow-specific filter state ──
 const flowSearch = ref('')
@@ -2241,6 +2335,27 @@ onBeforeUnmount(() => {
 .empty-snippet code { font-size: var(--font-xs); color: var(--primary); font-family: 'SF Mono', 'Fira Code', monospace; }
 .empty-hint { font-size: var(--font-xs); color: var(--muted-foreground); }
 .empty-inline { text-align: center; padding: 40px 20px; color: var(--muted-foreground); font-size: var(--font-sm); }
+
+.btn-sm {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  font-size: 12px; font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-sm:hover:not(:disabled) { background: var(--muted); border-color: var(--muted-foreground); }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.event-log-pager {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+}
 
 /* ── Modal ── */
 /* Inherit shared .modal-overlay / .modal-card from components.css */
