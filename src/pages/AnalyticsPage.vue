@@ -95,18 +95,11 @@
             <!-- Traffic Overview -->
             <div v-if="cid === 'traffic'" class="ret-dyn-card ret-full">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <Card class="mb-6">
-                <CardHeader>
-                  <CardTitle>Traffic Overview</CardTitle>
-                  <CardDescription>Visitor sessions over time</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div class="chart-container" style="height:260px;position:relative">
-                    <Line v-if="chartData.length" :data="trafficChartData" :options="trafficChartOptions" />
-                    <div v-else class="empty-inline">No chart data yet</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TrafficOverviewCard
+                class="mb-6"
+                :chart-data="chartData"
+                :period-label="periodLabel"
+              />
             </div>
 
             <!-- Top Sources -->
@@ -986,6 +979,7 @@ import analyticsApi from '@/api/analytics'
 import dashboardApi from '@/api/dashboard'
 import { Line, Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import TrafficOverviewCard from '@/components/analytics/TrafficOverviewCard.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
