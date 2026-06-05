@@ -4,8 +4,8 @@
 
     <header class="pw-top">
       <div class="pw-brand">
-        <span class="pw-brand-dot"></span>
-        FetchBot
+        <img src="/images/fb-logo.png" alt="FetchBot" class="pw-brand-mark" />
+        <span>FetchBot</span>
       </div>
       <button type="button" class="pw-signout" @click.prevent="signOut">Sign out</button>
     </header>
@@ -395,12 +395,11 @@ async function signOut() {
   font-size: 16px;
   letter-spacing: -0.01em;
 }
-.pw-brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--pw-accent);
-  box-shadow: 0 0 0 4px var(--pw-accent-soft);
+.pw-brand-mark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .pw-signout {
   background: transparent;
