@@ -1,14 +1,19 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Line } from 'vue-chartjs'
+import { Chart as ChartRender } from 'vue-chartjs'
 import {
-  Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement,
+  Chart as ChartJS, Title, Tooltip, Legend,
+  LineElement, PointElement, BarElement, BarController, LineController,
   CategoryScale, LinearScale, Filler,
 } from 'chart.js'
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
+ChartJS.register(
+  Title, Tooltip, Legend,
+  LineElement, PointElement, BarElement, BarController, LineController,
+  CategoryScale, LinearScale, Filler,
+)
 
 const props = defineProps({
   // chartData rows from the analytics store: [{ label, visitors, pageviews }, ...]
@@ -99,33 +104,53 @@ function fmtCount(n) {
 }
 
 // ── chart ─────────────────────────────────────────────────────────────────
-const baseDataset = {
-  fill: true,
-  tension: 0.4,
-  cubicInterpolationMode: 'monotone',
-  borderWidth: 2.5,
-  pointRadius: 0,
-  pointHoverRadius: 5,
-  pointHoverBorderWidth: 2.5,
-  pointHoverBorderColor: '#fff',
-}
+// Bars carry the primary metric and the overlay line carries the secondary.
+// When only one tab is active that one metric becomes the bar; in "Both" mode
+// Visitors are bars (the value we care about) and Pageviews ride over the top
+// as a smooth thin line — a Stripe / Linear / Plausible style combo chart.
+const primaryMetric = computed(() => {
+  if (view.value === 'pageviews') {
+    return { label: 'Pageviews', series: pageviewsSeries.value, color: PAGEVIEWS_COLOR }
+  }
+  return { label: 'Visitors', series: visitorsSeries.value, color: VISITORS_COLOR }
+})
+const overlayMetric = computed(() => {
+  if (view.value !== 'both') return null
+  return { label: 'Pageviews', series: pageviewsSeries.value, color: PAGEVIEWS_COLOR }
+})
 
 const chartConfig = computed(() => {
-  const datasets = []
-  if (showVisitors.value) {
+  const datasets = [
+    {
+      type: 'bar',
+      label: primaryMetric.value.label,
+      data: primaryMetric.value.series,
+      backgroundColor: gradientFor(primaryMetric.value.color),
+      hoverBackgroundColor: primaryMetric.value.color,
+      borderRadius: 6,
+      borderSkipped: false,
+      barPercentage: 0.78,
+      categoryPercentage: 0.86,
+      order: 2,
+    },
+  ]
+  if (overlayMetric.value) {
     datasets.push({
-      ...baseDataset, label: 'Visitors', data: visitorsSeries.value,
-      borderColor: VISITORS_COLOR,
-      backgroundColor: gradientFor(VISITORS_COLOR),
-      pointHoverBackgroundColor: VISITORS_COLOR,
-    })
-  }
-  if (showPageviews.value) {
-    datasets.push({
-      ...baseDataset, label: 'Pageviews', data: pageviewsSeries.value,
-      borderColor: PAGEVIEWS_COLOR,
-      backgroundColor: gradientFor(PAGEVIEWS_COLOR),
-      pointHoverBackgroundColor: PAGEVIEWS_COLOR,
+      type: 'line',
+      label: overlayMetric.value.label,
+      data: overlayMetric.value.series,
+      borderColor: overlayMetric.value.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.4,
+      cubicInterpolationMode: 'monotone',
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: overlayMetric.value.color,
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 2,
+      fill: false,
+      order: 1,
     })
   }
   return { labels: labels.value, datasets }
@@ -138,7 +163,9 @@ const chartOptions = computed(() => {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
+    // 'nearest' on x lets the hover snap to the bar under the cursor — the
+    // entire bar+line column lights up together, Plausible-style.
+    interaction: { mode: 'index', axis: 'x', intersect: false },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -247,8 +274,8 @@ const chartOptions = computed(() => {
     <div class="mt-4 h-px w-full bg-border" />
 
     <div class="py-4 pl-0 pr-2">
-      <div class="h-[300px]">
-        <Line v-if="hasData" :data="chartConfig" :options="chartOptions" />
+      <div class="h-[320px]">
+        <ChartRender v-if="hasData" type="bar" :data="chartConfig" :options="chartOptions" />
         <div v-else class="flex h-full items-center justify-center text-sm text-muted-foreground">
           No chart data yet
         </div>
