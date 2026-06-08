@@ -100,82 +100,8 @@
           </Button>
         </div>
 
-        <!-- Step 2: Topic Source -->
+        <!-- Step 2: Platform Type -->
         <div v-if="wizardStep === 2" class="wizard-body">
-          <h2 class="wizard-title">How should we find topics?</h2>
-          <p class="wizard-subtitle">Choose how you'd like to discover topics for your project.</p>
-
-          <div class="topic-source-list">
-            <div
-              class="topic-source-card"
-              :class="{ selected: topicSource === 'gsc' }"
-              @click="topicSource = 'gsc'"
-            >
-              <div class="topic-radio">
-                <span class="topic-radio-dot" v-if="topicSource === 'gsc'"></span>
-              </div>
-              <div class="topic-source-body">
-                <div class="topic-source-title-row">
-                  <svg width="18" height="18" viewBox="0 0 48 48">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  </svg>
-                  <span class="topic-source-title">Google Search Console</span>
-                  <Badge variant="outline">Recommended</Badge>
-                </div>
-                <p class="topic-source-desc">
-                  Use Google Search Console data to find topics based on your site's actual search performance.
-                </p>
-              </div>
-            </div>
-
-            <div
-              class="topic-source-card"
-              :class="{ selected: topicSource === 'ai' }"
-              @click="topicSource = 'ai'"
-            >
-              <div class="topic-radio">
-                <span class="topic-radio-dot" v-if="topicSource === 'ai'"></span>
-              </div>
-              <div class="topic-source-body">
-                <div class="topic-source-title-row">
-                  <span class="topic-source-title">AI-powered suggestions</span>
-                </div>
-                <p class="topic-source-desc">
-                  Let our AI analyze your domain and suggest relevant topics automatically.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- GSC informational note (no fake OAuth) -->
-          <div v-if="topicSource === 'gsc'" class="flex items-start gap-2.5 rounded-xl border border-border bg-muted px-3.5 py-3 text-sm leading-relaxed text-muted-foreground">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--muted-foreground)">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
-            <span>
-              Google Search Console is connected from <strong>Settings &rarr; Integrations</strong> after you finish setting up the project. We'll save your topic-source choice and prompt you to authorise GSC there.
-            </span>
-          </div>
-
-          <Button class="mt-2 w-full" size="lg" @click="wizardStep = 3">
-            Continue
-          </Button>
-
-          <p class="wizard-helper">You can switch methods anytime from settings.</p>
-
-          <div class="wizard-dots">
-            <span class="dot" :class="{ active: wizardStep >= 1 }"></span>
-            <span class="dot" :class="{ active: wizardStep >= 2 }"></span>
-            <span class="dot" :class="{ active: wizardStep >= 3 }"></span>
-            <span class="dot" :class="{ active: wizardStep >= 4 }"></span>
-          </div>
-        </div>
-
-        <!-- Step 3: Platform Type -->
-        <div v-if="wizardStep === 3" class="wizard-body">
           <h2 class="wizard-title">Choose your platform</h2>
           <p class="wizard-subtitle">What platform is your website built on? This helps us optimize tracking and integrations.</p>
           <div class="platform-grid">
@@ -189,15 +115,15 @@
             </div>
           </div>
           <div class="mt-2 flex justify-between gap-3">
-            <Button variant="secondary" @click="wizardStep = 2">Back</Button>
+            <Button variant="secondary" @click="wizardStep = 1">Back</Button>
             <Button :disabled="!newSite.platform_type" @click="createAndGoToPixel">
               {{ adding ? 'Creating...' : 'Continue' }}
             </Button>
           </div>
         </div>
 
-        <!-- Step 4: Pixel Installation -->
-        <div v-if="wizardStep === 4" class="wizard-body">
+        <!-- Step 3: Pixel Installation -->
+        <div v-if="wizardStep === 3" class="wizard-body">
           <div v-if="newSite.platform_type === 'shopify'" class="pixel-instructions">
             <div class="pixel-icon" style="background: #96bf48"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
             <h4>Shopify Integration</h4>
@@ -296,13 +222,7 @@ const createdSite = ref(null)
 const copied = ref(false)
 const newSite = reactive({ name: '', url: '', industry: '', platform_type: 'custom' })
 
-const TOTAL_STEPS = 4
-
-// Step 2: Topic Source
-const topicSource = ref('ai')
-// GSC OAuth flow lives in Settings -> Integrations once a real handler
-// exists in the integrations app; the wizard only captures the user's
-// preferred topic-discovery method.
+const TOTAL_STEPS = 3
 
 const platforms = [
   { id: 'shopify', name: 'Shopify', desc: 'E-commerce on Shopify', color: '#96bf48', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>' },
@@ -313,7 +233,7 @@ const platforms = [
 
 const pixelSnippet = computed(() => {
   if (!createdSite.value) return ''
-  return `<script src="https://fetchbot.ai/pixel/growthpilot.min.js" data-key="${createdSite.value.pixel_key}"><\/script>`
+  return `<script src="https://fetchbot.ai/p.js" data-key="${createdSite.value.pixel_key}"><\/script>`
 })
 
 onMounted(async () => {
@@ -398,7 +318,6 @@ function openWizard() {
   newSite.url = ''
   newSite.industry = ''
   newSite.platform_type = 'custom'
-  topicSource.value = 'ai'
   showAddModal.value = true
 }
 </script>
@@ -485,64 +404,6 @@ function openWizard() {
 .wizard-dots .dot.active { background: var(--primary); }
 
 /* Topic Source */
-.topic-source-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.topic-source-card {
-  display: flex;
-  gap: 14px;
-  padding: 16px 18px;
-  border: 2px solid var(--border);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  background: var(--background);
-}
-.topic-source-card:hover { border-color: var(--muted-foreground); }
-.topic-source-card.selected {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 4%, transparent);
-}
-.topic-radio {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  flex-shrink: 0;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.topic-source-card.selected .topic-radio { border-color: var(--primary); }
-.topic-radio-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-.topic-source-body { flex: 1; }
-.topic-source-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-  flex-wrap: wrap;
-}
-.topic-source-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--foreground);
-}
-.topic-source-desc {
-  font-size: 13px;
-  color: var(--muted-foreground);
-  line-height: 1.5;
-  margin: 0;
-}
-
 .platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .platform-card { position: relative; padding: 16px; border-radius: 14px; border: 2px solid var(--border); cursor: pointer; text-align: center; transition: all 0.2s; background: var(--muted); }
 .platform-card:hover { border-color: var(--muted-foreground); transform: translateY(-1px); }

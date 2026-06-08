@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Analytics</h1>
-        <p class="page-subtitle">Product analytics, funnels, retention, and AI insights.</p>
+        <h1 class="page-title">SEO Analytics</h1>
+        <p class="page-subtitle">Search performance, retention, flows, and AI insights.</p>
       </div>
       <div class="flex gap-8 items-center">
         <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">
@@ -17,6 +17,24 @@
           <button v-for="p in periods" :key="p.value" class="period-tab" :class="{ active: period === p.value }" @click="changePeriod(p.value)">{{ p.label }}</button>
         </div>
       </div>
+    </div>
+
+    <div class="analytics-trust">
+      <span class="trust-badge" title="Search, SEO, AI, and monitoring crawlers are detected by user-agent and dropped before they reach your data, so these numbers are humans only.">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        Bot traffic excluded
+      </span>
+      <span class="retention-note" role="note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Retained for the last <strong>{{ RETENTION_LIMIT_LABEL }}</strong>, then auto-purged.</span>
+      </span>
     </div>
 
     <!-- Tabs -->
@@ -86,18 +104,11 @@
             <!-- Traffic Overview -->
             <div v-if="cid === 'traffic'" class="ret-dyn-card ret-full">
               <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
-              <Card class="mb-6">
-                <CardHeader>
-                  <CardTitle>Traffic Overview</CardTitle>
-                  <CardDescription>Visitor sessions over time</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div class="chart-container" style="height:260px;position:relative">
-                    <Line v-if="chartData.length" :data="trafficChartData" :options="trafficChartOptions" />
-                    <div v-else class="empty-inline">No chart data yet</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TrafficOverviewCard
+                class="mb-6"
+                :chart-data="chartData"
+                :period-label="periodLabel"
+              />
             </div>
 
             <!-- Top Sources -->
@@ -283,66 +294,7 @@
         </div>
       </div>
 
-      <!-- ═══════════ TAB 2: Funnels ═══════════ -->
-      <div v-show="activeTab === 'funnels'">
-        <Card class="mb-5">
-          <CardHeader class="flex-row items-center justify-between space-y-0">
-            <CardTitle>Conversion Funnels</CardTitle>
-            <Button size="sm" @click="showCreateFunnel = true">+ New Funnel</Button>
-          </CardHeader>
-          <CardContent>
-            <!-- Saved funnels -->
-            <div v-if="funnelList.length" class="funnel-list">
-              <div v-for="f in funnelList" :key="f.id" class="funnel-item" @click="runFunnel(f.id)">
-                <span class="font-semibold">{{ f.name }}</span>
-                <span class="text-xs text-muted">{{ f.steps?.length || 0 }} steps</span>
-              </div>
-            </div>
-            <div v-else class="empty-inline">No funnels yet. Create one to track conversions.</div>
-          </CardContent>
-        </Card>
-
-        <!-- Funnel result -->
-        <Card v-if="funnelResult">
-          <CardHeader class="flex-row items-center justify-between space-y-0">
-            <CardTitle>{{ funnelResult.name }}</CardTitle>
-            <Badge variant="success">{{ funnelResult.overall_conversion_pct }}% conversion</Badge>
-          </CardHeader>
-          <CardContent>
-          <div class="funnel-viz">
-            <div v-for="(step, i) in funnelResult.steps" :key="i" class="funnel-step">
-              <div class="funnel-bar" :style="{ height: step.conversion_pct + '%' }">
-                <div class="funnel-bar-fill"></div>
-              </div>
-              <div class="funnel-step-info">
-                <div class="font-semibold text-sm">{{ step.name }}</div>
-                <div class="text-xs text-muted">{{ step.visitors }} visitors</div>
-                <div v-if="step.drop_off_pct > 0" class="text-xs text-danger">-{{ step.drop_off_pct }}% drop</div>
-              </div>
-            </div>
-          </div>
-          </CardContent>
-        </Card>
-
-        <!-- Create Funnel Modal -->
-        <div v-if="showCreateFunnel" class="modal-overlay" @click.self="showCreateFunnel = false">
-          <div class="modal-card" style="max-width:500px">
-            <h3 class="card-title" style="margin-bottom:16px">Create Funnel</h3>
-            <div class="form-group"><label class="form-label">Name</label><input v-model="newFunnel.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="e.g. Signup Flow" /></div>
-            <div v-for="(step, i) in newFunnel.steps" :key="i" class="form-group" style="display:flex;gap:8px">
-              <input v-model="step.name" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'Step ' + (i+1) + ' name'" style="flex:1" />
-              <input v-model="step.value" class="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" :placeholder="'URL contains...'" style="flex:1" />
-            </div>
-            <Button variant="outline" size="sm" class="mb-4" @click="newFunnel.steps.push({name:'',type:'url',value:''})">+ Add Step</Button>
-            <div class="flex gap-8">
-              <Button @click="createFunnel">Create</Button>
-              <Button variant="secondary" @click="showCreateFunnel = false">Cancel</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ═══════════ TAB 3: Retention ═══════════ -->
+      <!-- ═══════════ TAB 2: Retention ═══════════ -->
       <div v-show="activeTab === 'retention'" @click.self="showCardPicker = false">
 
         <!-- Empty State -->
@@ -917,6 +869,51 @@
             <button class="chip-remove" @click="removeFilter(i)">&times;</button>
           </span>
         </TransitionGroup>
+        <Card class="mb-5">
+          <CardHeader class="flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Event Log</CardTitle>
+              <CardDescription>Persisted for the last 6 months. Older events are automatically purged.</CardDescription>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted">{{ eventLogTotal.toLocaleString() }} events</span>
+              <a class="btn-sm" :href="eventLogCsvHref" target="_blank" rel="noopener" :class="{ 'opacity-50 pointer-events-none': !eventLogTotal }">Download CSV</a>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table v-if="eventLogRows.length">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Device</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Visitor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="e in eventLogRows" :key="e.id">
+                  <TableCell class="text-xs text-muted whitespace-nowrap">{{ formatTime(e.timestamp) }}</TableCell>
+                  <TableCell><span class="badge badge-sm" :class="eventBadge(e.event_type)">{{ e.event_type }}</span></TableCell>
+                  <TableCell class="truncate" style="max-width: 360px" :title="e.url">{{ e.url }}</TableCell>
+                  <TableCell>{{ e.visitor__device_type || '--' }}</TableCell>
+                  <TableCell>{{ e.visitor__geo_country || '--' }}</TableCell>
+                  <TableCell class="font-mono text-xs text-muted">{{ (e.visitor__fingerprint_hash || '').substring(0, 8) }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <div v-else-if="eventLogLoading" class="empty-inline">Loading event log...</div>
+            <div v-else class="empty-inline">No events captured yet for this window.</div>
+
+            <div v-if="eventLogTotalPages > 1" class="event-log-pager">
+              <button class="btn-sm" :disabled="eventLogPage <= 1" @click="loadEventLog(eventLogPage - 1)">Prev</button>
+              <span class="text-xs text-muted">Page {{ eventLogPage }} of {{ eventLogTotalPages }}</span>
+              <button class="btn-sm" :disabled="eventLogPage >= eventLogTotalPages" @click="loadEventLog(eventLogPage + 1)">Next</button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader class="flex-row items-center justify-between space-y-0">
             <CardTitle>Visitor Profiles</CardTitle>
@@ -977,6 +974,7 @@ import analyticsApi from '@/api/analytics'
 import dashboardApi from '@/api/dashboard'
 import { Line, Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import TrafficOverviewCard from '@/components/analytics/TrafficOverviewCard.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -1004,7 +1002,6 @@ const websiteId = route.params.websiteId
 
 const tabs = [
   { id: 'overview', svg: '<path d="M2 14V6l4-4 4 4 4-4v12" stroke-linejoin="round"/>', label: 'Overview' },
-  { id: 'funnels', svg: '<path d="M2 2h12l-3 5v5l-2 2V7z"/>', label: 'Funnels' },
   { id: 'retention', svg: '<path d="M1 8a7 7 0 0114 0M12 5l3 3-3 3"/><circle cx="8" cy="8" r="2"/>', label: 'Retention' },
   { id: 'flows', svg: '<path d="M1 4h4l3 4-3 4H1M15 4h-4l-3 4 3 4h4"/>', label: 'Flows' },
   { id: 'insights', svg: '<circle cx="8" cy="6" r="4"/><path d="M5 10v1a3 3 0 006 0v-1"/><line x1="8" y1="14" x2="8" y2="15"/>', label: 'AI Insights' },
@@ -1022,6 +1019,7 @@ const periods = [
   { label: '7d', value: '7d' },
   { label: '30d', value: '30d' },
   { label: '90d', value: '90d' },
+  { label: '6mo', value: '6mo' },
 ]
 
 // ── Bind to store ──
@@ -1043,7 +1041,10 @@ const noData = computed(() => cached.value.noData)
 // ── Integration status ──
 const integrationStatus = ref({ pixel: false, ga: false, gsc: false, facebook: false })
 
-const PERIOD_LABELS = { '5m': '5 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days' }
+const PERIOD_LABELS = { '5m': '5 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days', '6mo': '6 months' }
+// Retention cap. Anything older than this is purged on the backend, so the
+// time-range picker tops out at 6 months and the UI states it plainly.
+const RETENTION_LIMIT_LABEL = '6 months'
 const periodLabel = computed(() => PERIOD_LABELS[period.value] || period.value)
 
 onMounted(async () => {
@@ -1062,8 +1063,6 @@ onMounted(async () => {
   } catch { /* silently fail — icon bar will show all gray */ }
 })
 
-const funnelList = computed(() => cached.value.funnelList || [])
-const funnelResult = computed(() => cached.value.funnelResult)
 const retentionData = computed(() => cached.value.retentionData || {})
 const engagementData = computed(() => cached.value.engagementData || {})
 
@@ -1282,8 +1281,6 @@ const conversionRate = computed(() => cached.value.conversionRate || 0)
 const avgLoadTime = computed(() => cached.value.avgLoadTime || 0)
 
 // Local UI state
-const showCreateFunnel = ref(false)
-const newFunnel = ref({ name: '', steps: [{ name: '', type: 'url', value: '' }, { name: '', type: 'url', value: '' }] })
 const showTooltip = ref(null)
 
 // ── Filter state ──
@@ -1292,6 +1289,55 @@ const filterEvent = ref('')
 const filterDevice = ref('')
 const filterCountry = ref('')
 const activeFilters = ref([])
+
+// ── Persisted event log (Events tab) ──
+const EVENT_LOG_PAGE_SIZE = 50
+const eventLogRows = ref([])
+const eventLogTotal = ref(0)
+const eventLogPage = ref(1)
+const eventLogLoading = ref(false)
+const eventLogTotalPages = computed(() =>
+  Math.max(1, Math.ceil(eventLogTotal.value / EVENT_LOG_PAGE_SIZE)),
+)
+
+function _eventLogParams(page) {
+  const params = { page, page_size: EVENT_LOG_PAGE_SIZE }
+  if (filterEvent.value) params.event_type = filterEvent.value
+  if (filterDevice.value) params.device = filterDevice.value
+  if (filterCountry.value) params.country = filterCountry.value
+  const q = searchQuery.value.trim()
+  if (q) params.q = q
+  return params
+}
+
+const eventLogCsvHref = computed(() => {
+  if (!websiteId) return '#'
+  return analyticsApi.eventLogCsvUrl(websiteId, _eventLogParams(1))
+})
+
+async function loadEventLog(page = 1) {
+  if (!websiteId) return
+  eventLogLoading.value = true
+  try {
+    const { data } = await analyticsApi.eventLog(websiteId, _eventLogParams(page))
+    eventLogRows.value = data?.results || []
+    eventLogTotal.value = data?.total || 0
+    eventLogPage.value = data?.page || page
+  } catch (err) {
+    console.warn('Event log fetch failed', err)
+    eventLogRows.value = []
+    eventLogTotal.value = 0
+  } finally {
+    eventLogLoading.value = false
+  }
+}
+
+// Re-fetch the log when the user switches into the Events tab, and when any
+// of the four filters change while it's already open.
+watch(activeTab, (tab) => { if (tab === 'events') loadEventLog(1) })
+watch([searchQuery, filterEvent, filterDevice, filterCountry], () => {
+  if (activeTab.value === 'events') loadEventLog(1)
+})
 
 // ── Flow-specific filter state ──
 const flowSearch = ref('')
@@ -1847,16 +1893,6 @@ function changePeriod(p) {
   store.changePeriod(p)
 }
 
-async function runFunnel(fid) {
-  await store.runFunnel(websiteId, fid, period.value)
-}
-
-async function createFunnel() {
-  await store.createFunnel(websiteId, { name: newFunnel.value.name, steps: newFunnel.value.steps })
-  showCreateFunnel.value = false
-  newFunnel.value = { name: '', steps: [{ name: '', type: 'url', value: '' }, { name: '', type: 'url', value: '' }] }
-}
-
 async function loadTimeline(vid) {
   await store.loadTimeline(websiteId, vid)
 }
@@ -2009,15 +2045,31 @@ onBeforeUnmount(() => {
 .period-tab:hover { color: var(--foreground); }
 .period-tab.active { background: var(--primary); color: #1a1a2e; }
 
-/* ── Funnels ── */
-.funnel-list { display: flex; flex-direction: column; gap: 8px; }
-.funnel-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--muted); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
-.funnel-item:hover { background: var(--card); border: 1px solid var(--input); }
-.funnel-viz { display: flex; gap: 4px; align-items: flex-end; padding: 20px 0; height: 200px; }
-.funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
-.funnel-bar { width: 100%; background: rgba(91,141,239,0.08); border-radius: var(--radius-md) var(--radius-md) 0 0; position: relative; min-height: 20px; transition: height 0.5s; display: flex; align-items: flex-end; }
-.funnel-bar-fill { width: 100%; height: 100%; background: linear-gradient(180deg, var(--primary), rgba(91,141,239,0.3)); border-radius: var(--radius-md) var(--radius-md) 0 0; }
-.funnel-step-info { text-align: center; }
+.analytics-trust {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin: 10px 0 18px;
+}
+.trust-badge, .retention-note {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.trust-badge {
+  color: var(--chart-2, #16a34a);
+  background: color-mix(in srgb, var(--chart-2, #16a34a) 12%, transparent);
+  font-weight: 600;
+  cursor: help;
+}
+.trust-badge svg { flex-shrink: 0; }
+.retention-note {
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
+}
+.retention-note strong { color: var(--foreground); font-weight: 600; }
+.retention-note svg { opacity: 0.7; flex-shrink: 0; }
+
 .text-danger { color: var(--destructive); }
 
 /* ── Retention ── */
@@ -2221,6 +2273,27 @@ onBeforeUnmount(() => {
 .empty-snippet code { font-size: var(--font-xs); color: var(--primary); font-family: 'SF Mono', 'Fira Code', monospace; }
 .empty-hint { font-size: var(--font-xs); color: var(--muted-foreground); }
 .empty-inline { text-align: center; padding: 40px 20px; color: var(--muted-foreground); font-size: var(--font-sm); }
+
+.btn-sm {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  font-size: 12px; font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-sm:hover:not(:disabled) { background: var(--muted); border-color: var(--muted-foreground); }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.event-log-pager {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+}
 
 /* ── Modal ── */
 /* Inherit shared .modal-overlay / .modal-card from components.css */

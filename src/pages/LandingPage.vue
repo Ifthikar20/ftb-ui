@@ -63,12 +63,6 @@
                 @pointerleave="onCardLeave"
               >
                 <div class="probe-card-head">
-                  <span
-                    class="probe-logo"
-                    :class="'is-' + p.key"
-                    :aria-label="p.name + ' logo'"
-                    v-html="providerLogo(p.key)"
-                  ></span>
                   <span class="probe-name">{{ p.name }}</span>
                 </div>
                 <div class="probe-stream">
@@ -141,13 +135,13 @@
       <div class="wrap why-wrap">
         <div class="why-head">
           <h2 class="why-h">
-            Your customers stopped Googling.<br/>
-            <span class="why-h-quiet">They started asking.</span>
+            AI is the new homepage.<br/>
+            <span class="why-h-quiet">Your buyers ask before they Google.</span>
           </h2>
           <p class="why-sub">
-            Every day, millions of buyers skip the search bar and ask ChatGPT, Claude,
-            Gemini, or Perplexity instead. The model gives them one answer, two competitors,
-            and a recommendation. If your brand isn't in that answer — you weren't even in the room.
+            More than half of B2B buyers now research vendors inside ChatGPT, Claude, Gemini, and
+            Perplexity before they ever land on a website. Whatever those four models say about you
+            is, for a lot of people, the only thing they will hear.
           </p>
         </div>
 
@@ -156,24 +150,24 @@
             <div class="why-card-top">
               <span class="why-card-num">01</span>
             </div>
-            <h3 class="why-card-h">SEO ranks pages.<br/>AI ranks brands.</h3>
-            <p class="why-card-p">You can be #1 on Google and invisible inside ChatGPT's answer. Different game, different scoreboard.</p>
+            <h3 class="why-card-h">Google ranks pages.<br/>AI ranks brands.</h3>
+            <p class="why-card-p">You can hold position one on Google and still be missing from the answer a buyer reads inside ChatGPT. Same buyer, but the SEO playbook does not move that number.</p>
           </article>
 
           <article class="why-card anim" data-anim="fade-up" data-delay="140">
             <div class="why-card-top">
               <span class="why-card-num">02</span>
             </div>
-            <h3 class="why-card-h">Every missed mention<br/>is a handed-over sale.</h3>
-            <p class="why-card-p">When the AI names your competitor and not you, the buyer takes the recommendation. No second click. No second chance.</p>
+            <h3 class="why-card-h">If you are not in the answer, you are not in the deal.</h3>
+            <p class="why-card-p">When a model lists three vendors, most buyers pick one of the three. There is no scroll to position twelve, no second-page click. Made the shortlist or you did not.</p>
           </article>
 
           <article class="why-card anim" data-anim="fade-up" data-delay="220">
             <div class="why-card-top">
               <span class="why-card-num">03</span>
             </div>
-            <h3 class="why-card-h">You can't fix<br/>what you can't see.</h3>
-            <p class="why-card-p">Most brands have zero visibility into what the four major models say about them. We turn the lights on, week over week.</p>
+            <h3 class="why-card-h">Most teams have no idea what the models say about them.</h3>
+            <p class="why-card-p">Ask a founder this week and you will get a guess. We pull the actual answers from all four models on a schedule, so you can stop guessing and start fixing the prompts where the answer goes to a competitor.</p>
           </article>
         </div>
 
@@ -265,12 +259,76 @@
                     v-for="(p, idx) in visiblePromptRows"
                     :key="p.id"
                     class="mock-prompt-row"
+                    :class="{ 'is-pinned': pinnedPromptId === p.id }"
                     :style="{ animationDelay: (0.05 + idx * 0.10) + 's' }"
+                    @click="togglePin(p)"
                   >
-                    <span class="mock-q">{{ p.q }}</span>
-                    <span class="mock-chip" :class="'is-' + p.style">{{ p.style }}</span>
-                    <div class="mock-trend">
-                      <div class="mock-trend-bar" :style="{ '--target-w': p.trend + '%', animationDelay: (0.25 + idx * 0.10) + 's' }"></div>
+                    <div class="mock-prompt-main">
+                      <span class="mock-q">{{ p.q }}</span>
+                      <span class="mock-chip" :class="'is-' + p.style">{{ p.style }}</span>
+                    </div>
+
+                    <div class="mock-prompt-meta">
+                      <svg
+                        class="mock-spark"
+                        viewBox="0 0 64 18"
+                        :title="'8-week search trend'"
+                        aria-hidden="true"
+                      >
+                        <path
+                          :d="sparkPath(p.spark)"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span class="mock-volume" :title="p.volume + ' searches/mo'">
+                        {{ formatVolume(p.volume) }}/mo
+                      </span>
+                      <span
+                        class="mock-delta"
+                        :class="p.delta >= 0 ? 'is-up' : 'is-down'"
+                        :title="'Week-over-week change'"
+                      >{{ p.delta >= 0 ? '+' : '' }}{{ p.delta }}%</span>
+                      <span class="mock-models" :title="coverageLabel(p)">
+                        <span
+                          v-for="k in MODEL_KEYS"
+                          :key="k"
+                          class="mock-model-dot"
+                          :class="['is-' + k, { 'is-hit': p.models?.[k] }]"
+                          :title="MODEL_LABEL[k] + (p.models?.[k] ? ' — surfaces you' : ' — does not surface you')"
+                        ></span>
+                      </span>
+                    </div>
+
+                    <div v-if="pinnedPromptId === p.id" class="mock-prompt-detail">
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Search volume</span>
+                        <span class="mock-detail-value">{{ p.volume.toLocaleString() }} per month</span>
+                      </div>
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Trend (8 weeks)</span>
+                        <span class="mock-detail-value">{{ p.delta >= 0 ? 'up' : 'down' }} {{ Math.abs(p.delta) }}% week over week</span>
+                      </div>
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Your coverage</span>
+                        <span class="mock-detail-value">{{ coverageLabel(p) }}</span>
+                      </div>
+                      <ul class="mock-detail-models">
+                        <li
+                          v-for="k in MODEL_KEYS"
+                          :key="k"
+                          :class="p.models?.[k] ? 'is-hit' : 'is-miss'"
+                        >
+                          <span class="mock-model-dot" :class="['is-' + k, { 'is-hit': p.models?.[k] }]"></span>
+                          {{ MODEL_LABEL[k] }}
+                          <span class="mock-detail-status">
+                            {{ p.models?.[k] ? 'mentions you' : 'gap — not mentioned' }}
+                          </span>
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </transition-group>
@@ -278,54 +336,254 @@
             </div>
 
             <!-- MULTI-LLM PROBING -->
-            <div v-else-if="f.key === 'probe'" class="mock-card mock-grid">
-              <div v-for="(p, idx) in heroProviders" :key="p.key" class="mock-mini" :style="{ animationDelay: (0.15 + idx * 0.15) + 's' }">
-                <div class="mock-mini-head">
-                  <span class="hero-viz-dot" :class="'is-' + p.key"></span>
-                  <span class="mock-mini-name">{{ p.name }}</span>
-                  <span class="mock-mini-pct">{{ p.pct }}%</span>
+            <div v-else-if="f.key === 'probe'" class="mock-card">
+              <div class="mock-probe-head">
+                <div>
+                  <div class="mock-probe-title">Visibility score</div>
+                  <div class="mock-probe-sub">Click a model to see avg rank, sentiment, and who beats you</div>
                 </div>
-                <div class="hero-viz-bar">
-                  <div class="hero-viz-bar-fill" :class="'is-' + p.key" :style="{ '--target-w': p.pct + '%', animationDelay: (0.3 + idx * 0.15) + 's' }"></div>
+                <div class="mock-probe-score">
+                  <span class="mock-probe-score-num">{{ heroAvgVisibility }}%</span>
+                  <span class="mock-probe-score-label">across 4 models</span>
                 </div>
-                <div class="mock-mini-meta">{{ p.cited }} citations</div>
+              </div>
+
+              <div class="mock-probe-grid">
+                <div
+                  v-for="(p, idx) in heroProviders"
+                  :key="p.key"
+                  class="mock-probe-card"
+                  :class="{ 'is-pinned': pinnedProbeKey === p.key }"
+                  :style="{ animationDelay: (0.15 + idx * 0.10) + 's' }"
+                  @click="toggleProbePin(p)"
+                >
+                  <div class="mock-probe-row">
+                    <span class="mock-probe-name">
+                      <span class="mock-source-dot" :class="'is-' + p.key"></span>
+                      {{ p.name }}
+                    </span>
+                    <span class="mock-probe-pct">{{ p.pct }}%</span>
+                  </div>
+
+                  <div class="mock-probe-bar" :title="p.pct + '% visibility'">
+                    <div
+                      class="mock-probe-bar-fill"
+                      :class="'is-' + p.key"
+                      :style="{ '--target-w': p.pct + '%', animationDelay: (0.3 + idx * 0.10) + 's' }"
+                    ></div>
+                  </div>
+
+                  <div class="mock-probe-stats">
+                    <span
+                      class="mock-probe-delta"
+                      :class="p.delta >= 0 ? 'is-up' : 'is-down'"
+                      :title="'Week over week'"
+                    >{{ p.delta >= 0 ? '+' : '' }}{{ p.delta }}%</span>
+                    <span class="mock-probe-stat" :title="'Average rank when mentioned'">
+                      avg #{{ p.rank.toFixed(1) }}
+                    </span>
+                    <span class="mock-probe-stat" :title="p.citations + ' citations carried in answers'">
+                      {{ p.citations }} citations
+                    </span>
+                  </div>
+
+                  <div v-if="pinnedProbeKey === p.key" class="mock-probe-detail">
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Sentiment</span>
+                      <span class="mock-probe-sent" :title="'Positive / neutral / negative split of mentions'">
+                        <span class="mock-probe-sent-seg pos" :style="{ '--w': p.sentiment.pos * 100 + '%' }"></span>
+                        <span class="mock-probe-sent-seg neu" :style="{ '--w': p.sentiment.neu * 100 + '%' }"></span>
+                        <span class="mock-probe-sent-seg neg" :style="{ '--w': p.sentiment.neg * 100 + '%' }"></span>
+                      </span>
+                    </div>
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Most cited competitor</span>
+                      <span class="mock-detail-value">
+                        {{ p.topCompetitor.name }} <span class="mock-probe-comp">· {{ p.topCompetitor.share }}% of answers</span>
+                      </span>
+                    </div>
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Brand safety</span>
+                      <span
+                        class="mock-probe-safety"
+                        :class="p.hallucinations === 0 ? 'is-ok' : 'is-warn'"
+                      >
+                        {{ p.hallucinations === 0 ? 'Clean' : p.hallucinations + ' unverified claim' + (p.hallucinations === 1 ? '' : 's') }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- SOURCE INFLUENCE -->
             <div v-else-if="f.key === 'source'" class="mock-card">
-              <div class="mock-source-title">Source mix per provider</div>
-              <div v-for="(s, idx) in sourceShares" :key="s.provider" class="mock-source-row" :style="{ animationDelay: (0.15 + idx * 0.12) + 's' }">
-                <span class="mock-source-label">{{ s.provider }}</span>
-                <div class="mock-stack">
-                  <span v-for="seg in s.segments" :key="seg.cls" class="mock-seg" :class="'seg-' + seg.cls" :style="{ '--target-w': seg.pct + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"></span>
+              <div class="mock-source-head">
+                <div class="mock-source-title">Source mix per model</div>
+                <div class="mock-source-sub">Click a model to see its top three sources and your rank</div>
+              </div>
+
+              <div
+                v-for="(s, idx) in sourceShares"
+                :key="s.key"
+                class="mock-source-row"
+                :class="{ 'is-pinned': pinnedSourceKey === s.key }"
+                :style="{ animationDelay: (0.15 + idx * 0.12) + 's' }"
+                @click="toggleSourcePin(s)"
+              >
+                <div class="mock-source-line">
+                  <span class="mock-source-label">
+                    <span class="mock-source-dot" :class="'is-' + s.key"></span>
+                    {{ s.provider }}
+                  </span>
+                  <span
+                    class="mock-source-rank"
+                    :class="s.yourRank == null ? 'is-miss' : 'is-hit'"
+                    :title="sourceRankLabel(s)"
+                  >
+                    {{ s.yourRank == null ? 'Not in top 25' : '#' + s.yourRank }}
+                  </span>
+                </div>
+
+                <div
+                  class="mock-stack"
+                  :title="s.takeaway"
+                  role="img"
+                  :aria-label="s.takeaway"
+                >
+                  <span
+                    v-for="seg in s.segments"
+                    :key="seg.cls"
+                    class="mock-seg"
+                    :class="'seg-' + seg.cls"
+                    :style="{ '--target-w': seg.pct + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"
+                    :title="seg.pct + '% ' + (SOURCE_CLASSES.find(c => c.cls === seg.cls)?.label || seg.cls)"
+                  ></span>
+                </div>
+
+                <div v-if="pinnedSourceKey === s.key" class="mock-source-detail">
+                  <div class="mock-detail-row">
+                    <span class="mock-detail-label">Top three sources</span>
+                  </div>
+                  <ul class="mock-source-top">
+                    <li v-for="t in s.topSources" :key="t.domain">
+                      <img
+                        class="mock-source-fav"
+                        :src="faviconFor(t.domain)"
+                        :alt="''"
+                        width="14" height="14"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                        @error="(e) => e.target.style.display = 'none'"
+                      />
+                      <span class="mock-source-domain">{{ t.domain }}</span>
+                      <span class="mock-source-share">{{ t.share }}% of citations</span>
+                    </li>
+                  </ul>
+                  <div class="mock-source-takeaway">{{ s.takeaway }}</div>
                 </div>
               </div>
+
               <div class="mock-source-legend">
                 <span><i class="seg-reddit"></i>Reddit</span>
                 <span><i class="seg-news"></i>News</span>
                 <span><i class="seg-wiki"></i>Wikipedia</span>
                 <span><i class="seg-blog"></i>Blogs</span>
-                <span><i class="seg-own"></i>Your site</span>
+                <span><i class="seg-own"></i>Your domain</span>
               </div>
             </div>
 
             <!-- CONTENT STUDIO -->
             <div v-else-if="f.key === 'studio'" class="mock-card">
-              <div class="mock-draft-head">
-                <span class="mock-chip is-draft">Draft</span>
-                <span class="mock-chip-prov">Claude</span>
+              <div class="mock-studio-head">
+                <div>
+                  <div class="mock-studio-title">Market quadrant · PM apps</div>
+                  <div class="mock-studio-sub">Visibility (y) × sentiment (x). Click any brand to inspect.</div>
+                </div>
+                <div class="mock-studio-counts">
+                  <span class="mock-studio-pill q-leader">{{ studioCounts.leader }} Leaders</span>
+                  <span class="mock-studio-pill q-niche">{{ studioCounts.niche }} Niche</span>
+                </div>
               </div>
-              <div class="mock-draft-title">How AI analytics tools rank for SMB SaaS in 2026</div>
-              <div class="mock-draft-line w-95"></div>
-              <div class="mock-draft-line w-88"></div>
-              <div class="mock-draft-line w-92"></div>
-              <div class="mock-draft-line w-70"></div>
-              <div class="mock-draft-line w-85"></div>
-              <div class="mock-draft-actions">
-                <button class="mock-btn">Save</button>
-                <button class="mock-btn">Approve</button>
-                <button class="mock-btn is-primary">Publish</button>
+
+              <div class="mock-studio-canvas">
+                <div class="mock-studio-q q-leader"><span>Leaders</span></div>
+                <div class="mock-studio-q q-niche"><span>Niche</span></div>
+                <div class="mock-studio-q q-lagger"><span>Laggers</span></div>
+                <div class="mock-studio-q q-controversial"><span>Controversial</span></div>
+
+                <div class="mock-studio-axis-y" aria-hidden="true">
+                  <span class="hi">High visibility</span>
+                  <span class="lo">Low visibility</span>
+                </div>
+                <div class="mock-studio-axis-x" aria-hidden="true">
+                  <span class="lo">Polarising</span>
+                  <span class="hi">Positive</span>
+                </div>
+
+                <button
+                  v-for="b in studioBrands"
+                  :key="b.key"
+                  class="mock-studio-brand"
+                  :class="[
+                    'q-' + quadrantOf(b),
+                    { 'is-you': b.you, 'is-pinned': pinnedStudioKey === b.key },
+                  ]"
+                  :style="{ left: studioX(b) + '%', top: studioY(b) + '%' }"
+                  :title="b.name + ' — ' + studioQuadrantLabel[quadrantOf(b)]"
+                  @click.stop="toggleStudioPin(b)"
+                >
+                  <span class="mock-studio-marker"></span>
+                  <span class="mock-studio-label">{{ b.name }}</span>
+                </button>
+              </div>
+
+              <div v-if="pinnedStudio" class="mock-studio-detail">
+                <div class="mock-studio-detail-head">
+                  <span class="mock-studio-detail-name">
+                    {{ pinnedStudio.name }}
+                    <span v-if="pinnedStudio.you" class="mock-studio-you-pill">You</span>
+                  </span>
+                  <span class="mock-studio-detail-quad" :class="'q-' + quadrantOf(pinnedStudio)">
+                    {{ studioQuadrantLabel[quadrantOf(pinnedStudio)] }}
+                  </span>
+                </div>
+                <div class="mock-studio-stats">
+                  <div class="mock-studio-stat">
+                    <span class="mock-studio-stat-label">Visibility</span>
+                    <span class="mock-studio-stat-value">{{ pinnedStudio.vis }}%</span>
+                  </div>
+                  <div class="mock-studio-stat">
+                    <span class="mock-studio-stat-label">Positive sentiment</span>
+                    <span class="mock-studio-stat-value">{{ Math.round(pinnedStudio.sent * 100) }}%</span>
+                  </div>
+                  <div class="mock-studio-stat">
+                    <span class="mock-studio-stat-label">Avg rank</span>
+                    <span class="mock-studio-stat-value">#{{ pinnedStudio.rank.toFixed(1) }}</span>
+                  </div>
+                  <div class="mock-studio-stat">
+                    <span class="mock-studio-stat-label">Answer share</span>
+                    <span class="mock-studio-stat-value">{{ pinnedStudio.share }}%</span>
+                  </div>
+                </div>
+                <div class="mock-studio-models">
+                  <span class="mock-studio-models-label">Surfaces in</span>
+                  <span
+                    v-for="k in MODEL_KEYS"
+                    :key="k"
+                    class="mock-model-dot"
+                    :class="['is-' + k, { 'is-hit': pinnedStudio.models.includes(k) }]"
+                    :title="MODEL_LABEL[k] + (pinnedStudio.models.includes(k) ? ' — surfaces ' + pinnedStudio.name : ' — does not surface ' + pinnedStudio.name)"
+                  ></span>
+                  <span class="mock-studio-models-count">{{ pinnedStudio.models.length }} of 4</span>
+                </div>
+              </div>
+
+              <div class="mock-studio-exports">
+                <span class="mock-studio-exports-label">Export</span>
+                <span class="mock-studio-export">CSV</span>
+                <span class="mock-studio-export">Looker</span>
+                <span class="mock-studio-export">API</span>
               </div>
             </div>
           </div>
@@ -746,12 +1004,94 @@ onMounted(() => {
 })
 
 const categories = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity']
+// Multi-LLM Probing demo data — every field is what the in-product report
+// surfaces per model after a scan: visibility rate, week-over-week delta,
+// avg rank when mentioned, sentiment split, number of citations carried
+// in the response, the competitor that beats you most often, and a brand-
+// safety flag indicating any hallucinations or unverified claims surfaced.
 const heroProviders = [
-  { key: 'anthropic',  name: 'Claude',     pct: 47, cited: 12, sources: 'Reddit · TechCrunch · Wikipedia' },
-  { key: 'openai',     name: 'GPT-4',      pct: 38, cited:  8, sources: 'Wikipedia · Medium · NYT' },
-  { key: 'google',     name: 'Gemini',     pct: 52, cited: 15, sources: 'BBC · Bloomberg · gov sites' },
-  { key: 'perplexity', name: 'Perplexity', pct: 64, cited: 21, sources: 'Reddit · Quora · Stack Overflow' },
+  {
+    key: 'anthropic', name: 'Claude',
+    pct: 47, delta: 8, rank: 3.1, citations: 12, hallucinations: 0,
+    sentiment: { pos: 0.7, neu: 0.25, neg: 0.05 },
+    topCompetitor: { name: 'Asana', share: 18 },
+  },
+  {
+    key: 'openai', name: 'GPT-4',
+    pct: 38, delta: -3, rank: 4.6, citations: 8, hallucinations: 1,
+    sentiment: { pos: 0.55, neu: 0.35, neg: 0.10 },
+    topCompetitor: { name: 'Linear', share: 22 },
+  },
+  {
+    key: 'google', name: 'Gemini',
+    pct: 52, delta: 12, rank: 2.4, citations: 15, hallucinations: 0,
+    sentiment: { pos: 0.66, neu: 0.30, neg: 0.04 },
+    topCompetitor: { name: 'Notion', share: 14 },
+  },
+  {
+    key: 'perplexity', name: 'Perplexity',
+    pct: 64, delta: 17, rank: 1.8, citations: 21, hallucinations: 0,
+    sentiment: { pos: 0.74, neu: 0.22, neg: 0.04 },
+    topCompetitor: { name: 'Trello', share: 9 },
+  },
 ]
+const heroAvgVisibility = computed(() =>
+  Math.round(heroProviders.reduce((s, p) => s + p.pct, 0) / heroProviders.length),
+)
+const pinnedProbeKey = ref(null)
+function toggleProbePin(p) {
+  pinnedProbeKey.value = pinnedProbeKey.value === p.key ? null : p.key
+}
+
+// Content Studio demo data — the market quadrant the in-product report
+// renders for any category: every brand plotted by sentiment (x) and
+// visibility (y), grouped into Leaders, Niche Players, Laggers, and
+// Controversial. Click a brand to see avg rank, mention share, the models
+// that surface them, and a sample sentence the report exports.
+const studioBrands = [
+  { key: 'you',      name: 'Acrelane',  you: true,  vis: 64, sent: 0.74, rank: 1.8, share: 22, models: ['anthropic','openai','google','perplexity'] },
+  { key: 'linear',   name: 'Linear',    vis: 78, sent: 0.66, rank: 1.5, share: 28, models: ['anthropic','openai','google','perplexity'] },
+  { key: 'asana',    name: 'Asana',     vis: 71, sent: 0.58, rank: 2.4, share: 24, models: ['anthropic','openai','perplexity'] },
+  { key: 'notion',   name: 'Notion',    vis: 55, sent: 0.62, rank: 3.1, share: 18, models: ['anthropic','openai','perplexity'] },
+  { key: 'monday',   name: 'Monday',    vis: 42, sent: 0.32, rank: 5.2, share: 11, models: ['openai','google'] },
+  { key: 'trello',   name: 'Trello',    vis: 31, sent: 0.78, rank: 7.4, share:  9, models: ['anthropic','perplexity'] },
+  { key: 'wrike',    name: 'Wrike',     vis: 22, sent: 0.55, rank: 9.1, share:  6, models: ['openai'] },
+  { key: 'clickup',  name: 'ClickUp',   vis: 36, sent: 0.18, rank: 6.7, share: 10, models: ['google','perplexity'] },
+]
+
+// Two thresholds carve the canvas into four quadrants — match how the
+// in-product report bins brands.
+const STUDIO_VIS_THRESH = 50    // y-axis: visibility cutoff
+const STUDIO_SENT_THRESH = 0.5  // x-axis: positive vs polarising sentiment
+
+function quadrantOf(b) {
+  if (b.vis >= STUDIO_VIS_THRESH && b.sent >= STUDIO_SENT_THRESH) return 'leader'
+  if (b.vis <  STUDIO_VIS_THRESH && b.sent >= STUDIO_SENT_THRESH) return 'niche'
+  if (b.vis <  STUDIO_VIS_THRESH && b.sent <  STUDIO_SENT_THRESH) return 'lagger'
+  return 'controversial'
+}
+const studioQuadrantLabel = {
+  leader: 'Leader', niche: 'Niche player',
+  lagger: 'Lagger', controversial: 'Controversial',
+}
+const studioCounts = computed(() => {
+  const c = { leader: 0, niche: 0, lagger: 0, controversial: 0 }
+  studioBrands.forEach(b => { c[quadrantOf(b)]++ })
+  return c
+})
+
+// Plot coordinates inside the canvas (we render manually as a positioned
+// list rather than a chart-lib scatter, so the layout stays light).
+function studioX(b) { return Math.max(4, Math.min(96, b.sent * 100)) }
+function studioY(b) { return Math.max(4, Math.min(96, 100 - b.vis)) }
+
+const pinnedStudioKey = ref('you')
+function toggleStudioPin(b) {
+  pinnedStudioKey.value = pinnedStudioKey.value === b.key ? null : b.key
+}
+const pinnedStudio = computed(() =>
+  studioBrands.find(b => b.key === pinnedStudioKey.value) || null,
+)
 
 // Hero "probe" animation — cycles through a handful of category prompts,
 // each with its own set of model answers. Sources are `{label, domain}`
@@ -1106,16 +1446,98 @@ const showcaseFeatures = [
 ]
 
 // Demand-side prompt examples — the typed search bar cycles through
-// these one at a time; each becomes a row beneath with a category chip
-// + animated trend bar.
+// these one at a time; each becomes a row beneath with the data the
+// Prompt Library actually surfaces in-product: monthly search volume,
+// week-over-week delta, a tiny 8-week sparkline, and per-LLM coverage
+// dots showing whether your brand appears in each model's answer today.
 const PROMPT_EXAMPLES = [
-  { q: 'best ai analytics tool for small saas',     style: 'comparison', trend: 82 },
-  { q: 'how to track llm visibility in 2026',       style: 'how-to',     trend: 64 },
-  { q: 'fetchbot vs bluefish alternatives',         style: 'vs',         trend: 47 },
-  { q: 'why does perplexity keep mentioning notion',style: 'question',   trend: 71 },
-  { q: 'cheapest geo platform for an indie founder',style: 'local',      trend: 58 },
-  { q: 'is there a free chatgpt visibility tracker',style: 'question',   trend: 76 },
+  {
+    q: 'best ai analytics tool for small saas',
+    style: 'comparison',
+    volume: 4400,
+    delta: 18,
+    spark: [22, 26, 28, 33, 38, 41, 44, 52],
+    // true = your brand currently surfaces in this model's answer.
+    models: { anthropic: true, openai: true, google: false, perplexity: true },
+  },
+  {
+    q: 'how to track llm visibility in 2026',
+    style: 'how-to',
+    volume: 2100,
+    delta: 34,
+    spark: [8, 10, 11, 14, 16, 19, 22, 28],
+    models: { anthropic: true, openai: false, google: false, perplexity: true },
+  },
+  {
+    q: 'fetchbot vs bluefish alternatives',
+    style: 'vs',
+    volume: 880,
+    delta: 9,
+    spark: [12, 13, 15, 14, 16, 18, 17, 19],
+    models: { anthropic: true, openai: true, google: true, perplexity: true },
+  },
+  {
+    q: 'why does perplexity keep mentioning notion',
+    style: 'question',
+    volume: 1600,
+    delta: -6,
+    spark: [24, 22, 21, 20, 18, 17, 17, 16],
+    models: { anthropic: false, openai: false, google: false, perplexity: true },
+  },
+  {
+    q: 'cheapest geo platform for an indie founder',
+    style: 'local',
+    volume: 720,
+    delta: 12,
+    spark: [9, 10, 10, 12, 13, 14, 15, 16],
+    models: { anthropic: true, openai: false, google: false, perplexity: false },
+  },
+  {
+    q: 'is there a free chatgpt visibility tracker',
+    style: 'question',
+    volume: 3200,
+    delta: 41,
+    spark: [14, 16, 18, 22, 28, 34, 40, 48],
+    models: { anthropic: true, openai: true, google: true, perplexity: true },
+  },
 ]
+
+const MODEL_KEYS = ['anthropic', 'openai', 'google', 'perplexity']
+const MODEL_LABEL = {
+  anthropic: 'Claude',
+  openai: 'GPT-4',
+  google: 'Gemini',
+  perplexity: 'Perplexity',
+}
+
+function formatVolume(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(n)
+}
+
+function sparkPath(values, w = 64, h = 18) {
+  if (!values || values.length < 2) return ''
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const span = Math.max(1, max - min)
+  const stepX = w / (values.length - 1)
+  return values
+    .map((v, i) => {
+      const x = +(i * stepX).toFixed(1)
+      const y = +(h - ((v - min) / span) * h).toFixed(1)
+      return `${i === 0 ? 'M' : 'L'}${x},${y}`
+    })
+    .join(' ')
+}
+
+const pinnedPromptId = ref(null)
+function togglePin(p) {
+  pinnedPromptId.value = pinnedPromptId.value === p.id ? null : p.id
+}
+const coverageLabel = (p) => {
+  const hit = MODEL_KEYS.filter(k => p.models?.[k]).length
+  return `${hit} of 4 models surface you`
+}
 
 const typedPrompt = ref('')
 const visiblePromptRows = ref([])
@@ -1138,8 +1560,18 @@ function startPromptCycle() {
   })
   const wait = (ms) => new Promise(r => { timer = setTimeout(r, ms) })
 
+  const waitWhilePinned = async () => {
+    // Pause the loop while a row is pinned so a reader can study the
+    // expanded detail. Poll every 250ms — cheap and only runs when paused.
+    while (!cancelled && pinnedPromptId.value) {
+      await new Promise(r => { timer = setTimeout(r, 250) })
+    }
+  }
+
   const loop = async () => {
     while (!cancelled) {
+      await waitWhilePinned()
+      if (cancelled) break
       const ex = PROMPT_EXAMPLES[idx]
       // Type the query into the search bar.
       await typeIn(ex.q, 45)
@@ -1159,12 +1591,72 @@ function startPromptCycle() {
   _promptCycleStop = () => { cancelled = true; if (timer) clearTimeout(timer) }
 }
 
-const sourceShares = [
-  { provider: 'Claude',     segments: [{cls:'reddit',pct:18},{cls:'news',pct:14},{cls:'wiki',pct:38},{cls:'blog',pct:20},{cls:'own',pct:10}] },
-  { provider: 'GPT-4',      segments: [{cls:'reddit',pct:12},{cls:'news',pct:24},{cls:'wiki',pct:30},{cls:'blog',pct:24},{cls:'own',pct:10}] },
-  { provider: 'Gemini',     segments: [{cls:'reddit',pct:10},{cls:'news',pct:42},{cls:'wiki',pct:18},{cls:'blog',pct:22},{cls:'own',pct:8}] },
-  { provider: 'Perplexity', segments: [{cls:'reddit',pct:38},{cls:'news',pct:16},{cls:'wiki',pct:12},{cls:'blog',pct:22},{cls:'own',pct:12}] },
+// Source Influence demo data — every number is what the in-product table
+// actually surfaces: per-provider share of citations by source class, the
+// three sites most cited by each model, whether you appear in their top
+// 25, and a one-line takeaway ("Perplexity leans on Reddit. You are not
+// in their Reddit footprint.").
+const SOURCE_CLASSES = [
+  { cls: 'reddit', label: 'Reddit / forums' },
+  { cls: 'news',   label: 'News' },
+  { cls: 'wiki',   label: 'Wikipedia' },
+  { cls: 'blog',   label: 'Blogs / editorial' },
+  { cls: 'own',    label: 'Your domain' },
 ]
+
+const sourceShares = [
+  {
+    key: 'anthropic', provider: 'Claude',
+    segments: [{cls:'reddit',pct:18},{cls:'news',pct:14},{cls:'wiki',pct:38},{cls:'blog',pct:20},{cls:'own',pct:10}],
+    yourRank: 12,
+    topSources: [
+      { domain: 'wikipedia.org', share: 22 },
+      { domain: 'theverge.com',  share: 9 },
+      { domain: 'reddit.com',    share: 7 },
+    ],
+    takeaway: 'Claude leans on Wikipedia. You rank #12.',
+  },
+  {
+    key: 'openai', provider: 'GPT-4',
+    segments: [{cls:'reddit',pct:12},{cls:'news',pct:24},{cls:'wiki',pct:30},{cls:'blog',pct:24},{cls:'own',pct:10}],
+    yourRank: 7,
+    topSources: [
+      { domain: 'nytimes.com',    share: 16 },
+      { domain: 'wikipedia.org',  share: 14 },
+      { domain: 'medium.com',     share: 8 },
+    ],
+    takeaway: 'GPT-4 cites a balanced news + reference mix. You rank #7.',
+  },
+  {
+    key: 'google', provider: 'Gemini',
+    segments: [{cls:'reddit',pct:10},{cls:'news',pct:42},{cls:'wiki',pct:18},{cls:'blog',pct:22},{cls:'own',pct:8}],
+    yourRank: null,
+    topSources: [
+      { domain: 'bloomberg.com',  share: 18 },
+      { domain: 'bbc.com',        share: 11 },
+      { domain: 'forbes.com',     share: 9 },
+    ],
+    takeaway: 'Gemini is news-first. You are not in the top 25.',
+  },
+  {
+    key: 'perplexity', provider: 'Perplexity',
+    segments: [{cls:'reddit',pct:38},{cls:'news',pct:16},{cls:'wiki',pct:12},{cls:'blog',pct:22},{cls:'own',pct:12}],
+    yourRank: 4,
+    topSources: [
+      { domain: 'reddit.com',       share: 28 },
+      { domain: 'news.ycombinator.com', share: 9 },
+      { domain: 'stackoverflow.com',share: 6 },
+    ],
+    takeaway: 'Perplexity is Reddit-heavy. You rank #4.',
+  },
+]
+
+const pinnedSourceKey = ref(null)
+function toggleSourcePin(s) {
+  pinnedSourceKey.value = pinnedSourceKey.value === s.key ? null : s.key
+}
+const sourceRankLabel = (s) =>
+  s.yourRank == null ? 'Not in top 25' : `Your site ranks #${s.yourRank}`
 
 /* ── FAQ items ── */
 const faqItems = [
@@ -3220,78 +3712,171 @@ html:has(.lp) #app {
   width: 100%;
   max-width: 460px;
   background: #ffffff;
-  border: 1px solid #ece6da;
-  border-radius: 18px;
-  padding: 22px;
-  box-shadow: 0 30px 60px -32px rgba(20, 23, 24, 0.22);
+  border: none;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .mock-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 36px 70px -32px rgba(20, 23, 24, 0.28);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.06),
+    0 22px 60px rgba(0, 0, 0, 0.10);
 }
 .mock-search {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #f8f4ec;
-  border: 1px solid #ece6da;
-  font-size: 13.5px;
-  color: #2d3640;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 15px;
+  font-weight: 500;
+  color: #222222;
 }
 .mock-search-icon {
   width: 14px; height: 14px;
   border-radius: 50%;
-  border: 1.6px solid #8a8275;
+  border: 1.6px solid #717171;
   position: relative;
+  flex-shrink: 0;
 }
 .mock-search-icon::after {
   content: ''; position: absolute;
   width: 6px; height: 1.6px;
-  background: #8a8275;
+  background: #717171;
   bottom: -3px; right: -3px;
   transform: rotate(45deg);
 }
-.mock-search-text { flex: 1; }
+.mock-search-text { flex: 1; min-width: 0; }
 .mock-search-caret {
-  color: var(--brand-accent, #ff6b35);
+  color: #ff385c;
+  font-weight: 400;
   animation: caretBlink 1s steps(1) infinite;
 }
 @keyframes caretBlink { 50% { opacity: 0; } }
 
-.mock-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mock-rows { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
 .mock-prompt-row {
-  display: grid;
-  grid-template-columns: 1fr auto 80px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #fbf8f1;
-  border: 1px solid #f0e9d9;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
+.mock-prompt-row:hover {
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+.mock-prompt-row.is-pinned {
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
+}
 @keyframes fadeSlide { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
-.mock-q { font-size: 13px; color: #2d3640; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.mock-prompt-main {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+.mock-q {
+  font-size: 14px; color: #222222;
+  font-weight: 500;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.mock-prompt-meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: #717171;
+}
+.mock-spark { width: 64px; height: 18px; color: #ff385c; flex-shrink: 0; }
+.mock-volume { font-weight: 600; color: #222222; }
+.mock-delta {
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+.mock-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
+.mock-models {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-left: auto;
+}
+.mock-model-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  transition: transform .15s ease;
+}
+/* "Hit" colours mirror the probe-panel avatars so the two demos read as
+   the same product. */
+.mock-model-dot.is-hit.is-anthropic  { background: #d97706; }
+.mock-model-dot.is-hit.is-openai     { background: #0f1212; }
+.mock-model-dot.is-hit.is-google     { background: #4285f4; }
+.mock-model-dot.is-hit.is-perplexity { background: #1fb8a8; }
+.mock-prompt-row:hover .mock-model-dot.is-hit { transform: scale(1.15); }
+
+.mock-prompt-detail {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 8px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-detail-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12.5px;
+}
+.mock-detail-label { color: #717171; }
+.mock-detail-value { color: #222222; font-weight: 600; }
+.mock-detail-models {
+  list-style: none; margin: 6px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mock-detail-models li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: #484848;
+}
+.mock-detail-models li.is-miss { color: #8a8a8a; }
+.mock-detail-models li .mock-model-dot { margin: 0; }
+.mock-detail-status {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+}
+.mock-detail-models li.is-hit  .mock-detail-status { color: #008489; }
+.mock-detail-models li.is-miss .mock-detail-status { color: #c61b48; }
 .mock-chip {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255,107,53,0.14);
-  color: #8a6d2a;
+  background: rgba(0, 0, 0, 0.05);
+  color: #484848;
 }
-.mock-chip.is-comparison { background: rgba(74,127,176,0.14);  color: #345f86; }
-.mock-chip.is-how-to     { background: rgba(110,165,110,0.16); color: #3f6b3f; }
-.mock-chip.is-vs         { background: rgba(198,90,47,0.14);   color: #8a3d18; }
-.mock-chip.is-question   { background: rgba(126,34,206,0.12);  color: #5b21b6; }
-.mock-chip.is-local      { background: rgba(217,119,6,0.14);   color: #92400e; }
-.mock-chip.is-story      { background: rgba(15,118,110,0.14);  color: #115e59; }
+.mock-chip.is-comparison { background: rgba(91, 141, 239, 0.14);  color: #2f5cb1; }
+.mock-chip.is-how-to     { background: rgba(0, 166, 153, 0.14);   color: #007e7a; }
+.mock-chip.is-vs         { background: rgba(255, 56, 92, 0.12);   color: #c61b48; }
+.mock-chip.is-question   { background: rgba(217, 119, 6, 0.14);   color: #a25208; }
+.mock-chip.is-local      { background: rgba(31, 184, 168, 0.14);  color: #0f7a72; }
+.mock-chip.is-story      { background: rgba(15, 118, 110, 0.14);  color: #115e59; }
 
 /* Cycler: rows fade in from the top, push older rows down. The
    transition-group + per-row absolute positioning would be over-
@@ -3300,63 +3885,207 @@ html:has(.lp) #app {
 .mock-row-stagger-enter-from   { opacity: 0; transform: translateY(-6px); }
 .mock-row-stagger-leave-active { transition: opacity .25s ease; }
 .mock-row-stagger-leave-to     { opacity: 0; }
-.mock-trend {
-  height: 6px; border-radius: 4px;
-  background: #ece6da;
-  overflow: hidden;
+/* Multi-LLM Probing demo */
+.mock-probe-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.mock-trend-bar {
-  width: 0; height: 100%;
-  background: linear-gradient(90deg, var(--brand-accent, #ff6b35), #3b82f6);
-  border-radius: 4px;
-  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
+.mock-probe-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 2px;
 }
-@keyframes barFill { to { width: var(--target-w, 50%); } }
+.mock-probe-sub { font-size: 12px; color: #717171; }
+.mock-probe-score { text-align: right; flex-shrink: 0; }
+.mock-probe-score-num {
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
+  display: block;
+  font-size: 28px; font-weight: 700;
+  line-height: 1;
+  color: #ff385c;
+  letter-spacing: -0.02em;
+}
+.mock-probe-score-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #717171;
+  font-weight: 600;
+}
 
-/* Probe mini grid */
-.mock-grid {
+.mock-probe-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.mock-mini {
-  background: #fbf8f1;
-  border: 1px solid #f0e9d9;
-  border-radius: 12px;
-  padding: 12px;
+.mock-probe-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
-.mock-mini-head { display:flex; align-items:center; gap:8px; font-size: 12.5px; }
-.mock-mini-name { flex: 1; font-weight: 600; color: #2d3640; }
-.mock-mini-pct { color: var(--brand-accent, #ff6b35); font-weight: 600; }
-.mock-mini-meta { margin-top: 8px; font-size: 11.5px; color: #6b7680; }
+.mock-probe-card:hover {
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+.mock-probe-card.is-pinned {
+  grid-column: 1 / -1;
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
+}
+
+.mock-probe-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.mock-probe-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #222222;
+}
+.mock-probe-pct {
+  font-size: 13px; font-weight: 700; color: #222222;
+}
+
+.mock-probe-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.mock-probe-bar-fill {
+  width: 0; height: 100%;
+  border-radius: 999px;
+  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.mock-probe-bar-fill.is-anthropic  { background: #d97706; }
+.mock-probe-bar-fill.is-openai     { background: #0f1212; }
+.mock-probe-bar-fill.is-google     { background: #4285f4; }
+.mock-probe-bar-fill.is-perplexity { background: #1fb8a8; }
+
+.mock-probe-stats {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 11px; color: #717171;
+}
+.mock-probe-stat { color: #484848; font-weight: 600; }
+.mock-probe-delta {
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+.mock-probe-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-probe-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
+.mock-probe-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 8px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-probe-sent {
+  display: inline-flex;
+  width: 140px; height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+}
+.mock-probe-sent-seg {
+  height: 100%; width: var(--w, 0%);
+  display: block;
+  transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+}
+.mock-probe-sent-seg.pos { background: #008489; }
+.mock-probe-sent-seg.neu { background: #aab2bb; }
+.mock-probe-sent-seg.neg { background: #c61b48; }
+.mock-probe-comp { color: #717171; font-weight: 500; margin-left: 4px; }
+.mock-probe-safety {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.mock-probe-safety.is-ok   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-probe-safety.is-warn { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
 
 /* Source bars */
+.mock-source-head { margin-bottom: 14px; }
 .mock-source-title {
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #8a8275;
-  margin-bottom: 12px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 2px;
 }
+.mock-source-sub {
+  font-size: 12px;
+  color: #717171;
+}
+
 .mock-source-row {
-  display: grid;
-  grid-template-columns: 86px 1fr;
-  align-items: center;
-  gap: 12px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   margin-bottom: 10px;
   opacity: 0;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
-.mock-source-label { font-size: 13px; color: #2d3640; font-weight: 500; }
+.mock-source-row:hover {
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+.mock-source-row.is-pinned {
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
+}
+
+.mock-source-line {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.mock-source-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #222222;
+}
+.mock-source-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+/* Mirror the probe-panel avatar colours so the demos read as one product. */
+.mock-source-dot.is-anthropic  { background: #d97706; }
+.mock-source-dot.is-openai     { background: #0f1212; }
+.mock-source-dot.is-google     { background: #4285f4; }
+.mock-source-dot.is-perplexity { background: #1fb8a8; }
+
+.mock-source-rank {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.mock-source-rank.is-hit  { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-source-rank.is-miss { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
 .mock-stack {
   display: flex;
-  height: 14px;
-  border-radius: 6px;
+  height: 10px;
+  border-radius: 999px;
   overflow: hidden;
-  background: #f0e9d9;
+  background: rgba(0, 0, 0, 0.05);
 }
 .mock-seg {
   width: 0;
@@ -3364,18 +4093,56 @@ html:has(.lp) #app {
   display: block;
   animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-.seg-reddit { background: #c65a2f; }
-.seg-news   { background: #4a7fb0; }
-.seg-wiki   { background: #6b7680; }
-.seg-blog   { background: #d9b770; }
-.seg-own    { background: var(--brand-accent, #ff6b35); }
+@keyframes barFill { to { width: var(--target-w, 0%); } }
+/* Soft Airbnb-leaning palette — distinct, but in the same family as the
+   probe panel's brand-mention highlight rather than the marketing-bright
+   tones we had before. */
+.seg-reddit { background: #ff5a5f; }
+.seg-news   { background: #4285f4; }
+.seg-wiki   { background: #717171; }
+.seg-blog   { background: #d97706; }
+.seg-own    { background: #ff385c; }
+
+.mock-source-detail {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 6px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-source-top {
+  list-style: none; margin: 4px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mock-source-top li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: #484848;
+}
+.mock-source-fav {
+  border-radius: 4px;
+  background: #fff;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.mock-source-domain { color: #222222; font-weight: 500; flex: 1; min-width: 0; }
+.mock-source-share { color: #717171; font-weight: 600; }
+.mock-source-takeaway {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 56, 92, 0.06);
+  color: #222222;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
 .mock-source-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 14px;
   font-size: 11.5px;
-  color: #6b7680;
+  color: #717171;
 }
 .mock-source-legend i {
   display: inline-block;
@@ -3386,55 +4153,189 @@ html:has(.lp) #app {
 }
 
 /* Studio draft mock */
-.mock-draft-head { display:flex; gap: 8px; align-items:center; margin-bottom: 10px; }
-.mock-chip.is-draft { background: rgba(20,23,24,0.08); color: #2d3640; }
-.mock-chip-prov {
+/* Content Studio — market quadrant */
+.mock-studio-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.mock-studio-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 2px;
+}
+.mock-studio-sub { font-size: 12px; color: #717171; }
+.mock-studio-counts { display: flex; gap: 6px; flex-wrap: wrap; }
+.mock-studio-pill {
   font-size: 11px;
-  padding: 3px 8px;
+  font-weight: 700;
+  padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.14);
-  color: #1d4ed8;
-  font-weight: 600;
 }
-.mock-draft-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 19px;
-  line-height: 1.25;
-  color: #131718;
-  margin: 4px 0 16px;
-}
-.mock-draft-line {
-  height: 8px;
-  border-radius: 4px;
-  background: #e2e8f0;
-  margin-bottom: 8px;
-}
-.mock-draft-line.w-95 { width: 95%; }
-.mock-draft-line.w-88 { width: 88%; }
-.mock-draft-line.w-92 { width: 92%; }
-.mock-draft-line.w-70 { width: 70%; }
-.mock-draft-line.w-85 { width: 85%; }
-.mock-draft-actions {
-  display: flex; gap: 8px; margin-top: 16px;
-}
-.mock-btn {
-  border: 1px solid #e2e8f0;
+.mock-studio-pill.q-leader { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-studio-pill.q-niche  { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
+
+.mock-studio-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
   background: #fff;
-  color: #1f2937;
-  font-size: 12.5px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+.mock-studio-q {
+  position: absolute;
+  width: 50%; height: 50%;
+}
+.mock-studio-q > span {
+  position: absolute;
+  top: 8px; padding: 2px 8px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 999px;
+}
+.mock-studio-q.q-leader        { top: 0;  left: 50%; background: rgba(0, 166, 153, 0.06); }
+.mock-studio-q.q-leader > span { right: 10px; color: #008489; background: rgba(0, 166, 153, 0.14); }
+.mock-studio-q.q-niche         { top: 0;  left: 0;   background: rgba(66, 133, 244, 0.05); }
+.mock-studio-q.q-niche > span  { left: 10px;  color: #2f5cb1; background: rgba(66, 133, 244, 0.14); }
+.mock-studio-q.q-lagger        { top: 50%; left: 0;   background: rgba(0, 0, 0, 0.025); }
+.mock-studio-q.q-lagger > span { left: 10px;  top: auto; bottom: 8px; color: #484848; background: rgba(0, 0, 0, 0.08); }
+.mock-studio-q.q-controversial { top: 50%; left: 50%; background: rgba(255, 56, 92, 0.04); }
+.mock-studio-q.q-controversial > span { right: 10px; top: auto; bottom: 8px; color: #c61b48; background: rgba(255, 56, 92, 0.12); }
+
+.mock-studio-axis-y, .mock-studio-axis-x {
+  position: absolute;
+  display: flex; justify-content: space-between;
+  font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: #aab2bb;
+  pointer-events: none;
+}
+.mock-studio-axis-y {
+  top: 8px; bottom: 8px; left: -2px;
+  flex-direction: column;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.mock-studio-axis-x {
+  left: 12px; right: 12px; bottom: 4px;
+}
+
+.mock-studio-brand {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px 4px 6px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  font-size: 11.5px;
   font-weight: 600;
-  border-radius: 8px;
-  padding: 7px 14px;
+  color: #222222;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  white-space: nowrap;
 }
-.mock-btn:hover { background: #f1f5f9; }
-.mock-btn.is-primary {
-  background: #ff6b35;
-  color: #fff;
-  border-color: #ff6b35;
+.mock-studio-brand:hover {
+  transform: translate(-50%, calc(-50% - 2px));
+  border-color: rgba(255, 56, 92, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.10);
 }
-.mock-btn.is-primary:hover { background: #ff5722; }
+.mock-studio-brand.is-pinned {
+  border-color: #ff385c;
+  box-shadow: 0 8px 22px rgba(255, 56, 92, 0.18);
+  z-index: 2;
+}
+.mock-studio-brand.is-you {
+  border-color: #ff385c;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(255, 56, 92, 0.20);
+}
+.mock-studio-marker {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #aab2bb;
+  flex-shrink: 0;
+}
+.mock-studio-brand.q-leader        .mock-studio-marker { background: #008489; }
+.mock-studio-brand.q-niche         .mock-studio-marker { background: #4285f4; }
+.mock-studio-brand.q-lagger        .mock-studio-marker { background: #717171; }
+.mock-studio-brand.q-controversial .mock-studio-marker { background: #c61b48; }
+.mock-studio-brand.is-you .mock-studio-marker { background: #ff385c; }
+.mock-studio-label { line-height: 1; }
+
+.mock-studio-detail {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  animation: fadeSlide 0.25s ease;
+}
+.mock-studio-detail-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mock-studio-detail-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: #222222;
+}
+.mock-studio-you-pill {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 56, 92, 0.12);
+  color: #c61b48;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.mock-studio-detail-quad {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.mock-studio-detail-quad.q-leader        { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-studio-detail-quad.q-niche         { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
+.mock-studio-detail-quad.q-lagger        { background: rgba(0, 0, 0, 0.06); color: #484848; }
+.mock-studio-detail-quad.q-controversial { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
+.mock-studio-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px 18px;
+}
+.mock-studio-stat { display: flex; align-items: baseline; justify-content: space-between; font-size: 12px; }
+.mock-studio-stat-label { color: #717171; }
+.mock-studio-stat-value { color: #222222; font-weight: 700; }
+
+.mock-studio-models {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px;
+  font-size: 12px; color: #717171;
+}
+.mock-studio-models-label { margin-right: 4px; font-weight: 600; color: #484848; }
+.mock-studio-models-count { margin-left: 6px; color: #484848; font-weight: 600; }
+
+.mock-studio-exports {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: #717171;
+}
+.mock-studio-exports-label { font-weight: 600; color: #484848; }
+.mock-studio-export {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: #484848;
+  text-transform: uppercase;
+}
 
 /* ── Pull quote ── */
 .pull-quote {

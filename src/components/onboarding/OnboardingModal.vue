@@ -7,8 +7,8 @@
 
       <header class="ob-topbar">
         <div class="ob-brand">
-          <span class="ob-brand-dot"></span>
-          FetchBot
+          <img src="/images/fb-logo.png" alt="FetchBot" class="ob-brand-mark" />
+          <span>FetchBot</span>
         </div>
         <div class="ob-progress" :aria-label="`Step ${step + 1} of ${steps.length}`">
           <span
@@ -608,10 +608,10 @@ onBeforeUnmount(() => {
   display: flex; align-items: center; gap: 10px;
   font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
 }
-.ob-brand-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--ob-accent);
-  box-shadow: 0 0 0 4px var(--ob-accent-soft);
+.ob-brand-mark {
+  width: 26px; height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .ob-progress { display: flex; gap: 6px; }
 .ob-progress-dot {

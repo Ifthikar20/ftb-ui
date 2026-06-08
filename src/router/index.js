@@ -43,6 +43,12 @@ const routes = [
         meta: { public: true }
     },
     {
+        path: '/what-we-track',
+        name: 'what-we-track',
+        component: () => import('@/pages/info/WhatWeTrackPage.vue'),
+        meta: { public: true }
+    },
+    {
         path: '/cookies',
         name: 'cookies',
         component: () => import('@/pages/info/CookiesPage.vue'),

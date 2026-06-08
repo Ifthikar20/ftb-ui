@@ -12,11 +12,6 @@ export default {
     devices: (wid, params) => api.get(`/analytics/${wid}/devices/`, { params }),
     countries: (wid, params) => api.get(`/analytics/${wid}/countries/`, { params }),
 
-    // Funnels
-    funnels: (wid) => api.get(`/analytics/${wid}/funnels/`),
-    createFunnel: (wid, data) => api.post(`/analytics/${wid}/funnels/`, data),
-    calculateFunnel: (wid, fid, params) => api.get(`/analytics/${wid}/funnels/${fid}/calculate/`, { params }),
-
     // Retention
     retention: (wid, params) => api.get(`/analytics/${wid}/retention/`, { params }),
     retentionCurve: (wid, params) => api.get(`/analytics/${wid}/retention/curve/`, { params }),
@@ -36,6 +31,13 @@ export default {
 
     // Live
     liveEvents: (wid) => api.get(`/analytics/${wid}/live/`),
+
+    // Persisted event log (last 6 months, paginated)
+    eventLog: (wid, params = {}) => api.get(`/analytics/${wid}/event-log/`, { params }),
+    eventLogCsvUrl: (wid, params = {}) => {
+      const qs = new URLSearchParams({ ...params, format: 'csv' }).toString()
+      return `/api/v1/analytics/${wid}/event-log/?${qs}`
+    },
 
     // Dynamic SEO
     seoEmbed: (wid) => api.get(`/analytics/${wid}/seo-embed/`),

@@ -93,7 +93,7 @@ const open = ref(false)
 const expandedItem = ref('')
 
 const pageHelp = [
-  { page: 'analytics', icon: '', label: 'Analytics', help: 'See real-time visitor data, traffic sources, top pages, and device breakdown. Data appears once you install the tracking pixel on your website.' },
+  { page: 'analytics', icon: '', label: 'SEO Analytics', help: 'See real-time search performance, traffic sources, top pages, and device breakdown. Data appears once you install the tracking pixel on your website.' },
   { page: 'heatmap', icon: '', label: 'Heatmaps', help: 'Visualize where visitors click on your pages. Requires the tracking pixel to capture click coordinates. Hotter colors = more clicks.' },
   { page: 'keywords', icon: '', label: 'Keywords', help: 'Track your search engine rankings for specific keywords. Add keywords manually and monitor their position over time.' },
   { page: 'leads', icon: '', label: 'Leads', help: 'Captured visitor and form submission data. Leads are created when visitors interact with forms on your tracked site.' },
