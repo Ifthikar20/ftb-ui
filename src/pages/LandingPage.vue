@@ -352,19 +352,78 @@
 
             <!-- SOURCE INFLUENCE -->
             <div v-else-if="f.key === 'source'" class="mock-card">
-              <div class="mock-source-title">Source mix per provider</div>
-              <div v-for="(s, idx) in sourceShares" :key="s.provider" class="mock-source-row" :style="{ animationDelay: (0.15 + idx * 0.12) + 's' }">
-                <span class="mock-source-label">{{ s.provider }}</span>
-                <div class="mock-stack">
-                  <span v-for="seg in s.segments" :key="seg.cls" class="mock-seg" :class="'seg-' + seg.cls" :style="{ '--target-w': seg.pct + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"></span>
+              <div class="mock-source-head">
+                <div class="mock-source-title">Source mix per model</div>
+                <div class="mock-source-sub">Click a model to see its top three sources and your rank</div>
+              </div>
+
+              <div
+                v-for="(s, idx) in sourceShares"
+                :key="s.key"
+                class="mock-source-row"
+                :class="{ 'is-pinned': pinnedSourceKey === s.key }"
+                :style="{ animationDelay: (0.15 + idx * 0.12) + 's' }"
+                @click="toggleSourcePin(s)"
+              >
+                <div class="mock-source-line">
+                  <span class="mock-source-label">
+                    <span class="mock-source-dot" :class="'is-' + s.key"></span>
+                    {{ s.provider }}
+                  </span>
+                  <span
+                    class="mock-source-rank"
+                    :class="s.yourRank == null ? 'is-miss' : 'is-hit'"
+                    :title="sourceRankLabel(s)"
+                  >
+                    {{ s.yourRank == null ? 'Not in top 25' : '#' + s.yourRank }}
+                  </span>
+                </div>
+
+                <div
+                  class="mock-stack"
+                  :title="s.takeaway"
+                  role="img"
+                  :aria-label="s.takeaway"
+                >
+                  <span
+                    v-for="seg in s.segments"
+                    :key="seg.cls"
+                    class="mock-seg"
+                    :class="'seg-' + seg.cls"
+                    :style="{ '--target-w': seg.pct + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"
+                    :title="seg.pct + '% ' + (SOURCE_CLASSES.find(c => c.cls === seg.cls)?.label || seg.cls)"
+                  ></span>
+                </div>
+
+                <div v-if="pinnedSourceKey === s.key" class="mock-source-detail">
+                  <div class="mock-detail-row">
+                    <span class="mock-detail-label">Top three sources</span>
+                  </div>
+                  <ul class="mock-source-top">
+                    <li v-for="t in s.topSources" :key="t.domain">
+                      <img
+                        class="mock-source-fav"
+                        :src="faviconFor(t.domain)"
+                        :alt="''"
+                        width="14" height="14"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                        @error="(e) => e.target.style.display = 'none'"
+                      />
+                      <span class="mock-source-domain">{{ t.domain }}</span>
+                      <span class="mock-source-share">{{ t.share }}% of citations</span>
+                    </li>
+                  </ul>
+                  <div class="mock-source-takeaway">{{ s.takeaway }}</div>
                 </div>
               </div>
+
               <div class="mock-source-legend">
                 <span><i class="seg-reddit"></i>Reddit</span>
                 <span><i class="seg-news"></i>News</span>
                 <span><i class="seg-wiki"></i>Wikipedia</span>
                 <span><i class="seg-blog"></i>Blogs</span>
-                <span><i class="seg-own"></i>Your site</span>
+                <span><i class="seg-own"></i>Your domain</span>
               </div>
             </div>
 
@@ -1309,12 +1368,72 @@ function startPromptCycle() {
   _promptCycleStop = () => { cancelled = true; if (timer) clearTimeout(timer) }
 }
 
-const sourceShares = [
-  { provider: 'Claude',     segments: [{cls:'reddit',pct:18},{cls:'news',pct:14},{cls:'wiki',pct:38},{cls:'blog',pct:20},{cls:'own',pct:10}] },
-  { provider: 'GPT-4',      segments: [{cls:'reddit',pct:12},{cls:'news',pct:24},{cls:'wiki',pct:30},{cls:'blog',pct:24},{cls:'own',pct:10}] },
-  { provider: 'Gemini',     segments: [{cls:'reddit',pct:10},{cls:'news',pct:42},{cls:'wiki',pct:18},{cls:'blog',pct:22},{cls:'own',pct:8}] },
-  { provider: 'Perplexity', segments: [{cls:'reddit',pct:38},{cls:'news',pct:16},{cls:'wiki',pct:12},{cls:'blog',pct:22},{cls:'own',pct:12}] },
+// Source Influence demo data — every number is what the in-product table
+// actually surfaces: per-provider share of citations by source class, the
+// three sites most cited by each model, whether you appear in their top
+// 25, and a one-line takeaway ("Perplexity leans on Reddit. You are not
+// in their Reddit footprint.").
+const SOURCE_CLASSES = [
+  { cls: 'reddit', label: 'Reddit / forums' },
+  { cls: 'news',   label: 'News' },
+  { cls: 'wiki',   label: 'Wikipedia' },
+  { cls: 'blog',   label: 'Blogs / editorial' },
+  { cls: 'own',    label: 'Your domain' },
 ]
+
+const sourceShares = [
+  {
+    key: 'anthropic', provider: 'Claude',
+    segments: [{cls:'reddit',pct:18},{cls:'news',pct:14},{cls:'wiki',pct:38},{cls:'blog',pct:20},{cls:'own',pct:10}],
+    yourRank: 12,
+    topSources: [
+      { domain: 'wikipedia.org', share: 22 },
+      { domain: 'theverge.com',  share: 9 },
+      { domain: 'reddit.com',    share: 7 },
+    ],
+    takeaway: 'Claude leans on Wikipedia. You rank #12.',
+  },
+  {
+    key: 'openai', provider: 'GPT-4',
+    segments: [{cls:'reddit',pct:12},{cls:'news',pct:24},{cls:'wiki',pct:30},{cls:'blog',pct:24},{cls:'own',pct:10}],
+    yourRank: 7,
+    topSources: [
+      { domain: 'nytimes.com',    share: 16 },
+      { domain: 'wikipedia.org',  share: 14 },
+      { domain: 'medium.com',     share: 8 },
+    ],
+    takeaway: 'GPT-4 cites a balanced news + reference mix. You rank #7.',
+  },
+  {
+    key: 'google', provider: 'Gemini',
+    segments: [{cls:'reddit',pct:10},{cls:'news',pct:42},{cls:'wiki',pct:18},{cls:'blog',pct:22},{cls:'own',pct:8}],
+    yourRank: null,
+    topSources: [
+      { domain: 'bloomberg.com',  share: 18 },
+      { domain: 'bbc.com',        share: 11 },
+      { domain: 'forbes.com',     share: 9 },
+    ],
+    takeaway: 'Gemini is news-first. You are not in the top 25.',
+  },
+  {
+    key: 'perplexity', provider: 'Perplexity',
+    segments: [{cls:'reddit',pct:38},{cls:'news',pct:16},{cls:'wiki',pct:12},{cls:'blog',pct:22},{cls:'own',pct:12}],
+    yourRank: 4,
+    topSources: [
+      { domain: 'reddit.com',       share: 28 },
+      { domain: 'news.ycombinator.com', share: 9 },
+      { domain: 'stackoverflow.com',share: 6 },
+    ],
+    takeaway: 'Perplexity is Reddit-heavy. You rank #4.',
+  },
+]
+
+const pinnedSourceKey = ref(null)
+function toggleSourcePin(s) {
+  pinnedSourceKey.value = pinnedSourceKey.value === s.key ? null : s.key
+}
+const sourceRankLabel = (s) =>
+  s.yourRank == null ? 'Not in top 25' : `Your site ranks #${s.yourRank}`
 
 /* ── FAQ items ── */
 const faqItems = [
@@ -3563,30 +3682,74 @@ html:has(.lp) #app {
 .mock-mini-meta { margin-top: 8px; font-size: 11.5px; color: #6b7680; }
 
 /* Source bars */
+.mock-source-head { margin-bottom: 14px; }
 .mock-source-title {
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #8a8275;
-  margin-bottom: 12px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 2px;
 }
+.mock-source-sub {
+  font-size: 12px;
+  color: #717171;
+}
+
 .mock-source-row {
-  display: grid;
-  grid-template-columns: 86px 1fr;
-  align-items: center;
-  gap: 12px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   margin-bottom: 10px;
   opacity: 0;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
-.mock-source-label { font-size: 13px; color: #2d3640; font-weight: 500; }
+.mock-source-row:hover {
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+.mock-source-row.is-pinned {
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
+}
+
+.mock-source-line {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.mock-source-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #222222;
+}
+.mock-source-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+/* Mirror the probe-panel avatar colours so the demos read as one product. */
+.mock-source-dot.is-anthropic  { background: #d97706; }
+.mock-source-dot.is-openai     { background: #0f1212; }
+.mock-source-dot.is-google     { background: #4285f4; }
+.mock-source-dot.is-perplexity { background: #1fb8a8; }
+
+.mock-source-rank {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.mock-source-rank.is-hit  { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-source-rank.is-miss { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
 .mock-stack {
   display: flex;
-  height: 14px;
-  border-radius: 6px;
+  height: 10px;
+  border-radius: 999px;
   overflow: hidden;
-  background: #f0e9d9;
+  background: rgba(0, 0, 0, 0.05);
 }
 .mock-seg {
   width: 0;
@@ -3594,18 +3757,56 @@ html:has(.lp) #app {
   display: block;
   animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-.seg-reddit { background: #c65a2f; }
-.seg-news   { background: #4a7fb0; }
-.seg-wiki   { background: #6b7680; }
-.seg-blog   { background: #d9b770; }
-.seg-own    { background: var(--brand-accent, #ff6b35); }
+@keyframes barFill { to { width: var(--target-w, 0%); } }
+/* Soft Airbnb-leaning palette — distinct, but in the same family as the
+   probe panel's brand-mention highlight rather than the marketing-bright
+   tones we had before. */
+.seg-reddit { background: #ff5a5f; }
+.seg-news   { background: #4285f4; }
+.seg-wiki   { background: #717171; }
+.seg-blog   { background: #d97706; }
+.seg-own    { background: #ff385c; }
+
+.mock-source-detail {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 6px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-source-top {
+  list-style: none; margin: 4px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mock-source-top li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: #484848;
+}
+.mock-source-fav {
+  border-radius: 4px;
+  background: #fff;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.mock-source-domain { color: #222222; font-weight: 500; flex: 1; min-width: 0; }
+.mock-source-share { color: #717171; font-weight: 600; }
+.mock-source-takeaway {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 56, 92, 0.06);
+  color: #222222;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
 .mock-source-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 14px;
   font-size: 11.5px;
-  color: #6b7680;
+  color: #717171;
 }
 .mock-source-legend i {
   display: inline-block;
