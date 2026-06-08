@@ -336,17 +336,83 @@
             </div>
 
             <!-- MULTI-LLM PROBING -->
-            <div v-else-if="f.key === 'probe'" class="mock-card mock-grid">
-              <div v-for="(p, idx) in heroProviders" :key="p.key" class="mock-mini" :style="{ animationDelay: (0.15 + idx * 0.15) + 's' }">
-                <div class="mock-mini-head">
-                  <span class="hero-viz-dot" :class="'is-' + p.key"></span>
-                  <span class="mock-mini-name">{{ p.name }}</span>
-                  <span class="mock-mini-pct">{{ p.pct }}%</span>
+            <div v-else-if="f.key === 'probe'" class="mock-card">
+              <div class="mock-probe-head">
+                <div>
+                  <div class="mock-probe-title">Visibility score</div>
+                  <div class="mock-probe-sub">Click a model to see avg rank, sentiment, and who beats you</div>
                 </div>
-                <div class="hero-viz-bar">
-                  <div class="hero-viz-bar-fill" :class="'is-' + p.key" :style="{ '--target-w': p.pct + '%', animationDelay: (0.3 + idx * 0.15) + 's' }"></div>
+                <div class="mock-probe-score">
+                  <span class="mock-probe-score-num">{{ heroAvgVisibility }}%</span>
+                  <span class="mock-probe-score-label">across 4 models</span>
                 </div>
-                <div class="mock-mini-meta">{{ p.cited }} citations</div>
+              </div>
+
+              <div class="mock-probe-grid">
+                <div
+                  v-for="(p, idx) in heroProviders"
+                  :key="p.key"
+                  class="mock-probe-card"
+                  :class="{ 'is-pinned': pinnedProbeKey === p.key }"
+                  :style="{ animationDelay: (0.15 + idx * 0.10) + 's' }"
+                  @click="toggleProbePin(p)"
+                >
+                  <div class="mock-probe-row">
+                    <span class="mock-probe-name">
+                      <span class="mock-source-dot" :class="'is-' + p.key"></span>
+                      {{ p.name }}
+                    </span>
+                    <span class="mock-probe-pct">{{ p.pct }}%</span>
+                  </div>
+
+                  <div class="mock-probe-bar" :title="p.pct + '% visibility'">
+                    <div
+                      class="mock-probe-bar-fill"
+                      :class="'is-' + p.key"
+                      :style="{ '--target-w': p.pct + '%', animationDelay: (0.3 + idx * 0.10) + 's' }"
+                    ></div>
+                  </div>
+
+                  <div class="mock-probe-stats">
+                    <span
+                      class="mock-probe-delta"
+                      :class="p.delta >= 0 ? 'is-up' : 'is-down'"
+                      :title="'Week over week'"
+                    >{{ p.delta >= 0 ? '+' : '' }}{{ p.delta }}%</span>
+                    <span class="mock-probe-stat" :title="'Average rank when mentioned'">
+                      avg #{{ p.rank.toFixed(1) }}
+                    </span>
+                    <span class="mock-probe-stat" :title="p.citations + ' citations carried in answers'">
+                      {{ p.citations }} citations
+                    </span>
+                  </div>
+
+                  <div v-if="pinnedProbeKey === p.key" class="mock-probe-detail">
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Sentiment</span>
+                      <span class="mock-probe-sent" :title="'Positive / neutral / negative split of mentions'">
+                        <span class="mock-probe-sent-seg pos" :style="{ '--w': p.sentiment.pos * 100 + '%' }"></span>
+                        <span class="mock-probe-sent-seg neu" :style="{ '--w': p.sentiment.neu * 100 + '%' }"></span>
+                        <span class="mock-probe-sent-seg neg" :style="{ '--w': p.sentiment.neg * 100 + '%' }"></span>
+                      </span>
+                    </div>
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Most cited competitor</span>
+                      <span class="mock-detail-value">
+                        {{ p.topCompetitor.name }} <span class="mock-probe-comp">· {{ p.topCompetitor.share }}% of answers</span>
+                      </span>
+                    </div>
+                    <div class="mock-detail-row">
+                      <span class="mock-detail-label">Brand safety</span>
+                      <span
+                        class="mock-probe-safety"
+                        :class="p.hallucinations === 0 ? 'is-ok' : 'is-warn'"
+                      >
+                        {{ p.hallucinations === 0 ? 'Clean' : p.hallucinations + ' unverified claim' + (p.hallucinations === 1 ? '' : 's') }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -863,12 +929,44 @@ onMounted(() => {
 })
 
 const categories = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity']
+// Multi-LLM Probing demo data — every field is what the in-product report
+// surfaces per model after a scan: visibility rate, week-over-week delta,
+// avg rank when mentioned, sentiment split, number of citations carried
+// in the response, the competitor that beats you most often, and a brand-
+// safety flag indicating any hallucinations or unverified claims surfaced.
 const heroProviders = [
-  { key: 'anthropic',  name: 'Claude',     pct: 47, cited: 12, sources: 'Reddit · TechCrunch · Wikipedia' },
-  { key: 'openai',     name: 'GPT-4',      pct: 38, cited:  8, sources: 'Wikipedia · Medium · NYT' },
-  { key: 'google',     name: 'Gemini',     pct: 52, cited: 15, sources: 'BBC · Bloomberg · gov sites' },
-  { key: 'perplexity', name: 'Perplexity', pct: 64, cited: 21, sources: 'Reddit · Quora · Stack Overflow' },
+  {
+    key: 'anthropic', name: 'Claude',
+    pct: 47, delta: 8, rank: 3.1, citations: 12, hallucinations: 0,
+    sentiment: { pos: 0.7, neu: 0.25, neg: 0.05 },
+    topCompetitor: { name: 'Asana', share: 18 },
+  },
+  {
+    key: 'openai', name: 'GPT-4',
+    pct: 38, delta: -3, rank: 4.6, citations: 8, hallucinations: 1,
+    sentiment: { pos: 0.55, neu: 0.35, neg: 0.10 },
+    topCompetitor: { name: 'Linear', share: 22 },
+  },
+  {
+    key: 'google', name: 'Gemini',
+    pct: 52, delta: 12, rank: 2.4, citations: 15, hallucinations: 0,
+    sentiment: { pos: 0.66, neu: 0.30, neg: 0.04 },
+    topCompetitor: { name: 'Notion', share: 14 },
+  },
+  {
+    key: 'perplexity', name: 'Perplexity',
+    pct: 64, delta: 17, rank: 1.8, citations: 21, hallucinations: 0,
+    sentiment: { pos: 0.74, neu: 0.22, neg: 0.04 },
+    topCompetitor: { name: 'Trello', share: 9 },
+  },
 ]
+const heroAvgVisibility = computed(() =>
+  Math.round(heroProviders.reduce((s, p) => s + p.pct, 0) / heroProviders.length),
+)
+const pinnedProbeKey = ref(null)
+function toggleProbePin(p) {
+  pinnedProbeKey.value = pinnedProbeKey.value === p.key ? null : p.key
+}
 
 // Hero "probe" animation — cycles through a handful of category prompts,
 // each with its own set of model answers. Sources are `{label, domain}`
@@ -3662,24 +3760,137 @@ html:has(.lp) #app {
 .mock-row-stagger-enter-from   { opacity: 0; transform: translateY(-6px); }
 .mock-row-stagger-leave-active { transition: opacity .25s ease; }
 .mock-row-stagger-leave-to     { opacity: 0; }
-/* Probe mini grid */
-.mock-grid {
+/* Multi-LLM Probing demo */
+.mock-probe-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.mock-probe-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  margin-bottom: 2px;
+}
+.mock-probe-sub { font-size: 12px; color: #717171; }
+.mock-probe-score { text-align: right; flex-shrink: 0; }
+.mock-probe-score-num {
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
+  display: block;
+  font-size: 28px; font-weight: 700;
+  line-height: 1;
+  color: #ff385c;
+  letter-spacing: -0.02em;
+}
+.mock-probe-score-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #717171;
+  font-weight: 600;
+}
+
+.mock-probe-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.mock-mini {
-  background: #fbf8f1;
-  border: 1px solid #f0e9d9;
-  border-radius: 12px;
-  padding: 12px;
+.mock-probe-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
-.mock-mini-head { display:flex; align-items:center; gap:8px; font-size: 12.5px; }
-.mock-mini-name { flex: 1; font-weight: 600; color: #2d3640; }
-.mock-mini-pct { color: var(--brand-accent, #ff6b35); font-weight: 600; }
-.mock-mini-meta { margin-top: 8px; font-size: 11.5px; color: #6b7680; }
+.mock-probe-card:hover {
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+.mock-probe-card.is-pinned {
+  grid-column: 1 / -1;
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
+}
+
+.mock-probe-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.mock-probe-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: #222222;
+}
+.mock-probe-pct {
+  font-size: 13px; font-weight: 700; color: #222222;
+}
+
+.mock-probe-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.mock-probe-bar-fill {
+  width: 0; height: 100%;
+  border-radius: 999px;
+  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.mock-probe-bar-fill.is-anthropic  { background: #d97706; }
+.mock-probe-bar-fill.is-openai     { background: #0f1212; }
+.mock-probe-bar-fill.is-google     { background: #4285f4; }
+.mock-probe-bar-fill.is-perplexity { background: #1fb8a8; }
+
+.mock-probe-stats {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 11px; color: #717171;
+}
+.mock-probe-stat { color: #484848; font-weight: 600; }
+.mock-probe-delta {
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+.mock-probe-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-probe-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+
+.mock-probe-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 8px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-probe-sent {
+  display: inline-flex;
+  width: 140px; height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+}
+.mock-probe-sent-seg {
+  height: 100%; width: var(--w, 0%);
+  display: block;
+  transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+}
+.mock-probe-sent-seg.pos { background: #008489; }
+.mock-probe-sent-seg.neu { background: #aab2bb; }
+.mock-probe-sent-seg.neg { background: #c61b48; }
+.mock-probe-comp { color: #717171; font-weight: 500; margin-left: 4px; }
+.mock-probe-safety {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.mock-probe-safety.is-ok   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-probe-safety.is-warn { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
 
 /* Source bars */
 .mock-source-head { margin-bottom: 14px; }
