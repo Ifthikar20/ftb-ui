@@ -3370,70 +3370,77 @@ html:has(.lp) #app {
   width: 100%;
   max-width: 460px;
   background: #ffffff;
-  border: 1px solid #ece6da;
-  border-radius: 18px;
-  padding: 22px;
-  box-shadow: 0 30px 60px -32px rgba(20, 23, 24, 0.22);
+  border: none;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .mock-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 36px 70px -32px rgba(20, 23, 24, 0.28);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.06),
+    0 22px 60px rgba(0, 0, 0, 0.10);
 }
 .mock-search {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #f8f4ec;
-  border: 1px solid #ece6da;
-  font-size: 13.5px;
-  color: #2d3640;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 15px;
+  font-weight: 500;
+  color: #222222;
 }
 .mock-search-icon {
   width: 14px; height: 14px;
   border-radius: 50%;
-  border: 1.6px solid #8a8275;
+  border: 1.6px solid #717171;
   position: relative;
+  flex-shrink: 0;
 }
 .mock-search-icon::after {
   content: ''; position: absolute;
   width: 6px; height: 1.6px;
-  background: #8a8275;
+  background: #717171;
   bottom: -3px; right: -3px;
   transform: rotate(45deg);
 }
-.mock-search-text { flex: 1; }
+.mock-search-text { flex: 1; min-width: 0; }
 .mock-search-caret {
-  color: var(--brand-accent, #ff6b35);
+  color: #ff385c;
+  font-weight: 400;
   animation: caretBlink 1s steps(1) infinite;
 }
 @keyframes caretBlink { 50% { opacity: 0; } }
 
-.mock-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mock-rows { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
 .mock-prompt-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #fbf8f1;
-  border: 1px solid #f0e9d9;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   opacity: 0;
   cursor: pointer;
-  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
 .mock-prompt-row:hover {
-  border-color: rgba(255, 56, 92, 0.35);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border-color: rgba(255, 56, 92, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
 }
 .mock-prompt-row.is-pinned {
-  border-color: #ff385c;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(255, 56, 92, 0.10);
+  border-color: rgba(255, 56, 92, 0.55);
+  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
 }
 @keyframes fadeSlide { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
 
@@ -3442,93 +3449,92 @@ html:has(.lp) #app {
   min-width: 0;
 }
 .mock-q {
-  font-size: 13.5px; color: #2d3640;
+  font-size: 14px; color: #222222;
+  font-weight: 500;
   flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .mock-prompt-meta {
   display: flex; align-items: center; gap: 12px;
-  font-size: 12px; color: #5a6470;
+  font-size: 12px; color: #717171;
 }
-.mock-spark { width: 64px; height: 18px; color: #6e6a65; flex-shrink: 0; }
-.mock-volume { font-weight: 600; color: #2d3640; }
+.mock-spark { width: 64px; height: 18px; color: #ff385c; flex-shrink: 0; }
+.mock-volume { font-weight: 600; color: #222222; }
 .mock-delta {
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
   font-size: 11px;
 }
-.mock-delta.is-up   { background: #e8f5e9; color: #1f7d34; }
-.mock-delta.is-down { background: #fdecea; color: #c02926; }
+.mock-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
+.mock-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
 
 .mock-models {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 5px;
   margin-left: auto;
 }
 .mock-model-dot {
-  width: 9px; height: 9px;
+  width: 10px; height: 10px;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.12);
-  border: 1px solid rgba(15, 23, 42, 0.18);
+  background: rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
   transition: transform .15s ease;
 }
-.mock-model-dot.is-hit {
-  border-color: transparent;
-}
+/* "Hit" colours mirror the probe-panel avatars so the two demos read as
+   the same product. */
 .mock-model-dot.is-hit.is-anthropic  { background: #d97706; }
-.mock-model-dot.is-hit.is-openai     { background: #10a37f; }
+.mock-model-dot.is-hit.is-openai     { background: #0f1212; }
 .mock-model-dot.is-hit.is-google     { background: #4285f4; }
 .mock-model-dot.is-hit.is-perplexity { background: #1fb8a8; }
 .mock-prompt-row:hover .mock-model-dot.is-hit { transform: scale(1.15); }
 
 .mock-prompt-detail {
-  margin-top: 6px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(15, 23, 42, 0.08);
-  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex; flex-direction: column; gap: 8px;
   animation: fadeSlide 0.25s ease;
 }
 .mock-detail-row {
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px;
+  font-size: 12.5px;
 }
-.mock-detail-label { color: #6e6a65; }
-.mock-detail-value { color: #2d3640; font-weight: 600; }
+.mock-detail-label { color: #717171; }
+.mock-detail-value { color: #222222; font-weight: 600; }
 .mock-detail-models {
-  list-style: none; margin: 4px 0 0; padding: 0;
-  display: flex; flex-direction: column; gap: 4px;
+  list-style: none; margin: 6px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
 }
 .mock-detail-models li {
   display: flex; align-items: center; gap: 8px;
-  font-size: 12px; color: #2d3640;
+  font-size: 12.5px; color: #484848;
 }
 .mock-detail-models li.is-miss { color: #8a8a8a; }
 .mock-detail-models li .mock-model-dot { margin: 0; }
 .mock-detail-status {
   margin-left: auto;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
 }
-.mock-detail-models li.is-hit  .mock-detail-status { color: #1f7d34; }
-.mock-detail-models li.is-miss .mock-detail-status { color: #c02926; }
+.mock-detail-models li.is-hit  .mock-detail-status { color: #008489; }
+.mock-detail-models li.is-miss .mock-detail-status { color: #c61b48; }
 .mock-chip {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255,107,53,0.14);
-  color: #8a6d2a;
+  background: rgba(0, 0, 0, 0.05);
+  color: #484848;
 }
-.mock-chip.is-comparison { background: rgba(74,127,176,0.14);  color: #345f86; }
-.mock-chip.is-how-to     { background: rgba(110,165,110,0.16); color: #3f6b3f; }
-.mock-chip.is-vs         { background: rgba(198,90,47,0.14);   color: #8a3d18; }
-.mock-chip.is-question   { background: rgba(126,34,206,0.12);  color: #5b21b6; }
-.mock-chip.is-local      { background: rgba(217,119,6,0.14);   color: #92400e; }
-.mock-chip.is-story      { background: rgba(15,118,110,0.14);  color: #115e59; }
+.mock-chip.is-comparison { background: rgba(91, 141, 239, 0.14);  color: #2f5cb1; }
+.mock-chip.is-how-to     { background: rgba(0, 166, 153, 0.14);   color: #007e7a; }
+.mock-chip.is-vs         { background: rgba(255, 56, 92, 0.12);   color: #c61b48; }
+.mock-chip.is-question   { background: rgba(217, 119, 6, 0.14);   color: #a25208; }
+.mock-chip.is-local      { background: rgba(31, 184, 168, 0.14);  color: #0f7a72; }
+.mock-chip.is-story      { background: rgba(15, 118, 110, 0.14);  color: #115e59; }
 
 /* Cycler: rows fade in from the top, push older rows down. The
    transition-group + per-row absolute positioning would be over-
