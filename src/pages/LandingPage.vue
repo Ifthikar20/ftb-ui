@@ -259,12 +259,76 @@
                     v-for="(p, idx) in visiblePromptRows"
                     :key="p.id"
                     class="mock-prompt-row"
+                    :class="{ 'is-pinned': pinnedPromptId === p.id }"
                     :style="{ animationDelay: (0.05 + idx * 0.10) + 's' }"
+                    @click="togglePin(p)"
                   >
-                    <span class="mock-q">{{ p.q }}</span>
-                    <span class="mock-chip" :class="'is-' + p.style">{{ p.style }}</span>
-                    <div class="mock-trend">
-                      <div class="mock-trend-bar" :style="{ '--target-w': p.trend + '%', animationDelay: (0.25 + idx * 0.10) + 's' }"></div>
+                    <div class="mock-prompt-main">
+                      <span class="mock-q">{{ p.q }}</span>
+                      <span class="mock-chip" :class="'is-' + p.style">{{ p.style }}</span>
+                    </div>
+
+                    <div class="mock-prompt-meta">
+                      <svg
+                        class="mock-spark"
+                        viewBox="0 0 64 18"
+                        :title="'8-week search trend'"
+                        aria-hidden="true"
+                      >
+                        <path
+                          :d="sparkPath(p.spark)"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span class="mock-volume" :title="p.volume + ' searches/mo'">
+                        {{ formatVolume(p.volume) }}/mo
+                      </span>
+                      <span
+                        class="mock-delta"
+                        :class="p.delta >= 0 ? 'is-up' : 'is-down'"
+                        :title="'Week-over-week change'"
+                      >{{ p.delta >= 0 ? '+' : '' }}{{ p.delta }}%</span>
+                      <span class="mock-models" :title="coverageLabel(p)">
+                        <span
+                          v-for="k in MODEL_KEYS"
+                          :key="k"
+                          class="mock-model-dot"
+                          :class="['is-' + k, { 'is-hit': p.models?.[k] }]"
+                          :title="MODEL_LABEL[k] + (p.models?.[k] ? ' — surfaces you' : ' — does not surface you')"
+                        ></span>
+                      </span>
+                    </div>
+
+                    <div v-if="pinnedPromptId === p.id" class="mock-prompt-detail">
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Search volume</span>
+                        <span class="mock-detail-value">{{ p.volume.toLocaleString() }} per month</span>
+                      </div>
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Trend (8 weeks)</span>
+                        <span class="mock-detail-value">{{ p.delta >= 0 ? 'up' : 'down' }} {{ Math.abs(p.delta) }}% week over week</span>
+                      </div>
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Your coverage</span>
+                        <span class="mock-detail-value">{{ coverageLabel(p) }}</span>
+                      </div>
+                      <ul class="mock-detail-models">
+                        <li
+                          v-for="k in MODEL_KEYS"
+                          :key="k"
+                          :class="p.models?.[k] ? 'is-hit' : 'is-miss'"
+                        >
+                          <span class="mock-model-dot" :class="['is-' + k, { 'is-hit': p.models?.[k] }]"></span>
+                          {{ MODEL_LABEL[k] }}
+                          <span class="mock-detail-status">
+                            {{ p.models?.[k] ? 'mentions you' : 'gap — not mentioned' }}
+                          </span>
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </transition-group>
@@ -1100,16 +1164,98 @@ const showcaseFeatures = [
 ]
 
 // Demand-side prompt examples — the typed search bar cycles through
-// these one at a time; each becomes a row beneath with a category chip
-// + animated trend bar.
+// these one at a time; each becomes a row beneath with the data the
+// Prompt Library actually surfaces in-product: monthly search volume,
+// week-over-week delta, a tiny 8-week sparkline, and per-LLM coverage
+// dots showing whether your brand appears in each model's answer today.
 const PROMPT_EXAMPLES = [
-  { q: 'best ai analytics tool for small saas',     style: 'comparison', trend: 82 },
-  { q: 'how to track llm visibility in 2026',       style: 'how-to',     trend: 64 },
-  { q: 'fetchbot vs bluefish alternatives',         style: 'vs',         trend: 47 },
-  { q: 'why does perplexity keep mentioning notion',style: 'question',   trend: 71 },
-  { q: 'cheapest geo platform for an indie founder',style: 'local',      trend: 58 },
-  { q: 'is there a free chatgpt visibility tracker',style: 'question',   trend: 76 },
+  {
+    q: 'best ai analytics tool for small saas',
+    style: 'comparison',
+    volume: 4400,
+    delta: 18,
+    spark: [22, 26, 28, 33, 38, 41, 44, 52],
+    // true = your brand currently surfaces in this model's answer.
+    models: { anthropic: true, openai: true, google: false, perplexity: true },
+  },
+  {
+    q: 'how to track llm visibility in 2026',
+    style: 'how-to',
+    volume: 2100,
+    delta: 34,
+    spark: [8, 10, 11, 14, 16, 19, 22, 28],
+    models: { anthropic: true, openai: false, google: false, perplexity: true },
+  },
+  {
+    q: 'fetchbot vs bluefish alternatives',
+    style: 'vs',
+    volume: 880,
+    delta: 9,
+    spark: [12, 13, 15, 14, 16, 18, 17, 19],
+    models: { anthropic: true, openai: true, google: true, perplexity: true },
+  },
+  {
+    q: 'why does perplexity keep mentioning notion',
+    style: 'question',
+    volume: 1600,
+    delta: -6,
+    spark: [24, 22, 21, 20, 18, 17, 17, 16],
+    models: { anthropic: false, openai: false, google: false, perplexity: true },
+  },
+  {
+    q: 'cheapest geo platform for an indie founder',
+    style: 'local',
+    volume: 720,
+    delta: 12,
+    spark: [9, 10, 10, 12, 13, 14, 15, 16],
+    models: { anthropic: true, openai: false, google: false, perplexity: false },
+  },
+  {
+    q: 'is there a free chatgpt visibility tracker',
+    style: 'question',
+    volume: 3200,
+    delta: 41,
+    spark: [14, 16, 18, 22, 28, 34, 40, 48],
+    models: { anthropic: true, openai: true, google: true, perplexity: true },
+  },
 ]
+
+const MODEL_KEYS = ['anthropic', 'openai', 'google', 'perplexity']
+const MODEL_LABEL = {
+  anthropic: 'Claude',
+  openai: 'GPT-4',
+  google: 'Gemini',
+  perplexity: 'Perplexity',
+}
+
+function formatVolume(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(n)
+}
+
+function sparkPath(values, w = 64, h = 18) {
+  if (!values || values.length < 2) return ''
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const span = Math.max(1, max - min)
+  const stepX = w / (values.length - 1)
+  return values
+    .map((v, i) => {
+      const x = +(i * stepX).toFixed(1)
+      const y = +(h - ((v - min) / span) * h).toFixed(1)
+      return `${i === 0 ? 'M' : 'L'}${x},${y}`
+    })
+    .join(' ')
+}
+
+const pinnedPromptId = ref(null)
+function togglePin(p) {
+  pinnedPromptId.value = pinnedPromptId.value === p.id ? null : p.id
+}
+const coverageLabel = (p) => {
+  const hit = MODEL_KEYS.filter(k => p.models?.[k]).length
+  return `${hit} of 4 models surface you`
+}
 
 const typedPrompt = ref('')
 const visiblePromptRows = ref([])
@@ -1132,8 +1278,18 @@ function startPromptCycle() {
   })
   const wait = (ms) => new Promise(r => { timer = setTimeout(r, ms) })
 
+  const waitWhilePinned = async () => {
+    // Pause the loop while a row is pinned so a reader can study the
+    // expanded detail. Poll every 250ms — cheap and only runs when paused.
+    while (!cancelled && pinnedPromptId.value) {
+      await new Promise(r => { timer = setTimeout(r, 250) })
+    }
+  }
+
   const loop = async () => {
     while (!cancelled) {
+      await waitWhilePinned()
+      if (cancelled) break
       const ex = PROMPT_EXAMPLES[idx]
       // Type the query into the search bar.
       await typeIn(ex.q, 45)
@@ -3257,19 +3413,106 @@ html:has(.lp) #app {
 
 .mock-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
 .mock-prompt-row {
-  display: grid;
-  grid-template-columns: 1fr auto 80px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
   background: #fbf8f1;
   border: 1px solid #f0e9d9;
   opacity: 0;
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
   animation: fadeSlide 0.55s ease forwards;
 }
+.mock-prompt-row:hover {
+  border-color: rgba(255, 56, 92, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+.mock-prompt-row.is-pinned {
+  border-color: #ff385c;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(255, 56, 92, 0.10);
+}
 @keyframes fadeSlide { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
-.mock-q { font-size: 13px; color: #2d3640; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.mock-prompt-main {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 0;
+}
+.mock-q {
+  font-size: 13.5px; color: #2d3640;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.mock-prompt-meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: #5a6470;
+}
+.mock-spark { width: 64px; height: 18px; color: #6e6a65; flex-shrink: 0; }
+.mock-volume { font-weight: 600; color: #2d3640; }
+.mock-delta {
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.mock-delta.is-up   { background: #e8f5e9; color: #1f7d34; }
+.mock-delta.is-down { background: #fdecea; color: #c02926; }
+
+.mock-models {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: auto;
+}
+.mock-model-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  flex-shrink: 0;
+  transition: transform .15s ease;
+}
+.mock-model-dot.is-hit {
+  border-color: transparent;
+}
+.mock-model-dot.is-hit.is-anthropic  { background: #d97706; }
+.mock-model-dot.is-hit.is-openai     { background: #10a37f; }
+.mock-model-dot.is-hit.is-google     { background: #4285f4; }
+.mock-model-dot.is-hit.is-perplexity { background: #1fb8a8; }
+.mock-prompt-row:hover .mock-model-dot.is-hit { transform: scale(1.15); }
+
+.mock-prompt-detail {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.08);
+  display: flex; flex-direction: column; gap: 6px;
+  animation: fadeSlide 0.25s ease;
+}
+.mock-detail-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+}
+.mock-detail-label { color: #6e6a65; }
+.mock-detail-value { color: #2d3640; font-weight: 600; }
+.mock-detail-models {
+  list-style: none; margin: 4px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mock-detail-models li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #2d3640;
+}
+.mock-detail-models li.is-miss { color: #8a8a8a; }
+.mock-detail-models li .mock-model-dot { margin: 0; }
+.mock-detail-status {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+}
+.mock-detail-models li.is-hit  .mock-detail-status { color: #1f7d34; }
+.mock-detail-models li.is-miss .mock-detail-status { color: #c02926; }
 .mock-chip {
   font-size: 10.5px;
   font-weight: 600;
@@ -3294,19 +3537,6 @@ html:has(.lp) #app {
 .mock-row-stagger-enter-from   { opacity: 0; transform: translateY(-6px); }
 .mock-row-stagger-leave-active { transition: opacity .25s ease; }
 .mock-row-stagger-leave-to     { opacity: 0; }
-.mock-trend {
-  height: 6px; border-radius: 4px;
-  background: #ece6da;
-  overflow: hidden;
-}
-.mock-trend-bar {
-  width: 0; height: 100%;
-  background: linear-gradient(90deg, var(--brand-accent, #ff6b35), #3b82f6);
-  border-radius: 4px;
-  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
-}
-@keyframes barFill { to { width: var(--target-w, 50%); } }
-
 /* Probe mini grid */
 .mock-grid {
   display: grid;
