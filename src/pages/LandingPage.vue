@@ -63,12 +63,6 @@
                 @pointerleave="onCardLeave"
               >
                 <div class="probe-card-head">
-                  <span
-                    class="probe-logo"
-                    :class="'is-' + p.key"
-                    :aria-label="p.name + ' logo'"
-                    v-html="providerLogo(p.key)"
-                  ></span>
                   <span class="probe-name">{{ p.name }}</span>
                 </div>
                 <div class="probe-stream">
