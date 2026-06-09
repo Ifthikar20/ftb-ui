@@ -23,6 +23,17 @@ const autoTemplating = ref(false)
 const saving = ref(false)
 const detectedVars = ref([])
 
+// After a prompt is created we keep the modal open and surface a list of
+// related prompts (generated from the one just added) that the user can
+// add to the library with one click.
+const created = ref(false)
+const suggestions = ref([])
+const suggestLoading = ref(false)
+const suggestError = ref(false)
+let suggUid = 0
+
+function norm(s) { return (s || '').trim().toLowerCase() }
+
 const styles = [
   { value: 'question', label: 'Question' },
   { value: 'story', label: 'Story' },
@@ -65,6 +76,10 @@ watch(() => props.modelValue, (open) => {
     style.value = 'question'
     intentBucket.value = 'category'
     detectedVars.value = []
+    created.value = false
+    suggestions.value = []
+    suggestLoading.value = false
+    suggestError.value = false
   }
 })
 
@@ -101,14 +116,74 @@ async function save() {
       intent_bucket: intentBucket.value,
     }
     const { data } = await promptLibrary.createWebsitePrompt(props.websiteId, payload)
-    const created = data?.data || data
+    const row = data?.data || data
     toast.success('Prompt created.')
-    emit('created', created)
-    close()
+    emit('created', row)
+    // Keep the modal open and surface related prompts to add next.
+    created.value = true
+    fetchSuggestions(text.value)
   } catch (e) {
     toast.error(e.displayMessage || 'Could not create prompt.')
   } finally {
     saving.value = false
+  }
+}
+
+async function fetchSuggestions(seedText) {
+  const seed = (seedText || '').trim()
+  if (!seed) return
+  suggestLoading.value = true
+  suggestError.value = false
+  suggestions.value = []
+  try {
+    // Wrap the seed prompt so the generator returns related questions and
+    // the context clears the backend's 5-word minimum even for short prompts.
+    const context = `Suggest related questions a customer might ask, similar to this prompt: "${seed}"`
+    const { data } = await promptLibrary.generateFromContext({ context, count: 6, persist: false })
+    const payload = data?.data || data || {}
+    const items = Array.isArray(payload.generated) ? payload.generated : []
+    const seedNorm = norm(seed)
+    suggestions.value = items
+      .map((it) => {
+        suggUid += 1
+        const tmpl = it.template_text || it.preview_text || ''
+        return {
+          _uid: 's' + suggUid,
+          _adding: false,
+          _added: false,
+          text: it.preview_text || tmpl,
+          template_text: tmpl,
+          style: it.style || 'question',
+          intent_bucket: it.intent_bucket || 'category',
+        }
+      })
+      .filter((s) => s.template_text && norm(s.text) !== seedNorm)
+    if (!suggestions.value.length) suggestError.value = true
+  } catch (e) {
+    suggestError.value = true
+  } finally {
+    suggestLoading.value = false
+  }
+}
+
+async function addSuggestion(s) {
+  if (!props.websiteId || s._adding || s._added) return
+  s._adding = true
+  try {
+    const { data } = await promptLibrary.createWebsitePrompt(props.websiteId, {
+      template_text: s.template_text,
+      style: s.style,
+      intent_bucket: s.intent_bucket,
+      text: s.text,
+    })
+    const row = data?.data || data
+    s._added = true
+    emit('created', row)
+    toast.success('Added to library.')
+  } catch (e) {
+    toast.error(e.displayMessage || 'Could not add prompt.')
+  } finally {
+    s._adding = false
   }
 }
 </script>
@@ -158,14 +233,50 @@ async function save() {
       </div>
     </div>
 
+    <div v-if="created" class="np-sugg">
+      <div class="np-sugg-head">
+        <div>
+          <div class="np-sugg-title">Suggested prompts</div>
+          <div class="np-sugg-sub">Related questions based on the prompt you just added. Add any to your library.</div>
+        </div>
+        <Button variant="outline" size="sm" :disabled="suggestLoading" @click="fetchSuggestions(text)">
+          {{ suggestLoading ? 'Loading…' : 'Refresh' }}
+        </Button>
+      </div>
+
+      <div v-if="suggestLoading" class="np-sugg-empty">Generating suggestions…</div>
+      <div v-else-if="!suggestions.length" class="np-sugg-empty">No suggestions right now. Try Refresh.</div>
+      <ul v-else class="np-sugg-list">
+        <li v-for="s in suggestions" :key="s._uid" class="np-sugg-item">
+          <div class="np-sugg-text">
+            <span class="np-sugg-prompt">{{ s.text }}</span>
+            <Badge variant="secondary">{{ s.style }}</Badge>
+          </div>
+          <Button
+            size="sm"
+            :variant="s._added ? 'ghost' : 'outline'"
+            :disabled="s._adding || s._added"
+            @click="addSuggestion(s)"
+          >
+            {{ s._added ? 'Added' : (s._adding ? 'Adding…' : 'Add') }}
+          </Button>
+        </li>
+      </ul>
+    </div>
+
     <template #footer>
       <div class="np-footer">
-        <Button variant="outline" :disabled="autoTemplating || !text.trim()" @click="autoTemplate">
+        <Button v-if="!created" variant="outline" :disabled="autoTemplating || !text.trim()" @click="autoTemplate">
           {{ autoTemplating ? 'Templating…' : 'Auto-template this' }}
         </Button>
         <div class="np-spacer"></div>
-        <Button variant="ghost" @click="close">Cancel</Button>
-        <Button :disabled="saving || !text.trim()" @click="save">{{ saving ? 'Saving…' : 'Save' }}</Button>
+        <template v-if="created">
+          <Button @click="close">Done</Button>
+        </template>
+        <template v-else>
+          <Button variant="ghost" @click="close">Cancel</Button>
+          <Button :disabled="saving || !text.trim()" @click="save">{{ saving ? 'Saving…' : 'Save' }}</Button>
+        </template>
       </div>
     </template>
   </BaseModal>
@@ -187,4 +298,17 @@ async function save() {
 }
 .np-footer { display: flex; align-items: center; gap: 8px; width: 100%; }
 .np-spacer { flex: 1; }
+
+.np-sugg { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.np-sugg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.np-sugg-title { font-size: 14px; font-weight: 600; color: var(--foreground); }
+.np-sugg-sub { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.np-sugg-empty { font-size: 13px; color: var(--muted-foreground); padding: 8px 0; }
+.np-sugg-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.np-sugg-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--background);
+}
+.np-sugg-text { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.np-sugg-prompt { font-size: 13px; color: var(--foreground); line-height: 1.45; }
 </style>
