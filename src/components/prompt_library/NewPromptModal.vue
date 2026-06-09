@@ -136,7 +136,7 @@ async function fetchSuggestions(seedText) {
   suggestError.value = false
   suggestions.value = []
   try {
-    const { data } = await promptLibrary.generateRelated({ prompt: seed, count: 6 })
+    const { data } = await promptLibrary.generateRelated({ prompt: seed, count: 5 })
     const payload = data?.data || data || {}
     const items = Array.isArray(payload.generated) ? payload.generated : []
     const seedNorm = norm(seed)
