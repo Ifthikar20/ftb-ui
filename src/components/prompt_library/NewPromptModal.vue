@@ -136,10 +136,7 @@ async function fetchSuggestions(seedText) {
   suggestError.value = false
   suggestions.value = []
   try {
-    // Wrap the seed prompt so the generator returns related questions and
-    // the context clears the backend's 5-word minimum even for short prompts.
-    const context = `Suggest related questions a customer might ask, similar to this prompt: "${seed}"`
-    const { data } = await promptLibrary.generateFromContext({ context, count: 6, persist: false })
+    const { data } = await promptLibrary.generateRelated({ prompt: seed, count: 6 })
     const payload = data?.data || data || {}
     const items = Array.isArray(payload.generated) ? payload.generated : []
     const seedNorm = norm(seed)
