@@ -21,11 +21,11 @@
   --brand-primary: #1e293b;
   --brand-primary-hover: #334155;
   --brand-primary-glow: rgba(30, 41, 59, 0.06);
-  --brand-accent: #5B8DEF;
-  --brand-accent-hover: #4A7DE0;
-  --brand-accent-glow: rgba(91, 141, 239, 0.12);
+  --brand-accent: #2f6bed;
+  --brand-accent-hover: #2456c9;
+  --brand-accent-glow: rgba(47, 107, 237, 0.10);
   --brand-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  --brand-highlight: #93b4f5;
+  --brand-highlight: #9db8f0;
 
   /* Content Studio (Airbnb-inspired) accent — additive, do not remove existing tokens */
   --brand-rose: #FF385C;
@@ -49,23 +49,23 @@
   --text-inverse: #ffffff;
 
   /* Borders */
-  --border-color: rgba(15, 23, 42, 0.08);
-  --border-hover: rgba(15, 23, 42, 0.16);
+  --border-color: rgba(15, 23, 42, 0.10);
+  --border-hover: rgba(15, 23, 42, 0.18);
   --border-focus: var(--brand-accent);
 
-  /* Shadows — soft, modern design */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --shadow-card: 0 1px 4px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 2px 8px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-glow: 0 0 0 3px rgba(91, 141, 239, 0.15);
+  /* Shadows — flat: borders define surfaces, shadows only hint depth */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-card-hover: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-glow: 0 0 0 3px rgba(47, 107, 237, 0.12);
 
-  /* Radius — rounded modern feel */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 28px;
+  /* Radius — tighter, less bubbly */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Spacing */
@@ -132,11 +132,11 @@
   --border-color: rgba(255, 255, 255, 0.07);
   --border-hover: rgba(255, 255, 255, 0.14);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 6px 22px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 0 3px rgba(107, 158, 255, 0.15);
 
   color-scheme: dark;
