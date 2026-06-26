@@ -281,7 +281,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown,
   LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
-  ShieldCheck, FileText, Plug, CreditCard, Settings,
+  ShieldCheck, FileText, Plug, CreditCard, Settings, Bot,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -468,6 +468,7 @@ const navMain = computed(() => [
           { title: 'Content', to: contentStudioRoute.value, match: '/content' },
         ],
       },
+      { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
       { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
     ],
   },
