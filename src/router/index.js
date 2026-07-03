@@ -120,6 +120,14 @@ const routes = [
         redirect: { name: 'login' },
     },
     {
+        // Google OAuth return leg. Google redirects here with ?code&state;
+        // the page exchanges the code via POST /auth/google/ and signs in.
+        path: '/auth/google/callback',
+        name: 'google-callback',
+        component: () => import('@/pages/auth/GoogleCallbackPage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
         path: '/forgot-password',
         name: 'forgot-password',
         component: () => import('@/pages/auth/ForgotPasswordPage.vue'),

@@ -123,7 +123,21 @@ async function handleLogin() {
 }
 
 function handleGoogleLogin() {
-  // OAuth redirect placeholder
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  if (!clientId) {
+    error.value = 'Google sign-in is not configured on this deployment.'
+    return
+  }
+  const state = crypto.randomUUID()
+  sessionStorage.setItem('google-oauth-state', state)
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: `${window.location.origin}/auth/google/callback`,
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+  })
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
 }
 </script>
 

@@ -49,6 +49,20 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function googleLogin(code, redirectUri) {
+        loading.value = true
+        try {
+            const { data } = await api.post('/auth/google/', { code, redirect_uri: redirectUri })
+            const result = data.data || data
+            accessToken.value = result.access
+            user.value = result.user
+            localStorage.setItem('fb-session', '1')
+            return result
+        } finally {
+            loading.value = false
+        }
+    }
+
     async function register(payload) {
         loading.value = true
         try {
@@ -137,6 +151,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated,
         userInitials,
         login,
+        googleLogin,
         register,
         logout,
         fetchMe,
