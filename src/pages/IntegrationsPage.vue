@@ -106,6 +106,38 @@
       </div>
     </div>
 
+    <!-- Data sources -->
+    <div v-if="activeWebsite" class="mt-10">
+      <h2 class="section-title">Data sources</h2>
+      <div class="integrations-grid mt-4">
+        <div class="integration-card" :class="{ connected: gscConnected }">
+          <div class="intg-status-dot" :class="gscConnected ? 'status-connected' : 'status-disconnected'">
+            <span class="status-pulse" v-if="gscConnected"></span>
+          </div>
+          <div class="intg-card-top">
+            <div class="intg-icon-wrap" style="background: #458CF515">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#458CF5" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div class="intg-card-identity">
+              <span class="intg-card-name">Google Search Console</span>
+              <span class="intg-card-status" :class="gscConnected ? 'text-success' : 'text-muted'">
+                {{ gscConnected ? `Connected for ${activeWebsite.name}` : 'Not connected' }}
+              </span>
+            </div>
+          </div>
+          <p class="intg-card-desc">
+            Real Google ranking data for your project: queries, clicks, impressions, and positions,
+            synced nightly and fed into your prompt library.
+          </p>
+          <div class="flex gap-2">
+            <Button size="sm" class="flex-1" @click="goToSearchPerformance">
+              {{ gscConnected ? 'Manage' : 'Set up' }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- What Gets Sent Section -->
     <div class="what-gets-sent">
       <h2 class="section-title">What gets sent to your teams</h2>
@@ -252,9 +284,32 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Button } from '@/components/ui/button'
 import integrationsApi from '@/api/integrations'
+import searchConsoleApi from '@/api/searchConsole'
+import { useAppStore } from '@/stores/app'
+
+const router = useRouter()
+const appStore = useAppStore()
+const activeWebsite = computed(() => appStore.activeWebsite)
+const gscConnected = ref(false)
+
+function goToSearchPerformance() {
+  if (!activeWebsite.value) return
+  router.push(`/llm-ranking/${activeWebsite.value.id}/search-performance`)
+}
+
+async function loadGscStatus() {
+  if (!activeWebsite.value) return
+  try {
+    const { data } = await searchConsoleApi.status(activeWebsite.value.id)
+    gscConnected.value = Boolean(data.connected && data.is_active)
+  } catch {
+    gscConnected.value = false
+  }
+}
 
 const scheduleTime = ref('09:00')
 const showConnectModal = ref(false)
@@ -337,7 +392,10 @@ async function loadConnections() {
   }
 }
 
-onMounted(loadConnections)
+onMounted(() => {
+  loadConnections()
+  loadGscStatus()
+})
 
 function openConnect(intg) {
   activeIntegration.value = intg
