@@ -120,6 +120,14 @@ const routes = [
         redirect: { name: 'login' },
     },
     {
+        // Google OAuth return leg. Google redirects here with ?code&state;
+        // the page exchanges the code via POST /auth/google/ and signs in.
+        path: '/auth/google/callback',
+        name: 'google-callback',
+        component: () => import('@/pages/auth/GoogleCallbackPage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
         path: '/forgot-password',
         name: 'forgot-password',
         component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
@@ -148,6 +156,7 @@ const routes = [
     protect('/llm-ranking/:websiteId/urls', 'sources-urls', () => import('@/pages/SourcesUrlsPage.vue'), true),
     protect('/llm-ranking/:websiteId/urls/detail', 'sources-url-detail', () => import('@/pages/SourcesUrlDetailPage.vue'), true),
     protect('/llm-ranking/:websiteId/source-influence', 'source-influence', () => import('@/pages/SourceInfluencePage.vue'), true),
+    protect('/llm-ranking/:websiteId/search-performance', 'search-performance', () => import('@/pages/SearchPerformancePage.vue'), true),
     protect('/llm-ranking/:websiteId/brand-vault', 'brand-vault', () => import('@/pages/BrandVaultPage.vue'), true),
     protect('/llm-ranking/:websiteId/content', 'content-studio', () => import('@/pages/ContentStudioPage.vue'), true),
     protect('/llm-ranking/:websiteId/content/drafts/:draftId', 'content-studio-draft', () => import('@/pages/DraftEditorPage.vue'), true),
@@ -162,6 +171,8 @@ const routes = [
         component: () => import('@/pages/PaywallPage.vue'),
         meta: { requiresAuth: true, layout: 'auth' }
     },
+    protect('/agents', 'agents', () => import('@/pages/AgentsPage.vue')),
+    protect('/agents/:hiredId', 'agent-detail', () => import('@/pages/AgentDetailPage.vue'), true),
     protect('/app/integrations', 'integrations', () => import('@/pages/IntegrationsPage.vue')),
     protect('/billing', 'billing', () => import('@/pages/BillingPage.vue')),
     protect('/settings', 'settings', () => import('@/pages/SettingsPage.vue')),
@@ -277,7 +288,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Guard: project-specific pages require an active project
-    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'source-influence', 'sources-urls', 'prompt-library', 'brand-vault', 'content-studio', 'content-studio-draft']
+    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'source-influence', 'search-performance', 'sources-urls', 'prompt-library', 'brand-vault', 'content-studio', 'content-studio-draft']
     if (projectPages.includes(to.name) && auth.isAuthenticated) {
         const app = useAppStore()
         if (!app.activeWebsite) {

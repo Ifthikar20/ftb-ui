@@ -103,30 +103,12 @@
 
     <!-- ═══ Trust strip ═══ -->
     <section class="trust anim" data-anim="fade-up">
-      <div class="marquee">
-        <div class="marquee-track">
-          <span class="marquee-item is-label">Trusted Probes</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Anthropic Claude</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">OpenAI GPT-4</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Google Gemini</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Perplexity</span>
-          <span class="marquee-sep">·</span>
-          <!-- duplicate for seamless loop -->
-          <span class="marquee-item is-label">Trusted Probes</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Anthropic Claude</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">OpenAI GPT-4</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Google Gemini</span>
-          <span class="marquee-sep">·</span>
-          <span class="marquee-item">Perplexity</span>
-          <span class="marquee-sep">·</span>
-        </div>
+      <div class="trust-row">
+        <span class="trust-label">Probes across</span>
+        <span class="trust-item">Anthropic Claude</span>
+        <span class="trust-item">OpenAI GPT-4</span>
+        <span class="trust-item">Google Gemini</span>
+        <span class="trust-item">Perplexity</span>
       </div>
     </section>
 
@@ -1716,10 +1698,10 @@ function updateStickyCta() {
 
 <style scoped>
 /* ═══════════════════════════════════
-   FetchBot — Travel Lab style
-   White bg · DM Serif Display headlines
-   Horizontal numbered card carousel
-   Typewriter hero · word cycler
+   FetchBot — clean, flat aesthetic
+   White bg · sans-serif headlines
+   Single restrained accent (--brand-accent)
+   Flat surfaces · static trust strip
    ═══════════════════════════════════ */
 
 /* ── Animations ── */
@@ -1733,6 +1715,12 @@ function updateStickyCta() {
 
 /* ── Base ── */
 .lp {
+  /* Single restrained accent + neutral palette (Extend-style calm). */
+  --brand-accent: #2f6bed;
+  --brand-accent-rgb: 47, 107, 237;
+  --font-display: 'Plus Jakarta Sans';
+  --surface-soft: #f5f6f8;
+  --line: #e6e8ec;
   background: #ffffff;
   color: #131718;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1743,7 +1731,7 @@ function updateStickyCta() {
   -webkit-font-smoothing: antialiased;
 }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-em { color: #5B8DEF; font-style: italic; }
+em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
 .hide-m {}
 
 /* ── Nav ── */
@@ -1815,8 +1803,8 @@ em { color: #5B8DEF; font-style: italic; }
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-accent, #ff6b35);
-  background: rgba(255, 107, 53, 0.12);
+  color: var(--brand-accent);
+  background: rgba(var(--brand-accent-rgb), 0.12);
   padding: 6px 12px;
   border-radius: 9999px;
   margin-bottom: 18px;
@@ -1832,7 +1820,7 @@ em { color: #5B8DEF; font-style: italic; }
 }
 .hero-word {
   display: inline-block;
-  color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1849,7 +1837,7 @@ em { color: #5B8DEF; font-style: italic; }
 .hero-bullets li { display: flex; align-items: center; gap: 10px; }
 .hero-bullet-dot {
   width: 6px; height: 6px; border-radius: 9999px;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--brand-accent);
   flex-shrink: 0;
 }
 
@@ -2069,7 +2057,7 @@ em { color: #5B8DEF; font-style: italic; }
   stroke-linecap: round;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.35));
+  filter: drop-shadow(0 0 6px rgba(var(--brand-accent-rgb), 0.35));
   animation: probe-ring-fill 2s cubic-bezier(0.16, 1, 0.3, 1) 1.4s forwards;
 }
 @keyframes probe-ring-fill {
@@ -2107,7 +2095,7 @@ em { color: #5B8DEF; font-style: italic; }
 }
 .probe-card:hover {
   box-shadow: 0 12px 32px -16px rgba(15, 23, 42, 0.25),
-              0 0 0 1px rgba(255, 107, 53, 0.18);
+              0 0 0 1px rgba(var(--brand-accent-rgb), 0.18);
 }
 
 /* ── New: live stats strip under the footer ─────────────────────── */
@@ -2142,7 +2130,7 @@ em { color: #5B8DEF; font-style: italic; }
   position: absolute; inset: 0;
   background: linear-gradient(110deg,
     transparent 0%,
-    rgba(255, 107, 53, 0.10) 45%,
+    rgba(var(--brand-accent-rgb), 0.10) 45%,
     transparent 70%);
   transform: translateX(-100%);
   animation: probe-stat-sweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + 0.2s) forwards;
@@ -2224,7 +2212,7 @@ em { color: #5B8DEF; font-style: italic; }
 .tw-cursor {
   display: inline-block;
   font-weight: 300;
-  color: #5B8DEF;
+  color: var(--brand-accent);
   animation: tw-blink 0.6s step-end infinite;
   margin-left: 2px;
 }
@@ -2244,8 +2232,8 @@ em { color: #5B8DEF; font-style: italic; }
   max-width: 480px;
   margin: 0 0 32px;
   padding: 20px 22px 18px;
-  border-left: 3px solid #ff6b35;
-  background: linear-gradient(180deg, rgba(255, 107, 53, 0.06), rgba(255, 107, 53, 0));
+  border-left: 3px solid var(--brand-accent);
+  background: linear-gradient(180deg, rgba(var(--brand-accent-rgb), 0.06), rgba(var(--brand-accent-rgb), 0));
   border-radius: 4px 10px 10px 4px;
 }
 .hero-manifest-mark {
@@ -2254,7 +2242,7 @@ em { color: #5B8DEF; font-style: italic; }
   font-family: Georgia, serif;
   font-size: 42px;
   line-height: 1;
-  color: #ff6b35;
+  color: var(--brand-accent);
   opacity: 0.5;
   pointer-events: none;
 }
@@ -2264,7 +2252,7 @@ em { color: #5B8DEF; font-style: italic; }
   line-height: 1.6;
   color: #1f2937;
   font-weight: 500;
-  font-style: italic;
+  font-style: normal;
 }
 .hero-manifest-attr {
   margin-top: 10px;
@@ -2292,7 +2280,7 @@ em { color: #5B8DEF; font-style: italic; }
 
 /* ═══ Features Carousel — Travel Lab Style ═══ */
 .features-section { padding: 64px 0 80px; }
-.feat-full { background: #FFF6C6; border-radius: 24px; margin: 0 32px; padding: 48px 0 40px; overflow: hidden; }
+.feat-full { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 24px; margin: 0 32px; padding: 48px 0 40px; overflow: hidden; }
 
 .feat-header { display: flex; align-items: baseline; gap: 40px; margin-bottom: 36px; flex-wrap: wrap; }
 .feat-headline {
@@ -2318,16 +2306,16 @@ em { color: #5B8DEF; font-style: italic; }
   display: inline-block;
   position: absolute;
   left: 0; bottom: 0;
-  color: #5B8DEF;
-  font-style: italic;
+  color: var(--brand-accent);
+  font-style: normal;
   white-space: nowrap;
   line-height: 1.2;
 }
 .feat-word-glow {
   position: absolute; bottom: -4px; left: 0; right: 0;
-  height: 3px; background: #5B8DEF;
+  height: 3px; background: var(--brand-accent);
   border-radius: 2px;
-  box-shadow: 0 0 12px rgba(91, 141, 239, 0.5), 0 0 24px rgba(91, 141, 239, 0.2);
+  box-shadow: 0 0 12px rgba(var(--brand-accent-rgb), 0.5), 0 0 24px rgba(var(--brand-accent-rgb), 0.2);
   animation: glow-pulse 2.8s ease-in-out infinite;
 }
 @keyframes glow-pulse {
@@ -2365,12 +2353,12 @@ em { color: #5B8DEF; font-style: italic; }
   background: none; border: none; cursor: pointer;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: clamp(1rem, 1.8vw, 1.3rem);
-  font-style: italic; color: #94a3b8;
+  font-style: normal; color: #94a3b8;
   padding: 0; transition: all 0.3s;
   position: relative;
 }
 .feat-tab.active {
-  color: #5B8DEF;
+  color: var(--brand-accent);
   text-decoration: none;
 }
 .feat-tab.active::after {
@@ -2378,7 +2366,7 @@ em { color: #5B8DEF; font-style: italic; }
   position: absolute;
   bottom: -4px; left: 0; right: 0;
   height: 2px;
-  background: #5B8DEF;
+  background: var(--brand-accent);
   border-radius: 1px;
   animation: tab-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -2767,10 +2755,10 @@ em { color: #5B8DEF; font-style: italic; }
   position: relative; transition: all 0.3s;
 }
 .price-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.05); }
-.price-card.featured { border-color: #5B8DEF; box-shadow: 0 4px 20px rgba(91,141,239,0.1); }
+.price-card.featured { border-color: var(--brand-accent); box-shadow: 0 4px 20px rgba(var(--brand-accent-rgb),0.1); }
 .pop {
   position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-  padding: 3px 14px; background: #5B8DEF; color: #fff;
+  padding: 3px 14px; background: var(--brand-accent); color: #fff;
   border-radius: 999px; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.04em;
 }
@@ -2786,7 +2774,7 @@ em { color: #5B8DEF; font-style: italic; }
   text-decoration: none; border: 1.5px solid rgba(0,0,0,0.1);
   color: #131718; transition: all 0.25s;
 }
-.price-btn:hover { border-color: #5B8DEF; color: #5B8DEF; }
+.price-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
 .price-btn.dark { background: #131718; border-color: #131718; color: #fff; }
 .price-btn.dark:hover { background: #2a2d2e; transform: translateY(-1px); }
 
@@ -2862,10 +2850,10 @@ em { color: #5B8DEF; font-style: italic; }
   transition: transform 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 .footer-social:hover {
-  color: var(--brand-accent, #ff6b35);
-  border-color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
+  border-color: var(--brand-accent);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.18);
+  box-shadow: 0 6px 16px rgba(var(--brand-accent-rgb), 0.18);
 }
 
 .footer-col { display: flex; flex-direction: column; gap: 10px; }
@@ -2884,7 +2872,7 @@ em { color: #5B8DEF; font-style: italic; }
   transition: color 0.12s ease;
 }
 .footer-col a:hover {
-  color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
 }
 
 .footer-bottom {
@@ -3336,7 +3324,7 @@ html:has(.lp) #app {
   color: #5e6b73;
 }
 .sec-h-grad {
-  background: linear-gradient(110deg, #131718 0%, #131718 55%, var(--brand-accent, #ff6b35) 100%);
+  background: linear-gradient(110deg, #131718 0%, #131718 55%, var(--brand-accent) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -3346,13 +3334,8 @@ html:has(.lp) #app {
 
 /* ── Background blur orbs ── */
 .orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.32;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(circle, var(--brand-accent, #ff6b35) 0%, rgba(255,107,53,0) 70%);
+  /* Flattened look: drop the drifting blur orbs for clean, calm surfaces. */
+  display: none;
 }
 .orb-1 { width: 520px; height: 520px; top: 600px; left: -180px; animation: orbDrift 22s ease-in-out infinite; }
 .orb-2 { width: 420px; height: 420px; top: 1900px; right: -160px; opacity: 0.24; animation: orbDrift 28s ease-in-out -8s infinite reverse; }
@@ -3362,46 +3345,32 @@ html:has(.lp) #app {
   50%      { transform: translate(40px, -30px) scale(1.08); }
 }
 
-/* ── Trust strip / marquee ── */
+/* ── Trust strip (static, flat) ── */
 .trust {
   position: relative;
-  padding: 32px 0 12px;
-  overflow: hidden;
+  padding: 28px 0 12px;
   z-index: 1;
 }
-.marquee {
-  position: relative;
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-}
-.marquee-track {
-  display: inline-flex;
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
-  white-space: nowrap;
-  animation: marqueeRoll 30s linear infinite;
-  will-change: transform;
+  justify-content: center;
+  gap: 16px 32px;
 }
-.marquee:hover .marquee-track { animation-play-state: paused; }
-.marquee-item {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: #5e6b73;
-  font-family: 'Geist', 'Plus Jakarta Sans', sans-serif;
-}
-.marquee-item.is-label {
-  color: var(--brand-accent, #ff6b35);
+.trust-label {
+  color: var(--brand-accent);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.18em;
   font-size: 12px;
 }
-.marquee-sep { color: #c9c2b6; font-size: 14px; }
-@keyframes marqueeRoll {
-  from { transform: translateX(0%); }
-  to   { transform: translateX(-50%); }
+.trust-item {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #5e6b73;
+  font-family: 'Geist', 'Plus Jakarta Sans', sans-serif;
 }
 
 /* ── Why this exists (editorial / light) ── */
@@ -3417,8 +3386,8 @@ html:has(.lp) #app {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(900px circle at 12% 0%, rgba(255, 107, 53, 0.05), transparent 55%),
-    radial-gradient(700px circle at 88% 100%, rgba(59, 130, 246, 0.04), transparent 60%);
+    radial-gradient(900px circle at 12% 0%, rgba(var(--brand-accent-rgb), 0.05), transparent 55%),
+    radial-gradient(700px circle at 88% 100%, rgba(var(--brand-accent-rgb), 0.04), transparent 60%);
   pointer-events: none;
 }
 .why-wrap { max-width: 1080px; position: relative; z-index: 1; }
@@ -3428,14 +3397,14 @@ html:has(.lp) #app {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px; font-weight: 500; letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #ff6b35;
+  color: var(--brand-accent);
   margin-bottom: 28px;
 }
 .why-eyebrow-dot {
   width: 6px; height: 6px;
-  background: #ff6b35;
+  background: var(--brand-accent);
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(255, 107, 53, 0.45);
+  box-shadow: 0 0 8px rgba(var(--brand-accent-rgb), 0.45);
 }
 .why-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -3532,7 +3501,7 @@ html:has(.lp) #app {
   position: absolute;
   inset: -50% auto auto -10%;
   width: 60%; height: 200%;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.22) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(var(--brand-accent-rgb), 0.22) 0%, transparent 60%);
   pointer-events: none;
 }
 .why-cta-line {
@@ -3551,7 +3520,7 @@ html:has(.lp) #app {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 22px;
   border-radius: 10px;
-  background: #ff6b35;
+  background: var(--brand-accent);
   color: #ffffff;
   font-weight: 600;
   font-size: 14.5px;
@@ -3609,7 +3578,7 @@ html:has(.lp) #app {
 .count-up-prefix, .count-up-suffix {
   font-size: 36px;
   font-weight: 700;
-  color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
 }
 .count-up-label {
   margin-top: 18px;
@@ -3660,7 +3629,7 @@ html:has(.lp) #app {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
   text-transform: uppercase;
 }
 .feature-h {
@@ -3696,9 +3665,9 @@ html:has(.lp) #app {
   width: 8px; height: 8px;
   margin-top: 7px;
   border-radius: 50%;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--brand-accent);
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.12);
+  box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.12);
 }
 
 /* Mock visuals shared */
@@ -3871,7 +3840,7 @@ html:has(.lp) #app {
   background: rgba(0, 0, 0, 0.05);
   color: #484848;
 }
-.mock-chip.is-comparison { background: rgba(91, 141, 239, 0.14);  color: #2f5cb1; }
+.mock-chip.is-comparison { background: rgba(var(--brand-accent-rgb), 0.14);  color: #2f5cb1; }
 .mock-chip.is-how-to     { background: rgba(0, 166, 153, 0.14);   color: #007e7a; }
 .mock-chip.is-vs         { background: rgba(255, 56, 92, 0.12);   color: #c61b48; }
 .mock-chip.is-question   { background: rgba(217, 119, 6, 0.14);   color: #a25208; }
@@ -4346,7 +4315,7 @@ html:has(.lp) #app {
 .pq-text {
   max-width: 880px;
   margin: 0 auto;
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
   font-size: 32px;
   line-height: 1.35;
   color: #131718;
@@ -4358,7 +4327,7 @@ html:has(.lp) #app {
   display: block;
   font-size: 80px;
   line-height: 0.4;
-  color: var(--brand-accent, #ff6b35);
+  color: var(--brand-accent);
   margin-bottom: 18px;
 }
 .pq-attr {
@@ -4408,7 +4377,7 @@ html:has(.lp) #app {
 .faq-plus::before, .faq-plus::after {
   content: '';
   position: absolute;
-  background: var(--brand-accent, #ff6b35);
+  background: var(--brand-accent);
   border-radius: 1px;
   transition: transform 0.25s ease;
 }
@@ -4437,14 +4406,14 @@ html:has(.lp) #app {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.72) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(255, 107, 53, 0.25) 0%, transparent 60%);
+    radial-gradient(ellipse at 50% 50%, rgba(var(--brand-accent-rgb), 0.25) 0%, transparent 60%);
   z-index: 1;
   pointer-events: none;
 }
 .final-cta-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(var(--brand-accent-rgb), 0.18) 0%, transparent 60%);
   pointer-events: none;
   z-index: 2;
 }

@@ -88,6 +88,11 @@ export default {
     generateFromContext: (payload) =>
         api.post('/prompt-library/prompts/generate-from-context/', payload),
 
+    // Recommend prompts related to an existing one (AI-generated). Used by
+    // the create-prompt modal to surface follow-on suggestions.
+    generateRelated: (payload) =>
+        api.post('/prompt-library/prompts/generate-related/', payload),
+
     savePromptToWebsite: (websiteId, payload) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/`, payload),
 

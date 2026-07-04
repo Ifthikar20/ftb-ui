@@ -281,7 +281,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown,
   LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
-  ShieldCheck, FileText, Plug, CreditCard, Settings,
+  ShieldCheck, FileText, Plug, CreditCard, Settings, Bot,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -444,6 +444,7 @@ const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${we
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
+const searchPerformanceRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-performance` : '/websites')
 
 const navMain = computed(() => [
   {
@@ -464,10 +465,12 @@ const navMain = computed(() => [
           { title: 'URLs', to: sourcesUrlsRoute.value, match: '/urls' },
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Model Test', to: sourceInfluenceRoute.value, match: '/source-influence' },
+          { title: 'Search Performance', to: searchPerformanceRoute.value, match: '/search-performance' },
           { title: 'Brand Vault', to: brandVaultRoute.value, match: '/brand-vault' },
           { title: 'Content', to: contentStudioRoute.value, match: '/content' },
         ],
       },
+      { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
       { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
     ],
   },

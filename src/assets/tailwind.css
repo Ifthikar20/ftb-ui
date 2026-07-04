@@ -23,13 +23,13 @@
   --destructive-foreground: #ffffff;
   --border: rgba(15, 23, 42, 0.08);
   --input: rgba(15, 23, 42, 0.12);
-  --ring: #5b8def;
-  --chart-1: #5b8def;
+  --ring: #2f6bed;
+  --chart-1: #2f6bed;
   --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
-  --radius: 0.75rem;
+  --radius: 0.625rem;
   --sidebar: #f8fafc;
   --sidebar-foreground: #0f172a;
   --sidebar-primary: #1e293b;
@@ -37,7 +37,7 @@
   --sidebar-accent: #eef2ff;
   --sidebar-accent-foreground: #1e293b;
   --sidebar-border: rgba(15, 23, 42, 0.08);
-  --sidebar-ring: #5b8def;
+  --sidebar-ring: #2f6bed;
 }
 
 [data-theme="dark"] {
