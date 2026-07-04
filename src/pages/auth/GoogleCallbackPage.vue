@@ -59,8 +59,10 @@ onMounted(async () => {
     } else {
       router.replace('/dashboard')
     }
-  } catch {
-    fail('Google sign-in failed. Please try again.')
+  } catch (e) {
+    // Surface the backend's explanation when it has one, e.g. the
+    // closed-signup rejection for Google emails without an account.
+    fail(e?.response?.data?.error?.message || 'Google sign-in failed. Please try again.')
   }
 })
 </script>
