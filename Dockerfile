@@ -8,6 +8,14 @@ RUN npm install
 
 # Cache-bust on every CI build so identical file mtimes never serve a stale layer.
 ARG CACHE_DATE=unknown
+
+# Vite bakes VITE_* values into the bundle at build time. Passed from
+# the GitHub Actions workflow (repository variable VITE_GOOGLE_CLIENT_ID).
+# Empty default keeps local builds working; the login page disables the
+# Google button when the value is absent.
+ARG VITE_GOOGLE_CLIENT_ID=
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 COPY . .
 RUN npm run build
 
