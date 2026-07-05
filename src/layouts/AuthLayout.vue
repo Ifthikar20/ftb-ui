@@ -69,7 +69,7 @@
       </div>
       <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
       <!-- Internal-only backend build marker (deliberately near-invisible). -->
-      <span v-if="apiBuild" class="auth-build">{{ apiBuild }}</span>
+      <span v-if="apiBuild" class="auth-build" :title="apiCommit">{{ apiBuild }}</span>
     </div>
   </div>
 </template>
@@ -84,9 +84,11 @@ defineProps({
 })
 
 // Backend build marker for the footer. Internal use: tells us which
-// API commit is live without opening the server. Stays empty (and the
-// element unrendered) if the endpoint is unreachable.
+// API build is live without opening the server. Stays empty (and the
+// element unrendered) if the endpoint is unreachable. The commit hash
+// goes into the title attribute so hovering the marker reveals it.
 const apiBuild = ref('')
+const apiCommit = ref('')
 
 // Auth screens are light-only. Stash whatever theme the rest of the app
 // was using and restore it on unmount so we don't surprise authenticated
@@ -99,8 +101,13 @@ onMounted(async () => {
   try {
     const res = await api.get('/version/', { _silentError: true })
     const v = res.data || {}
-    if (v.version) {
-      apiBuild.value = v.build ? `api ${v.version} · b${v.build}` : `api ${v.version}`
+    // Prefer the server-computed vMMDD-N label; fall back to the raw
+    // commit hash if talking to an older backend without it.
+    if (v.label) {
+      apiBuild.value = v.label
+      apiCommit.value = v.version || ''
+    } else if (v.version) {
+      apiBuild.value = `api ${v.version}`
     }
   } catch {
     // Version marker is cosmetic; never let it disturb the login page.
