@@ -68,25 +68,43 @@
         <slot />
       </div>
       <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
+      <!-- Internal-only backend build marker (deliberately near-invisible). -->
+      <span v-if="apiBuild" class="auth-build">{{ apiBuild }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import api from '@/api/client'
 
 defineProps({
   title: { type: String, default: '' },
   subtitle: { type: String, default: '' },
 })
 
+// Backend build marker for the footer. Internal use: tells us which
+// API commit is live without opening the server. Stays empty (and the
+// element unrendered) if the endpoint is unreachable.
+const apiBuild = ref('')
+
 // Auth screens are light-only. Stash whatever theme the rest of the app
 // was using and restore it on unmount so we don't surprise authenticated
 // users when they navigate away.
 let _previousTheme = null
-onMounted(() => {
+onMounted(async () => {
   _previousTheme = document.documentElement.getAttribute('data-theme')
   document.documentElement.setAttribute('data-theme', 'light')
+
+  try {
+    const res = await api.get('/version/', { _silentError: true })
+    const v = res.data || {}
+    if (v.version) {
+      apiBuild.value = v.build ? `api ${v.version} · b${v.build}` : `api ${v.version}`
+    }
+  } catch {
+    // Version marker is cosmetic; never let it disturb the login page.
+  }
 })
 onUnmounted(() => {
   if (_previousTheme) {
@@ -145,6 +163,19 @@ onUnmounted(() => {
   bottom: 24px;
   font-size: var(--font-xs);
   color: var(--muted-foreground);
+}
+
+/* Internal backend build marker. Deliberately tiny and faint: it is
+   for our own deploy tracking, not something users should notice. */
+.auth-build {
+  position: absolute;
+  bottom: 6px;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+  opacity: 0.45;
+  user-select: none;
 }
 
 /* ── Right Panel — rounded video card ── */
