@@ -130,13 +130,33 @@
             synced nightly and fed into your prompt library.
           </p>
           <div class="flex gap-2">
-            <Button size="sm" class="flex-1" @click="goToSearchPerformance">
-              {{ gscConnected ? 'Manage' : 'Set up' }}
+            <template v-if="gscConnected">
+              <Button variant="secondary" size="sm" class="flex-1" @click="toggleGscSummary">
+                {{ showGscSummary ? 'Hide summary' : 'View summary' }}
+              </Button>
+              <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-destructive" @click="confirmGscDisconnect">
+                Disconnect
+              </Button>
+            </template>
+            <Button v-else size="sm" class="flex-1" :disabled="gscConnecting" @click="startGscConnect">
+              {{ gscConnecting ? 'Redirecting…' : 'Connect with Google' }}
             </Button>
           </div>
         </div>
       </div>
+      <div v-if="gscConnected && showGscSummary" class="mt-4">
+        <GscSummaryCards v-if="gscSummary" :summary="gscSummary" />
+        <p v-else class="text-sm text-muted-foreground">Loading summary…</p>
+      </div>
     </div>
+
+    <!-- GSC property picker (OAuth return with multiple properties) -->
+    <PropertyPickerModal
+      v-model="showGscPropertyPicker"
+      :properties="gscProperties"
+      :saving="gscSavingProperty"
+      @select="selectGscProperty"
+    />
 
     <!-- What Gets Sent Section -->
     <div class="what-gets-sent">
@@ -283,33 +303,161 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Button } from '@/components/ui/button'
 import integrationsApi from '@/api/integrations'
 import searchConsoleApi from '@/api/searchConsole'
+import PropertyPickerModal from '@/components/search_console/PropertyPickerModal.vue'
+import GscSummaryCards from '@/components/search_console/GscSummaryCards.vue'
+import { useToast } from '@/composables/useToast'
 import { useAppStore } from '@/stores/app'
 
+const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 const appStore = useAppStore()
 const activeWebsite = computed(() => appStore.activeWebsite)
-const gscConnected = ref(false)
 
-function goToSearchPerformance() {
-  if (!activeWebsite.value) return
-  router.push(`/llm-ranking/${activeWebsite.value.id}/search-performance`)
-}
+// ── Google Search Console (management moved here from the old
+//    Search Performance page; that route is now Search Insights) ──
+const gscConnected = ref(false)
+const gscConnecting = ref(false)
+const showGscSummary = ref(false)
+const gscSummary = ref(null)
+const showGscPropertyPicker = ref(false)
+const gscProperties = ref([])
+const gscSavingProperty = ref(false)
+let gscPollTimer = null
+
+// The OAuth callback may land here for a website that is not the
+// active one; prefer the id Google's redirect carries.
+const gscWebsiteId = computed(() => route.query.website_id || activeWebsite.value?.id)
 
 async function loadGscStatus() {
-  if (!activeWebsite.value) return
+  if (!gscWebsiteId.value) return null
   try {
-    const { data } = await searchConsoleApi.status(activeWebsite.value.id)
+    const { data } = await searchConsoleApi.status(gscWebsiteId.value)
     gscConnected.value = Boolean(data.connected && data.is_active)
+    return data
   } catch {
     gscConnected.value = false
+    return null
   }
 }
+
+async function startGscConnect() {
+  if (!gscWebsiteId.value) return
+  gscConnecting.value = true
+  try {
+    const { data } = await searchConsoleApi.connectStart(gscWebsiteId.value)
+    window.location.href = data.authorize_url
+  } catch {
+    gscConnecting.value = false
+  }
+}
+
+async function toggleGscSummary() {
+  showGscSummary.value = !showGscSummary.value
+  if (showGscSummary.value && !gscSummary.value) {
+    // GSC data lags 2-3 days; show the last 28 finalized days.
+    const end = new Date()
+    end.setDate(end.getDate() - 3)
+    const start = new Date(end)
+    start.setDate(start.getDate() - 27)
+    const iso = (d) => d.toISOString().slice(0, 10)
+    try {
+      const { data } = await searchConsoleApi.summary(gscWebsiteId.value, {
+        start: iso(start), end: iso(end),
+      })
+      gscSummary.value = data
+    } catch {
+      // toasted by interceptor
+    }
+  }
+}
+
+function confirmGscDisconnect() {
+  if (!window.confirm('Disconnect Google Search Console? Synced history is kept, but nightly updates stop.')) return
+  disconnectGsc()
+}
+
+async function disconnectGsc() {
+  try {
+    await searchConsoleApi.disconnect(gscWebsiteId.value)
+    toast.success('Google Search Console disconnected.')
+    gscConnected.value = false
+    gscSummary.value = null
+    showGscSummary.value = false
+  } catch {
+    // toasted by interceptor
+  }
+}
+
+async function openGscPropertyPicker() {
+  try {
+    const { data } = await searchConsoleApi.properties(gscWebsiteId.value)
+    gscProperties.value = data.properties || []
+    showGscPropertyPicker.value = true
+  } catch {
+    // toasted by interceptor
+  }
+}
+
+async function selectGscProperty(siteUrl) {
+  gscSavingProperty.value = true
+  try {
+    await searchConsoleApi.selectProperty(gscWebsiteId.value, siteUrl)
+    showGscPropertyPicker.value = false
+    toast.success('Property saved. First sync is running.')
+    startGscPolling()
+  } finally {
+    gscSavingProperty.value = false
+  }
+}
+
+// Poll status briefly after connect until the first sync lands.
+function startGscPolling() {
+  stopGscPolling()
+  let attempts = 0
+  gscPollTimer = setInterval(async () => {
+    attempts += 1
+    const s = await loadGscStatus()
+    if (s?.has_data || attempts >= 12) stopGscPolling()
+  }, 10000)
+}
+
+function stopGscPolling() {
+  if (gscPollTimer) {
+    clearInterval(gscPollTimer)
+    gscPollTimer = null
+  }
+}
+
+// Google's OAuth callback redirects to /app/integrations?gsc=...
+async function handleGscOAuthReturn() {
+  const outcome = route.query.gsc
+  if (!outcome) return
+  const reason = route.query.reason
+  router.replace({ query: {} })
+
+  if (outcome === 'connected') {
+    toast.success('Google Search Console connected. First sync is running; Google data has a 2-3 day delay.')
+    startGscPolling()
+  } else if (outcome === 'select_property') {
+    await openGscPropertyPicker()
+  } else if (outcome === 'error') {
+    const messages = {
+      denied: 'Google access was declined. Connect again when ready.',
+      invalid_state: 'The sign-in link expired. Please try connecting again.',
+      exchange_failed: 'Google did not accept the authorization. Please try again.',
+    }
+    toast.error(messages[reason] || 'Connecting Google Search Console failed. Please try again.')
+  }
+}
+
+onBeforeUnmount(stopGscPolling)
 
 const scheduleTime = ref('09:00')
 const showConnectModal = ref(false)
@@ -392,9 +540,10 @@ async function loadConnections() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadConnections()
-  loadGscStatus()
+  await loadGscStatus()
+  await handleGscOAuthReturn()
 })
 
 function openConnect(intg) {
