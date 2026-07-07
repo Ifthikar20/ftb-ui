@@ -35,8 +35,15 @@
       </form>
 
       <div class="ip-body">
-        <!-- Recent scans rail -->
-        <aside class="ip-rail">
+        <!-- Recent scans rail (collapsed by default, expands on hover
+             with a delay so it doesn't slam shut the moment the cursor
+             brushes past) -->
+        <aside
+          class="ip-rail"
+          :class="{ open: railOpen }"
+          @mouseenter="onRailEnter"
+          @mouseleave="onRailLeave"
+        >
           <h2 class="ip-rail-title">Recent scans</h2>
           <p v-if="!scans.length" class="ip-rail-empty">No scans yet.</p>
           <button
@@ -44,6 +51,7 @@
             :key="scan.id"
             class="ip-scan-item"
             :class="{ active: scan.id === activeScanId }"
+            :title="scan.query"
             @click="openScan(scan.id)"
           >
             <span class="ip-scan-dot" :class="scan.status"></span>
@@ -97,8 +105,8 @@
             </div>
             <div class="ip-canvas-row">
               <InsightFlowCanvas
-                :nodes="graph.nodes"
-                :edges="graph.edges"
+                :nodes="styledGraph.nodes"
+                :edges="styledGraph.edges"
                 class="ip-canvas"
                 @node-click="selectedNode = $event"
                 @pane-click="selectedNode = null"
@@ -141,6 +149,26 @@ const activeScanId = ref(null)
 const activeScan = ref(null)
 const selectedNode = ref(null)
 
+// Rail hover-expand state. Small close-delay so it doesn't collapse the
+// instant the cursor grazes off during a click; longer than a "sticky
+// hover" (~600ms) so it feels intentional.
+const railOpen = ref(false)
+let railCloseTimer = null
+function onRailEnter() {
+  if (railCloseTimer) {
+    clearTimeout(railCloseTimer)
+    railCloseTimer = null
+  }
+  railOpen.value = true
+}
+function onRailLeave() {
+  if (railCloseTimer) clearTimeout(railCloseTimer)
+  railCloseTimer = setTimeout(() => {
+    railOpen.value = false
+    railCloseTimer = null
+  }, 600)
+}
+
 const exampleQueries = [
   'best bagels in Dallas',
   'top CRM for small business',
@@ -157,6 +185,62 @@ const graph = computed(() => buildGraph(activeScan.value))
 const maxBrandScore = computed(() =>
   Math.max(...(activeScan.value?.brands || []).map((b) => b.weighted_score || 0), 0.0001),
 )
+
+// Undirected BFS from the selected node so the whole query → source →
+// brand → leaf chain (plus opportunity nodes hanging off sources) lights
+// up as a single flow, not just the one-hop neighbourhood.
+const flowSet = computed(() => {
+  const sel = selectedNode.value
+  if (!sel) return null
+  const adj = new Map()
+  for (const e of graph.value.edges) {
+    if (!adj.has(e.source)) adj.set(e.source, [])
+    if (!adj.has(e.target)) adj.set(e.target, [])
+    adj.get(e.source).push(e.target)
+    adj.get(e.target).push(e.source)
+  }
+  const visited = new Set([sel.id])
+  const queue = [sel.id]
+  while (queue.length) {
+    const cur = queue.shift()
+    for (const nb of adj.get(cur) || []) {
+      if (!visited.has(nb)) {
+        visited.add(nb)
+        queue.push(nb)
+      }
+    }
+  }
+  return visited
+})
+
+const styledGraph = computed(() => {
+  const set = flowSet.value
+  if (!set) return graph.value
+  const nodes = graph.value.nodes.map((n) => ({
+    ...n,
+    style: {
+      ...(n.style || {}),
+      opacity: set.has(n.id) ? 1 : 0.18,
+      transition: 'opacity 0.2s',
+    },
+  }))
+  const edges = graph.value.edges.map((e) => {
+    const on = set.has(e.source) && set.has(e.target)
+    const base = e.style || {}
+    return {
+      ...e,
+      animated: on ? true : false,
+      style: {
+        ...base,
+        opacity: on ? 1 : 0.08,
+        strokeWidth: on ? Math.max(2.5, (base.strokeWidth || 1) + 1) : base.strokeWidth || 1,
+        filter: on ? 'drop-shadow(0 0 3px currentColor)' : 'none',
+        transition: 'opacity 0.2s, stroke-width 0.2s',
+      },
+    }
+  })
+  return { nodes, edges }
+})
 
 let pollTimer = null
 let pollAttempts = 0
@@ -252,7 +336,10 @@ onMounted(async () => {
   if (scans.value.length) openScan(scans.value[0].id)
 })
 
-onBeforeUnmount(stopPolling)
+onBeforeUnmount(() => {
+  stopPolling()
+  if (railCloseTimer) clearTimeout(railCloseTimer)
+})
 </script>
 
 <style scoped>
@@ -293,15 +380,20 @@ onBeforeUnmount(stopPolling)
   min-height: 0;
 }
 
-/* Recent scans rail */
+/* Recent scans rail — narrow strip that expands on hover */
 .ip-rail {
-  width: 210px;
+  width: 44px;
   flex-shrink: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: width 0.18s ease;
+  border-right: 1px solid var(--border);
+  padding-right: 4px;
 }
+.ip-rail.open { width: 210px; }
 .ip-rail-title {
   font-size: 10px;
   font-weight: 800;
@@ -309,8 +401,19 @@ onBeforeUnmount(stopPolling)
   letter-spacing: 0.06em;
   color: var(--muted-foreground);
   margin-bottom: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
-.ip-rail-empty { font-size: 12px; color: var(--muted-foreground); }
+.ip-rail.open .ip-rail-title { opacity: 1; }
+.ip-rail-empty {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.ip-rail.open .ip-rail-empty { opacity: 1; }
 .ip-scan-item {
   display: flex;
   align-items: center;
@@ -319,9 +422,14 @@ onBeforeUnmount(stopPolling)
   border-radius: 8px;
   text-align: left;
   transition: background 0.15s;
+  min-height: 30px;
 }
 .ip-scan-item:hover { background: var(--muted); }
 .ip-scan-item.active { background: var(--muted); }
+/* Query label hidden when the rail is collapsed; the status dot alone
+   still tells you which scans are running/complete/failed. Title
+   attribute on the button gives you a native tooltip. */
+.ip-rail.open .ip-scan-query { opacity: 1; }
 .ip-scan-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--border); }
 .ip-scan-dot.complete { background: var(--chart-2); }
 .ip-scan-dot.failed { background: var(--destructive); }
@@ -337,6 +445,8 @@ onBeforeUnmount(stopPolling)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .ip-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -402,12 +512,23 @@ onBeforeUnmount(stopPolling)
 @keyframes spin { to { transform: rotate(360deg); } }
 .ip-canvas-row { display: flex; gap: 14px; flex: 1; min-height: 0; }
 .ip-canvas { flex: 1; min-width: 0; }
-.ip-detail { width: 300px; flex-shrink: 0; max-height: 100%; }
+.ip-detail { width: 400px; flex-shrink: 0; max-height: 100%; }
 
 @media (max-width: 1024px) {
   .insights-page { height: auto; }
   .ip-body { flex-direction: column; }
-  .ip-rail { width: 100%; flex-direction: row; overflow-x: auto; }
+  /* On narrow viewports the rail becomes a horizontal chip strip and
+     is always fully visible — the collapse/expand behaviour only makes
+     sense as a vertical side rail. */
+  .ip-rail, .ip-rail.open {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+  }
+  .ip-rail-title, .ip-rail-empty, .ip-scan-query { opacity: 1; }
   .ip-scan-item { flex-shrink: 0; max-width: 220px; }
   .ip-canvas-row { flex-direction: column; }
   .ip-canvas { height: 460px; }

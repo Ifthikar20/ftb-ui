@@ -24,6 +24,12 @@
           <span class="dp-brand-meta">{{ b.mentions }}x</span>
         </div>
       </div>
+      <div v-if="keywords.length" class="dp-section">
+        <h4 class="dp-section-title">Keywords</h4>
+        <div class="dp-chips">
+          <span v-for="k in keywords" :key="k" class="dp-chip">{{ k }}</span>
+        </div>
+      </div>
       <a :href="node.data.row.url" target="_blank" rel="noopener" class="dp-cta">Open source</a>
     </template>
 
@@ -60,11 +66,17 @@
       <blockquote v-if="node.data.brand.top_quote" class="dp-quote">
         "{{ node.data.brand.top_quote }}"
       </blockquote>
-      <div v-if="(node.data.brand.issues || []).length" class="dp-section">
+      <div v-if="cleanBrandIssues.length" class="dp-section">
         <h4 class="dp-section-title">Issues people raise</h4>
         <ul class="dp-issues">
-          <li v-for="issue in node.data.brand.issues" :key="issue">{{ issue }}</li>
+          <li v-for="issue in cleanBrandIssues" :key="issue">{{ issue }}</li>
         </ul>
+      </div>
+      <div v-if="keywords.length" class="dp-section">
+        <h4 class="dp-section-title">Keywords</h4>
+        <div class="dp-chips">
+          <span v-for="k in keywords" :key="k" class="dp-chip">{{ k }}</span>
+        </div>
       </div>
     </template>
 
@@ -78,11 +90,17 @@
           <span v-for="c in node.data.opportunity.competitors" :key="c" class="dp-chip">{{ c }}</span>
         </div>
       </div>
-      <div v-if="(node.data.opportunity.issues || []).length" class="dp-section">
+      <div v-if="cleanOpportunityIssues.length" class="dp-section">
         <h4 class="dp-section-title">Their weak spots</h4>
         <ul class="dp-issues">
-          <li v-for="issue in node.data.opportunity.issues" :key="issue">{{ issue }}</li>
+          <li v-for="issue in cleanOpportunityIssues" :key="issue">{{ issue }}</li>
         </ul>
+      </div>
+      <div v-if="keywords.length" class="dp-section">
+        <h4 class="dp-section-title">Keywords</h4>
+        <div class="dp-chips">
+          <span v-for="k in keywords" :key="k" class="dp-chip">{{ k }}</span>
+        </div>
       </div>
       <a :href="node.data.opportunity.url" target="_blank" rel="noopener" class="dp-cta accent">
         Open the conversation
@@ -114,6 +132,59 @@ const props = defineProps({
   maxScore: { type: Number, default: 1 },
 })
 defineEmits(['close'])
+
+// Claude occasionally invents an "issue" like "Access denied error
+// preventing content review" when it's handed a blocked/error page as
+// content. Filter those out at the display layer so users don't see
+// pipeline artifacts as real user complaints. Backend Perplexity
+// fallback for blocked sources is a separate follow-up.
+const JUNK_ISSUE_RE = /access\s+denied|preventing\s+content|content\s+review|unable to (access|review|retrieve)|error preventing|no accessible|content is (blocked|unavailable)/i
+function cleanIssues(list) {
+  return (list || []).filter((s) => s && !JUNK_ISSUE_RE.test(String(s)))
+}
+
+const cleanBrandIssues = computed(() =>
+  props.node.type === 'brand' ? cleanIssues(props.node.data.brand?.issues) : [],
+)
+const cleanOpportunityIssues = computed(() =>
+  props.node.type === 'opportunity' ? cleanIssues(props.node.data.opportunity?.issues) : [],
+)
+
+// Keywords surfaced per node type. No backend keyword model yet — we
+// derive from the fields we already have (brand names, cleaned issue
+// phrases, top quote). Uniqued and truncated so the panel doesn't wall
+// of text out.
+function uniq(list, cap = 10) {
+  const seen = new Set()
+  const out = []
+  for (const raw of list) {
+    if (!raw) continue
+    const key = String(raw).trim().toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(String(raw).trim())
+    if (out.length >= cap) break
+  }
+  return out
+}
+const keywords = computed(() => {
+  const n = props.node
+  if (n.type === 'source') {
+    const brands = (n.data.row?.brands || []).map((b) => b.name)
+    const issues = (n.data.row?.brands || []).flatMap((b) => cleanIssues(b.issues))
+    return uniq([...brands, ...issues])
+  }
+  if (n.type === 'brand') {
+    return uniq(cleanBrandIssues.value)
+  }
+  if (n.type === 'opportunity') {
+    return uniq([
+      ...(n.data.opportunity?.competitors || []),
+      ...cleanOpportunityIssues.value,
+    ])
+  }
+  return []
+})
 
 const sharePct = computed(() => {
   if (props.node.type !== 'brand') return 0

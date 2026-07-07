@@ -110,7 +110,7 @@
       <SidebarInset class="md:m-2 md:min-h-[calc(100svh-1rem)] md:overflow-hidden md:rounded-xl md:border md:border-border md:shadow-sm">
         <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-card transition-[width,height] ease-linear">
           <div class="flex items-center gap-2 px-4 md:px-6">
-            <SidebarTrigger class="-ml-1" />
+            <SidebarTrigger class="-ml-1 size-9 border border-border bg-muted/60 shadow-sm hover:bg-muted" />
             <Separator orientation="vertical" class="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
