@@ -17,4 +17,11 @@ export default {
     api.get(`/citations/websites/${websiteId}/chats/${resultId}/`),
   globalInfluence: (params = {}) =>
     api.get(`/citations/source-influence/global/`, { params }),
+  // Source Intelligence scans (Search Insights page)
+  sourceScans: (websiteId) =>
+    api.get(`/citations/websites/${websiteId}/source-scans/`),
+  createSourceScan: (websiteId, query) =>
+    api.post(`/citations/websites/${websiteId}/source-scans/`, { query }),
+  sourceScanDetail: (websiteId, scanId) =>
+    api.get(`/citations/websites/${websiteId}/source-scans/${scanId}/`),
 }
