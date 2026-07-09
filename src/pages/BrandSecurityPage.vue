@@ -336,7 +336,12 @@ function stopPolling() {
     <AgentConfigDrawer
       v-model:open="drawerOpen"
       :agent="drawerAgent"
+      :prompts="prompts"
+      :running="drawerAgent ? runningAgentIds.has(drawerAgent.agent_id) : false"
       @save="saveAgentConfig"
+      @run="runOneAgent"
+      @add-prompt="addPrompt"
+      @delete-prompt="deletePrompt"
     />
   </div>
 </template>

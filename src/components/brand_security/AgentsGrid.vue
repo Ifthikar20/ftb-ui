@@ -9,7 +9,7 @@ const emit = defineEmits(['run', 'configure'])
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+  <div class="flex flex-col gap-2">
     <AgentCard
       v-for="agent in agents"
       :key="agent.agent_id"
