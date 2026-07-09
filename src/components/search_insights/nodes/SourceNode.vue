@@ -4,6 +4,9 @@
     <div class="sn-top">
       <img :src="favicon" class="sn-favicon" alt="" @error="hideFavicon = true" v-if="!hideFavicon" />
       <span class="sn-domain">{{ data.row.domain }}</span>
+      <span v-if="data.isOpportunity" class="sn-post-tag" title="You can post on this page">
+        Post here
+      </span>
       <SourceClassBadge :source_class="data.row.source_class" class="sn-badge" />
     </div>
     <div class="sn-title">{{ data.row.serp_title || data.row.url }}</div>
@@ -16,7 +19,6 @@
       </template>
     </div>
     <Handle type="source" :position="Position.Right" id="out" />
-    <Handle type="source" :position="Position.Bottom" id="down" class="handle-opp" />
   </div>
 </template>
 
@@ -79,6 +81,18 @@ const shortDate = computed(() => {
   flex: 1;
 }
 .sn-badge { flex-shrink: 0; transform: scale(0.85); transform-origin: right center; }
+.sn-post-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--chart-3);
+  background: color-mix(in srgb, var(--chart-3) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chart-3) 40%, transparent);
+  flex-shrink: 0;
+}
 .sn-title {
   font-size: 11.5px;
   font-weight: 600;
@@ -105,5 +119,4 @@ const shortDate = computed(() => {
   background: var(--muted-foreground);
   border: 2px solid var(--card);
 }
-:deep(.vue-flow__handle.handle-opp) { background: var(--chart-3); }
 </style>

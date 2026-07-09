@@ -3,7 +3,21 @@
     <!-- Header + query bar -->
     <div class="ip-header">
       <div>
-        <h1 class="text-xl font-semibold">Search Insights</h1>
+        <h1 class="text-xl font-semibold ip-heading">
+          Search Insights
+          <span
+            class="ip-info"
+            tabindex="0"
+            aria-label="What is Search Insights"
+            :data-tip="tooltip"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+          </span>
+        </h1>
         <p class="text-sm text-muted-foreground">
           Trace a search from the sources that answer it to the brands they
           recommend, the issues people raise, and where you can chip in.
@@ -115,6 +129,7 @@
                 v-if="selectedNode"
                 :node="selectedNode"
                 :max-score="maxBrandScore"
+                :scan-rows="activeScan?.rows || []"
                 class="ip-detail"
                 @close="selectedNode = null"
               />
@@ -175,6 +190,11 @@ const exampleQueries = [
   'most reliable running shoes',
 ]
 
+const tooltip =
+  'Maps a customer search query to the sources that answer it, the ' +
+  'brands those sources recommend, and the sentiment they carry — so ' +
+  'you can see who owns the conversation and where you can chip in.'
+
 const scanRunning = computed(() =>
   ['pending', 'running'].includes(activeScan.value?.status),
 )
@@ -186,56 +206,86 @@ const maxBrandScore = computed(() =>
   Math.max(...(activeScan.value?.brands || []).map((b) => b.weighted_score || 0), 0.0001),
 )
 
-// Undirected BFS from the selected node so the whole query → source →
-// brand → leaf chain (plus opportunity nodes hanging off sources) lights
-// up as a single flow, not just the one-hop neighbourhood.
+// DIRECTED BFS from the selected node: forward along outgoing edges
+// and backward along incoming edges. The graph flows query → source →
+// brand → leaf, so clicking a source lights up (query → this source →
+// its brands → their leaves) without pulling in OTHER sources that
+// share a brand. Clicking a brand lights up (query → its sources →
+// this brand → its leaves). Clicking a leaf lights up (query →
+// mentioning sources → parent brand → this leaf). The old undirected
+// walk was leaking every source that shared a brand into the flow.
 const flowSet = computed(() => {
   const sel = selectedNode.value
   if (!sel) return null
-  const adj = new Map()
+  const outAdj = new Map()
+  const inAdj = new Map()
   for (const e of graph.value.edges) {
-    if (!adj.has(e.source)) adj.set(e.source, [])
-    if (!adj.has(e.target)) adj.set(e.target, [])
-    adj.get(e.source).push(e.target)
-    adj.get(e.target).push(e.source)
+    if (!outAdj.has(e.source)) outAdj.set(e.source, [])
+    outAdj.get(e.source).push(e.target)
+    if (!inAdj.has(e.target)) inAdj.set(e.target, [])
+    inAdj.get(e.target).push(e.source)
   }
   const visited = new Set([sel.id])
-  const queue = [sel.id]
-  while (queue.length) {
-    const cur = queue.shift()
-    for (const nb of adj.get(cur) || []) {
-      if (!visited.has(nb)) {
-        visited.add(nb)
-        queue.push(nb)
+  function walk(startId, adj) {
+    const q = [startId]
+    while (q.length) {
+      const cur = q.shift()
+      for (const nb of adj.get(cur) || []) {
+        if (!visited.has(nb)) {
+          visited.add(nb)
+          q.push(nb)
+        }
       }
     }
   }
+  walk(sel.id, outAdj)
+  walk(sel.id, inAdj)
   return visited
+})
+
+// Pick a single "path colour" when exactly one brand sits in the flow.
+// Zero or many brands in the flow → fall back to per-edge colours
+// (sentiment, destructive for issue leaves, etc.).
+const flowBrandColor = computed(() => {
+  const set = flowSet.value
+  if (!set) return null
+  const brandNodes = graph.value.nodes.filter(
+    (n) => n.type === 'brand' && set.has(n.id),
+  )
+  if (brandNodes.length !== 1) return null
+  return brandNodes[0].data?.color || null
 })
 
 const styledGraph = computed(() => {
   const set = flowSet.value
   if (!set) return graph.value
+  const brandColor = flowBrandColor.value
   const nodes = graph.value.nodes.map((n) => ({
     ...n,
     style: {
       ...(n.style || {}),
-      opacity: set.has(n.id) ? 1 : 0.18,
+      opacity: set.has(n.id) ? 1 : 0.14,
       transition: 'opacity 0.2s',
     },
   }))
   const edges = graph.value.edges.map((e) => {
     const on = set.has(e.source) && set.has(e.target)
     const base = e.style || {}
+    // In-flow edges stay thin (professional feel). They stand out
+    // through opacity + saturation, not thickness or drop-shadow.
+    // If exactly one brand is in the flow, the whole path adopts that
+    // brand's colour — makes the trace read as a coherent story.
     return {
       ...e,
       animated: on ? true : false,
       style: {
         ...base,
-        opacity: on ? 1 : 0.08,
-        strokeWidth: on ? Math.max(2.5, (base.strokeWidth || 1) + 1) : base.strokeWidth || 1,
-        filter: on ? 'drop-shadow(0 0 3px currentColor)' : 'none',
-        transition: 'opacity 0.2s, stroke-width 0.2s',
+        stroke: on && brandColor ? brandColor : base.stroke,
+        opacity: on ? 0.95 : 0.05,
+        strokeWidth: on
+          ? Math.max(1.2, (base.strokeWidth || 1) + 0.4)
+          : base.strokeWidth || 0.8,
+        transition: 'opacity 0.2s, stroke-width 0.2s, stroke 0.2s',
       },
     }
   })
@@ -351,6 +401,48 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 .ip-header { flex-shrink: 0; }
+.ip-heading { display: inline-flex; align-items: center; gap: 8px; }
+.ip-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--muted-foreground);
+  cursor: help;
+  border-radius: 50%;
+  position: relative;
+  outline: none;
+  transition: color 0.15s;
+}
+.ip-info:hover, .ip-info:focus-visible { color: var(--primary); }
+.ip-info::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: 300px;
+  padding: 10px 12px;
+  background: var(--foreground);
+  color: var(--background);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.ip-info:hover::after, .ip-info:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 .ip-querybar {
   display: flex;

@@ -24,4 +24,6 @@ export default {
     api.post(`/citations/websites/${websiteId}/source-scans/`, { query }),
   sourceScanDetail: (websiteId, scanId) =>
     api.get(`/citations/websites/${websiteId}/source-scans/${scanId}/`),
+  brandLookup: (name) =>
+    api.get(`/citations/brand-lookup/`, { params: { name } }),
 }

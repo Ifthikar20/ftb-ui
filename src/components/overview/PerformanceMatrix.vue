@@ -8,7 +8,20 @@ const props = defineProps({
   activeName: { type: String, default: '' },
 })
 
-const data = computed(() => props.matrix || fallbackMatrix(props.activeName))
+// If the parent hands us a real matrix — even if it's empty — trust it
+// and render the empty state instead of falling back to demo brands.
+// Only when no matrix was passed at all (null) do we show the
+// scaffolding. That way the LLM Dashboard never shows YNAB/Quicken for
+// an education website.
+const hasReal = computed(
+  () => props.matrix && Array.isArray(props.matrix.models) && Array.isArray(props.matrix.rows),
+)
+const isEmpty = computed(
+  () => hasReal.value && (!props.matrix.rows.length || !props.matrix.models.length),
+)
+const data = computed(
+  () => hasReal.value ? props.matrix : fallbackMatrix(props.activeName),
+)
 
 const metric = ref('visibility')
 const metrics = [
@@ -69,7 +82,14 @@ const gridCols = computed(() => `minmax(120px,max-content) repeat(${data.value.m
       </button>
     </div>
 
-    <div class="overflow-x-auto p-3">
+    <div v-if="isEmpty" class="flex flex-col items-center justify-center gap-1 px-6 py-10 text-center">
+      <p class="text-sm font-semibold text-foreground">Not enough data yet</p>
+      <p class="max-w-md text-[12px] text-muted-foreground">
+        The matrix fills in as your prompts get measured against LLM
+        providers and Search Insights collects competing brands.
+      </p>
+    </div>
+    <div v-else class="overflow-x-auto p-3">
       <div role="table" class="grid min-w-full gap-x-0 gap-y-1" :style="{ gridTemplateColumns: gridCols }">
         <div class="contents">
           <div class="px-4 pb-2 text-xs font-medium text-muted-foreground">Brands</div>

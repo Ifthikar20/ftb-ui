@@ -17,6 +17,7 @@
 
     <!-- SAVED dashboard — primary surface -->
     <section v-if="activeTab === 'saved'" class="pl-section">
+      <BenchmarkMaterial v-if="websiteId" :website-id="websiteId" />
       <SavedPromptsDashboard
         ref="savedTableRef"
         @go-search="activeTab = 'search'"
@@ -439,6 +440,7 @@ import NewPromptModal from '@/components/prompt_library/NewPromptModal.vue'
 import SmokeTestResult from '@/components/prompt_library/SmokeTestResult.vue'
 import SortIcon from '@/components/prompt_library/SortIcon.vue'
 import SavedPromptsDashboard from '@/components/prompt_library/SavedPromptsDashboard.vue'
+import BenchmarkMaterial from '@/components/prompt_library/BenchmarkMaterial.vue'
 
 const route = useRoute()
 const toast = useToast()

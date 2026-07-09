@@ -33,20 +33,13 @@ export default {
     // {prompt: {category, recommendations, ...}} per the GEO paper's
     // 7-category taxonomy. See apps/llm_ranking/services/geo_tagger.py.
     geoTags: (wid, prompts) => api.post(`/llm-ranking/${wid}/geo-tags/`, { prompts }),
-    // Standalone Model Test probe (does not create an audit row).
-    modelTest: (wid, payload) => api.post(`/llm-ranking/${wid}/model-test/`, payload),
-    modelTestStatus: (wid, runId) => api.get(`/llm-ranking/${wid}/model-test/${runId}/`),
-    // History of past Model Test runs for this website.
-    modelTestHistory: (wid, params) => api.get(`/llm-ranking/${wid}/model-test-history/`, { params }),
-    // GEO content rewrite — runs one of the 5 paper-validated strategies
-    // (quotation_addition, statistics_addition, cite_sources,
-    // fluency_optimization, authoritative) through Claude Sonnet.
-    geoRewrite: (wid, payload) => api.post(`/llm-ranking/${wid}/geo/rewrite/`, payload),
-    // G-Eval subjective-impression scoring for one citation across the
-    // 7 sub-metrics (Relevance, Influence, Uniqueness, Diversity,
-    // FollowUp, Subjective Position, Subjective Count).
-    geoJudge: (wid, payload) => api.post(`/llm-ranking/${wid}/geo/judge/`, payload),
+    // Model Test + GEO endpoints removed 2026-07 — the multi-provider
+    // probe use case moves under the Prompts page auto-measurement flow.
     // 12-month visibility series + headline values for the dashboard
     // Visibility Overview card.
     visibilityOverview: (wid) => api.get(`/llm-ranking/${wid}/visibility-overview/`),
+    // Cross-feature rollup for the LLM dashboard hero: prompt coverage,
+    // model visibility, top/bottom prompts, Search Insights summary,
+    // chip-in queue, 30-day AI spend. Fails soft.
+    dashboardSummary: (wid) => api.get(`/llm-ranking/${wid}/dashboard-summary/`),
 }

@@ -440,9 +440,8 @@ const pageKey = computed(() => {
 const analyticsRoute = computed(() => websiteId.value ? `/analytics/${websiteId.value}` : '/websites')
 const llmRankingRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}` : '/websites')
 const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/prompts` : '/websites')
-const sourceInfluenceRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/source-influence` : '/websites')
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
-const brandVaultRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-vault` : '/websites')
+const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
 const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
 
@@ -464,9 +463,8 @@ const navMain = computed(() => [
         children: [
           { title: 'URLs', to: sourcesUrlsRoute.value, match: '/urls' },
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
-          { title: 'Model Test', to: sourceInfluenceRoute.value, match: '/source-influence' },
           { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
-          { title: 'Brand Vault', to: brandVaultRoute.value, match: '/brand-vault' },
+          { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
           { title: 'Content', to: contentStudioRoute.value, match: '/content' },
         ],
       },

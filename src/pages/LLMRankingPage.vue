@@ -69,10 +69,9 @@
           <CalendarClock :size="14" :stroke-width="1.8"/>
           {{ schedule ? 'Edit Schedule' : 'Schedule' }}
         </Button>
-        <Button size="sm" @click="openRunAudit" :disabled="running">
-          <Play v-if="!running" :size="13" :stroke-width="2.2" fill="currentColor"/>
-          {{ running ? 'Running audit...' : 'Run New Audit' }}
-        </Button>
+        <!-- "Run New Audit" removed 2026-07 — the audit pipeline is the
+             thing this UI is moving away from. Measurement flows are
+             becoming per-prompt via the Prompts page. -->
       </div>
     </div>
 
@@ -87,16 +86,6 @@
         :aria-selected="activeTab === 'overview'"
         @click="activeTab = 'overview'"
       >Overview</button>
-      <button
-        type="button"
-        class="lr-tab"
-        :class="{ active: activeTab === 'pages' }"
-        role="tab"
-        :aria-selected="activeTab === 'pages'"
-        @click="activeTab = 'pages'"
-      >Pages
-        <span v-if="importedCount" class="lr-tab-badge">{{ importedCount }}</span>
-      </button>
     </div>
 
     <div v-show="activeTab === 'overview'" class="lr-overview">
@@ -169,164 +158,189 @@
         </div>
       </div>
 
-      <div class="my-6">
-        <OverviewSection :active-name="websiteName" :website-id="websiteId" :show-filters="false" />
-      </div>
+      <!-- Cross-feature rollup: what's actually happening across Prompts,
+           Prompt Detail, and Search Insights for this website. -->
+      <section v-if="summary" class="dh-hero">
+        <header class="dh-hero-head">
+          <h3 class="dh-hero-title">Everything you're tracking</h3>
+          <span class="dh-hero-sub">
+            Real numbers from Prompts, Search Insights, and AI usage — not just the last audit.
+          </span>
+        </header>
 
-      <!-- Trend + model coverage -->
-      <div class="ov-grid ov-grid-2">
-        <Card class="ov-card">
-          <div class="ov-card-head">
-            <div>
-              <h3 class="ov-card-title"><TrendingUp :size="14" :stroke-width="2"/>Visibility Over Time</h3>
-              <p class="ov-card-sub">{{ historyData.length || 0 }} completed audits</p>
+        <div class="dh-grid">
+          <!-- Prompt coverage -->
+          <div class="dh-card">
+            <div class="dh-card-title">Prompt coverage</div>
+            <div class="dh-metric-row">
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.prompt_coverage.total_prompts }}</div>
+                <div class="dh-metric-label">saved prompts</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.prompt_coverage.measured_last_7d }}</div>
+                <div class="dh-metric-label">measured 7d</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.prompt_coverage.avg_effectiveness.toFixed(2) }}</div>
+                <div class="dh-metric-label">avg effectiveness</div>
+              </div>
             </div>
+            <router-link
+              v-if="dhPromptRoute"
+              :to="dhPromptRoute"
+              class="dh-card-link"
+            >Open Prompts →</router-link>
           </div>
-          <div class="ov-chart">
-            <Line v-if="historyData.length" :data="trendChartData" :options="trendChartOptions" />
-            <div v-else class="ov-empty-inline">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/>
-              </svg>
-              <p>A trend line appears after your first completed audit.</p>
-            </div>
-          </div>
-        </Card>
 
-        <Card class="ov-card">
-          <div class="ov-card-head">
-            <div>
-              <h3 class="ov-card-title"><Bot :size="14" :stroke-width="2"/>Model Coverage</h3>
-              <p class="ov-card-sub">{{ providerHealth.configured_count }}/{{ providerHealth.total }} configured</p>
+          <!-- Search insights -->
+          <div class="dh-card">
+            <div class="dh-card-title">Search Insights (7 days)</div>
+            <div class="dh-metric-row">
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.search_insights.scans_last_7d }}</div>
+                <div class="dh-metric-label">recent scans</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.search_insights.total_scans }}</div>
+                <div class="dh-metric-label">total</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ Math.round((summary.search_insights.own_brand_present_rate || 0) * 100) }}%</div>
+                <div class="dh-metric-label">own brand present</div>
+              </div>
             </div>
-          </div>
-          <div class="ov-models">
-            <div
-              v-for="p in providerHealth.providers"
-              :key="p.key"
-              class="ov-model-row"
-              :class="{ off: !p.configured }"
-            >
-              <span class="ov-model-dot" :style="{ background: p.configured ? providerColor(p.key) : 'var(--border-color, #e5e7eb)' }"></span>
-              <span class="ov-model-name">{{ p.name.split('(')[0].trim() }}</span>
-              <span class="ov-model-meta">
-                <span v-if="!p.configured" class="ov-tag ov-tag-warn">Not configured</span>
-                <span v-else-if="modelMentionRate(p.key) !== null" class="ov-model-rate">{{ modelMentionRate(p.key) }}%</span>
-                <span v-else class="ov-tag ov-tag-muted">Ready</span>
-              </span>
+            <div v-if="summary.search_insights.top_brands.length" class="dh-chip-row">
+              <span
+                v-for="b in summary.search_insights.top_brands.slice(0, 6)"
+                :key="b.name"
+                class="dh-chip"
+                :title="`${b.mentions} mentions across ${b.in_scans} scans`"
+              >{{ b.name }}</span>
             </div>
+            <router-link
+              v-if="dhSearchInsightsRoute"
+              :to="dhSearchInsightsRoute"
+              class="dh-card-link"
+            >Open Search Insights →</router-link>
           </div>
-        </Card>
-      </div>
 
-      <!-- Recent audits -->
-      <Card class="ov-card">
-        <div class="ov-card-head">
-          <div>
-            <h3 class="ov-card-title"><History :size="14" :stroke-width="2"/>Recent Audits</h3>
-            <p class="ov-card-sub">{{ audits.length }} {{ audits.length === 1 ? 'run' : 'runs' }}</p>
+          <!-- AI spend -->
+          <div class="dh-card">
+            <div class="dh-card-title">AI spend (30 days)</div>
+            <div class="dh-metric-row">
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ formatDhTokens(summary.ai_spend_30d.total_tokens) }}</div>
+                <div class="dh-metric-label">tokens</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">${{ summary.ai_spend_30d.cost_usd.toFixed(2) }}</div>
+                <div class="dh-metric-label">est. cost</div>
+              </div>
+              <div class="dh-metric">
+                <div class="dh-metric-num">{{ summary.ai_spend_30d.calls }}</div>
+                <div class="dh-metric-label">calls</div>
+              </div>
+            </div>
+            <div v-if="summary.ai_spend_30d.top_provider" class="dh-note">
+              Top provider: <strong>{{ summary.ai_spend_30d.top_provider }}</strong>
+            </div>
+            <router-link to="/billing" class="dh-card-link">See in Billing →</router-link>
           </div>
-          <Button v-if="audits.length > 5" variant="ghost" size="sm" @click="showAllAudits = !showAllAudits">
-            {{ showAllAudits ? 'Show recent' : 'Show all' }}
-          </Button>
         </div>
 
-        <div v-if="!audits.length" class="ov-empty-inline">
-          <p>No audits yet. Kick off your first run from the Prompt Library.</p>
-        </div>
-        <div v-else class="ov-audit-table">
-          <div class="ov-audit-head">
-            <span>Date</span>
-            <span>Score</span>
-            <span>Mention Rate</span>
-            <span>Queries</span>
-            <span>Status</span>
-            <span></span>
+        <div class="dh-grid dh-grid-2">
+          <!-- Model visibility (per provider) -->
+          <div class="dh-card">
+            <div class="dh-card-title">Model visibility (30 days)</div>
+            <div v-if="summary.model_visibility.length" class="dh-mv">
+              <div v-for="m in summary.model_visibility" :key="m.provider" class="dh-mv-row">
+                <span class="dh-mv-name">{{ m.provider }}</span>
+                <div class="dh-mv-bar">
+                  <div class="dh-mv-fill" :style="{ width: (m.mention_rate * 100) + '%' }" />
+                </div>
+                <span class="dh-mv-pct">{{ Math.round(m.mention_rate * 100) }}%</span>
+                <span class="dh-mv-count">{{ m.mentioned }}/{{ m.evaluated }}</span>
+              </div>
+            </div>
+            <div v-else class="dh-empty">
+              No prompts have been measured yet. Create a prompt to start collecting data.
+            </div>
           </div>
-          <div
-            v-for="audit in visibleAudits"
-            :key="audit.id"
-            class="ov-audit-row"
-            :class="{ selected: selectedAuditId === audit.id }"
-            @click="selectedAuditId = audit.id"
-          >
-            <span class="ov-audit-date">{{ formatDate(audit.created_at) }}</span>
-            <span class="ov-audit-score">
-              <strong>{{ audit.overall_score != null ? Math.round(audit.overall_score) : '—' }}</strong>
-              <span v-if="audit.overall_score != null" class="text-muted">/100</span>
-            </span>
-            <span>{{ audit.mention_rate != null ? Math.round(audit.mention_rate) + '%' : '—' }}</span>
-            <span class="text-muted">{{ audit.total_queries || 0 }} queries</span>
-            <span>
-              <span class="ov-status" :class="auditStatusClass(audit.status)">{{ capitalize(audit.status || 'pending') }}</span>
-            </span>
-            <span class="ov-audit-actions">
-              <Button
-                v-if="audit.status === 'pending' || audit.status === 'failed'"
-                variant="ghost"
-                size="sm"
-                @click.stop="runAuditNow(audit)"
-                :disabled="runningAuditId === audit.id"
+
+          <!-- Chip-in queue -->
+          <div class="dh-card">
+            <div class="dh-card-title">Chip-in queue</div>
+            <div v-if="summary.chip_in_queue.length" class="dh-queue">
+              <a
+                v-for="(o, i) in summary.chip_in_queue"
+                :key="i"
+                :href="o.url"
+                target="_blank"
+                rel="noopener"
+                class="dh-queue-row"
               >
-                {{ runningAuditId === audit.id ? 'Running…' : 'Run' }}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="ov-audit-delete"
-                aria-label="Delete audit"
-                @click.stop="confirmDeleteId = audit.id"
-              >×</Button>
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      <!-- Usage -->
-      <Card v-if="usageData" class="ov-card">
-        <div class="ov-card-head">
-          <div>
-            <h3 class="ov-card-title"><Coins :size="14" :stroke-width="2"/>Usage</h3>
-            <p class="ov-card-sub">Last {{ usageDays }} days</p>
-          </div>
-          <select v-model.number="usageDays" class="ov-select" @change="loadUsage">
-            <option :value="7">Last 7 days</option>
-            <option :value="30">Last 30 days</option>
-            <option :value="90">Last 90 days</option>
-          </select>
-        </div>
-
-        <div class="ov-usage-totals">
-          <div class="ov-usage-cell">
-            <div class="ov-usage-val">{{ usageData.totals.calls }}</div>
-            <div class="ov-usage-label">API Calls</div>
-          </div>
-          <div class="ov-usage-cell">
-            <div class="ov-usage-val">{{ formatTokens(usageData.totals.total_tokens) }}</div>
-            <div class="ov-usage-label">Tokens</div>
-          </div>
-          <div class="ov-usage-cell">
-            <div class="ov-usage-val">${{ usageData.totals.estimated_cost_usd.toFixed(2) }}</div>
-            <div class="ov-usage-label">Estimated Cost</div>
-          </div>
-          <div class="ov-usage-cell">
-            <div class="ov-usage-val">{{ usageData.audit_stats.total_audits }}</div>
-            <div class="ov-usage-label">Audits</div>
+                <span class="dh-queue-rank">#{{ o.rank }}</span>
+                <div class="dh-queue-main">
+                  <span class="dh-queue-domain">{{ o.domain }}</span>
+                  <span class="dh-queue-query">for "{{ o.query }}"</span>
+                </div>
+                <span class="dh-queue-class">{{ o.source_class }}</span>
+              </a>
+            </div>
+            <div v-else class="dh-empty">
+              No open threads to reply on. Run a Search Insights scan to find some.
+            </div>
           </div>
         </div>
 
-        <div v-if="usageData.by_model && usageData.by_model.length" class="ov-usage-models">
-          <div class="ov-usage-models-head">
-            <span>Model</span><span>Calls</span><span>Tokens</span><span>Cost</span>
+        <div v-if="summary.top_prompts.length || summary.bottom_prompts.length" class="dh-grid dh-grid-2">
+          <div class="dh-card">
+            <div class="dh-card-title">Top performing prompts</div>
+            <ol v-if="summary.top_prompts.length" class="dh-plist">
+              <li v-for="p in summary.top_prompts" :key="p.id">
+                <span class="dh-plist-score">{{ p.effectiveness_score.toFixed(2) }}</span>
+                <span class="dh-plist-text">{{ p.text }}</span>
+              </li>
+            </ol>
+            <div v-else class="dh-empty">Not enough measured prompts to rank yet.</div>
           </div>
-          <div v-for="m in usageData.by_model" :key="m.model_name" class="ov-usage-models-row">
-            <span class="ov-usage-model-name">{{ m.model_name }}</span>
-            <span>{{ m.calls }}</span>
-            <span>{{ formatTokens(m.tokens) }}</span>
-            <span>${{ Number(m.cost || 0).toFixed(4) }}</span>
+          <div class="dh-card">
+            <div class="dh-card-title">Prompts to improve</div>
+            <ol v-if="summary.bottom_prompts.length" class="dh-plist">
+              <li v-for="p in summary.bottom_prompts" :key="p.id">
+                <span class="dh-plist-score dh-plist-low">{{ p.effectiveness_score.toFixed(2) }}</span>
+                <span class="dh-plist-text">{{ p.text }}</span>
+              </li>
+            </ol>
+            <div v-else class="dh-empty">Not enough measured prompts to rank yet.</div>
           </div>
         </div>
-      </Card>
+      </section>
+
+      <div class="my-6">
+        <OverviewSection
+          :active-name="websiteName"
+          :website-id="websiteId"
+          :show-filters="false"
+          :matrix="summary?.performance_matrix || null"
+        />
+      </div>
+
+      <!-- Visibility Over Time + Model Coverage cards removed 2026-07 —
+           both were showing "no data yet" boilerplate. Real trend +
+           model coverage now live in the "Everything you're tracking"
+           hero above and the Model visibility bars inside it. -->
+
+      <!-- Recent Audits card removed 2026-07 — was mostly zeros while
+           the audit pipeline was unreliable. When we start populating
+           real per-prompt runs from the Prompts page auto-measurement
+           flow, this can come back sourced from PromptCrawlRun. -->
+
+      <!-- Usage card removed 2026-07 — the same numbers live under
+           Billing > AI usage (last 30 days) and inside the hero's
+           "AI spend" card. Kept the loadUsage() call in mount so
+           other overview widgets that depend on usageData still work. -->
 
       <!-- Performance: moved from its own tab into the Overview page. -->
       <div class="lr-section-head">
@@ -430,39 +444,8 @@
           </Card>
         </div>
 
-        <!-- Row 3: per-model scorecards -->
-        <Card class="perf-card">
-          <div class="perf-card-head">
-            <h3>Per-model scorecard</h3>
-            <span class="perf-card-sub">Latest audit breakdown</span>
-          </div>
-          <div class="perf-scorecards">
-            <div
-              v-for="p in latestBreakdown"
-              :key="p.provider"
-              class="perf-scorecard"
-            >
-              <div class="perf-scorecard-head">
-                <span class="perf-scorecard-dot" :style="{ background: providerColor(p.provider) }"></span>
-                <span class="perf-scorecard-name">{{ p.provider_display || providerLabel(p.provider) }}</span>
-              </div>
-              <div class="perf-scorecard-metric">
-                <span class="perf-scorecard-value">{{ Math.round(p.mention_rate || 0) }}%</span>
-                <span class="perf-scorecard-label">mention rate</span>
-              </div>
-              <div class="perf-scorecard-bar">
-                <div
-                  class="perf-scorecard-bar-fill"
-                  :style="{ width: Math.min(100, Math.max(0, p.mention_rate || 0)) + '%', background: providerColor(p.provider) }"
-                ></div>
-              </div>
-              <div class="perf-scorecard-foot">
-                <span>{{ p.succeeded || 0 }}/{{ (p.succeeded || 0) + (p.failed || 0) }} queries</span>
-                <span v-if="p.failed">· {{ p.failed }} failed</span>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <!-- Per-model scorecard card removed 2026-07 — duplicated the
+             "Model visibility (30 days)" row inside the hero. -->
       </template>
       </div><!-- /performance section -->
 
@@ -476,235 +459,6 @@
          addContextUrl) the audit-wizard reads from, so anything selected
          here flows into the next "Run New Audit" without further wiring.
          ═══════════════════════════════════════════════════════════════════ -->
-    <div v-show="activeTab === 'pages'" class="lr-pages">
-      <!-- Project URL card: shows the existing project-level URL so the user
-           always sees what site we're working on. The change-website link
-           on the page header still owns the swap action. -->
-      <Card class="pages-project">
-        <div class="pages-project-head">
-          <div class="pages-project-icon" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M2 12h20"/>
-              <path d="M12 2a15 15 0 0 1 0 20"/>
-              <path d="M12 2a15 15 0 0 0 0 20"/>
-            </svg>
-          </div>
-          <div class="pages-project-body">
-            <div class="pages-project-label">Project site</div>
-            <div class="pages-project-url">
-              <a v-if="homepageUrl" :href="homepageUrl" target="_blank" rel="noopener">{{ homepageUrl }}</a>
-              <span v-else class="text-muted">No URL on file</span>
-            </div>
-            <div class="pages-project-meta">
-              <strong>{{ websiteName || '—' }}</strong>
-              <span class="text-muted" v-if="currentWebsite?.industry">· {{ currentWebsite.industry }}</span>
-            </div>
-          </div>
-          <router-link :class="buttonVariants({ variant: 'ghost', size: 'sm' })" to="/websites/">Change site</router-link>
-        </div>
-      </Card>
-
-      <!-- Summary strip: how many pages are queued for the next run. -->
-      <div class="pages-summary">
-        <div class="pages-summary-cell">
-          <div class="pages-summary-val">{{ extraPaths.length }}</div>
-          <div class="pages-summary-label">Same-site pages</div>
-        </div>
-        <div class="pages-summary-cell">
-          <div class="pages-summary-val">{{ scannedContextCount }}</div>
-          <div class="pages-summary-label">External sources</div>
-        </div>
-        <div class="pages-summary-cell">
-          <div class="pages-summary-val">{{ uploadedDocsReady.length }}</div>
-          <div class="pages-summary-label">Uploaded docs</div>
-        </div>
-        <div class="pages-summary-cell pages-summary-cell-strong">
-          <div class="pages-summary-val">{{ importedCount }}</div>
-          <div class="pages-summary-label">Will import into next audit</div>
-        </div>
-        <Button size="sm" class="pages-summary-cta" @click="openRunAudit" :disabled="running">
-          {{ running ? 'Running…' : 'Run audit with these pages' }}
-        </Button>
-      </div>
-
-      <div class="ov-grid ov-grid-2">
-        <!-- Same-domain sub-paths. Add a path like /pricing or a full URL on
-             the same origin; the audit's enrichment will scan each at run
-             time. -->
-        <Card class="ov-card">
-          <div class="ov-card-head">
-            <div>
-              <h3 class="ov-card-title"><FileText :size="14" :stroke-width="2"/>Pages on your site</h3>
-              <p class="ov-card-sub">
-                Pull in any path on <strong v-if="homepageOrigin">{{ homepageOrigin }}</strong><span v-else>this domain</span> so models see them when answering buyer-style questions.
-              </p>
-            </div>
-            <span class="pages-count">{{ extraPaths.length }}/20</span>
-          </div>
-          <form class="pages-input-row" @submit.prevent="addExtraPath">
-            <span class="pages-input-prefix" v-if="homepageOrigin">{{ homepageOrigin }}</span>
-            <input
-              v-model="extraPathInput"
-              class="pages-input h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              :placeholder="homepageOrigin ? '/pricing or full URL on same domain' : 'Add a URL'"
-              :disabled="!homepageOrigin || extraPaths.length >= 20"
-            />
-            <Button
-              type="submit"
-              variant="secondary"
-              size="sm"
-              :disabled="!extraPathInput.trim() || !homepageOrigin || extraPaths.length >= 20"
-            >Add</Button>
-          </form>
-          <div v-if="!extraPaths.length" class="ov-empty-inline" style="min-height:80px">
-            <p>No additional pages yet — root URL is always included.</p>
-          </div>
-          <div v-else class="pages-list">
-            <div v-for="p in extraPaths" :key="p.url" class="pages-list-row">
-              <span class="pages-list-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 3h7l3 3v7H3z"/><path d="M10 3v3h3"/>
-                </svg>
-              </span>
-              <span class="pages-list-text">
-                <span class="pages-list-label">{{ p.label || p.url }}</span>
-                <a :href="p.url" target="_blank" rel="noopener" class="pages-list-url">{{ p.url }}</a>
-              </span>
-              <button
-                class="pages-list-remove"
-                aria-label="Remove page"
-                @click="removeExtraPath(p.url)"
-              >×</button>
-            </div>
-          </div>
-        </Card>
-
-        <!-- External context URLs — scanned via llmRankingApi.scanUrl so the
-             user can see what we'll send into the audit. -->
-        <Card class="ov-card">
-          <div class="ov-card-head">
-            <div>
-              <h3 class="ov-card-title"><Link2 :size="14" :stroke-width="2"/>External sources</h3>
-              <p class="ov-card-sub">Press, docs, comparison sites — anything off your domain. We'll scan and summarize each.</p>
-            </div>
-            <span class="pages-count">{{ contextUrls.length }}/5</span>
-          </div>
-          <form class="pages-input-row" @submit.prevent="addContextUrl">
-            <input
-              v-model="contextUrlInput"
-              class="pages-input h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="https://example.com/article"
-              :disabled="contextUrls.length >= 5"
-            />
-            <Button
-              type="submit"
-              variant="secondary"
-              size="sm"
-              :disabled="!contextUrlInput.trim() || contextUrls.length >= 5 || scanningContextUrl"
-            >{{ scanningContextUrl ? 'Scanning…' : 'Scan' }}</Button>
-          </form>
-          <div v-if="!contextUrls.length" class="ov-empty-inline" style="min-height:80px">
-            <p>No external sources added.</p>
-          </div>
-          <div v-else class="pages-list">
-            <div
-              v-for="c in contextUrls"
-              :key="c.url"
-              class="pages-list-row pages-list-row-tall"
-              :class="{ scanning: c.scanning, errored: !c.scanning && !c.success }"
-            >
-              <span class="pages-list-icon" aria-hidden="true">
-                <span v-if="c.scanning" class="pages-list-spinner"></span>
-                <svg v-else-if="c.success" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 8.5l3 3 7-7"/>
-                </svg>
-                <svg v-else width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                  <path d="M4 4l8 8M12 4l-8 8"/>
-                </svg>
-              </span>
-              <span class="pages-list-text">
-                <span class="pages-list-label">{{ c.title || c.url }}</span>
-                <a :href="c.url" target="_blank" rel="noopener" class="pages-list-url">{{ c.url }}</a>
-                <span v-if="c.summary" class="pages-list-summary">{{ c.summary }}</span>
-                <span v-if="c.error" class="pages-list-error">{{ c.error }}</span>
-              </span>
-              <button
-                class="pages-list-remove"
-                aria-label="Remove source"
-                @click="removeContextUrl(c.url)"
-              >×</button>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <!-- Uploaded documents card: same upload zone the wizard uses, so
-           anything dropped here is immediately queued for the next run. -->
-      <Card class="ov-card">
-        <div class="ov-card-head">
-          <div>
-            <h3 class="ov-card-title"><UploadCloud :size="14" :stroke-width="2"/>Uploaded documents</h3>
-            <p class="ov-card-sub">Briefs, sheets, or notes you want the models to read alongside your pages.</p>
-          </div>
-          <span class="pages-count">{{ uploadedDocuments.length }} files</span>
-        </div>
-        <div
-          class="ctx-upload-zone"
-          :class="{ dragging: uploadDragging }"
-          @dragover.prevent="uploadDragging = true"
-          @dragleave="uploadDragging = false"
-          @drop.prevent="onContextFileDrop"
-          @click="triggerContextUpload"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <path d="M17 8l-5-5-5 5"/>
-            <path d="M12 3v12"/>
-          </svg>
-          <div class="ctx-upload-zone-text">
-            <strong>Drag &amp; drop or click to upload</strong>
-            <span class="text-muted">.txt, .md, .csv, .json, .html · up to 256 KB each</span>
-          </div>
-        </div>
-        <div v-if="uploadedDocuments.length" class="ctx-uploaded-list" style="margin-top:12px">
-          <div
-            v-for="doc in uploadedDocuments"
-            :key="doc.id"
-            class="ctx-uploaded-row"
-            :class="{ errored: doc.error }"
-          >
-            <span class="ctx-uploaded-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/>
-              </svg>
-            </span>
-            <div class="ctx-uploaded-body">
-              <div class="ctx-uploaded-name">{{ doc.name }}</div>
-              <div class="ctx-uploaded-meta">
-                <span>{{ formatBytes(doc.size) }}</span>
-                <span v-if="doc.error" class="wizard-scan-error">· {{ doc.error }}</span>
-                <span v-else>· {{ doc.charCount }} chars extracted</span>
-              </div>
-            </div>
-            <button class="ctx-uploaded-remove" aria-label="Remove" @click.stop="removeUploadedDoc(doc.id)">×</button>
-          </div>
-        </div>
-      </Card>
-
-      <label class="wizard-permission pages-permission">
-        <input type="checkbox" v-model="agentScanPermission" />
-        <span>
-          <strong>I authorize agents to scan these pages</strong> and use the extracted content as context for the next model test on this project. Without permission, only the project root URL is sent.
-        </span>
-      </label>
-
-      <p class="pages-note">
-        These pages are imported into the next model test on this project.
-        Click <strong>Run New Audit</strong> in the header to send them to Claude, GPT-4, Gemini, and Perplexity — usage and cost
-        are tracked per run on the Overview tab.
-      </p>
-    </div><!-- /pages tab -->
 
       <!-- ═══ Provider Detail Modal ═══════════════════════════════════════ -->
       <BaseModal v-model="showProviderDetail" :title="providerDetailData?.provider_display + ' — Detailed Report'" :wide="true">
@@ -1694,6 +1448,22 @@ const expandedAuditId = ref(null)
 const confirmDeleteId = ref(null)
 const historyData = ref([])
 const runningAuditId = ref(null)
+
+// Cross-feature rollup for the hero (prompt coverage, model visibility,
+// AI spend, chip-in queue). Fetched once on mount, silent-fails to null.
+const summary = ref(null)
+const dhPromptRoute = computed(() =>
+  websiteId ? `/llm-ranking/${websiteId}/prompts` : null,
+)
+const dhSearchInsightsRoute = computed(() =>
+  websiteId ? `/llm-ranking/${websiteId}/search-insights` : null,
+)
+function formatDhTokens(n) {
+  const v = Number(n || 0)
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1) + 'M'
+  if (v >= 1_000) return (v / 1_000).toFixed(v >= 10_000 ? 0 : 1) + 'k'
+  return v.toLocaleString()
+}
 
 // Prompt source dispatcher state for the Run Audit wizard.
 const promptSource = ref('hybrid')
@@ -4773,11 +4543,22 @@ async function deleteSchedule() {
   }
 }
 
+async function loadDashboardSummary() {
+  try {
+    const { data } = await llmRankingApi.dashboardSummary(websiteId)
+    summary.value = data?.data || data || null
+  } catch {
+    // Silent-fail — the hero is v-if'd on `summary` so it just hides.
+    summary.value = null
+  }
+}
+
 onMounted(() => {
   // Load the website object first so the audit form is pre-filled
   // before the user opens the wizard.
   loadWebsite()
   loadSavedPromptsCount()
+  loadDashboardSummary()
   Promise.all([fetchData(), fetchHistory(), fetchSchedule()]).then(() => {
     loadPromptResults()
     loadUsage()
@@ -8993,5 +8774,200 @@ onBeforeUnmount(() => {
 }
 .badge-citation:hover {
   background: rgba(236, 72, 153, 0.2);
+}
+
+/* ── Cross-feature dashboard rollup ("Everything you're tracking") ── */
+.dh-hero { margin: 20px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+.dh-hero-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dh-hero-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--foreground);
+  margin: 0;
+}
+.dh-hero-sub {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.dh-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.dh-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .dh-grid, .dh-grid-2 { grid-template-columns: 1fr; }
+}
+.dh-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dh-card-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.dh-metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.dh-metric {
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  overflow: hidden;
+}
+.dh-metric-num {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--foreground);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.dh-metric-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dh-note {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.dh-card-link {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.dh-card-link:hover { text-decoration: underline; }
+.dh-empty {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  padding: 8px 0;
+}
+.dh-chip-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.dh-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--foreground);
+  white-space: nowrap;
+}
+.dh-mv { display: flex; flex-direction: column; gap: 6px; }
+.dh-mv-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 42px 60px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.dh-mv-name { font-weight: 700; color: var(--foreground); text-transform: capitalize; }
+.dh-mv-bar { height: 6px; background: var(--muted); border-radius: 999px; overflow: hidden; }
+.dh-mv-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.dh-mv-pct { font-weight: 800; color: var(--foreground); text-align: right; font-variant-numeric: tabular-nums; }
+.dh-mv-count { color: var(--muted-foreground); font-size: 10.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.dh-queue { display: flex; flex-direction: column; gap: 4px; }
+.dh-queue-row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.12s;
+  color: inherit;
+  text-decoration: none;
+}
+.dh-queue-row:hover { background: var(--muted); }
+.dh-queue-rank {
+  font-weight: 800;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.dh-queue-main { display: flex; flex-direction: column; overflow: hidden; }
+.dh-queue-domain {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dh-queue-query {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dh-queue-class {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chart-3) 14%, transparent);
+  color: var(--chart-3);
+}
+.dh-plist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dh-plist li {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.dh-plist-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--chart-2);
+  text-align: right;
+}
+.dh-plist-low { color: var(--destructive); }
+.dh-plist-text {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 </style>

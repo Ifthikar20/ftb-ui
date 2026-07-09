@@ -43,12 +43,12 @@ defineProps({
       <PerformanceMatrix :matrix="matrix" :active-name="activeName" />
     </section>
 
-    <section class="space-y-3">
+    <section class="space-y-2">
       <div>
-        <h2 class="text-lg font-semibold tracking-tight text-foreground">Top sources</h2>
-        <p class="text-sm text-muted-foreground">Top domains retrieved by AI models in their answers</p>
+        <h2 class="text-sm font-bold tracking-tight text-foreground">Top sources</h2>
+        <p class="text-[11px] text-muted-foreground">Top domains retrieved by AI models in their answers</p>
       </div>
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
         <TopDomainsCard :domains="domains" />
         <DomainTypesCard :data="domainTypes" />
       </div>

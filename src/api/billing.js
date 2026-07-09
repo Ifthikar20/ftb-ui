@@ -10,4 +10,5 @@ export default {
     portal: () => api.post('/billing/portal/'),
     invoices: () => api.get('/billing/invoices/'),
     usage: () => api.get('/billing/usage/'),
+    tokenUsage: (days = 30) => api.get('/billing/token-usage/', { params: { days } }),
 }

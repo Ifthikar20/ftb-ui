@@ -225,6 +225,62 @@
           </div>
         </div>
       </section>
+
+      <!-- ── AI token usage ────────────────────────────────────────── -->
+      <section v-if="tokenUsage" class="bp-card">
+        <header class="bp-card-head">
+          <h3 class="bp-card-title">AI usage (last {{ tokenUsage.window_days }} days)</h3>
+          <span class="bp-card-sub">
+            {{ Number(tokenUsage.call_count).toLocaleString() }} calls
+          </span>
+        </header>
+        <div class="bp-tok-totals">
+          <div class="bp-tok-tile">
+            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.total_tokens) }}</div>
+            <div class="bp-tok-label">Total tokens</div>
+          </div>
+          <div class="bp-tok-tile">
+            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.input_tokens) }}</div>
+            <div class="bp-tok-label">Input</div>
+          </div>
+          <div class="bp-tok-tile">
+            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.output_tokens) }}</div>
+            <div class="bp-tok-label">Output</div>
+          </div>
+          <div class="bp-tok-tile">
+            <div class="bp-tok-num">${{ tokenUsage.totals.cost_usd.toFixed(2) }}</div>
+            <div class="bp-tok-label">Est. cost</div>
+          </div>
+        </div>
+        <div v-if="tokenUsage.by_provider.length" class="bp-tok-block">
+          <h4 class="bp-tok-block-title">By provider</h4>
+          <div v-for="p in tokenUsage.by_provider" :key="p.provider" class="bp-tok-row">
+            <span class="bp-tok-row-label">{{ providerLabel(p.provider) }}</span>
+            <div class="bp-tok-row-bar">
+              <div
+                class="bp-tok-row-fill"
+                :style="{ width: barPct(p.tokens, tokenUsage.totals.total_tokens) + '%' }"
+              ></div>
+            </div>
+            <span class="bp-tok-row-num">{{ formatTokens(p.tokens) }}</span>
+            <span class="bp-tok-row-cost">${{ p.cost_usd.toFixed(3) }}</span>
+          </div>
+        </div>
+        <div v-if="tokenUsage.by_module.length" class="bp-tok-block">
+          <h4 class="bp-tok-block-title">By feature</h4>
+          <div v-for="m in tokenUsage.by_module" :key="m.module" class="bp-tok-row">
+            <span class="bp-tok-row-label">{{ moduleLabel(m.module) }}</span>
+            <div class="bp-tok-row-bar">
+              <div
+                class="bp-tok-row-fill"
+                :style="{ width: barPct(m.tokens, tokenUsage.totals.total_tokens) + '%' }"
+              ></div>
+            </div>
+            <span class="bp-tok-row-num">{{ formatTokens(m.tokens) }}</span>
+            <span class="bp-tok-row-cost">${{ m.cost_usd.toFixed(3) }}</span>
+          </div>
+        </div>
+      </section>
     </template>
   </div>
 </template>
@@ -245,6 +301,7 @@ const loading = ref(true)
 const subscription = ref(null)
 const invoices = ref([])
 const usage = ref([])
+const tokenUsage = ref(null)
 const annual = ref(false)
 const checkingOut = ref(null)
 const portalLoading = ref(false)
@@ -433,19 +490,58 @@ async function resume() {
 
 async function refresh() {
   try {
-    const [subRes, invRes, usageRes] = await Promise.all([
+    const [subRes, invRes, usageRes, tokRes] = await Promise.all([
       billingApi.getCurrent().catch(() => ({ data: null })),
       billingApi.invoices().catch(() => ({ data: [] })),
       billingApi.usage().catch(() => ({ data: [] })),
+      billingApi.tokenUsage().catch(() => ({ data: null })),
     ])
     subscription.value = subRes.data?.data || subRes.data || null
     const inv = invRes.data?.data || invRes.data || []
     invoices.value = Array.isArray(inv) ? inv : (inv.results || [])
     const u = usageRes.data?.data || usageRes.data || []
     usage.value = Array.isArray(u) ? u : (u.results || [])
+    // Token usage soft-fails to null; the section is v-if'd on that.
+    tokenUsage.value = tokRes.data?.data || tokRes.data || null
   } catch (_) {
     // soft-fail; the UI degrades to "no active plan" state
   }
+}
+
+// Compact token count: 1.2M, 340k, 850. Full precision lives in the
+// tooltip if we ever need it (raw number is preserved on the value).
+function formatTokens(n) {
+  const v = Number(n || 0)
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1) + 'M'
+  if (v >= 1_000) return (v / 1_000).toFixed(v >= 10_000 ? 0 : 1) + 'k'
+  return v.toLocaleString()
+}
+function barPct(part, total) {
+  if (!total) return 0
+  return Math.max(2, Math.round((part / total) * 100))
+}
+const PROVIDER_LABELS = {
+  anthropic: 'Anthropic · Claude',
+  openai: 'OpenAI · GPT',
+  google: 'Google · Gemini',
+  perplexity: 'Perplexity',
+  meta: 'Meta · Llama',
+  mistral: 'Mistral',
+  cohere: 'Cohere',
+  deepseek: 'DeepSeek',
+  xai: 'xAI · Grok',
+  amazon: 'Amazon · Nova',
+}
+function providerLabel(k) {
+  return PROVIDER_LABELS[k] || (k || 'unknown')
+}
+const MODULE_LABELS = {
+  llm_ranking: 'LLM Ranking',
+  rag: 'RAG / Embeddings',
+  onboarding: 'Onboarding scan',
+}
+function moduleLabel(k) {
+  return MODULE_LABELS[k] || (k || 'other')
 }
 
 onMounted(async () => {
@@ -892,6 +988,94 @@ onMounted(async () => {
   height: 100%;
   background: var(--bp-accent);
   transition: width 0.4s var(--bp-spring);
+}
+
+/* ── AI token usage card ────────────────────────────────────── */
+.bp-card-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.bp-tok-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.bp-tok-tile {
+  padding: 12px;
+  background: var(--muted);
+  border-radius: 10px;
+  text-align: center;
+}
+.bp-tok-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--foreground);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.bp-tok-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+.bp-tok-block {
+  margin-top: 14px;
+}
+.bp-tok-block-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  margin: 0 0 8px;
+}
+.bp-tok-row {
+  display: grid;
+  grid-template-columns: 150px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.bp-tok-row-label {
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-tok-row-bar {
+  height: 6px;
+  background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bp-tok-row-fill {
+  height: 100%;
+  background: var(--bp-accent);
+  border-radius: 999px;
+  transition: width 0.4s var(--bp-spring);
+}
+.bp-tok-row-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--foreground);
+  min-width: 60px;
+  text-align: right;
+}
+.bp-tok-row-cost {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  min-width: 60px;
+  text-align: right;
 }
 
 @media (max-width: 720px) {

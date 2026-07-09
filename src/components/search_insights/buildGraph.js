@@ -43,21 +43,27 @@ export function buildGraph(scan) {
   let brandY = 0
   const brandLayouts = []
   for (const brand of brands) {
-    const issueLeaves = (brand.issues || []).slice(0, MAX_ISSUE_LEAVES)
-    const leaves = issueLeaves.map((text) => ({ kind: 'issue', text }))
-    if (brand.top_quote) leaves.push({ kind: 'quote', text: brand.top_quote })
+    // Only real issues as leaves. Quotes used to sit as a terminal
+    // node too but that turned every path into a dead-end quote; the
+    // quote still lives in the right-hand detail panel where it has
+    // context.
+    const leaves = (brand.issues || [])
+      .slice(0, MAX_ISSUE_LEAVES)
+      .map((text) => ({ kind: 'issue', text }))
     const slot = Math.max(104, leaves.length * 84)
     brandLayouts.push({ brand, leaves, y: brandY + slot / 2, slot })
     brandY += slot
   }
 
   // -- Source column -----------------------------------------------------------
+  // Opportunity is now a badge inside the source node, not a separate
+  // graph node, so every source slot is the same fixed height.
   let sourceY = 0
   const sourceLayouts = []
   for (const row of rows) {
     const opp = oppByRank.get(row.rank)
-    const slot = 116 + (opp ? 96 : 0)
-    sourceLayouts.push({ row, opp, y: sourceY + slot / 2 - (opp ? 40 : 0), slot })
+    const slot = 116
+    sourceLayouts.push({ row, opp, y: sourceY + slot / 2, slot })
     sourceY += slot
   }
 
@@ -77,40 +83,22 @@ export function buildGraph(scan) {
   // -- Source nodes + edges from query ---------------------------------------
   for (const { row, opp, y } of sourceLayouts) {
     const id = `source-${row.rank}`
+    // Opportunity info rides on the source node itself now — the node
+    // shows a small "Post here" tag when opp is present, and the
+    // detail panel renders the reason + CTA when the source is clicked.
     nodes.push({
       id,
       type: 'source',
       position: { x: X_SOURCE, y: y + sourceOffset - 34 },
-      data: { row, isOpportunity: Boolean(opp) },
+      data: { row, isOpportunity: Boolean(opp), opportunity: opp || null },
     })
     edges.push({
       id: `e-query-${id}`,
       source: 'query',
       target: id,
       animated: running,
-      style: { stroke: 'var(--border)', strokeWidth: 1.5 },
+      style: { stroke: 'var(--border)', strokeWidth: 0.9, opacity: 0.55 },
     })
-
-    if (opp) {
-      const oppId = `opp-${row.rank}`
-      nodes.push({
-        id: oppId,
-        type: 'opportunity',
-        position: { x: X_SOURCE + 36, y: y + sourceOffset + 46 },
-        data: { opportunity: opp },
-      })
-      edges.push({
-        id: `e-${id}-${oppId}`,
-        source: id,
-        target: oppId,
-        animated: true,
-        style: {
-          stroke: 'var(--chart-3)',
-          strokeWidth: 1.5,
-          strokeDasharray: '6 4',
-        },
-      })
-    }
   }
 
   // -- Brand nodes, leaves, and source->brand edges ---------------------------
@@ -133,7 +121,11 @@ export function buildGraph(scan) {
           x: X_LEAF,
           y: y + brandOffset - (leaves.length * 84) / 2 + i * 84,
         },
-        data: leaf,
+        // Carry the parent brand name so the leaf detail panel can
+        // find engageable sources that discuss this brand and offer
+        // "chip in here" links, instead of just dead-ending on the
+        // negative framing.
+        data: { ...leaf, brand: brand.name },
       })
       edges.push({
         id: `e-${id}-${leafId}`,
@@ -141,13 +133,16 @@ export function buildGraph(scan) {
         target: leafId,
         style: {
           stroke: leaf.kind === 'issue' ? 'var(--destructive)' : 'var(--border)',
-          strokeWidth: 1,
-          opacity: 0.6,
+          strokeWidth: 0.8,
+          opacity: 0.4,
         },
       })
     })
 
-    // Connect each source that actually mentions this brand.
+    // Connect each source that actually mentions this brand. One edge
+    // per (source, brand) pair — Vue Flow routes them into the brand's
+    // left handle so a brand referenced by many sources gets a natural
+    // fan of thin lines converging to a single node.
     for (const { row } of sourceLayouts) {
       const rowBrand = (row.brands || []).find(
         (b) => brandKey(b.name) === brandKey(brand.name),
@@ -159,9 +154,11 @@ export function buildGraph(scan) {
         target: id,
         animated: running,
         style: {
+          // Weight modulates thickness gently. Cap ~1.4 px so even the
+          // most-cited brand doesn't dominate the canvas visually.
           stroke: sentimentColor(rowBrand.sentiment || 0),
-          strokeWidth: 1 + 3 * (rowBrand.weight || 0),
-          opacity: 0.75,
+          strokeWidth: 0.7 + 0.7 * Math.min(rowBrand.weight || 0, 1),
+          opacity: 0.42,
         },
       })
     }

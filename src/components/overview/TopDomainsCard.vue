@@ -27,10 +27,10 @@ function initials(domain) {
 </script>
 
 <template>
-  <Card class="overflow-hidden rounded-2xl border-border p-0 shadow-none">
-    <div class="px-6 pb-4 pt-6">
-      <h2 class="text-lg font-extrabold text-foreground">{{ title }}</h2>
-      <p class="mt-1 text-[13px] text-muted-foreground">{{ subtitle }}</p>
+  <Card class="overflow-hidden rounded-xl border-border p-0 shadow-none">
+    <div class="px-4 pb-2 pt-3">
+      <h2 class="text-sm font-bold text-foreground">{{ title }}</h2>
+      <p class="mt-0.5 text-[11px] text-muted-foreground">{{ subtitle }}</p>
     </div>
 
     <div class="h-px w-full bg-border" />
@@ -39,31 +39,31 @@ function initials(domain) {
       <div
         v-for="(d, i) in rows"
         :key="d.domain"
-        class="flex cursor-pointer items-center gap-3.5 px-6 py-3.5 transition-colors"
+        class="flex cursor-pointer items-center gap-2.5 px-4 py-1.5 transition-colors"
         :class="[i < rows.length - 1 ? 'border-b border-border/60' : '', hovered === i ? 'bg-muted' : '']"
         @mouseenter="hovered = i"
         @mouseleave="hovered = null"
       >
         <div
-          class="flex size-[42px] shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-white"
+          class="flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
           :style="{ background: typeColor(d.type) }"
         >{{ initials(d.domain) }}</div>
 
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold text-foreground">{{ d.domain }}</p>
-          <p class="mt-0.5 text-xs text-muted-foreground">{{ d.type }}</p>
+          <p class="truncate text-[13px] font-semibold leading-tight text-foreground">{{ d.domain }}</p>
+          <p class="text-[10px] leading-tight text-muted-foreground">{{ d.type }}</p>
         </div>
 
         <div class="shrink-0 text-right">
-          <p class="text-sm font-bold text-foreground">{{ d.retrieved.toFixed(1) }}%</p>
-          <p class="mt-0.5 text-xs text-muted-foreground">citation {{ d.citation.toFixed(1) }}</p>
+          <p class="text-[13px] font-semibold leading-tight text-foreground">{{ d.retrieved.toFixed(1) }}%</p>
+          <p class="text-[10px] leading-tight text-muted-foreground">cite {{ d.citation.toFixed(1) }}</p>
         </div>
       </div>
     </div>
 
     <div class="h-px w-full bg-border" />
-    <div class="px-6 py-3.5 text-center">
-      <button class="text-[13px] font-bold text-foreground underline underline-offset-[3px]">All domains</button>
+    <div class="px-4 py-2 text-center">
+      <button class="text-[11px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground">All domains</button>
     </div>
   </Card>
 </template>

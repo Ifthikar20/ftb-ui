@@ -29,7 +29,6 @@ import QueryNode from './nodes/QueryNode.vue'
 import SourceNode from './nodes/SourceNode.vue'
 import BrandNode from './nodes/BrandNode.vue'
 import LeafNode from './nodes/LeafNode.vue'
-import OpportunityNode from './nodes/OpportunityNode.vue'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
@@ -46,7 +45,6 @@ const nodeTypes = {
   source: markRaw(SourceNode),
   brand: markRaw(BrandNode),
   leaf: markRaw(LeafNode),
-  opportunity: markRaw(OpportunityNode),
 }
 
 const { fitView } = useVueFlow()
