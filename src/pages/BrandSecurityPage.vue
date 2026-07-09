@@ -17,6 +17,7 @@ import brandSecurity from '@/api/brandSecurity'
 import { Button } from '@/components/ui/button'
 import HealthScoreCard from '@/components/brand_security/HealthScoreCard.vue'
 import AgentsGrid from '@/components/brand_security/AgentsGrid.vue'
+import InactiveAgentCard from '@/components/brand_security/InactiveAgentCard.vue'
 import AlertsTable from '@/components/brand_security/AlertsTable.vue'
 import AgentConfigDrawer from '@/components/brand_security/AgentConfigDrawer.vue'
 import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
@@ -42,6 +43,9 @@ const filter = reactive({ agent_id: [], severity: [], status: 'open' })
 const agentsById = computed(() =>
   Object.fromEntries(agents.value.map((a) => [a.agent_id, a])),
 )
+const activeAgents = computed(() => agents.value.filter((a) => a.enabled))
+const inactiveAgents = computed(() => agents.value.filter((a) => !a.enabled))
+const activatingIds = ref(new Set())
 
 let pollTimer = null
 
@@ -180,6 +184,23 @@ async function saveAgentConfig(payload) {
   }
 }
 
+async function activateAgent(agent) {
+  activatingIds.value = new Set(activatingIds.value).add(agent.agent_id)
+  try {
+    await brandSecurity.updateAgent(
+      websiteId.value, agent.agent_id, { enabled: true },
+    )
+    toast.success(`${agent.display_name} is now active`)
+    await loadAgents()
+  } catch {
+    toast.error(`Failed to activate ${agent.display_name}`)
+  } finally {
+    const next = new Set(activatingIds.value)
+    next.delete(agent.agent_id)
+    activatingIds.value = next
+  }
+}
+
 async function resolveAlert(alert) {
   try {
     await brandSecurity.resolveAlert(alert.id)
@@ -263,14 +284,54 @@ function stopPolling() {
 
     <HealthScoreCard :overview="overview" />
 
-    <div>
-      <div class="mb-3 text-sm font-semibold">Agents</div>
-      <AgentsGrid
-        :agents="agents"
-        :running-ids="runningAgentIds"
-        @run="runOneAgent"
-        @configure="openConfigure"
-      />
+    <div class="space-y-6">
+      <div>
+        <div class="mb-2 flex items-baseline justify-between">
+          <div class="text-sm font-semibold">
+            Active agents
+            <span class="ml-1 font-normal text-muted-foreground">
+              ({{ activeAgents.length }})
+            </span>
+          </div>
+          <div class="text-xs text-muted-foreground">
+            Run automatically on their schedule
+          </div>
+        </div>
+        <div v-if="activeAgents.length" class="space-y-2">
+          <AgentsGrid
+            :agents="activeAgents"
+            :running-ids="runningAgentIds"
+            @run="runOneAgent"
+            @configure="openConfigure"
+          />
+        </div>
+        <div v-else class="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          No agents active yet. Activate one below to start monitoring.
+        </div>
+      </div>
+
+      <div v-if="inactiveAgents.length">
+        <div class="mb-2 flex items-baseline justify-between">
+          <div class="text-sm font-semibold">
+            Not active
+            <span class="ml-1 font-normal text-muted-foreground">
+              ({{ inactiveAgents.length }})
+            </span>
+          </div>
+          <div class="text-xs text-muted-foreground">
+            Click a card to activate
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <InactiveAgentCard
+            v-for="agent in inactiveAgents"
+            :key="agent.agent_id"
+            :agent="agent"
+            :busy="activatingIds.has(agent.agent_id)"
+            @activate="activateAgent"
+          />
+        </div>
+      </div>
     </div>
 
     <div class="space-y-3">
