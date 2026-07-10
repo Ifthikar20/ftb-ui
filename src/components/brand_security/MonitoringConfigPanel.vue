@@ -6,15 +6,13 @@ import { Plus, X, Save } from '@lucide/vue'
 
 const props = defineProps({
   config: { type: Object, default: () => ({ brand_terms: [], negative_keywords: [] }) },
-  prompts: { type: Array, default: () => [] },
 })
-const emit = defineEmits(['save', 'add-prompt', 'delete-prompt'])
+const emit = defineEmits(['save'])
 
 const brandTerms = ref([...(props.config.brand_terms || [])])
 const negativeKeywords = ref([...(props.config.negative_keywords || [])])
 const newTerm = ref('')
 const newNegative = ref('')
-const newPrompt = ref('')
 
 watch(() => props.config, (v) => {
   brandTerms.value = [...(v?.brand_terms || [])]
@@ -40,12 +38,6 @@ function submit() {
     brand_terms: brandTerms.value,
     negative_keywords: negativeKeywords.value,
   })
-}
-function submitPrompt() {
-  const v = newPrompt.value.trim()
-  if (!v) return
-  emit('add-prompt', v)
-  newPrompt.value = ''
 }
 </script>
 
@@ -106,37 +98,6 @@ function submitPrompt() {
             @keydown.enter.prevent="addNegative"
           />
           <Button size="sm" variant="secondary" @click="addNegative">
-            <Plus class="size-3.5" /> Add
-          </Button>
-        </div>
-      </div>
-
-      <div>
-        <div class="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-          LLM Truth prompts
-        </div>
-        <ul class="space-y-1.5">
-          <li
-            v-for="p in prompts" :key="p.id"
-            class="flex items-center justify-between rounded border bg-muted/30 px-2 py-1 text-sm"
-          >
-            <span class="truncate">{{ p.text }}</span>
-            <button
-              class="opacity-60 hover:opacity-100"
-              @click="emit('delete-prompt', p)"
-            >
-              <X class="size-3" />
-            </button>
-          </li>
-        </ul>
-        <div class="mt-2 flex gap-2">
-          <input
-            v-model="newPrompt"
-            placeholder="What does an LLM say about my brand?"
-            class="flex-1 rounded border bg-background px-2 py-1 text-sm"
-            @keydown.enter.prevent="submitPrompt"
-          />
-          <Button size="sm" variant="secondary" @click="submitPrompt">
             <Plus class="size-3.5" /> Add
           </Button>
         </div>

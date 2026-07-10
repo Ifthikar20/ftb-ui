@@ -33,11 +33,15 @@ export default {
   saveConfig: (websiteId, payload) =>
     api.put(`/brand-security/websites/${websiteId}/config/`, payload),
 
-  // Prompts (LLM Truth) --------------------------------------------------
-  prompts: (websiteId) =>
-    api.get(`/brand-security/websites/${websiteId}/prompts/`),
-  createPrompt: (websiteId, text) =>
-    api.post(`/brand-security/websites/${websiteId}/prompts/`, { text }),
+  // Prompts (per-agent) --------------------------------------------------
+  prompts: (websiteId, agentId = null) => {
+    const params = agentId ? { agent_id: agentId } : {}
+    return api.get(`/brand-security/websites/${websiteId}/prompts/`, { params })
+  },
+  createPrompt: (websiteId, text, agentId = 'llm_truth') =>
+    api.post(`/brand-security/websites/${websiteId}/prompts/`, {
+      text, agent_id: agentId,
+    }),
   deletePrompt: (promptId) =>
     api.delete(`/brand-security/prompts/${promptId}/`),
 }

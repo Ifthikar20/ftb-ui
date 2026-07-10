@@ -191,7 +191,7 @@ async function activateAgent(agent) {
       websiteId.value, agent.agent_id, { enabled: true },
     )
     toast.success(`${agent.display_name} is now active`)
-    await loadAgents()
+    await Promise.all([loadAgents(), loadPrompts()])
   } catch {
     toast.error(`Failed to activate ${agent.display_name}`)
   } finally {
@@ -221,9 +221,9 @@ async function saveConfig(payload) {
     await loadConfig()
   } catch { toast.error('Failed to save configuration') }
 }
-async function addPrompt(text) {
+async function addPrompt(text, agentId = 'llm_truth') {
   try {
-    await brandSecurity.createPrompt(websiteId.value, text)
+    await brandSecurity.createPrompt(websiteId.value, text, agentId)
     await loadPrompts()
   } catch { toast.error('Failed to add prompt') }
 }
@@ -388,10 +388,7 @@ function stopPolling() {
 
     <MonitoringConfigPanel
       :config="config"
-      :prompts="prompts"
       @save="saveConfig"
-      @add-prompt="addPrompt"
-      @delete-prompt="deletePrompt"
     />
 
     <AgentConfigDrawer

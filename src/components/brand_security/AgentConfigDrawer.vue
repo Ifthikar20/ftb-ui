@@ -20,7 +20,46 @@ const sensitivity = ref('medium')
 const schedule = ref('daily')
 const newPrompt = ref('')
 
-const isLLMTruth = computed(() => props.agent?.agent_id === 'llm_truth')
+const PROMPT_DRIVEN = ['llm_truth', 'serp_reputation', 'sentiment_pulse']
+const isPromptDriven = computed(() => PROMPT_DRIVEN.includes(props.agent?.agent_id))
+
+const agentPrompts = computed(() =>
+  props.prompts.filter((p) => (p.agent_id || 'llm_truth') === props.agent?.agent_id),
+)
+
+const promptGuide = {
+  llm_truth: {
+    heading: 'Prompts asked to each LLM',
+    body: `Each prompt is sent to Claude, GPT, Gemini, Perplexity and Grok on
+      every run. Answers are flagged when they hallucinate, are outdated,
+      or make unverified or harmful claims about your brand.`,
+    placeholder: 'What is <your brand>?',
+  },
+  serp_reputation: {
+    heading: 'Google queries this agent runs',
+    body: `Each prompt is used as a Google search query. Any page returned in
+      the top 10 is judged for whether it's negative, misleading or a
+      brand-safety issue for you.`,
+    placeholder: 'why is <your brand> not lasting',
+  },
+  sentiment_pulse: {
+    heading: 'Social queries this agent runs',
+    body: `Each prompt is used as a search on Reddit and X. Mentions are
+      scored for sentiment and flagged when the tone turns hostile,
+      harmful or shows a sudden negative shift.`,
+    placeholder: 'bad experience with <your brand>',
+  },
+}
+const guide = computed(() => promptGuide[props.agent?.agent_id])
+
+const patternDrivenNote = {
+  impersonation: `This agent looks for lookalike domains and fake handles
+    that impersonate your brand — it does not take natural-language prompts.
+    Set your real brand name in Monitoring Config below to steer it.`,
+  narrative_watch: `This agent watches Google Trends and Reddit velocity
+    around your brand terms — it needs short single-word seeds, not
+    sentences. Add your brand terms in Monitoring Config below.`,
+}
 
 watch(() => props.agent, (a) => {
   if (!a) return
@@ -41,7 +80,7 @@ function save() {
 function submitPrompt() {
   const text = newPrompt.value.trim()
   if (!text) return
-  emit('add-prompt', text)
+  emit('add-prompt', text, props.agent?.agent_id)
   newPrompt.value = ''
 }
 
@@ -58,10 +97,10 @@ const nextRunLabel = computed(() => {
 
 const sourceDescriptions = {
   llms: 'Asks Claude, GPT, Gemini, Perplexity and Grok your prompts and inspects their answers.',
-  serp: 'Runs Google searches for negative queries against your brand (scam, lawsuit, review, etc).',
-  reddit: 'Reads recent Reddit discussions mentioning your brand.',
-  trends: 'Watches Google Trends for rising queries around your brand.',
-  x: 'Reads recent X (Twitter) posts mentioning your brand.',
+  serp: 'Runs Google searches and inspects the results.',
+  reddit: 'Reads recent Reddit discussions.',
+  trends: 'Watches Google Trends for rising queries.',
+  x: 'Reads recent X (Twitter) posts.',
 }
 </script>
 
@@ -81,7 +120,6 @@ const sourceDescriptions = {
       </SheetHeader>
 
       <div v-if="agent" class="mt-6 space-y-5">
-        <!-- Active toggle -->
         <div class="flex items-center justify-between rounded-lg border p-3">
           <div class="pr-3">
             <div class="text-sm font-medium">Active</div>
@@ -97,7 +135,6 @@ const sourceDescriptions = {
           </label>
         </div>
 
-        <!-- Timing -->
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div class="rounded border p-2">
             <div class="text-muted-foreground">Last run</div>
@@ -118,7 +155,6 @@ const sourceDescriptions = {
           </div>
         </div>
 
-        <!-- Sources -->
         <div>
           <div class="mb-1 text-sm font-medium">What this agent monitors</div>
           <ul class="space-y-1 text-xs">
@@ -133,23 +169,17 @@ const sourceDescriptions = {
           </ul>
         </div>
 
-        <!-- Prompts (LLM Truth only) -->
-        <div v-if="isLLMTruth">
+        <div v-if="isPromptDriven && guide">
           <div class="mb-1 text-sm font-medium">
-            Prompts asked to each LLM ({{ prompts.length }})
+            {{ guide.heading }} ({{ agentPrompts.length }})
           </div>
-          <p class="mb-2 text-xs text-muted-foreground">
-            Every prompt below is sent to Claude, GPT, Gemini, Perplexity and
-            Grok on each run. Answers are flagged when they hallucinate, are
-            outdated, or make unverified or harmful claims about your brand.
-          </p>
+          <p class="mb-2 text-xs text-muted-foreground">{{ guide.body }}</p>
           <ul class="mb-2 max-h-56 space-y-1 overflow-y-auto rounded border p-2">
-            <li v-if="!prompts.length" class="px-1 py-0.5 text-xs text-muted-foreground">
-              No prompts yet. Defaults ("What is &lt;brand&gt;?", "Is &lt;brand&gt; a scam?")
-              will be used until you add your own.
+            <li v-if="!agentPrompts.length" class="px-1 py-0.5 text-xs text-muted-foreground">
+              No prompts yet. Add your first below.
             </li>
             <li
-              v-for="p in prompts" :key="p.id"
+              v-for="p in agentPrompts" :key="p.id"
               class="flex items-start justify-between gap-2 rounded p-1.5 text-xs hover:bg-muted/40"
             >
               <span class="flex-1 break-words">{{ p.text }}</span>
@@ -164,7 +194,7 @@ const sourceDescriptions = {
           <div class="flex gap-2">
             <input
               v-model="newPrompt"
-              placeholder="What is <your brand>?"
+              :placeholder="guide.placeholder"
               class="flex-1 rounded border bg-background px-2 py-1 text-sm"
               @keyup.enter="submitPrompt"
             />
@@ -172,7 +202,10 @@ const sourceDescriptions = {
           </div>
         </div>
 
-        <!-- Sensitivity -->
+        <div v-else-if="patternDrivenNote[agent.agent_id]" class="rounded border border-dashed p-3 text-xs text-muted-foreground">
+          {{ patternDrivenNote[agent.agent_id] }}
+        </div>
+
         <div>
           <div class="mb-1 text-sm font-medium">Sensitivity</div>
           <select v-model="sensitivity" class="w-full rounded border bg-background px-2 py-1 text-sm">
@@ -182,7 +215,6 @@ const sourceDescriptions = {
           </select>
         </div>
 
-        <!-- Schedule -->
         <div>
           <div class="mb-1 text-sm font-medium">Schedule</div>
           <select v-model="schedule" class="w-full rounded border bg-background px-2 py-1 text-sm">
@@ -193,7 +225,6 @@ const sourceDescriptions = {
           </select>
         </div>
 
-        <!-- Actions -->
         <div class="flex items-center justify-between gap-2 pt-2">
           <Button variant="outline" :disabled="running" @click="emit('run', agent)">
             <Play class="size-3.5" />
