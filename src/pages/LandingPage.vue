@@ -112,45 +112,134 @@
       </div>
     </section>
 
-    <!-- ═══ Why this exists — editorial / pam-style ═══ -->
+    <!-- ═══ Why this exists — split editorial layout ═══ -->
     <section class="why anim" data-anim="fade-up">
       <div class="wrap why-wrap">
-        <div class="why-head">
-          <h2 class="why-h">
-            AI is the new homepage.<br/>
-            <span class="why-h-quiet">Your buyers ask before they Google.</span>
-          </h2>
-          <p class="why-sub">
-            More than half of B2B buyers now research vendors inside ChatGPT, Claude, Gemini, and
-            Perplexity before they ever land on a website. Whatever those four models say about you
-            is, for a lot of people, the only thing they will hear.
-          </p>
-        </div>
+        <div class="why-split">
+          <div class="why-left">
+            <h2 class="why-h">
+              AI is the new homepage.<br/>
+              <span class="why-h-quiet">Your buyers ask before they Google.</span>
+            </h2>
+            <p class="why-sub">
+              More than half of B2B buyers now research vendors inside ChatGPT, Claude,
+              Gemini, and Perplexity before they ever land on a website. Whatever those
+              four models say about you is, for a lot of people, the only thing they will
+              hear.
+            </p>
 
-        <div class="why-grid">
-          <article class="why-card anim" data-anim="fade-up" data-delay="60">
-            <div class="why-card-top">
-              <span class="why-card-num">01</span>
-            </div>
-            <h3 class="why-card-h">Google ranks pages.<br/>AI ranks brands.</h3>
-            <p class="why-card-p">You can hold position one on Google and still be missing from the answer a buyer reads inside ChatGPT. Same buyer, but the SEO playbook does not move that number.</p>
-          </article>
+            <ul class="why-list">
+              <li
+                class="why-item"
+                :class="{ 'is-active': activeWhy === 0 }"
+                @click="activeWhy = 0"
+              >
+                <span class="why-item-bar"></span>
+                <span class="why-item-num">01</span>
+                <span class="why-item-label">Google ranks pages. AI ranks brands.</span>
+              </li>
+              <li
+                class="why-item"
+                :class="{ 'is-active': activeWhy === 1 }"
+                @click="activeWhy = 1"
+              >
+                <span class="why-item-bar"></span>
+                <span class="why-item-num">02</span>
+                <span class="why-item-label">If you're not in the answer, you're not in the deal.</span>
+              </li>
+              <li
+                class="why-item"
+                :class="{ 'is-active': activeWhy === 2 }"
+                @click="activeWhy = 2"
+              >
+                <span class="why-item-bar"></span>
+                <span class="why-item-num">03</span>
+                <span class="why-item-label">Most teams have no idea what the models say.</span>
+              </li>
+            </ul>
+          </div>
 
-          <article class="why-card anim" data-anim="fade-up" data-delay="140">
-            <div class="why-card-top">
-              <span class="why-card-num">02</span>
-            </div>
-            <h3 class="why-card-h">If you are not in the answer, you are not in the deal.</h3>
-            <p class="why-card-p">When a model lists three vendors, most buyers pick one of the three. There is no scroll to position twelve, no second-page click. Made the shortlist or you did not.</p>
-          </article>
+          <div class="why-right">
+            <div class="why-gradient">
+              <div class="why-demo">
+                <Transition name="why-demo-fade" mode="out-in">
+                  <div v-if="activeWhy === 0" key="demo-0" class="why-demo-panel">
+                    <div class="why-demo-head">
+                      <span class="why-demo-dot" style="background:#10a37f"></span>
+                      ChatGPT
+                    </div>
+                    <div class="why-demo-body">
+                      Top vendors for enterprise <em>observability</em>:
+                      <ol class="why-demo-list">
+                        <li>Datadog</li>
+                        <li>New Relic</li>
+                        <li>Grafana</li>
+                      </ol>
+                    </div>
+                    <div class="why-demo-foot">
+                      You rank <strong>#1 on Google</strong> for the same query.
+                      Nobody sees it.
+                    </div>
+                  </div>
 
-          <article class="why-card anim" data-anim="fade-up" data-delay="220">
-            <div class="why-card-top">
-              <span class="why-card-num">03</span>
+                  <div v-else-if="activeWhy === 1" key="demo-1" class="why-demo-panel">
+                    <div class="why-demo-head">
+                      <span class="why-demo-dot" style="background:#c26fff"></span>
+                      Claude
+                    </div>
+                    <div class="why-demo-body">
+                      Three tools worth evaluating:
+                      <ol class="why-demo-list">
+                        <li class="hi">Vendor A</li>
+                        <li class="hi">Vendor B</li>
+                        <li class="hi">Vendor C</li>
+                      </ol>
+                    </div>
+                    <div class="why-demo-foot">
+                      No scroll to position twelve.
+                      <strong>Made the shortlist or you didn't.</strong>
+                    </div>
+                  </div>
+
+                  <div v-else key="demo-2" class="why-demo-panel why-demo-panel--metrics">
+                    <div class="why-demo-head">
+                      <span class="why-demo-dot" style="background:#ff385c"></span>
+                      This week
+                    </div>
+                    <div class="why-demo-metric">
+                      <span class="why-demo-metric-value">3 <small>/ 47</small></span>
+                      <span class="why-demo-metric-label">answers where your brand appears</span>
+                    </div>
+                    <div class="why-demo-bars">
+                      <div class="why-demo-bar-row">
+                        <span class="lbl">ChatGPT</span>
+                        <span class="bar"><span style="width:15%"></span></span>
+                        <span class="val">2/13</span>
+                      </div>
+                      <div class="why-demo-bar-row">
+                        <span class="lbl">Claude</span>
+                        <span class="bar"><span style="width:8%"></span></span>
+                        <span class="val">1/12</span>
+                      </div>
+                      <div class="why-demo-bar-row">
+                        <span class="lbl">Gemini</span>
+                        <span class="bar"><span style="width:0%"></span></span>
+                        <span class="val">0/11</span>
+                      </div>
+                      <div class="why-demo-bar-row">
+                        <span class="lbl">Perplexity</span>
+                        <span class="bar"><span style="width:0%"></span></span>
+                        <span class="val">0/11</span>
+                      </div>
+                    </div>
+                    <div class="why-demo-foot">
+                      <strong>Stop guessing.</strong> Pulled from all four on schedule.
+                    </div>
+                  </div>
+                </Transition>
+              </div>
             </div>
-            <h3 class="why-card-h">Most teams have no idea what the models say about them.</h3>
-            <p class="why-card-p">Ask a founder this week and you will get a guess. We pull the actual answers from all four models on a schedule, so you can stop guessing and start fixing the prompts where the answer goes to a competitor.</p>
-          </article>
+          </div>
         </div>
 
         <div class="why-cta anim" data-anim="fade-up" data-delay="300">
@@ -711,6 +800,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 const scrolled = ref(false)
 const activeCard = ref(0)
 const activeCat = ref(0)
+const activeWhy = ref(0)
 const trackOffset = ref(0)
 const trackRef = ref(null)
 
@@ -3390,8 +3480,17 @@ html:has(.lp) #app {
     radial-gradient(700px circle at 88% 100%, rgba(var(--brand-accent-rgb), 0.04), transparent 60%);
   pointer-events: none;
 }
-.why-wrap { max-width: 1080px; position: relative; z-index: 1; }
+.why-wrap { max-width: 1180px; position: relative; z-index: 1; }
 .why-head { max-width: 760px; margin-bottom: 72px; }
+.why-split {
+  display: grid;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: 72px;
+  align-items: center;
+  margin-bottom: 56px;
+}
+.why-left { min-width: 0; }
+.why-right { min-width: 0; }
 .why-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -3408,13 +3507,12 @@ html:has(.lp) #app {
 }
 .why-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400;
-  font-size: clamp(2.4rem, 5vw, 4.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
+  font-weight: 700;
+  font-size: clamp(2rem, 3.6vw, 3.1rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
   color: #0f172a;
-  margin: 0 0 22px;
+  margin: 0 0 20px;
 }
 .why-h-quiet {
   display: block;
@@ -3422,70 +3520,193 @@ html:has(.lp) #app {
   font-weight: 400;
 }
 .why-sub {
-  font-size: 17px;
+  font-size: 16.5px;
   line-height: 1.65;
   color: #475569;
-  margin: 0;
+  margin: 0 0 36px;
 }
 
-.why-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin: 0 0 28px;
-}
-.why-card {
-  position: relative;
+.why-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  padding: 30px 28px 32px;
-  border-radius: 20px;
-  border: none;
-  /* Soft tinted backgrounds, Airbnb-style. Per-card hue set below. */
-  background: #fbf7f4;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 4px;
 }
-.why-card:nth-child(1) { background: #fdf3ef; }
-.why-card:nth-child(2) { background: #f2f6fb; }
-.why-card:nth-child(3) { background: #f1f8f4; }
-.why-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+.why-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3px auto 1fr;
+  align-items: baseline;
+  column-gap: 16px;
+  padding: 14px 6px 14px 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.18s ease;
 }
-.why-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
+.why-item:hover { background: rgba(15, 23, 42, 0.03); }
+.why-item-bar {
+  grid-column: 1;
+  align-self: stretch;
+  width: 3px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  transition: background 0.2s ease;
 }
-.why-card-num {
+.why-item.is-active .why-item-bar { background: #0f172a; }
+.why-item-num {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: #ff385c;
+  color: #94a3b8;
+  transition: color 0.2s ease;
 }
-.why-card-h {
-  position: relative; z-index: 1;
-  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
-  font-weight: 400;
-  font-size: clamp(1.3rem, 1.8vw, 1.6rem);
-  line-height: 1.18;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  color: #0f172a;
-  margin: 0 0 12px;
+.why-item.is-active .why-item-num { color: #ff385c; }
+.why-item-label {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+  letter-spacing: -0.01em;
 }
-.why-card-p {
-  position: relative; z-index: 1;
-  font-size: 14.5px;
-  line-height: 1.6;
+.why-item.is-active .why-item-label { color: #0f172a; }
+
+.why-gradient {
+  position: relative;
+  border-radius: 24px;
+  padding: 56px 48px;
+  background:
+    radial-gradient(120% 90% at 100% 100%, #4b7bff 0%, transparent 55%),
+    radial-gradient(90% 80% at 0% 20%, #ff5aa8 0%, transparent 55%),
+    linear-gradient(135deg, #ffb28b 0%, #ff5aa8 45%, #4b7bff 100%);
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  box-shadow:
+    0 30px 60px -20px rgba(75, 123, 255, 0.35),
+    0 20px 40px -20px rgba(255, 90, 168, 0.30);
+  overflow: hidden;
+}
+.why-demo {
+  position: relative;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 26px 28px 22px;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.25);
+  min-height: 300px;
+  display: flex;
+  align-items: stretch;
+}
+.why-demo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.why-demo-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
   color: #64748b;
-  margin: 0;
+  letter-spacing: 0.02em;
 }
+.why-demo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255,255,255,1), 0 0 0 4px rgba(0,0,0,0.05);
+}
+.why-demo-body {
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: #0f172a;
+}
+.why-demo-body em { color: #ff385c; font-style: normal; font-weight: 600; }
+.why-demo-list {
+  margin: 10px 0 0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+.why-demo-list li.hi {
+  background: linear-gradient(90deg, rgba(255,90,168,0.14), transparent 60%);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.why-demo-foot {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(15,23,42,0.10);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.why-demo-foot strong { color: #0f172a; font-weight: 600; }
+.why-demo-panel--metrics { gap: 12px; }
+.why-demo-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.why-demo-metric-value {
+  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.why-demo-metric-value small { font-size: 24px; font-weight: 500; color: #94a3b8; }
+.why-demo-metric-label {
+  font-size: 13px;
+  color: #64748b;
+}
+.why-demo-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.why-demo-bar-row {
+  display: grid;
+  grid-template-columns: 68px 1fr 42px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #475569;
+}
+.why-demo-bar-row .bar {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.why-demo-bar-row .bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ff5aa8 0%, #4b7bff 100%);
+  border-radius: 3px;
+}
+.why-demo-bar-row .val {
+  text-align: right;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.why-demo-fade-enter-active,
+.why-demo-fade-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.why-demo-fade-enter-from { opacity: 0; transform: translateY(6px); }
+.why-demo-fade-leave-to   { opacity: 0; transform: translateY(-6px); }
 
 .why-cta {
   display: flex; align-items: center; justify-content: space-between;
@@ -3532,10 +3753,21 @@ html:has(.lp) #app {
   transform: translateX(2px);
 }
 
+@media (max-width: 960px) {
+  .why-split {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .why-gradient { padding: 40px 28px; min-height: 380px; }
+}
 @media (max-width: 880px) {
   .why { padding: 80px 0 64px; }
   .why-head { margin-bottom: 48px; }
-  .why-grid { grid-template-columns: 1fr; gap: 16px; }
+  .why-sub { margin-bottom: 28px; }
+  .why-item { padding: 12px 6px 12px 14px; }
+  .why-item-label { font-size: 15.5px; }
+  .why-gradient { padding: 32px 20px; min-height: 340px; }
+  .why-demo { padding: 22px 20px 18px; }
   .why-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
 }
 
