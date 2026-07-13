@@ -275,6 +275,18 @@ function stopPolling() {
       </Button>
     </div>
 
+    <!-- ── Tab strip: siblings of the same feature ── -->
+    <div class="flex items-center gap-1 border-b border-border">
+      <router-link
+        :to="`/llm-ranking/${websiteId}/brand-security`"
+        class="border-b-2 border-foreground px-3 py-2 text-sm font-semibold text-foreground"
+      >Alerts</router-link>
+      <router-link
+        :to="`/llm-ranking/${websiteId}/brand-input`"
+        class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >Brand Input</router-link>
+    </div>
+
     <!-- ── Intro ── -->
     <div>
       <h2 class="text-lg font-bold text-foreground">Brand Security</h2>
