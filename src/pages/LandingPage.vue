@@ -2235,6 +2235,14 @@ em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
   animation: probe-card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards;
   overflow: hidden;
   transition: box-shadow 0.25s ease, transform 0.25s ease;
+  /* Fixed height so the card never grows or shrinks as scenarios
+     cycle through prompts of different length. Longer replies
+     truncate in .probe-stream below. */
+  height: 172px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  contain: layout;
 }
 @keyframes probe-card-in {
   to { opacity: 1; transform: translateY(0); }
@@ -2288,6 +2296,15 @@ em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
 .probe-stream {
   font-size: 13px; line-height: 1.55; color: #484848;
   margin-bottom: 12px;
+  /* Flex fills the vertical space between the header and the tags.
+     Overflow clamps at 3 lines so a long reply gets an ellipsis
+     instead of pushing the tags out of the card. */
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 .probe-mark {
   background: rgba(255, 56, 92, 0.12);
@@ -2476,13 +2493,24 @@ em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
   .probe-card { transform: none; }
 }
 
-/* word-cycle transition (reused from the deleted features section) */
-.word-cycle-enter-active, .word-cycle-leave-active {
+/* word-cycle transition (reused from the deleted features section).
+   The leaving word is pulled out of flow the instant the transition
+   starts (not only at leave-to) so the entering word can immediately
+   take its inline slot. Without this, both words occupy the flow
+   during the 0.3s transition, which can wrap the paragraph to an
+   extra line and shove everything below down. */
+.word-cycle-enter-active,
+.word-cycle-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
   display: inline-block;
 }
+.word-cycle-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
 .word-cycle-enter-from { opacity: 0; transform: translateY(8px); }
-.word-cycle-leave-to   { opacity: 0; transform: translateY(-8px); position: absolute; }
+.word-cycle-leave-to   { opacity: 0; transform: translateY(-8px); }
 .hero-h {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 400; font-size: clamp(2.8rem, 6vw, 5.5rem);
