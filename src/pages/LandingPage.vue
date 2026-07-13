@@ -1898,6 +1898,58 @@ function updateStickyCta() {
     animation-range: cover 0% cover 100%;
   }
 }
+/* Apple-style section entrance + exit tied directly to scroll
+   position. Each major section eases up + fades in as it enters
+   the viewport, holds crisp while it's fully visible (the "cover"
+   phase), then softly recedes on the way out. Two named animations
+   run on the same element with different animation-range values:
+   `entry` covers 0% -> 100% of the entry into the viewport, `exit`
+   covers 0% -> 100% of the exit. Because animation-fill-mode is
+   `both`, the final state of the entry animation is held during
+   the cover phase in between. Same view() timeline support as
+   above; older browsers fall back to the .anim in-viewport
+   observer with no downside. */
+@supports (animation-timeline: view()) {
+  @keyframes apple-section-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 80px, 0) scale(0.94);
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
+    }
+  }
+  @keyframes apple-section-out {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
+    }
+    to {
+      opacity: 0.35;
+      transform: translate3d(0, -60px, 0) scale(0.96);
+      filter: blur(4px);
+    }
+  }
+  .why,
+  .feature-showcase,
+  .how,
+  .faq,
+  .final-cta {
+    animation-name: apple-section-in, apple-section-out;
+    animation-fill-mode: both, both;
+    animation-timing-function:
+      cubic-bezier(0.16, 1, 0.3, 1),
+      cubic-bezier(0.7, 0, 0.84, 0);
+    animation-timeline: view(), view();
+    animation-range:
+      entry 0% cover 15%,
+      cover 85% exit 100%;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .anim {
     transition: none;
@@ -1906,7 +1958,12 @@ function updateStickyCta() {
     filter: none;
   }
   @supports (animation-timeline: view()) {
-    .feature-visual { animation-name: none; }
+    .feature-visual,
+    .why,
+    .feature-showcase,
+    .how,
+    .faq,
+    .final-cta { animation-name: none; }
   }
 }
 
