@@ -23,7 +23,7 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-left">
-          <h1 class="hero-h anim" data-anim="fade-up">
+          <h1 class="hero-h anim" data-anim="hero">
             <span class="tw-line" ref="twLine1"></span><br/>
             <span class="tw-line" ref="twLine2"></span><br/>
             <em><span class="tw-line" ref="twLine3"></span></em>
@@ -271,7 +271,7 @@
 
           <div class="stats-card-content">
             <div class="stats-card-top">
-              <h2 class="stats-card-h anim" data-anim="fade-up" data-delay="400">
+              <h2 class="stats-card-h anim" data-anim="hero" data-delay="400">
                 AI search is the new search.<br/>
                 <em>Your brand isn't ready for it.</em>
               </h2>
@@ -667,7 +667,7 @@
     <!-- ═══ How It Works ═══ -->
     <section class="how" id="how">
       <div class="wrap">
-        <h2 class="sec-h anim" data-anim="fade-up">Up and running<br/><em>in 3 minutes.</em></h2>
+        <h2 class="sec-h anim" data-anim="hero">Up and running<br/><em>in 3 minutes.</em></h2>
         <div class="steps">
           <div v-for="(s, i) in steps" :key="i" class="step anim" data-anim="fade-up" :data-delay="i * 80">
             <div class="step-num">{{ i + 1 }}</div>
@@ -681,7 +681,7 @@
     <!-- ═══ FAQ ═══ -->
     <section class="faq anim" data-anim="fade-up">
       <div class="wrap faq-wrap">
-        <h2 class="sec-h sec-h-grad anim" data-anim="fade-up">Questions,<br/><em>answered plainly.</em></h2>
+        <h2 class="sec-h sec-h-grad anim" data-anim="hero">Questions,<br/><em>answered plainly.</em></h2>
         <div class="faq-list">
           <details v-for="(item, i) in faqItems" :key="i" class="faq-item anim" data-anim="fade-up" :data-delay="i * 60">
             <summary>
@@ -1747,14 +1747,71 @@ function updateStickyCta() {
    Flat surfaces · static trust strip
    ═══════════════════════════════════ */
 
-/* ── Animations ── */
+/* ── Animations — Apple-style scroll entrance ──
+   Displacement + subtle blur that clears as elements enter view.
+   Uses Apple's "power4 out" easing (cubic-bezier 0.16, 1, 0.3, 1):
+   nearly linear at the start, then eases hard into a soft landing.
+   Long enough (900ms) to feel deliberate, short enough to not stall
+   the reading flow. */
 .anim {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(0, 40px, 0) scale(0.985);
+  filter: blur(4px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
 }
-.anim.in { opacity: 1; transform: none; }
+.anim.in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+/* Hero variant — larger displacement + longer duration for the big
+   moments (section headlines, hero copy). */
+.anim[data-anim="hero"] {
+  transform: translate3d(0, 60px, 0) scale(0.97);
+  transition:
+    opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim[data-anim="hero"].in {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+/* Scroll-driven breath on the feature-showcase video cards: each
+   card lifts slightly toward center as it scrolls through view and
+   settles back — the "content moves at a different rate than the
+   frame" trick from Apple's product pages. Applied only to
+   .feature-visual (the stats card has its own framer entrance and
+   would double-transform). Uses view() timeline (Chrome/Edge 115+,
+   Safari 26+); older browsers get the hover-lift only. */
+@supports (animation-timeline: view()) {
+  @keyframes card-scroll-breath {
+    from { transform: translate3d(0, 24px, 0) scale(0.985); }
+    50%  { transform: translate3d(0, 0, 0)    scale(1);     }
+    to   { transform: translate3d(0, -24px, 0) scale(0.985); }
+  }
+  .feature-visual {
+    animation-name: card-scroll-breath;
+    animation-duration: 1ms;
+    animation-timing-function: linear;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim {
+    transition: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  @supports (animation-timeline: view()) {
+    .feature-visual { animation-name: none; }
+  }
+}
 
 /* ── Base ── */
 .lp {
