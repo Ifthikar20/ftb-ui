@@ -351,7 +351,7 @@
               disablepictureinpicture
               aria-hidden="true"
             >
-              <source :src="assetUrl('/videos/feature-' + (i + 1) + '.mp4')" type="video/mp4" />
+              <source :src="assetUrl('/videos/' + f.video)" type="video/mp4" />
             </video>
             <div class="feature-visual-tint" aria-hidden="true"></div>
 
@@ -648,6 +648,64 @@
                   </div>
                   <div class="mock-sec-alert-body">
                     Reddit velocity <em>+340%</em> on "fetchbot pricing". Trends: rising query <em>breakout</em>.
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- CONTENT STUDIO — brief → draft → approved flow -->
+            <div v-else-if="f.key === 'studio'" class="mock-card">
+              <div class="mock-studio-flow">
+
+                <div class="mock-studio-step is-brief">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">Brief</span>
+                    <span class="mock-studio-step-meta">2m ago</span>
+                  </div>
+                  <div class="mock-studio-step-title">
+                    Fix visibility gap: <em>"best CRM for indie founders"</em>
+                  </div>
+                  <div class="mock-studio-tags">
+                    <span class="mock-studio-tag">Missing in 3 of 4 models</span>
+                    <span class="mock-studio-tag is-priority">High</span>
+                  </div>
+                </div>
+
+                <div class="mock-studio-connector" aria-hidden="true"></div>
+
+                <div class="mock-studio-step is-draft">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">Draft</span>
+                    <span class="mock-studio-step-meta">640 words · 3 min read</span>
+                  </div>
+                  <div class="mock-studio-preview">
+                    For solo founders building their first CRM stack, the calculus is different —
+                    you're optimizing for time-to-first-customer, not enterprise workflow depth…
+                  </div>
+                  <div class="mock-studio-tags">
+                    <span class="mock-studio-tag">Voice match: 94%</span>
+                    <span class="mock-studio-tag">Accuracy: 92%</span>
+                  </div>
+                </div>
+
+                <div class="mock-studio-connector" aria-hidden="true"></div>
+
+                <div class="mock-studio-step is-approved">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                        <path d="M3 8.5l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Approved
+                    </span>
+                    <span class="mock-studio-step-meta">Ready to publish</span>
+                  </div>
+                  <div class="mock-studio-formats">
+                    <span class="mock-studio-format">HTML blog</span>
+                    <span class="mock-studio-format">JSON-LD</span>
+                    <span class="mock-studio-format">Reddit reply</span>
+                    <span class="mock-studio-format">FAQ</span>
                   </div>
                 </div>
 
@@ -1446,6 +1504,7 @@ const plans = [
 const showcaseFeatures = [
   {
     key: 'prompt',
+    video: 'feature-1.mp4',
     eyebrow: 'PROMPT LIBRARY',
     headline: 'Rank where your buyers actually ask.',
     desc: "GEO is the new SEO. Large language models don't rank pages — they rank mentions. Prompt Library gives you the exact prompts your customers type into AI, weighted by real demand, so you optimize for what's actually being asked.",
@@ -1457,6 +1516,7 @@ const showcaseFeatures = [
   },
   {
     key: 'probe',
+    video: 'feature-2.mp4',
     eyebrow: 'MULTI-LLM PROBING',
     headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one audit.',
     desc: "We fan out asynchronously, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
@@ -1468,6 +1528,7 @@ const showcaseFeatures = [
   },
   {
     key: 'source',
+    video: 'feature-3.mp4',
     eyebrow: 'SOURCE INFLUENCE',
     headline: 'See exactly where each LLM gets its answers in your category.',
     desc: "Every model has a personality — Perplexity leans on Reddit, Gemini reaches for news, Claude trusts Wikipedia. Source Influence maps the citation footprint behind every answer in your space, so you know where to show up and where you're invisible.",
@@ -1479,6 +1540,7 @@ const showcaseFeatures = [
   },
   {
     key: 'security',
+    video: 'feature-4.mp4',
     eyebrow: 'BRAND SECURITY',
     headline: "See what AI says about you before your customers do.",
     desc: "Independent agents watch LLM answers, search results, Reddit, and X for hallucinations, lookalike impersonators, and emerging narratives about your brand — every alert stamped with the agent that caught it and the model or source it came from.",
@@ -1486,6 +1548,21 @@ const showcaseFeatures = [
       'Hallucination detection across Claude, GPT, Gemini, Perplexity, Grok',
       'Impersonation watch for lookalike domains and social handles',
       'Narrative and sentiment alerts from Reddit velocity, Google Trends, and X',
+    ],
+  },
+  {
+    key: 'studio',
+    // Placeholder: reuses a video that's already cached in the browser
+    // from the stats card. Upload feature-5.mp4 and swap this to
+    // 'feature-5.mp4' when the real file lands in cdn.fetchbot.ai.
+    video: 'watercolor-second.mp4',
+    eyebrow: 'CONTENT STUDIO',
+    headline: 'Write the things AI assistants miss.',
+    desc: "AI-drafted blogs, FAQs, JSON-LD, and Reddit replies to close every visibility, accuracy, and citation gap we find. Ship a fix in a few clicks — no starting from a blank page.",
+    bullets: [
+      'One-click briefs from your visibility gaps',
+      'AI drafts you can edit and approve inline',
+      'Publish-ready JSON-LD and Reddit reply formats',
     ],
   },
 ]
@@ -4748,6 +4825,115 @@ html:has(.lp) #app {
   font-style: normal;
   font-weight: 700;
   color: #131718;
+}
+
+/* Content Studio — brief → draft → approved flow */
+.mock-studio-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.mock-studio-step {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.mock-studio-step:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 56, 92, 0.20);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.mock-studio-step-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.mock-studio-step-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.mock-studio-step.is-brief    .mock-studio-step-label { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
+.mock-studio-step.is-draft    .mock-studio-step-label { background: rgba(255, 145, 0, 0.14);  color: #b56000; }
+.mock-studio-step.is-approved .mock-studio-step-label { background: rgba(0, 166, 153, 0.14);  color: #008489; }
+.mock-studio-step-meta { font-size: 11px; color: #717171; font-weight: 500; }
+
+.mock-studio-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.35;
+}
+.mock-studio-step-title em {
+  font-style: italic;
+  color: #484848;
+  font-weight: 500;
+}
+.mock-studio-preview {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #484848;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-radius: 10px;
+  border-left: 3px solid rgba(255, 145, 0, 0.55);
+  margin: 2px 0;
+}
+.mock-studio-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.mock-studio-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #484848;
+}
+.mock-studio-tag.is-priority {
+  background: rgba(255, 56, 92, 0.12);
+  color: #c61b48;
+}
+.mock-studio-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.mock-studio-format {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(0, 166, 153, 0.10);
+  color: #007a80;
+  border: 1px solid rgba(0, 166, 153, 0.20);
+}
+.mock-studio-connector {
+  align-self: center;
+  width: 2px;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.10), rgba(0,0,0,0));
+  position: relative;
+}
+.mock-studio-connector::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: -2px;
+  transform: translate(-50%, 0) rotate(45deg);
+  width: 6px; height: 6px;
+  border-right: 2px solid rgba(0, 0, 0, 0.18);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
 }
 
 /* ── Pull quote ── */
