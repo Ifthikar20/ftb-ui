@@ -16,6 +16,13 @@ ARG CACHE_DATE=unknown
 ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
+# CDN base URL for large static assets (videos, images). When set at
+# build time (e.g. https://cdn.fetchbot.ai), src/utils/assetUrl.js
+# prefixes all asset paths with it so nginx never ships mp4 bytes.
+# Empty default keeps local dev pointing at /videos/... on the origin.
+ARG VITE_ASSET_CDN=
+ENV VITE_ASSET_CDN=$VITE_ASSET_CDN
+
 COPY . .
 RUN npm run build
 
