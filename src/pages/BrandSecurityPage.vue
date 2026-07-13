@@ -15,6 +15,7 @@ import { useToast } from '@/composables/useToast'
 import brandSecurity from '@/api/brandSecurity'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import HealthScoreCard from '@/components/brand_security/HealthScoreCard.vue'
 import AgentsGrid from '@/components/brand_security/AgentsGrid.vue'
 import InactiveAgentCard from '@/components/brand_security/InactiveAgentCard.vue'
@@ -260,10 +261,10 @@ function stopPolling() {
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Header -->
+    <!-- ── Header / breadcrumb row (matches URLs page) ── -->
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <span class="font-medium">LLM Dashboard</span>
+        <span class="font-medium text-foreground">LLM Dashboard</span>
         <ChevronRight class="size-3.5" />
         <span class="font-semibold text-foreground">Brand Security</span>
       </div>
@@ -274,118 +275,116 @@ function stopPolling() {
       </Button>
     </div>
 
+    <!-- ── Intro ── -->
     <div>
-      <h1 class="text-2xl font-bold">Brand Security</h1>
-      <p class="mt-1 text-sm text-muted-foreground">
-        Independent agents watch your brand across LLMs, SERPs, social and
-        trends. Each alert is stamped with the agent that caught it.
+      <h2 class="text-lg font-bold text-foreground">Brand Security</h2>
+      <p class="text-sm text-muted-foreground">
+        Independent agents watch your brand across LLMs, SERPs, social and trends.
+        Each alert is stamped with the agent that caught it.
       </p>
     </div>
 
+    <!-- ── Health score ── -->
     <HealthScoreCard :overview="overview" />
 
-    <div class="space-y-6">
+    <!-- ── Active agents ── -->
+    <div class="flex flex-wrap items-end justify-between gap-2">
       <div>
-        <div class="mb-2 flex items-baseline justify-between">
-          <div class="text-sm font-semibold">
-            Active agents
-            <span class="ml-1 font-normal text-muted-foreground">
-              ({{ activeAgents.length }})
-            </span>
-          </div>
-          <div class="text-xs text-muted-foreground">
-            Run automatically on their schedule
-          </div>
-        </div>
-        <div v-if="activeAgents.length" class="space-y-2">
-          <AgentsGrid
-            :agents="activeAgents"
-            :running-ids="runningAgentIds"
-            @run="runOneAgent"
-            @configure="openConfigure"
-          />
-        </div>
-        <div v-else class="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          No agents active yet. Activate one below to start monitoring.
-        </div>
-      </div>
-
-      <div v-if="inactiveAgents.length">
-        <div class="mb-2 flex items-baseline justify-between">
-          <div class="text-sm font-semibold">
-            Not active
-            <span class="ml-1 font-normal text-muted-foreground">
-              ({{ inactiveAgents.length }})
-            </span>
-          </div>
-          <div class="text-xs text-muted-foreground">
-            Click a card to activate
-          </div>
-        </div>
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <InactiveAgentCard
-            v-for="agent in inactiveAgents"
-            :key="agent.agent_id"
-            :agent="agent"
-            :busy="activatingIds.has(agent.agent_id)"
-            @activate="activateAgent"
-          />
-        </div>
+        <h2 class="text-lg font-bold text-foreground">Active agents</h2>
+        <p class="text-sm text-muted-foreground">
+          {{ activeAgents.length }} agent{{ activeAgents.length === 1 ? '' : 's' }} running on their schedule
+        </p>
       </div>
     </div>
+    <Card v-if="activeAgents.length">
+      <CardContent class="pt-6">
+        <AgentsGrid
+          :agents="activeAgents"
+          :running-ids="runningAgentIds"
+          @run="runOneAgent"
+          @configure="openConfigure"
+        />
+      </CardContent>
+    </Card>
+    <div v-else class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+      No agents active yet. Activate one below to start monitoring.
+    </div>
 
-    <div class="space-y-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="text-sm font-semibold">Alerts</div>
-        <div class="ml-2 flex gap-1">
-          <button
-            v-for="s in ['open', 'resolved', 'dismissed']" :key="s"
-            :class="[
-              'rounded px-2 py-0.5 text-xs font-medium',
-              filter.status === s
-                ? 'bg-foreground text-background'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70',
-            ]"
-            @click="setStatus(s)"
-          >{{ s }}</button>
-        </div>
-        <span class="mx-2 text-muted-foreground/50">|</span>
-        <div class="flex flex-wrap gap-1">
+    <!-- ── Not active ── -->
+    <template v-if="inactiveAgents.length">
+      <div>
+        <h2 class="text-lg font-bold text-foreground">Not active</h2>
+        <p class="text-sm text-muted-foreground">Click a card to activate an agent</p>
+      </div>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <InactiveAgentCard
+          v-for="agent in inactiveAgents"
+          :key="agent.agent_id"
+          :agent="agent"
+          :busy="activatingIds.has(agent.agent_id)"
+          @activate="activateAgent"
+        />
+      </div>
+    </template>
+
+    <!-- ── Alerts ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Alerts</h2>
+      <p class="text-sm text-muted-foreground">Every issue caught by your active agents</p>
+    </div>
+
+    <Card>
+      <CardContent class="pt-6">
+        <!-- Filter row: status segmented control + agent chips + severity chips -->
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+          <!-- Status: segmented control -->
+          <div class="flex items-center rounded-lg border border-border p-0.5">
+            <button
+              v-for="s in ['open', 'resolved', 'dismissed']" :key="s"
+              class="rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors"
+              :class="filter.status === s
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="setStatus(s)"
+            >{{ s }}</button>
+          </div>
+
+          <!-- Agent chips -->
           <button
             v-for="agent in agents" :key="agent.agent_id"
-            :class="[
-              'rounded px-2 py-0.5 text-xs font-medium',
-              filter.agent_id.includes(agent.agent_id)
-                ? 'bg-foreground text-background'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70',
-            ]"
+            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:border-ring"
+            :class="filter.agent_id.includes(agent.agent_id)
+              ? 'border-ring text-foreground'
+              : 'border-border text-muted-foreground'"
             @click="toggleAgentFilter(agent.agent_id)"
           >{{ agent.display_name }}</button>
-        </div>
-        <span class="mx-2 text-muted-foreground/50">|</span>
-        <div class="flex gap-1">
+
+          <!-- Severity chips -->
           <button
             v-for="sev in ['high', 'medium', 'low']" :key="sev"
-            :class="[
-              'rounded px-2 py-0.5 text-xs font-medium capitalize',
-              filter.severity.includes(sev)
-                ? 'bg-foreground text-background'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70',
-            ]"
+            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium capitalize transition-colors hover:border-ring"
+            :class="filter.severity.includes(sev)
+              ? 'border-ring text-foreground'
+              : 'border-border text-muted-foreground'"
             @click="toggleSeverityFilter(sev)"
           >{{ sev }}</button>
         </div>
-      </div>
 
-      <AlertsTable
-        :alerts="alerts"
-        :agents-by-id="agentsById"
-        :loading="loading.alerts"
-        @resolve="resolveAlert"
-        @dismiss="dismissAlert"
-      />
+        <AlertsTable
+          :alerts="alerts"
+          :agents-by-id="agentsById"
+          :loading="loading.alerts"
+          @resolve="resolveAlert"
+          @dismiss="dismissAlert"
+        />
+      </CardContent>
+    </Card>
+
+    <!-- ── Monitoring config ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Monitoring</h2>
+      <p class="text-sm text-muted-foreground">Brand terms and negative keywords the agents watch for</p>
     </div>
-
     <MonitoringConfigPanel
       :config="config"
       @save="saveConfig"
