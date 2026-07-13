@@ -4095,8 +4095,11 @@ html:has(.lp) #app {
     0 16px 48px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   /* Isolate internal layout so the typewriter/stagger transitions never
-     cause a reflow that shifts the sections above or below on the page. */
+     cause a reflow that shifts the sections above or below on the page.
+     Belt-and-braces: with fixed heights below AND contain:layout, this
+     card never changes size regardless of what the animation does. */
   contain: layout;
+  box-sizing: border-box;
 }
 .mock-card:hover {
   transform: translateY(-2px);
@@ -4115,6 +4118,12 @@ html:has(.lp) #app {
   font-size: 15px;
   font-weight: 500;
   color: #222222;
+  /* Lock the search bar to a single line so long typed prompts can't
+     wrap and grow the mock's height. */
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .mock-search-icon {
   width: 14px; height: 14px;
@@ -4130,7 +4139,13 @@ html:has(.lp) #app {
   bottom: -3px; right: -3px;
   transform: rotate(45deg);
 }
-.mock-search-text { flex: 1; min-width: 0; }
+.mock-search-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .mock-search-caret {
   color: #ff385c;
   font-weight: 400;
@@ -4143,9 +4158,11 @@ html:has(.lp) #app {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  /* Reserve space for 3 rows so the card doesn't grow as rows stream in
-     during the typewriter cycle and shove the section below downward. */
-  min-height: 300px;
+  /* Fixed height (not min-height) so the container is completely
+     immune to reflow as rows stream in and out. Older rows overflow
+     invisibly; only the newest 3 are ever rendered by the loop. */
+  height: 300px;
+  overflow: hidden;
 }
 .mock-prompt-row {
   display: flex;
