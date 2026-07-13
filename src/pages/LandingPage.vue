@@ -23,7 +23,7 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-left">
-          <h1 class="hero-h anim" data-anim="fade-up">
+          <h1 class="hero-h anim" data-anim="hero">
             <span class="tw-line" ref="twLine1"></span><br/>
             <span class="tw-line" ref="twLine2"></span><br/>
             <em><span class="tw-line" ref="twLine3"></span></em>
@@ -174,11 +174,20 @@
                         <li>Datadog</li>
                         <li>New Relic</li>
                         <li>Grafana</li>
+                        <li class="why-demo-you">
+                          Meterlane LLC
+                          <span class="why-demo-you-tag" aria-hidden="true">
+                            <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden="true">
+                              <path d="M13 5H1M1 5l4-4M1 5l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            This is you
+                          </span>
+                        </li>
                       </ol>
                     </div>
                     <div class="why-demo-foot">
                       You rank <strong>#1 on Google</strong> for the same query.
-                      Nobody sees it.
+                      Nobody sees it — until you show up here.
                     </div>
                   </div>
 
@@ -271,7 +280,7 @@
 
           <div class="stats-card-content">
             <div class="stats-card-top">
-              <h2 class="stats-card-h anim" data-anim="fade-up" data-delay="400">
+              <h2 class="stats-card-h anim" data-anim="hero" data-delay="400">
                 AI search is the new search.<br/>
                 <em>Your brand isn't ready for it.</em>
               </h2>
@@ -351,7 +360,7 @@
               disablepictureinpicture
               aria-hidden="true"
             >
-              <source :src="assetUrl('/videos/feature-' + (i + 1) + '.mp4')" type="video/mp4" />
+              <source :src="assetUrl('/videos/' + f.video)" type="video/mp4" />
             </video>
             <div class="feature-visual-tint" aria-hidden="true"></div>
 
@@ -602,7 +611,59 @@
               </div>
             </div>
 
-            <!-- CONTENT STUDIO -->
+            <!-- BRAND SECURITY — live alerts feed -->
+            <div v-else-if="f.key === 'security'" class="mock-card">
+              <div class="mock-sec-head">
+                <div class="mock-sec-title">Brand Security · Live alerts</div>
+                <div class="mock-sec-health">
+                  <span class="mock-sec-health-dot"></span>
+                  Health 82
+                </div>
+              </div>
+
+              <div class="mock-sec-alerts">
+
+                <div class="mock-sec-alert is-hallucination">
+                  <div class="mock-sec-alert-head">
+                    <span class="mock-sec-agent">LLM Truth</span>
+                    <span class="mock-sec-src">GPT-4</span>
+                    <span class="mock-sec-time">3m ago</span>
+                    <span class="mock-sec-sev is-high">High</span>
+                  </div>
+                  <div class="mock-sec-alert-body">
+                    Claimed you offer a <em>lifetime free tier</em> — you don't. Answer surfaced on prompt
+                    "best AI visibility tools 2026".
+                  </div>
+                </div>
+
+                <div class="mock-sec-alert is-impersonation">
+                  <div class="mock-sec-alert-head">
+                    <span class="mock-sec-agent">Impersonation</span>
+                    <span class="mock-sec-src">SERP</span>
+                    <span class="mock-sec-time">18m ago</span>
+                    <span class="mock-sec-sev is-critical">Critical</span>
+                  </div>
+                  <div class="mock-sec-alert-body">
+                    Lookalike domain <em>fetchb0t.ai</em> registered 2h ago. Levenshtein 1 to your brand.
+                  </div>
+                </div>
+
+                <div class="mock-sec-alert is-narrative">
+                  <div class="mock-sec-alert-head">
+                    <span class="mock-sec-agent">Narrative Watch</span>
+                    <span class="mock-sec-src">Reddit + Trends</span>
+                    <span class="mock-sec-time">42m ago</span>
+                    <span class="mock-sec-sev is-medium">Medium</span>
+                  </div>
+                  <div class="mock-sec-alert-body">
+                    Reddit velocity <em>+340%</em> on "fetchbot pricing". Trends: rising query <em>breakout</em>.
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- CONTENT STUDIO — brief → draft → approved flow -->
             <div v-else-if="f.key === 'studio'" class="mock-card">
               <div class="mock-studio-flow">
 
@@ -667,7 +728,7 @@
     <!-- ═══ How It Works ═══ -->
     <section class="how" id="how">
       <div class="wrap">
-        <h2 class="sec-h anim" data-anim="fade-up">Up and running<br/><em>in 3 minutes.</em></h2>
+        <h2 class="sec-h anim" data-anim="hero">Up and running<br/><em>in 3 minutes.</em></h2>
         <div class="steps">
           <div v-for="(s, i) in steps" :key="i" class="step anim" data-anim="fade-up" :data-delay="i * 80">
             <div class="step-num">{{ i + 1 }}</div>
@@ -681,7 +742,7 @@
     <!-- ═══ FAQ ═══ -->
     <section class="faq anim" data-anim="fade-up">
       <div class="wrap faq-wrap">
-        <h2 class="sec-h sec-h-grad anim" data-anim="fade-up">Questions,<br/><em>answered plainly.</em></h2>
+        <h2 class="sec-h sec-h-grad anim" data-anim="hero">Questions,<br/><em>answered plainly.</em></h2>
         <div class="faq-list">
           <details v-for="(item, i) in faqItems" :key="i" class="faq-item anim" data-anim="fade-up" :data-delay="i * 60">
             <summary>
@@ -1015,7 +1076,32 @@ async function runTypewriter() {
   twDone.value = true
 }
 
+// Apple-style section-by-section scroll. Applied to <html> so the
+// document is the snap container (leaving window.scroll events and
+// IntersectionObserver — both rooted on the window — untouched).
+// Only on desktop; only when the user hasn't opted out of motion.
+// Restored on unmount so other pages aren't affected.
+const _prevSnapType = { value: null, behavior: null, applied: false }
+function enableScrollSnap() {
+  if (window.innerWidth < 900) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const html = document.documentElement
+  _prevSnapType.value = html.style.scrollSnapType || ''
+  _prevSnapType.behavior = html.style.scrollBehavior || ''
+  html.style.scrollSnapType = 'y proximity'
+  html.style.scrollBehavior = 'smooth'
+  _prevSnapType.applied = true
+}
+function disableScrollSnap() {
+  if (!_prevSnapType.applied) return
+  document.documentElement.style.scrollSnapType = _prevSnapType.value
+  document.documentElement.style.scrollBehavior = _prevSnapType.behavior
+  _prevSnapType.applied = false
+}
+
 onMounted(() => {
+  enableScrollSnap()
+
   const onScroll = () => { scrolled.value = window.scrollY > 40 }
   window.addEventListener('scroll', onScroll, { passive: true })
 
@@ -1062,6 +1148,7 @@ onMounted(() => {
   }
 
   onUnmounted(() => {
+    disableScrollSnap()
     window.removeEventListener('scroll', onScroll)
     obs.disconnect()
     statsObs && statsObs.disconnect()
@@ -1426,6 +1513,7 @@ const plans = [
 const showcaseFeatures = [
   {
     key: 'prompt',
+    video: 'feature-1.mp4',
     eyebrow: 'PROMPT LIBRARY',
     headline: 'Rank where your buyers actually ask.',
     desc: "GEO is the new SEO. Large language models don't rank pages — they rank mentions. Prompt Library gives you the exact prompts your customers type into AI, weighted by real demand, so you optimize for what's actually being asked.",
@@ -1437,6 +1525,7 @@ const showcaseFeatures = [
   },
   {
     key: 'probe',
+    video: 'feature-2.mp4',
     eyebrow: 'MULTI-LLM PROBING',
     headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one audit.',
     desc: "We fan out asynchronously, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
@@ -1448,6 +1537,7 @@ const showcaseFeatures = [
   },
   {
     key: 'source',
+    video: 'feature-3.mp4',
     eyebrow: 'SOURCE INFLUENCE',
     headline: 'See exactly where each LLM gets its answers in your category.',
     desc: "Every model has a personality — Perplexity leans on Reddit, Gemini reaches for news, Claude trusts Wikipedia. Source Influence maps the citation footprint behind every answer in your space, so you know where to show up and where you're invisible.",
@@ -1458,7 +1548,23 @@ const showcaseFeatures = [
     ],
   },
   {
+    key: 'security',
+    video: 'feature-4.mp4',
+    eyebrow: 'BRAND SECURITY',
+    headline: "See what AI says about you before your customers do.",
+    desc: "Independent agents watch LLM answers, search results, Reddit, and X for hallucinations, lookalike impersonators, and emerging narratives about your brand — every alert stamped with the agent that caught it and the model or source it came from.",
+    bullets: [
+      'Hallucination detection across Claude, GPT, Gemini, Perplexity, Grok',
+      'Impersonation watch for lookalike domains and social handles',
+      'Narrative and sentiment alerts from Reddit velocity, Google Trends, and X',
+    ],
+  },
+  {
     key: 'studio',
+    // Placeholder: reuses a video that's already cached in the browser
+    // from the stats card. Upload feature-5.mp4 and swap this to
+    // 'feature-5.mp4' when the real file lands in cdn.fetchbot.ai.
+    video: 'watercolor-second.mp4',
     eyebrow: 'CONTENT STUDIO',
     headline: 'Write the things AI assistants miss.',
     desc: "AI-drafted blogs, FAQs, JSON-LD, and Reddit replies to close every visibility, accuracy, and citation gap we find. Ship a fix in a few clicks — no starting from a blank page.",
@@ -1747,14 +1853,128 @@ function updateStickyCta() {
    Flat surfaces · static trust strip
    ═══════════════════════════════════ */
 
-/* ── Animations ── */
+/* ── Animations — Apple-style scroll entrance ──
+   Displacement + subtle blur that clears as elements enter view.
+   Uses Apple's "power4 out" easing (cubic-bezier 0.16, 1, 0.3, 1):
+   nearly linear at the start, then eases hard into a soft landing.
+   Long enough (900ms) to feel deliberate, short enough to not stall
+   the reading flow. */
 .anim {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(0, 40px, 0) scale(0.985);
+  filter: blur(4px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
 }
-.anim.in { opacity: 1; transform: none; }
+.anim.in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+/* Hero variant — larger displacement + longer duration for the big
+   moments (section headlines, hero copy). */
+.anim[data-anim="hero"] {
+  transform: translate3d(0, 60px, 0) scale(0.97);
+  transition:
+    opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim[data-anim="hero"].in {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+/* Scroll-driven breath on the feature-showcase video cards: each
+   card lifts slightly toward center as it scrolls through view and
+   settles back — the "content moves at a different rate than the
+   frame" trick from Apple's product pages. Applied only to
+   .feature-visual (the stats card has its own framer entrance and
+   would double-transform). Uses view() timeline (Chrome/Edge 115+,
+   Safari 26+); older browsers get the hover-lift only. */
+@supports (animation-timeline: view()) {
+  @keyframes card-scroll-breath {
+    from { transform: translate3d(0, 24px, 0) scale(0.985); }
+    50%  { transform: translate3d(0, 0, 0)    scale(1);     }
+    to   { transform: translate3d(0, -24px, 0) scale(0.985); }
+  }
+  .feature-visual {
+    animation-name: card-scroll-breath;
+    animation-duration: 1ms;
+    animation-timing-function: linear;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+/* Apple-style section entrance + exit tied directly to scroll
+   position. Each major section eases up + fades in as it enters
+   the viewport, holds crisp while it's fully visible (the "cover"
+   phase), then softly recedes on the way out. Two named animations
+   run on the same element with different animation-range values:
+   `entry` covers 0% -> 100% of the entry into the viewport, `exit`
+   covers 0% -> 100% of the exit. Because animation-fill-mode is
+   `both`, the final state of the entry animation is held during
+   the cover phase in between. Same view() timeline support as
+   above; older browsers fall back to the .anim in-viewport
+   observer with no downside. */
+@supports (animation-timeline: view()) {
+  @keyframes apple-section-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 80px, 0) scale(0.94);
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
+    }
+  }
+  @keyframes apple-section-out {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
+    }
+    to {
+      opacity: 0.35;
+      transform: translate3d(0, -60px, 0) scale(0.96);
+      filter: blur(4px);
+    }
+  }
+  .why,
+  .feature-showcase,
+  .how,
+  .faq,
+  .final-cta {
+    animation-name: apple-section-in, apple-section-out;
+    animation-fill-mode: both, both;
+    animation-timing-function:
+      cubic-bezier(0.16, 1, 0.3, 1),
+      cubic-bezier(0.7, 0, 0.84, 0);
+    animation-timeline: view(), view();
+    animation-range:
+      entry 0% cover 15%,
+      cover 85% exit 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim {
+    transition: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  @supports (animation-timeline: view()) {
+    .feature-visual,
+    .why,
+    .feature-showcase,
+    .how,
+    .faq,
+    .final-cta { animation-name: none; }
+  }
+}
 
 /* ── Base ── */
 .lp {
@@ -1772,6 +1992,30 @@ function updateStickyCta() {
   max-width: 100vw;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+}
+/* Apple-style section-by-section scroll: each major section carries
+   scroll-snap-align, and JS toggles scroll-snap-type on <html> on
+   mount / unmount (see script setup). Uses `proximity` (not
+   `mandatory`) so it only pulls the section into view when the
+   scroll naturally lands near it — never traps a user mid-content.
+   scroll-margin-top clears the fixed nav so sections don't hide
+   behind it. */
+@media (min-width: 900px) {
+  .hero,
+  .stats,
+  .why,
+  .feature-showcase .feature-row,
+  .how,
+  .faq,
+  .final-cta {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+    scroll-margin-top: 88px;
+  }
+  /* Stats + feature rows command the viewport so each snap lands
+     with the whole section visible. */
+  .stats { min-height: calc(100vh - 88px); display: flex; align-items: center; }
+  .feature-row { min-height: calc(100vh - 88px); }
 }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
@@ -3592,6 +3836,47 @@ html:has(.lp) #app {
   padding: 2px 6px;
   border-radius: 4px;
 }
+/* The "this is you" row — highlights an invented brand as the
+   4th vendor with a soft accent bar and a labeled arrow badge to
+   its right. Positioned inline so the arrow always sits beside
+   the brand name, no matter how the list wraps. */
+.why-demo-list li.why-demo-you {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(47, 107, 237, 0.14), transparent 60%);
+  color: #131718;
+  font-weight: 700;
+  position: relative;
+  animation: why-demo-you-pulse 2.4s ease-in-out infinite;
+}
+.why-demo-you-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: var(--brand-accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px -2px rgba(var(--brand-accent-rgb), 0.42);
+  white-space: nowrap;
+}
+.why-demo-you-tag svg {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+@keyframes why-demo-you-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-accent-rgb), 0.00); }
+  50%      { box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .why-demo-list li.why-demo-you { animation: none; }
+}
 .why-demo-foot {
   margin-top: auto;
   padding-top: 14px;
@@ -4555,7 +4840,100 @@ html:has(.lp) #app {
   vertical-align: -1px;
 }
 
-/* Studio draft mock */
+/* Brand Security — live alerts feed */
+.mock-sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mock-sec-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #222222;
+  letter-spacing: -0.01em;
+}
+.mock-sec-health {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 166, 153, 0.12);
+  color: #007a80;
+}
+.mock-sec-health-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #008489;
+  box-shadow: 0 0 0 3px rgba(0, 166, 153, 0.20);
+}
+.mock-sec-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mock-sec-alert {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-left-width: 3px;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.mock-sec-alert:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.mock-sec-alert.is-hallucination { border-left-color: rgba(255, 145, 0, 0.65); }
+.mock-sec-alert.is-impersonation { border-left-color: rgba(198, 27, 72, 0.75); }
+.mock-sec-alert.is-narrative     { border-left-color: rgba(66, 133, 244, 0.65); }
+
+.mock-sec-alert-head {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 6px;
+}
+.mock-sec-agent {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+.mock-sec-src {
+  font-size: 11px;
+  font-weight: 600;
+  color: #484848;
+}
+.mock-sec-time {
+  font-size: 11px;
+  color: #717171;
+  margin-left: auto;
+}
+.mock-sec-sev {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.mock-sec-sev.is-medium   { background: rgba(255, 145, 0, 0.14); color: #b56000; }
+.mock-sec-sev.is-high     { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
+.mock-sec-sev.is-critical { background: #c61b48; color: #ffffff; }
+.mock-sec-alert-body {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #222222;
+}
+.mock-sec-alert-body em {
+  font-style: normal;
+  font-weight: 700;
+  color: #131718;
+}
+
 /* Content Studio — brief → draft → approved flow */
 .mock-studio-flow {
   display: flex;
@@ -4648,7 +5026,6 @@ html:has(.lp) #app {
   color: #007a80;
   border: 1px solid rgba(0, 166, 153, 0.20);
 }
-/* Vertical connector between steps: a short line + chevron. */
 .mock-studio-connector {
   align-self: center;
   width: 2px;
