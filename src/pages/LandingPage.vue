@@ -256,7 +256,15 @@
     <section class="stats anim" data-anim="fade-up" ref="statsSection">
       <div class="wrap">
         <div class="stats-card">
-          <video class="stats-card-bg" autoplay muted loop playsinline>
+          <video
+            class="stats-card-bg"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="auto"
+            disablepictureinpicture
+          >
             <source :src="assetUrl('/videos/watercolor-second.mp4')" type="video/mp4" />
           </video>
           <div class="stats-card-tint"></div>
@@ -582,95 +590,59 @@
 
             <!-- CONTENT STUDIO -->
             <div v-else-if="f.key === 'studio'" class="mock-card">
-              <div class="mock-studio-head">
-                <div>
-                  <div class="mock-studio-title">Market quadrant · PM apps</div>
-                  <div class="mock-studio-sub">Visibility (y) × sentiment (x). Click any brand to inspect.</div>
-                </div>
-                <div class="mock-studio-counts">
-                  <span class="mock-studio-pill q-leader">{{ studioCounts.leader }} Leaders</span>
-                  <span class="mock-studio-pill q-niche">{{ studioCounts.niche }} Niche</span>
-                </div>
-              </div>
+              <div class="mock-studio-flow">
 
-              <div class="mock-studio-canvas">
-                <div class="mock-studio-q q-leader"><span>Leaders</span></div>
-                <div class="mock-studio-q q-niche"><span>Niche</span></div>
-                <div class="mock-studio-q q-lagger"><span>Laggers</span></div>
-                <div class="mock-studio-q q-controversial"><span>Controversial</span></div>
-
-                <div class="mock-studio-axis-y" aria-hidden="true">
-                  <span class="hi">High visibility</span>
-                  <span class="lo">Low visibility</span>
-                </div>
-                <div class="mock-studio-axis-x" aria-hidden="true">
-                  <span class="lo">Polarising</span>
-                  <span class="hi">Positive</span>
-                </div>
-
-                <button
-                  v-for="b in studioBrands"
-                  :key="b.key"
-                  class="mock-studio-brand"
-                  :class="[
-                    'q-' + quadrantOf(b),
-                    { 'is-you': b.you, 'is-pinned': pinnedStudioKey === b.key },
-                  ]"
-                  :style="{ left: studioX(b) + '%', top: studioY(b) + '%' }"
-                  :title="b.name + ' — ' + studioQuadrantLabel[quadrantOf(b)]"
-                  @click.stop="toggleStudioPin(b)"
-                >
-                  <span class="mock-studio-marker"></span>
-                  <span class="mock-studio-label">{{ b.name }}</span>
-                </button>
-              </div>
-
-              <div v-if="pinnedStudio" class="mock-studio-detail">
-                <div class="mock-studio-detail-head">
-                  <span class="mock-studio-detail-name">
-                    {{ pinnedStudio.name }}
-                    <span v-if="pinnedStudio.you" class="mock-studio-you-pill">You</span>
-                  </span>
-                  <span class="mock-studio-detail-quad" :class="'q-' + quadrantOf(pinnedStudio)">
-                    {{ studioQuadrantLabel[quadrantOf(pinnedStudio)] }}
-                  </span>
-                </div>
-                <div class="mock-studio-stats">
-                  <div class="mock-studio-stat">
-                    <span class="mock-studio-stat-label">Visibility</span>
-                    <span class="mock-studio-stat-value">{{ pinnedStudio.vis }}%</span>
+                <div class="mock-studio-step is-brief">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">Brief</span>
+                    <span class="mock-studio-step-meta">2m ago</span>
                   </div>
-                  <div class="mock-studio-stat">
-                    <span class="mock-studio-stat-label">Positive sentiment</span>
-                    <span class="mock-studio-stat-value">{{ Math.round(pinnedStudio.sent * 100) }}%</span>
+                  <div class="mock-studio-step-title">
+                    Fix visibility gap: <em>"best CRM for indie founders"</em>
                   </div>
-                  <div class="mock-studio-stat">
-                    <span class="mock-studio-stat-label">Avg rank</span>
-                    <span class="mock-studio-stat-value">#{{ pinnedStudio.rank.toFixed(1) }}</span>
-                  </div>
-                  <div class="mock-studio-stat">
-                    <span class="mock-studio-stat-label">Answer share</span>
-                    <span class="mock-studio-stat-value">{{ pinnedStudio.share }}%</span>
+                  <div class="mock-studio-tags">
+                    <span class="mock-studio-tag">Missing in 3 of 4 models</span>
+                    <span class="mock-studio-tag is-priority">High</span>
                   </div>
                 </div>
-                <div class="mock-studio-models">
-                  <span class="mock-studio-models-label">Surfaces in</span>
-                  <span
-                    v-for="k in MODEL_KEYS"
-                    :key="k"
-                    class="mock-model-dot"
-                    :class="['is-' + k, { 'is-hit': pinnedStudio.models.includes(k) }]"
-                    :title="MODEL_LABEL[k] + (pinnedStudio.models.includes(k) ? ' — surfaces ' + pinnedStudio.name : ' — does not surface ' + pinnedStudio.name)"
-                  ></span>
-                  <span class="mock-studio-models-count">{{ pinnedStudio.models.length }} of 4</span>
-                </div>
-              </div>
 
-              <div class="mock-studio-exports">
-                <span class="mock-studio-exports-label">Export</span>
-                <span class="mock-studio-export">CSV</span>
-                <span class="mock-studio-export">Looker</span>
-                <span class="mock-studio-export">API</span>
+                <div class="mock-studio-connector" aria-hidden="true"></div>
+
+                <div class="mock-studio-step is-draft">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">Draft</span>
+                    <span class="mock-studio-step-meta">640 words · 3 min read</span>
+                  </div>
+                  <div class="mock-studio-preview">
+                    For solo founders building their first CRM stack, the calculus is different —
+                    you're optimizing for time-to-first-customer, not enterprise workflow depth…
+                  </div>
+                  <div class="mock-studio-tags">
+                    <span class="mock-studio-tag">Voice match: 94%</span>
+                    <span class="mock-studio-tag">Accuracy: 92%</span>
+                  </div>
+                </div>
+
+                <div class="mock-studio-connector" aria-hidden="true"></div>
+
+                <div class="mock-studio-step is-approved">
+                  <div class="mock-studio-step-head">
+                    <span class="mock-studio-step-label">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+                        <path d="M3 8.5l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Approved
+                    </span>
+                    <span class="mock-studio-step-meta">Ready to publish</span>
+                  </div>
+                  <div class="mock-studio-formats">
+                    <span class="mock-studio-format">HTML blog</span>
+                    <span class="mock-studio-format">JSON-LD</span>
+                    <span class="mock-studio-format">Reddit reply</span>
+                    <span class="mock-studio-format">FAQ</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -1132,56 +1104,6 @@ function toggleProbePin(p) {
   pinnedProbeKey.value = pinnedProbeKey.value === p.key ? null : p.key
 }
 
-// Content Studio demo data — the market quadrant the in-product report
-// renders for any category: every brand plotted by sentiment (x) and
-// visibility (y), grouped into Leaders, Niche Players, Laggers, and
-// Controversial. Click a brand to see avg rank, mention share, the models
-// that surface them, and a sample sentence the report exports.
-const studioBrands = [
-  { key: 'you',      name: 'Acrelane',  you: true,  vis: 64, sent: 0.74, rank: 1.8, share: 22, models: ['anthropic','openai','google','perplexity'] },
-  { key: 'linear',   name: 'Linear',    vis: 78, sent: 0.66, rank: 1.5, share: 28, models: ['anthropic','openai','google','perplexity'] },
-  { key: 'asana',    name: 'Asana',     vis: 71, sent: 0.58, rank: 2.4, share: 24, models: ['anthropic','openai','perplexity'] },
-  { key: 'notion',   name: 'Notion',    vis: 55, sent: 0.62, rank: 3.1, share: 18, models: ['anthropic','openai','perplexity'] },
-  { key: 'monday',   name: 'Monday',    vis: 42, sent: 0.32, rank: 5.2, share: 11, models: ['openai','google'] },
-  { key: 'trello',   name: 'Trello',    vis: 31, sent: 0.78, rank: 7.4, share:  9, models: ['anthropic','perplexity'] },
-  { key: 'wrike',    name: 'Wrike',     vis: 22, sent: 0.55, rank: 9.1, share:  6, models: ['openai'] },
-  { key: 'clickup',  name: 'ClickUp',   vis: 36, sent: 0.18, rank: 6.7, share: 10, models: ['google','perplexity'] },
-]
-
-// Two thresholds carve the canvas into four quadrants — match how the
-// in-product report bins brands.
-const STUDIO_VIS_THRESH = 50    // y-axis: visibility cutoff
-const STUDIO_SENT_THRESH = 0.5  // x-axis: positive vs polarising sentiment
-
-function quadrantOf(b) {
-  if (b.vis >= STUDIO_VIS_THRESH && b.sent >= STUDIO_SENT_THRESH) return 'leader'
-  if (b.vis <  STUDIO_VIS_THRESH && b.sent >= STUDIO_SENT_THRESH) return 'niche'
-  if (b.vis <  STUDIO_VIS_THRESH && b.sent <  STUDIO_SENT_THRESH) return 'lagger'
-  return 'controversial'
-}
-const studioQuadrantLabel = {
-  leader: 'Leader', niche: 'Niche player',
-  lagger: 'Lagger', controversial: 'Controversial',
-}
-const studioCounts = computed(() => {
-  const c = { leader: 0, niche: 0, lagger: 0, controversial: 0 }
-  studioBrands.forEach(b => { c[quadrantOf(b)]++ })
-  return c
-})
-
-// Plot coordinates inside the canvas (we render manually as a positioned
-// list rather than a chart-lib scatter, so the layout stays light).
-function studioX(b) { return Math.max(4, Math.min(96, b.sent * 100)) }
-function studioY(b) { return Math.max(4, Math.min(96, 100 - b.vis)) }
-
-const pinnedStudioKey = ref('you')
-function toggleStudioPin(b) {
-  pinnedStudioKey.value = pinnedStudioKey.value === b.key ? null : b.key
-}
-const pinnedStudio = computed(() =>
-  studioBrands.find(b => b.key === pinnedStudioKey.value) || null,
-)
-
 // Hero "probe" animation — cycles through a handful of category prompts,
 // each with its own set of model answers. Sources are `{label, domain}`
 // so we render the real favicon via Google's favicon CDN.
@@ -1524,12 +1446,12 @@ const showcaseFeatures = [
   {
     key: 'studio',
     eyebrow: 'CONTENT STUDIO',
-    headline: 'Turn AI search data into reports people actually read.',
-    desc: "Group every brand in your category into Leaders, Niche Players, Laggers, and Controversial. Visibility, sentiment, and position on one canvas — the shape of the market at a glance, ready to share with your team or your clients.",
+    headline: 'Write the things AI assistants miss.',
+    desc: "AI-drafted blogs, FAQs, JSON-LD, and Reddit replies to close every visibility, accuracy, and citation gap we find. Ship a fix in a few clicks — no starting from a blank page.",
     bullets: [
-      'Clean .csv exports in seconds',
-      'Looker Studio connector for client-ready dashboards',
-      'API access to pipe insights into your stack',
+      'One-click briefs from your visibility gaps',
+      'AI drafts you can edit and approve inline',
+      'Publish-ready JSON-LD and Reddit reply formats',
     ],
   },
 ]
@@ -3799,25 +3721,35 @@ html:has(.lp) #app {
    for a landing hero. */
 .stats-card {
   position: relative;
-  border-radius: 24px;
+  border-radius: 28px;
   overflow: hidden;
-  background: #1a1a2e;
-  min-height: 620px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 780px;
   aspect-ratio: 16 / 9;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 30px 80px -20px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+              0 40px 100px -20px rgba(15, 23, 42, 0.28);
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .stats-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 40px 100px -20px rgba(15, 23, 42, 0.30);
+  transform: translateY(-4px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+              0 50px 120px -20px rgba(15, 23, 42, 0.36);
 }
-/* Ken Burns: slow, imperceptible scale + drift on the video so the card
-   never feels static even during quiet moments in the loop. */
+/* Fade + scale the video in from the poster color so there's no
+   "black flash" during load, and the entrance itself is animated. */
+@keyframes stats-card-fadein {
+  from { opacity: 0; transform: scale(1.08); }
+  to   { opacity: 1; transform: scale(1.04); }
+}
+/* Ken Burns: noticeable slow drift + scale so the card breathes even
+   during quiet moments in the loop. */
 @keyframes stats-card-kenburns {
-  0%   { transform: scale(1.02) translate3d(0, 0, 0); }
-  50%  { transform: scale(1.08) translate3d(-1.2%, -0.8%, 0); }
-  100% { transform: scale(1.02) translate3d(0, 0, 0); }
+  0%   { transform: scale(1.04) translate3d(0, 0, 0); }
+  25%  { transform: scale(1.10) translate3d(-1.5%, -1%, 0); }
+  50%  { transform: scale(1.14) translate3d(-2.5%, -1.5%, 0); }
+  75%  { transform: scale(1.10) translate3d(-1.5%, -0.5%, 0); }
+  100% { transform: scale(1.04) translate3d(0, 0, 0); }
 }
 .stats-card-bg {
   position: absolute;
@@ -3826,13 +3758,27 @@ html:has(.lp) #app {
   object-fit: cover;
   z-index: 0;
   transform-origin: 50% 55%;
-  animation: stats-card-kenburns 28s ease-in-out infinite;
-  will-change: transform;
+  animation:
+    stats-card-fadein 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both,
+    stats-card-kenburns 18s ease-in-out 1.3s infinite;
+  will-change: transform, opacity;
 }
+/* Metrics fade + rise in a stagger as the card enters view. */
+@keyframes stats-card-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stats-card .stats-card-metric {
+  animation: stats-card-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stats-card .stats-card-metric:nth-child(1) { animation-delay: 0.5s; }
+.stats-card .stats-card-metric:nth-child(2) { animation-delay: 0.65s; }
+.stats-card .stats-card-metric:nth-child(3) { animation-delay: 0.8s; }
 @media (prefers-reduced-motion: reduce) {
   .stats-card { transition: none; }
-  .stats-card:hover { transform: none; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 30px 80px -20px rgba(15, 23, 42, 0.22); }
-  .stats-card-bg { animation: none; transform: none; }
+  .stats-card:hover { transform: none; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 40px 100px -20px rgba(15, 23, 42, 0.28); }
+  .stats-card-bg,
+  .stats-card .stats-card-metric { animation: none; opacity: 1; transform: none; }
 }
 .stats-card-tint {
   position: absolute;
@@ -3848,20 +3794,20 @@ html:has(.lp) #app {
   justify-content: space-between;
   height: 100%;
   min-height: inherit;
-  padding: 64px 64px 56px;
+  padding: 80px 80px 72px;
   color: #ffffff;
 }
 .stats-card-top {
-  max-width: 780px;
+  max-width: 900px;
 }
 .stats-card-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 700;
-  font-size: clamp(2rem, 3.4vw, 3.2rem);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.6rem, 4.4vw, 4.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   color: #ffffff;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
 }
 .stats-card-h em {
@@ -3870,19 +3816,19 @@ html:has(.lp) #app {
   color: rgba(255, 255, 255, 0.85);
 }
 .stats-card-sub {
-  font-size: 16.5px;
+  font-size: 18px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 620px;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 720px;
   margin: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 .stats-card-bottom {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 48px;
-  margin-top: 96px;
-  max-width: 900px;
+  gap: 56px;
+  margin-top: 120px;
+  max-width: 1100px;
 }
 .stats-card-metric {
   color: #ffffff;
@@ -3890,7 +3836,7 @@ html:has(.lp) #app {
 .stats-card-num {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 700;
-  font-size: 64px;
+  font-size: 84px;
   line-height: 1;
   letter-spacing: -0.03em;
   color: #ffffff;
@@ -3900,9 +3846,9 @@ html:has(.lp) #app {
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
 }
 .stats-card-prefix, .stats-card-suffix {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
 }
 .stats-card-label {
   margin-top: 14px;
@@ -4074,6 +4020,9 @@ html:has(.lp) #app {
     0 6px 16px rgba(0, 0, 0, 0.06),
     0 16px 48px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  /* Isolate internal layout so the typewriter/stagger transitions never
+     cause a reflow that shifts the sections above or below on the page. */
+  contain: layout;
 }
 .mock-card:hover {
   transform: translateY(-2px);
@@ -4115,7 +4064,15 @@ html:has(.lp) #app {
 }
 @keyframes caretBlink { 50% { opacity: 0; } }
 
-.mock-rows { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.mock-rows {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Reserve space for 3 rows so the card doesn't grow as rows stream in
+     during the typewriter cycle and shove the section below downward. */
+  min-height: 300px;
+}
 .mock-prompt-row {
   display: flex;
   flex-direction: column;
@@ -4508,188 +4465,114 @@ html:has(.lp) #app {
 }
 
 /* Studio draft mock */
-/* Content Studio — market quadrant */
-.mock-studio-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-.mock-studio-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #222222;
-  margin-bottom: 2px;
-}
-.mock-studio-sub { font-size: 12px; color: #717171; }
-.mock-studio-counts { display: flex; gap: 6px; flex-wrap: wrap; }
-.mock-studio-pill {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-}
-.mock-studio-pill.q-leader { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-studio-pill.q-niche  { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
-
-.mock-studio-canvas {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-.mock-studio-q {
-  position: absolute;
-  width: 50%; height: 50%;
-}
-.mock-studio-q > span {
-  position: absolute;
-  top: 8px; padding: 2px 8px;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  border-radius: 999px;
-}
-.mock-studio-q.q-leader        { top: 0;  left: 50%; background: rgba(0, 166, 153, 0.06); }
-.mock-studio-q.q-leader > span { right: 10px; color: #008489; background: rgba(0, 166, 153, 0.14); }
-.mock-studio-q.q-niche         { top: 0;  left: 0;   background: rgba(66, 133, 244, 0.05); }
-.mock-studio-q.q-niche > span  { left: 10px;  color: #2f5cb1; background: rgba(66, 133, 244, 0.14); }
-.mock-studio-q.q-lagger        { top: 50%; left: 0;   background: rgba(0, 0, 0, 0.025); }
-.mock-studio-q.q-lagger > span { left: 10px;  top: auto; bottom: 8px; color: #484848; background: rgba(0, 0, 0, 0.08); }
-.mock-studio-q.q-controversial { top: 50%; left: 50%; background: rgba(255, 56, 92, 0.04); }
-.mock-studio-q.q-controversial > span { right: 10px; top: auto; bottom: 8px; color: #c61b48; background: rgba(255, 56, 92, 0.12); }
-
-.mock-studio-axis-y, .mock-studio-axis-x {
-  position: absolute;
-  display: flex; justify-content: space-between;
-  font-size: 9.5px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  color: #aab2bb;
-  pointer-events: none;
-}
-.mock-studio-axis-y {
-  top: 8px; bottom: 8px; left: -2px;
+/* Content Studio — brief → draft → approved flow */
+.mock-studio-flow {
+  display: flex;
   flex-direction: column;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  gap: 0;
 }
-.mock-studio-axis-x {
-  left: 12px; right: 12px; bottom: 4px;
-}
-
-.mock-studio-brand {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 9px 4px 6px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #222222;
-  cursor: pointer;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-  white-space: nowrap;
-}
-.mock-studio-brand:hover {
-  transform: translate(-50%, calc(-50% - 2px));
-  border-color: rgba(255, 56, 92, 0.35);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.10);
-}
-.mock-studio-brand.is-pinned {
-  border-color: #ff385c;
-  box-shadow: 0 8px 22px rgba(255, 56, 92, 0.18);
-  z-index: 2;
-}
-.mock-studio-brand.is-you {
-  border-color: #ff385c;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(255, 56, 92, 0.20);
-}
-.mock-studio-marker {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #aab2bb;
-  flex-shrink: 0;
-}
-.mock-studio-brand.q-leader        .mock-studio-marker { background: #008489; }
-.mock-studio-brand.q-niche         .mock-studio-marker { background: #4285f4; }
-.mock-studio-brand.q-lagger        .mock-studio-marker { background: #717171; }
-.mock-studio-brand.q-controversial .mock-studio-marker { background: #c61b48; }
-.mock-studio-brand.is-you .mock-studio-marker { background: #ff385c; }
-.mock-studio-label { line-height: 1; }
-
-.mock-studio-detail {
-  margin-top: 12px;
-  padding: 12px 14px;
+.mock-studio-step {
+  padding: 14px 16px;
   border-radius: 14px;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  animation: fadeSlide 0.25s ease;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
 }
-.mock-studio-detail-head {
+.mock-studio-step:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 56, 92, 0.20);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.mock-studio-step-head {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
-.mock-studio-detail-name {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 700; color: #222222;
-}
-.mock-studio-you-pill {
-  font-size: 10px; font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(255, 56, 92, 0.12);
-  color: #c61b48;
+.mock-studio-step-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.mock-studio-detail-quad {
-  font-size: 11px; font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 999px;
-}
-.mock-studio-detail-quad.q-leader        { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-studio-detail-quad.q-niche         { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
-.mock-studio-detail-quad.q-lagger        { background: rgba(0, 0, 0, 0.06); color: #484848; }
-.mock-studio-detail-quad.q-controversial { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-
-.mock-studio-stats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 6px 18px;
-}
-.mock-studio-stat { display: flex; align-items: baseline; justify-content: space-between; font-size: 12px; }
-.mock-studio-stat-label { color: #717171; }
-.mock-studio-stat-value { color: #222222; font-weight: 700; }
-
-.mock-studio-models {
-  display: flex; align-items: center; gap: 6px;
-  margin-top: 10px;
-  font-size: 12px; color: #717171;
-}
-.mock-studio-models-label { margin-right: 4px; font-weight: 600; color: #484848; }
-.mock-studio-models-count { margin-left: 6px; color: #484848; font-weight: 600; }
-
-.mock-studio-exports {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 12px;
-  font-size: 11.5px;
-  color: #717171;
-}
-.mock-studio-exports-label { font-weight: 600; color: #484848; }
-.mock-studio-export {
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.05);
-  font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
+}
+.mock-studio-step.is-brief    .mock-studio-step-label { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
+.mock-studio-step.is-draft    .mock-studio-step-label { background: rgba(255, 145, 0, 0.14);  color: #b56000; }
+.mock-studio-step.is-approved .mock-studio-step-label { background: rgba(0, 166, 153, 0.14);  color: #008489; }
+.mock-studio-step-meta { font-size: 11px; color: #717171; font-weight: 500; }
+
+.mock-studio-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  line-height: 1.35;
+}
+.mock-studio-step-title em {
+  font-style: italic;
   color: #484848;
-  text-transform: uppercase;
+  font-weight: 500;
+}
+.mock-studio-preview {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #484848;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-radius: 10px;
+  border-left: 3px solid rgba(255, 145, 0, 0.55);
+  margin: 2px 0;
+}
+.mock-studio-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.mock-studio-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #484848;
+}
+.mock-studio-tag.is-priority {
+  background: rgba(255, 56, 92, 0.12);
+  color: #c61b48;
+}
+.mock-studio-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.mock-studio-format {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(0, 166, 153, 0.10);
+  color: #007a80;
+  border: 1px solid rgba(0, 166, 153, 0.20);
+}
+/* Vertical connector between steps: a short line + chevron. */
+.mock-studio-connector {
+  align-self: center;
+  width: 2px;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.10), rgba(0,0,0,0));
+  position: relative;
+}
+.mock-studio-connector::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: -2px;
+  transform: translate(-50%, 0) rotate(45deg);
+  width: 6px; height: 6px;
+  border-right: 2px solid rgba(0, 0, 0, 0.18);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
 }
 
 /* ── Pull quote ── */
@@ -4843,10 +4726,10 @@ html:has(.lp) #app {
 @media (max-width: 900px) {
   .count-up-grid { grid-template-columns: 1fr; }
   .stats-card { aspect-ratio: auto; min-height: 0; border-radius: 20px; }
-  .stats-card-content { padding: 40px 28px 32px; }
-  .stats-card-bottom { grid-template-columns: 1fr; gap: 32px; margin-top: 48px; }
-  .stats-card-num { font-size: 52px; }
-  .stats-card-prefix, .stats-card-suffix { font-size: 30px; }
+  .stats-card-content { padding: 44px 28px 36px; }
+  .stats-card-bottom { grid-template-columns: 1fr; gap: 36px; margin-top: 56px; }
+  .stats-card-num { font-size: 60px; }
+  .stats-card-prefix, .stats-card-suffix { font-size: 34px; }
   .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 50px 0; min-height: 0; }
   .feature-row.is-reverse .feature-copy { order: 1; }
   .feature-row.is-reverse .feature-visual { order: 2; }
