@@ -174,11 +174,20 @@
                         <li>Datadog</li>
                         <li>New Relic</li>
                         <li>Grafana</li>
+                        <li class="why-demo-you">
+                          Acrelane
+                          <span class="why-demo-you-tag" aria-hidden="true">
+                            <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden="true">
+                              <path d="M13 5H1M1 5l4-4M1 5l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            This is you
+                          </span>
+                        </li>
                       </ol>
                     </div>
                     <div class="why-demo-foot">
                       You rank <strong>#1 on Google</strong> for the same query.
-                      Nobody sees it.
+                      Nobody sees it — until you show up here.
                     </div>
                   </div>
 
@@ -3826,6 +3835,47 @@ html:has(.lp) #app {
   background: linear-gradient(90deg, rgba(255,90,168,0.14), transparent 60%);
   padding: 2px 6px;
   border-radius: 4px;
+}
+/* The "this is you" row — highlights an invented brand as the
+   4th vendor with a soft accent bar and a labeled arrow badge to
+   its right. Positioned inline so the arrow always sits beside
+   the brand name, no matter how the list wraps. */
+.why-demo-list li.why-demo-you {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(47, 107, 237, 0.14), transparent 60%);
+  color: #131718;
+  font-weight: 700;
+  position: relative;
+  animation: why-demo-you-pulse 2.4s ease-in-out infinite;
+}
+.why-demo-you-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: var(--brand-accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px -2px rgba(var(--brand-accent-rgb), 0.42);
+  white-space: nowrap;
+}
+.why-demo-you-tag svg {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+@keyframes why-demo-you-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-accent-rgb), 0.00); }
+  50%      { box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .why-demo-list li.why-demo-you { animation: none; }
 }
 .why-demo-foot {
   margin-top: auto;
