@@ -12,18 +12,12 @@
         <h2 class="text-xl font-semibold text-foreground">You need a FetchBot account first</h2>
         <p class="max-w-md text-base text-muted-foreground">{{ message }}</p>
         <p class="max-w-md text-sm text-muted-foreground">
-          Account creation is currently invite-only. To request access, email us or
-          reach out through the contact page and we will set you up.
+          Account creation is currently invite-only. Reach out through the contact page
+          to request access and we will set you up.
         </p>
         <div class="mt-2 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href="mailto:hello@fetchbot.ai?subject=FetchBot%20account%20request"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            Email hello@fetchbot.ai
-          </a>
-          <router-link to="/contact" class="rounded-lg border border-input px-4 py-2 text-sm font-medium">
-            Contact page
+          <router-link to="/contact" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            Request access
           </router-link>
           <router-link to="/login" class="text-sm font-medium underline">Back to sign in</router-link>
         </div>

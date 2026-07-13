@@ -1,36 +1,28 @@
 <template>
-  <InfoPage title="Contact us" eyebrow="Talk to FetchBot" intro="The fastest way to reach the team is email. We answer most messages within one business day.">
-    <h2>Email</h2>
-    <div class="info-grid">
-      <div>
-        <h4>General</h4>
-        <p><a href="mailto:hello@fetchbot.ai">hello@fetchbot.ai</a></p>
-      </div>
-      <div>
-        <h4>Support</h4>
-        <p><a href="mailto:support@fetchbot.ai">support@fetchbot.ai</a></p>
-      </div>
-      <div>
-        <h4>Sales</h4>
-        <p><a href="mailto:sales@fetchbot.ai">sales@fetchbot.ai</a></p>
-      </div>
-      <div>
-        <h4>Security &amp; privacy</h4>
-        <p><a href="mailto:security@fetchbot.ai">security@fetchbot.ai</a></p>
-      </div>
-    </div>
-
-    <h2>Office</h2>
+  <InfoPage title="Contact us" eyebrow="Talk to FetchBot" intro="FetchBot is a small, invite-only team. A public contact form is on the way — until then, requests come through the channels below.">
+    <h2>Request access</h2>
     <p>
-      Alicorr LLC, operator of FetchBot. Mailing address available on request via
-      <a href="mailto:hello@fetchbot.ai">hello@fetchbot.ai</a>.
+      Access to FetchBot is currently invite-only. If you'd like an account, a working
+      integration, or a private beta invite, hold tight — we'll open a request form on this
+      page soon.
+    </p>
+
+    <h2>Security &amp; privacy</h2>
+    <p>
+      Security researchers and privacy inquiries can reach the team through the process
+      described on the <router-link to="/privacy">Privacy</router-link> page.
     </p>
 
     <h2>Press</h2>
     <p>
-      For interviews, quotes, or media kits, email
-      <a href="mailto:press@fetchbot.ai">press@fetchbot.ai</a> with your deadline and we'll
-      come back the same day where possible.
+      For interviews, quotes, or media kits, watch this page — press contact details will
+      be published alongside our first public release.
+    </p>
+
+    <h2>Company</h2>
+    <p>
+      FetchBot is operated by Alicorr LLC. Mailing address available on request once the
+      contact form is live.
     </p>
   </InfoPage>
 </template>

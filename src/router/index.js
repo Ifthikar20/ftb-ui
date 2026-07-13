@@ -162,6 +162,7 @@ const routes = [
         redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/search-insights`, query: to.query }),
     },
     protect('/llm-ranking/:websiteId/brand-security', 'brand-security', () => import('@/pages/BrandSecurityPage.vue'), true),
+    protect('/llm-ranking/:websiteId/brand-input', 'brand-input', () => import('@/pages/BrandInputPage.vue'), true),
     // Old brand-vault path redirects so bookmarks keep working.
     {
         path: '/llm-ranking/:websiteId/brand-vault',
@@ -297,7 +298,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Guard: project-specific pages require an active project
-    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'content-studio', 'content-studio-draft']
+    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input', 'content-studio', 'content-studio-draft']
     if (projectPages.includes(to.name) && auth.isAuthenticated) {
         const app = useAppStore()
         if (!app.activeWebsite) {
