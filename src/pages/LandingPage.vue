@@ -2493,13 +2493,24 @@ em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
   .probe-card { transform: none; }
 }
 
-/* word-cycle transition (reused from the deleted features section) */
-.word-cycle-enter-active, .word-cycle-leave-active {
+/* word-cycle transition (reused from the deleted features section).
+   The leaving word is pulled out of flow the instant the transition
+   starts (not only at leave-to) so the entering word can immediately
+   take its inline slot. Without this, both words occupy the flow
+   during the 0.3s transition, which can wrap the paragraph to an
+   extra line and shove everything below down. */
+.word-cycle-enter-active,
+.word-cycle-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
   display: inline-block;
 }
+.word-cycle-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
 .word-cycle-enter-from { opacity: 0; transform: translateY(8px); }
-.word-cycle-leave-to   { opacity: 0; transform: translateY(-8px); position: absolute; }
+.word-cycle-leave-to   { opacity: 0; transform: translateY(-8px); }
 .hero-h {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 400; font-size: clamp(2.8rem, 6vw, 5.5rem);
