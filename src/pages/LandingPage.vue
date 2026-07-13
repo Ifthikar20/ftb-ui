@@ -3735,11 +3735,11 @@ html:has(.lp) #app {
    for a landing hero. */
 .stats-card {
   position: relative;
+  width: 100%;
   border-radius: 28px;
   overflow: hidden;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  min-height: 780px;
-  aspect-ratio: 16 / 9;
+  min-height: 720px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
               0 40px 100px -20px rgba(15, 23, 42, 0.28);
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
@@ -4816,7 +4816,7 @@ html:has(.lp) #app {
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .count-up-grid { grid-template-columns: 1fr; }
-  .stats-card { aspect-ratio: auto; min-height: 0; border-radius: 20px; }
+  .stats-card { min-height: 0; border-radius: 20px; }
   .stats-card-content { padding: 44px 28px 36px; }
   .stats-card-bottom { grid-template-columns: 1fr; gap: 36px; margin-top: 56px; }
   .stats-card-num { font-size: 60px; }
