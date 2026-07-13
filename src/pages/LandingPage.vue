@@ -255,44 +255,60 @@
     <!-- ═══ Stats / Why GEO matters ═══ -->
     <section class="stats anim" data-anim="fade-up" ref="statsSection">
       <div class="wrap">
-        <h2 class="sec-h sec-h-grad anim" data-anim="fade-up">AI search is the new search.<br/><em>Your brand isn't ready for it.</em></h2>
-        <p class="sec-sub anim" data-anim="fade-up" data-delay="60">
-          ChatGPT and Perplexity already shape millions of buying decisions every day.
-          The brands that show up in those answers are the ones writing the right things in the right places.
-        </p>
-        <div class="count-up-grid">
-          <div class="count-up-card anim" data-anim="fade-up" data-delay="80">
-            <div class="count-up-num">{{ stat0Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Buyers research with LLMs</div>
-            <div class="count-up-note">of B2B buyers used LLMs during their buying process in 2025</div>
-            <a
-              class="count-up-cite"
-              href="https://6sense.com/science-of-b2b/buyer-experience-report-2025/"
-              target="_blank"
-              rel="noopener"
-            >Source: 6sense, 2025 Buyer Experience Report</a>
-          </div>
-          <div class="count-up-card anim" data-anim="fade-up" data-delay="160">
-            <div class="count-up-num"><span class="count-up-prefix">+</span>{{ stat1Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Visibility you can win</div>
-            <div class="count-up-note">lift in brand visibility from GEO-optimized content in AI answers</div>
-            <a
-              class="count-up-cite"
-              href="https://arxiv.org/abs/2311.09735"
-              target="_blank"
-              rel="noopener"
-            >Source: Aggarwal et al., GEO (KDD 2024)</a>
-          </div>
-          <div class="count-up-card anim" data-anim="fade-up" data-delay="240">
-            <div class="count-up-num">{{ stat2Display }}<span class="count-up-suffix">%</span></div>
-            <div class="count-up-label">Zero-click searches</div>
-            <div class="count-up-note">of searches now end without a click to another website</div>
-            <a
-              class="count-up-cite"
-              href="https://www.bain.com/insights/goodbye-clicks-hello-ai-zero-click-search-redefines-marketing/"
-              target="_blank"
-              rel="noopener"
-            >Source: Bain &amp; Company, 2025</a>
+        <div class="stats-card">
+          <video class="stats-card-bg" autoplay muted loop playsinline>
+            <source :src="assetUrl('/videos/watercolor-second.mp4')" type="video/mp4" />
+          </video>
+          <div class="stats-card-tint"></div>
+
+          <div class="stats-card-content">
+            <div class="stats-card-top">
+              <h2 class="stats-card-h anim" data-anim="fade-up">
+                AI search is the new search.<br/>
+                <em>Your brand isn't ready for it.</em>
+              </h2>
+              <p class="stats-card-sub anim" data-anim="fade-up" data-delay="60">
+                ChatGPT and Perplexity already shape millions of buying decisions every day.
+                The brands that show up in those answers are the ones writing the right things
+                in the right places.
+              </p>
+            </div>
+
+            <div class="stats-card-bottom">
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="80">
+                <div class="stats-card-num">{{ stat0Display }}<span class="stats-card-suffix">%</span></div>
+                <div class="stats-card-label">Buyers research with LLMs</div>
+                <div class="stats-card-note">of B2B buyers used LLMs during their buying process in 2025</div>
+                <a
+                  class="stats-card-cite"
+                  href="https://6sense.com/science-of-b2b/buyer-experience-report-2025/"
+                  target="_blank"
+                  rel="noopener"
+                >Source: 6sense, 2025 Buyer Experience Report</a>
+              </div>
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="160">
+                <div class="stats-card-num"><span class="stats-card-prefix">+</span>{{ stat1Display }}<span class="stats-card-suffix">%</span></div>
+                <div class="stats-card-label">Visibility you can win</div>
+                <div class="stats-card-note">lift in brand visibility from GEO-optimized content in AI answers</div>
+                <a
+                  class="stats-card-cite"
+                  href="https://arxiv.org/abs/2311.09735"
+                  target="_blank"
+                  rel="noopener"
+                >Source: Aggarwal et al., GEO (KDD 2024)</a>
+              </div>
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="240">
+                <div class="stats-card-num">{{ stat2Display }}<span class="stats-card-suffix">%</span></div>
+                <div class="stats-card-label">Zero-click searches</div>
+                <div class="stats-card-note">of searches now end without a click to another website</div>
+                <a
+                  class="stats-card-cite"
+                  href="https://www.bain.com/insights/goodbye-clicks-hello-ai-zero-click-search-redefines-marketing/"
+                  target="_blank"
+                  rel="noopener"
+                >Source: Bain &amp; Company, 2025</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -695,7 +711,7 @@
     <!-- ═══ Final CTA ═══ -->
     <section class="final-cta anim" data-anim="fade-up" ref="finalCtaSection">
       <video class="final-cta-video" autoplay muted loop playsinline aria-hidden="true">
-        <source src="/videos/watercolor-main.mp4" type="video/mp4" />
+        <source :src="assetUrl('/videos/watercolor-main.mp4')" type="video/mp4" />
       </video>
       <div class="final-cta-overlay" aria-hidden="true"></div>
       <div class="final-cta-glow" aria-hidden="true"></div>
@@ -796,6 +812,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { assetUrl } from '@/utils/assetUrl'
 
 const scrolled = ref(false)
 const activeCard = ref(0)
@@ -3777,6 +3794,143 @@ html:has(.lp) #app {
   padding: 96px 0 80px;
   z-index: 1;
 }
+/* Single rounded card: video fills the background, copy and metrics
+   are overlaid — same treatment as the login page's video-card, tuned
+   for a landing hero. */
+.stats-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #1a1a2e;
+  min-height: 620px;
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 30px 80px -20px rgba(15, 23, 42, 0.22);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.stats-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 40px 100px -20px rgba(15, 23, 42, 0.30);
+}
+/* Ken Burns: slow, imperceptible scale + drift on the video so the card
+   never feels static even during quiet moments in the loop. */
+@keyframes stats-card-kenburns {
+  0%   { transform: scale(1.02) translate3d(0, 0, 0); }
+  50%  { transform: scale(1.08) translate3d(-1.2%, -0.8%, 0); }
+  100% { transform: scale(1.02) translate3d(0, 0, 0); }
+}
+.stats-card-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transform-origin: 50% 55%;
+  animation: stats-card-kenburns 28s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats-card { transition: none; }
+  .stats-card:hover { transform: none; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 30px 80px -20px rgba(15, 23, 42, 0.22); }
+  .stats-card-bg { animation: none; transform: none; }
+}
+.stats-card-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.45) 100%);
+}
+.stats-card-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: inherit;
+  padding: 64px 64px 56px;
+  color: #ffffff;
+}
+.stats-card-top {
+  max-width: 780px;
+}
+.stats-card-h {
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 3.4vw, 3.2rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 20px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+.stats-card-h em {
+  font-style: normal;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+.stats-card-sub {
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 620px;
+  margin: 0;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+}
+.stats-card-bottom {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 48px;
+  margin-top: 96px;
+  max-width: 900px;
+}
+.stats-card-metric {
+  color: #ffffff;
+}
+.stats-card-num {
+  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+}
+.stats-card-prefix, .stats-card-suffix {
+  font-size: 36px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+.stats-card-label {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.01em;
+}
+.stats-card-note {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+.stats-card-cite {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.stats-card-cite:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+/* Legacy grid kept for other sections that may still reference it. */
 .count-up-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4688,6 +4842,11 @@ html:has(.lp) #app {
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .count-up-grid { grid-template-columns: 1fr; }
+  .stats-card { aspect-ratio: auto; min-height: 0; border-radius: 20px; }
+  .stats-card-content { padding: 40px 28px 32px; }
+  .stats-card-bottom { grid-template-columns: 1fr; gap: 32px; margin-top: 48px; }
+  .stats-card-num { font-size: 52px; }
+  .stats-card-prefix, .stats-card-suffix { font-size: 30px; }
   .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 50px 0; min-height: 0; }
   .feature-row.is-reverse .feature-copy { order: 1; }
   .feature-row.is-reverse .feature-visual { order: 2; }

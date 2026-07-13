@@ -4,7 +4,7 @@
     <div class="auth-right">
       <div class="auth-video-card">
         <video class="auth-video-bg" autoplay muted loop playsinline>
-          <source src="/videos/watercolor-main.mp4" type="video/mp4" />
+          <source :src="assetUrl('/videos/watercolor-main.mp4')" type="video/mp4" />
         </video>
         <div class="auth-video-tint"></div>
 
@@ -77,6 +77,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import api from '@/api/client'
+import { assetUrl } from '@/utils/assetUrl'
 
 defineProps({
   title: { type: String, default: '' },
