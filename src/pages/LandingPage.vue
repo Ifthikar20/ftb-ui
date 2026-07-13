@@ -623,40 +623,42 @@
 
               <div class="mock-sec-alerts">
 
-                <div class="mock-sec-alert is-hallucination">
+                <div class="mock-sec-alert is-sentiment">
                   <div class="mock-sec-alert-head">
-                    <span class="mock-sec-agent">LLM Truth</span>
-                    <span class="mock-sec-src">GPT-4</span>
-                    <span class="mock-sec-time">3m ago</span>
+                    <span class="mock-sec-agent">Sentiment Pulse</span>
+                    <span class="mock-sec-src">Reddit r/SaaS</span>
+                    <span class="mock-sec-time">8m ago</span>
                     <span class="mock-sec-sev is-high">High</span>
                   </div>
                   <div class="mock-sec-alert-body">
-                    Claimed you offer a <em>lifetime free tier</em> — you don't. Answer surfaced on prompt
-                    "best AI visibility tools 2026".
+                    Thread <em>"Why we canceled Meterlane"</em> at 340 upvotes and <em>78% negative</em> sentiment.
+                    Peaked in the last hour.
                   </div>
                 </div>
 
-                <div class="mock-sec-alert is-impersonation">
+                <div class="mock-sec-alert is-reputation">
                   <div class="mock-sec-alert-head">
-                    <span class="mock-sec-agent">Impersonation</span>
-                    <span class="mock-sec-src">SERP</span>
-                    <span class="mock-sec-time">18m ago</span>
+                    <span class="mock-sec-agent">SERP Reputation</span>
+                    <span class="mock-sec-src">Google</span>
+                    <span class="mock-sec-time">22m ago</span>
                     <span class="mock-sec-sev is-critical">Critical</span>
                   </div>
                   <div class="mock-sec-alert-body">
-                    Lookalike domain <em>fetchb0t.ai</em> registered 2h ago. Levenshtein 1 to your brand.
+                    <em>"Meterlane review — do NOT use"</em> now ranking <em>#2</em> for your brand query,
+                    above your homepage.
                   </div>
                 </div>
 
                 <div class="mock-sec-alert is-narrative">
                   <div class="mock-sec-alert-head">
                     <span class="mock-sec-agent">Narrative Watch</span>
-                    <span class="mock-sec-src">Reddit + Trends</span>
-                    <span class="mock-sec-time">42m ago</span>
+                    <span class="mock-sec-src">Reddit + X</span>
+                    <span class="mock-sec-time">47m ago</span>
                     <span class="mock-sec-sev is-medium">Medium</span>
                   </div>
                   <div class="mock-sec-alert-body">
-                    Reddit velocity <em>+340%</em> on "fetchbot pricing". Trends: rising query <em>breakout</em>.
+                    New narrative forming: <em>"pricing changes"</em>. 8 posts in the last hour across
+                    Reddit and X. Tone trending negative.
                   </div>
                 </div>
 
@@ -1551,12 +1553,12 @@ const showcaseFeatures = [
     key: 'security',
     video: 'feature-4.mp4',
     eyebrow: 'BRAND SECURITY',
-    headline: "See what AI says about you before your customers do.",
-    desc: "Independent agents watch LLM answers, search results, Reddit, and X for hallucinations, lookalike impersonators, and emerging narratives about your brand — every alert stamped with the agent that caught it and the model or source it came from.",
+    headline: "Catch the bad conversation before it becomes the loud one.",
+    desc: "Independent agents watch Reddit, X, Google, and every major LLM for negative sentiment, damaging reviews, and emerging reputation threats about your brand — flagged the moment they start climbing, not after they've already won the search page.",
     bullets: [
-      'Hallucination detection across Claude, GPT, Gemini, Perplexity, Grok',
-      'Impersonation watch for lookalike domains and social handles',
-      'Narrative and sentiment alerts from Reddit velocity, Google Trends, and X',
+      'Sentiment monitoring across Reddit and X per brand term',
+      'SERP reputation watch — flags negative pages outranking your own',
+      'Emerging-narrative alerts from post velocity and Google Trends breakouts',
     ],
   },
   {
@@ -4913,9 +4915,9 @@ html:has(.lp) #app {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
-.mock-sec-alert.is-hallucination { border-left-color: rgba(255, 145, 0, 0.65); }
-.mock-sec-alert.is-impersonation { border-left-color: rgba(198, 27, 72, 0.75); }
-.mock-sec-alert.is-narrative     { border-left-color: rgba(66, 133, 244, 0.65); }
+.mock-sec-alert.is-sentiment  { border-left-color: rgba(255, 145, 0, 0.65); }
+.mock-sec-alert.is-reputation { border-left-color: rgba(198, 27, 72, 0.75); }
+.mock-sec-alert.is-narrative  { border-left-color: rgba(66, 133, 244, 0.65); }
 
 .mock-sec-alert-head {
   display: flex; align-items: center; flex-wrap: wrap;
