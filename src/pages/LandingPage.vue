@@ -255,7 +255,7 @@
     <!-- ═══ Stats / Why GEO matters ═══ -->
     <section class="stats anim" data-anim="fade-up" ref="statsSection">
       <div class="wrap">
-        <div class="stats-card">
+        <div class="stats-card anim" data-anim="framer">
           <video
             class="stats-card-bg"
             autoplay
@@ -271,11 +271,11 @@
 
           <div class="stats-card-content">
             <div class="stats-card-top">
-              <h2 class="stats-card-h anim" data-anim="fade-up">
+              <h2 class="stats-card-h anim" data-anim="fade-up" data-delay="400">
                 AI search is the new search.<br/>
                 <em>Your brand isn't ready for it.</em>
               </h2>
-              <p class="stats-card-sub anim" data-anim="fade-up" data-delay="60">
+              <p class="stats-card-sub anim" data-anim="fade-up" data-delay="550">
                 ChatGPT and Perplexity already shape millions of buying decisions every day.
                 The brands that show up in those answers are the ones writing the right things
                 in the right places.
@@ -283,7 +283,7 @@
             </div>
 
             <div class="stats-card-bottom">
-              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="80">
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="700">
                 <div class="stats-card-num">{{ stat0Display }}<span class="stats-card-suffix">%</span></div>
                 <div class="stats-card-label">Buyers research with LLMs</div>
                 <div class="stats-card-note">of B2B buyers used LLMs during their buying process in 2025</div>
@@ -294,7 +294,7 @@
                   rel="noopener"
                 >Source: 6sense, 2025 Buyer Experience Report</a>
               </div>
-              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="160">
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="850">
                 <div class="stats-card-num"><span class="stats-card-prefix">+</span>{{ stat1Display }}<span class="stats-card-suffix">%</span></div>
                 <div class="stats-card-label">Visibility you can win</div>
                 <div class="stats-card-note">lift in brand visibility from GEO-optimized content in AI answers</div>
@@ -305,7 +305,7 @@
                   rel="noopener"
                 >Source: Aggarwal et al., GEO (KDD 2024)</a>
               </div>
-              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="240">
+              <div class="stats-card-metric anim" data-anim="fade-up" data-delay="1000">
                 <div class="stats-card-num">{{ stat2Display }}<span class="stats-card-suffix">%</span></div>
                 <div class="stats-card-label">Zero-click searches</div>
                 <div class="stats-card-note">of searches now end without a click to another website</div>
@@ -332,6 +332,20 @@
           :class="{ 'is-reverse': i % 2 === 1 }"
           data-anim="fade-up"
         >
+          <video
+            class="feature-row-bg"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            disablepictureinpicture
+            aria-hidden="true"
+          >
+            <source :src="assetUrl('/videos/feature-' + (i + 1) + '.mp4')" type="video/mp4" />
+          </video>
+          <div class="feature-row-tint" aria-hidden="true"></div>
+
           <div class="feature-copy">
             <span class="feature-eyebrow">{{ f.eyebrow }}</span>
             <h2 class="feature-h">{{ f.headline }}</h2>
@@ -3763,28 +3777,43 @@ html:has(.lp) #app {
     stats-card-kenburns 18s ease-in-out 1.3s infinite;
   will-change: transform, opacity;
 }
-/* Metrics fade + rise in a stagger as the card enters view. */
-@keyframes stats-card-rise {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Framer-style scroll entrance: the card springs in with a subtle
+   overshoot (translateY + scale + bezier with back-out), then the
+   observer cascades .in onto the headline, subtitle, and each metric
+   using their existing data-delay staggering. */
+.stats-card.anim {
+  opacity: 0;
+  transform: translateY(60px) scale(0.94);
+  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.stats-card .stats-card-metric {
-  animation: stats-card-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+.stats-card.anim.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
-.stats-card .stats-card-metric:nth-child(1) { animation-delay: 0.5s; }
-.stats-card .stats-card-metric:nth-child(2) { animation-delay: 0.65s; }
-.stats-card .stats-card-metric:nth-child(3) { animation-delay: 0.8s; }
 @media (prefers-reduced-motion: reduce) {
-  .stats-card { transition: none; }
+  .stats-card,
+  .stats-card.anim { transition: none; }
+  .stats-card.anim { opacity: 1; transform: none; }
   .stats-card:hover { transform: none; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 40px 100px -20px rgba(15, 23, 42, 0.28); }
-  .stats-card-bg,
-  .stats-card .stats-card-metric { animation: none; opacity: 1; transform: none; }
+  .stats-card-bg { animation: none; opacity: 1; transform: none; }
 }
 .stats-card-tint {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.45) 100%);
+  /* Legibility darkening only where text sits (top headline, bottom
+     metrics); middle of the card stays as clear as possible so the
+     video is fully visible. */
+  background:
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.28) 0%,
+      rgba(0, 0, 0, 0.10) 40%,
+      rgba(0, 0, 0, 0.10) 60%,
+      rgba(0, 0, 0, 0.38) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 60%,
+      rgba(0, 0, 0, 0.22) 100%);
 }
 .stats-card-content {
   position: relative;
@@ -3792,6 +3821,8 @@ html:has(.lp) #app {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: center;
+  text-align: center;
   height: 100%;
   min-height: inherit;
   padding: 80px 80px 72px;
@@ -3799,6 +3830,7 @@ html:has(.lp) #app {
 }
 .stats-card-top {
   max-width: 900px;
+  margin: 0 auto;
 }
 .stats-card-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3820,18 +3852,20 @@ html:has(.lp) #app {
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.88);
   max-width: 720px;
-  margin: 0;
+  margin: 0 auto;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 .stats-card-bottom {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 56px;
-  margin-top: 120px;
+  margin: 120px auto 0;
   max-width: 1100px;
+  width: 100%;
 }
 .stats-card-metric {
   color: #ffffff;
+  text-align: center;
 }
 .stats-card-num {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3842,6 +3876,7 @@ html:has(.lp) #app {
   color: #ffffff;
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 2px;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
 }
@@ -3947,21 +3982,69 @@ html:has(.lp) #app {
   z-index: 1;
 }
 .feature-row {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: center;
-  padding: 70px 0;
+  padding: 80px 72px;
   min-height: 60vh;
+  margin: 40px 0;
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+              0 40px 100px -20px rgba(15, 23, 42, 0.28);
+  isolation: isolate;
 }
 .feature-row.is-reverse .feature-copy { order: 2; }
 .feature-row.is-reverse .feature-visual { order: 1; }
+/* Video that fills the outer feature card. preload="metadata" keeps
+   the initial network cost tiny; the video starts streaming when the
+   element scrolls into view and autoplay engages. */
+.feature-row-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transform-origin: 50% 55%;
+  animation: stats-card-kenburns 22s ease-in-out infinite;
+  will-change: transform;
+}
+.feature-row-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* Just enough darkening on the copy side to keep text legible; the
+     video itself stays clearly visible across most of the card. */
+  background:
+    linear-gradient(100deg,
+      rgba(0, 0, 0, 0.42) 0%,
+      rgba(0, 0, 0, 0.22) 45%,
+      rgba(0, 0, 0, 0.08) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 55%,
+      rgba(0, 0, 0, 0.28) 100%);
+}
+.feature-row.is-reverse .feature-row-tint {
+  background:
+    linear-gradient(260deg,
+      rgba(0, 0, 0, 0.42) 0%,
+      rgba(0, 0, 0, 0.22) 45%,
+      rgba(0, 0, 0, 0.08) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 55%,
+      rgba(0, 0, 0, 0.28) 100%);
+}
+.feature-row .feature-copy,
+.feature-row .feature-visual { position: relative; z-index: 2; }
 .feature-eyebrow {
   font-family: 'Geist', sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: var(--brand-accent);
+  color: rgba(255, 255, 255, 0.75);
   text-transform: uppercase;
 }
 .feature-h {
@@ -3970,13 +4053,15 @@ html:has(.lp) #app {
   line-height: 1.12;
   font-weight: 600;
   letter-spacing: -0.025em;
-  color: #131718;
+  color: #ffffff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
 }
 .feature-desc {
   max-width: 36rem;
   font-size: 16.5px;
   line-height: 1.6;
-  color: #4a5560;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 .feature-bullets {
   list-style: none;
@@ -3991,15 +4076,19 @@ html:has(.lp) #app {
   align-items: flex-start;
   gap: 12px;
   font-size: 14.5px;
-  color: #2d3640;
+  color: rgba(255, 255, 255, 0.90);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
 .feature-bullet-dot {
   width: 8px; height: 8px;
   margin-top: 7px;
   border-radius: 50%;
-  background: var(--brand-accent);
+  background: #ffffff;
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  .feature-row-bg { animation: none; transform: none; }
 }
 
 /* Mock visuals shared */
@@ -4730,7 +4819,7 @@ html:has(.lp) #app {
   .stats-card-bottom { grid-template-columns: 1fr; gap: 36px; margin-top: 56px; }
   .stats-card-num { font-size: 60px; }
   .stats-card-prefix, .stats-card-suffix { font-size: 34px; }
-  .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 50px 0; min-height: 0; }
+  .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 44px 28px; min-height: 0; border-radius: 22px; margin: 24px 0; }
   .feature-row.is-reverse .feature-copy { order: 1; }
   .feature-row.is-reverse .feature-visual { order: 2; }
   .feature-h { font-size: 30px; }
