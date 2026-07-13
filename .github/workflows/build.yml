@@ -50,6 +50,7 @@ jobs:
           build-args: |
             CACHE_DATE=${{ github.run_id }}
             VITE_GOOGLE_CLIENT_ID=${{ vars.VITE_GOOGLE_CLIENT_ID }}
+            VITE_ASSET_CDN=${{ vars.VITE_ASSET_CDN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
