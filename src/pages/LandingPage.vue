@@ -1015,7 +1015,32 @@ async function runTypewriter() {
   twDone.value = true
 }
 
+// Apple-style section-by-section scroll. Applied to <html> so the
+// document is the snap container (leaving window.scroll events and
+// IntersectionObserver — both rooted on the window — untouched).
+// Only on desktop; only when the user hasn't opted out of motion.
+// Restored on unmount so other pages aren't affected.
+const _prevSnapType = { value: null, behavior: null, applied: false }
+function enableScrollSnap() {
+  if (window.innerWidth < 900) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const html = document.documentElement
+  _prevSnapType.value = html.style.scrollSnapType || ''
+  _prevSnapType.behavior = html.style.scrollBehavior || ''
+  html.style.scrollSnapType = 'y proximity'
+  html.style.scrollBehavior = 'smooth'
+  _prevSnapType.applied = true
+}
+function disableScrollSnap() {
+  if (!_prevSnapType.applied) return
+  document.documentElement.style.scrollSnapType = _prevSnapType.value
+  document.documentElement.style.scrollBehavior = _prevSnapType.behavior
+  _prevSnapType.applied = false
+}
+
 onMounted(() => {
+  enableScrollSnap()
+
   const onScroll = () => { scrolled.value = window.scrollY > 40 }
   window.addEventListener('scroll', onScroll, { passive: true })
 
@@ -1062,6 +1087,7 @@ onMounted(() => {
   }
 
   onUnmounted(() => {
+    disableScrollSnap()
     window.removeEventListener('scroll', onScroll)
     obs.disconnect()
     statsObs && statsObs.disconnect()
@@ -1829,6 +1855,30 @@ function updateStickyCta() {
   max-width: 100vw;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+}
+/* Apple-style section-by-section scroll: each major section carries
+   scroll-snap-align, and JS toggles scroll-snap-type on <html> on
+   mount / unmount (see script setup). Uses `proximity` (not
+   `mandatory`) so it only pulls the section into view when the
+   scroll naturally lands near it — never traps a user mid-content.
+   scroll-margin-top clears the fixed nav so sections don't hide
+   behind it. */
+@media (min-width: 900px) {
+  .hero,
+  .stats,
+  .why,
+  .feature-showcase .feature-row,
+  .how,
+  .faq,
+  .final-cta {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+    scroll-margin-top: 88px;
+  }
+  /* Stats + feature rows command the viewport so each snap lands
+     with the whole section visible. */
+  .stats { min-height: calc(100vh - 88px); display: flex; align-items: center; }
+  .feature-row { min-height: calc(100vh - 88px); }
 }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
