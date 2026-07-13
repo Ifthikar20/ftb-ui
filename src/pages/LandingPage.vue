@@ -3821,8 +3821,8 @@ html:has(.lp) #app {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   height: 100%;
   min-height: inherit;
   padding: 80px 80px 72px;
@@ -3830,7 +3830,6 @@ html:has(.lp) #app {
 }
 .stats-card-top {
   max-width: 900px;
-  margin: 0 auto;
 }
 .stats-card-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3852,20 +3851,19 @@ html:has(.lp) #app {
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.88);
   max-width: 720px;
-  margin: 0 auto;
+  margin: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 .stats-card-bottom {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 56px;
-  margin: 120px auto 0;
-  max-width: 1100px;
+  margin-top: 120px;
   width: 100%;
 }
 .stats-card-metric {
   color: #ffffff;
-  text-align: center;
+  text-align: left;
 }
 .stats-card-num {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3876,7 +3874,7 @@ html:has(.lp) #app {
   color: #ffffff;
   display: flex;
   align-items: baseline;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
 }
