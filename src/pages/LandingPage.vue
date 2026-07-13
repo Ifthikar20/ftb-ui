@@ -332,20 +332,6 @@
           :class="{ 'is-reverse': i % 2 === 1 }"
           data-anim="fade-up"
         >
-          <video
-            class="feature-row-bg"
-            autoplay
-            muted
-            loop
-            playsinline
-            preload="metadata"
-            disablepictureinpicture
-            aria-hidden="true"
-          >
-            <source :src="assetUrl('/videos/feature-' + (i + 1) + '.mp4')" type="video/mp4" />
-          </video>
-          <div class="feature-row-tint" aria-hidden="true"></div>
-
           <div class="feature-copy">
             <span class="feature-eyebrow">{{ f.eyebrow }}</span>
             <h2 class="feature-h">{{ f.headline }}</h2>
@@ -355,6 +341,20 @@
             </ul>
           </div>
           <div class="feature-visual" :class="'is-' + f.key">
+            <video
+              class="feature-visual-bg"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              disablepictureinpicture
+              aria-hidden="true"
+            >
+              <source :src="assetUrl('/videos/feature-' + (i + 1) + '.mp4')" type="video/mp4" />
+            </video>
+            <div class="feature-visual-tint" aria-hidden="true"></div>
+
             <!-- PROMPT LIBRARY — typewriter cycling through demand-side prompts -->
             <div v-if="f.key === 'prompt'" class="mock-card">
               <div class="mock-search">
@@ -3821,8 +3821,8 @@ html:has(.lp) #app {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   height: 100%;
   min-height: inherit;
   padding: 80px 80px 72px;
@@ -3830,7 +3830,6 @@ html:has(.lp) #app {
 }
 .stats-card-top {
   max-width: 900px;
-  margin: 0 auto;
 }
 .stats-card-h {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3852,20 +3851,19 @@ html:has(.lp) #app {
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.88);
   max-width: 720px;
-  margin: 0 auto;
+  margin: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 .stats-card-bottom {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 56px;
-  margin: 120px auto 0;
-  max-width: 1100px;
+  margin-top: 120px;
   width: 100%;
 }
 .stats-card-metric {
   color: #ffffff;
-  text-align: center;
+  text-align: left;
 }
 .stats-card-num {
   font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
@@ -3876,7 +3874,7 @@ html:has(.lp) #app {
   color: #ffffff;
   display: flex;
   align-items: baseline;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
 }
@@ -3982,69 +3980,21 @@ html:has(.lp) #app {
   z-index: 1;
 }
 .feature-row {
-  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: center;
-  padding: 80px 72px;
+  padding: 70px 0;
   min-height: 60vh;
-  margin: 40px 0;
-  border-radius: 28px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-              0 40px 100px -20px rgba(15, 23, 42, 0.28);
-  isolation: isolate;
 }
 .feature-row.is-reverse .feature-copy { order: 2; }
 .feature-row.is-reverse .feature-visual { order: 1; }
-/* Video that fills the outer feature card. preload="metadata" keeps
-   the initial network cost tiny; the video starts streaming when the
-   element scrolls into view and autoplay engages. */
-.feature-row-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  transform-origin: 50% 55%;
-  animation: stats-card-kenburns 22s ease-in-out infinite;
-  will-change: transform;
-}
-.feature-row-tint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  /* Just enough darkening on the copy side to keep text legible; the
-     video itself stays clearly visible across most of the card. */
-  background:
-    linear-gradient(100deg,
-      rgba(0, 0, 0, 0.42) 0%,
-      rgba(0, 0, 0, 0.22) 45%,
-      rgba(0, 0, 0, 0.08) 100%),
-    radial-gradient(ellipse at center,
-      rgba(0, 0, 0, 0.00) 55%,
-      rgba(0, 0, 0, 0.28) 100%);
-}
-.feature-row.is-reverse .feature-row-tint {
-  background:
-    linear-gradient(260deg,
-      rgba(0, 0, 0, 0.42) 0%,
-      rgba(0, 0, 0, 0.22) 45%,
-      rgba(0, 0, 0, 0.08) 100%),
-    radial-gradient(ellipse at center,
-      rgba(0, 0, 0, 0.00) 55%,
-      rgba(0, 0, 0, 0.28) 100%);
-}
-.feature-row .feature-copy,
-.feature-row .feature-visual { position: relative; z-index: 2; }
 .feature-eyebrow {
   font-family: 'Geist', sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--brand-accent);
   text-transform: uppercase;
 }
 .feature-h {
@@ -4053,15 +4003,13 @@ html:has(.lp) #app {
   line-height: 1.12;
   font-weight: 600;
   letter-spacing: -0.025em;
-  color: #ffffff;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+  color: #131718;
 }
 .feature-desc {
   max-width: 36rem;
   font-size: 16.5px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+  color: #4a5560;
 }
 .feature-bullets {
   list-style: none;
@@ -4076,19 +4024,15 @@ html:has(.lp) #app {
   align-items: flex-start;
   gap: 12px;
   font-size: 14.5px;
-  color: rgba(255, 255, 255, 0.90);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  color: #2d3640;
 }
 .feature-bullet-dot {
   width: 8px; height: 8px;
   margin-top: 7px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--brand-accent);
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
-}
-@media (prefers-reduced-motion: reduce) {
-  .feature-row-bg { animation: none; transform: none; }
+  box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.12);
 }
 
 /* Mock visuals shared */
@@ -4097,6 +4041,47 @@ html:has(.lp) #app {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 48px;
+  min-height: 480px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+              0 40px 100px -20px rgba(15, 23, 42, 0.28);
+  isolation: isolate;
+}
+/* Video that fills the visual card. preload="metadata" keeps the
+   initial network hit tiny; streaming starts on autoplay when the
+   element enters the viewport. */
+.feature-visual-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transform-origin: 50% 55%;
+  animation: stats-card-kenburns 22s ease-in-out infinite;
+  will-change: transform;
+}
+.feature-visual-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 55%,
+      rgba(0, 0, 0, 0.35) 100%),
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.18) 0%,
+      rgba(0, 0, 0, 0.10) 50%,
+      rgba(0, 0, 0, 0.25) 100%);
+}
+.feature-visual .mock-card {
+  position: relative;
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .feature-visual-bg { animation: none; transform: none; }
 }
 .mock-card {
   width: 100%;
@@ -4110,8 +4095,11 @@ html:has(.lp) #app {
     0 16px 48px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   /* Isolate internal layout so the typewriter/stagger transitions never
-     cause a reflow that shifts the sections above or below on the page. */
+     cause a reflow that shifts the sections above or below on the page.
+     Belt-and-braces: with fixed heights below AND contain:layout, this
+     card never changes size regardless of what the animation does. */
   contain: layout;
+  box-sizing: border-box;
 }
 .mock-card:hover {
   transform: translateY(-2px);
@@ -4130,6 +4118,12 @@ html:has(.lp) #app {
   font-size: 15px;
   font-weight: 500;
   color: #222222;
+  /* Lock the search bar to a single line so long typed prompts can't
+     wrap and grow the mock's height. */
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .mock-search-icon {
   width: 14px; height: 14px;
@@ -4145,7 +4139,13 @@ html:has(.lp) #app {
   bottom: -3px; right: -3px;
   transform: rotate(45deg);
 }
-.mock-search-text { flex: 1; min-width: 0; }
+.mock-search-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .mock-search-caret {
   color: #ff385c;
   font-weight: 400;
@@ -4158,9 +4158,11 @@ html:has(.lp) #app {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  /* Reserve space for 3 rows so the card doesn't grow as rows stream in
-     during the typewriter cycle and shove the section below downward. */
-  min-height: 300px;
+  /* Fixed height (not min-height) so the container is completely
+     immune to reflow as rows stream in and out. Older rows overflow
+     invisibly; only the newest 3 are ever rendered by the loop. */
+  height: 300px;
+  overflow: hidden;
 }
 .mock-prompt-row {
   display: flex;
@@ -4819,7 +4821,8 @@ html:has(.lp) #app {
   .stats-card-bottom { grid-template-columns: 1fr; gap: 36px; margin-top: 56px; }
   .stats-card-num { font-size: 60px; }
   .stats-card-prefix, .stats-card-suffix { font-size: 34px; }
-  .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 44px 28px; min-height: 0; border-radius: 22px; margin: 24px 0; }
+  .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 50px 0; min-height: 0; }
+  .feature-visual { padding: 28px; min-height: 340px; border-radius: 22px; }
   .feature-row.is-reverse .feature-copy { order: 1; }
   .feature-row.is-reverse .feature-visual { order: 2; }
   .feature-h { font-size: 30px; }
