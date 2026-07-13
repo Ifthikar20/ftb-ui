@@ -3802,7 +3802,18 @@ html:has(.lp) #app {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.45) 100%);
+  /* Legibility darkening only where text sits (top headline, bottom
+     metrics); middle of the card stays as clear as possible so the
+     video is fully visible. */
+  background:
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.28) 0%,
+      rgba(0, 0, 0, 0.10) 40%,
+      rgba(0, 0, 0, 0.10) 60%,
+      rgba(0, 0, 0, 0.38) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 60%,
+      rgba(0, 0, 0, 0.22) 100%);
 }
 .stats-card-content {
   position: relative;
@@ -4005,11 +4016,26 @@ html:has(.lp) #app {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(120deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.35) 40%,
-    rgba(0, 0, 0, 0.20) 70%,
-    rgba(0, 0, 0, 0.35) 100%);
+  /* Just enough darkening on the copy side to keep text legible; the
+     video itself stays clearly visible across most of the card. */
+  background:
+    linear-gradient(100deg,
+      rgba(0, 0, 0, 0.42) 0%,
+      rgba(0, 0, 0, 0.22) 45%,
+      rgba(0, 0, 0, 0.08) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 55%,
+      rgba(0, 0, 0, 0.28) 100%);
+}
+.feature-row.is-reverse .feature-row-tint {
+  background:
+    linear-gradient(260deg,
+      rgba(0, 0, 0, 0.42) 0%,
+      rgba(0, 0, 0, 0.22) 45%,
+      rgba(0, 0, 0, 0.08) 100%),
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0.00) 55%,
+      rgba(0, 0, 0, 0.28) 100%);
 }
 .feature-row .feature-copy,
 .feature-row .feature-visual { position: relative; z-index: 2; }
