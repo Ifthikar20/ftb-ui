@@ -78,6 +78,33 @@ async function submitSource() {
   }
 }
 
+// ── Paste text form ───────────────────────────────────────────────────
+const pasteForm = ref({
+  title: '',
+  kind: 'other',
+  text: '',
+})
+const pasteSubmitting = ref(false)
+
+async function submitPaste() {
+  if (!websiteId.value || pasteForm.value.text.trim().length < 20 || !pasteForm.value.title.trim()) return
+  pasteSubmitting.value = true
+  try {
+    await rag.uploadText(websiteId.value, { ...pasteForm.value })
+    toast.success('Text added to knowledge base')
+    pasteForm.value = { title: '', kind: 'other', text: '' }
+    await loadSources()
+  } catch (err) {
+    const msg = err?.response?.data?.error
+      || err?.response?.data?.text?.[0]
+      || err?.response?.data?.title?.[0]
+      || 'Failed to save text'
+    toast.error(msg)
+  } finally {
+    pasteSubmitting.value = false
+  }
+}
+
 async function deleteSource(source) {
   if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
   try {
@@ -242,17 +269,72 @@ watch(websiteId, async (v) => { if (v) await loadSources() })
           </div>
         </form>
 
-        <!-- Markdown / file upload — placeholder pending backend work -->
-        <div class="mt-6 flex items-start gap-3 rounded-lg border border-dashed border-border bg-secondary/40 px-4 py-4">
-          <FileText class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div class="flex-1">
-            <div class="text-sm font-semibold text-foreground">Markdown &amp; text upload</div>
-            <p class="mt-0.5 text-xs text-muted-foreground">
-              Coming soon. Backend endpoint <code class="rounded bg-muted px-1 py-0.5">/rag/&lt;website_id&gt;/sources/upload/</code>
-              is not yet wired — until then, publish your source content at a URL and add it above.
-            </p>
+      </CardContent>
+    </Card>
+
+    <!-- ── Paste text / markdown ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Or paste your brand material</h2>
+      <p class="text-sm text-muted-foreground">
+        Brand deck copy, FAQ answers, tone-of-voice notes, product one-pagers — anything that describes
+        how your brand should be represented. Text or markdown, no URL required.
+      </p>
+    </div>
+
+    <Card>
+      <CardContent class="pt-6">
+        <form class="flex flex-col gap-4" @submit.prevent="submitPaste">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</label>
+              <div class="relative">
+                <FileText class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  v-model="pasteForm.title"
+                  type="text"
+                  required
+                  placeholder="e.g. Brand voice notes, Refund policy, About us copy"
+                  class="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kind</label>
+              <select
+                v-model="pasteForm.kind"
+                class="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option v-for="k in KIND_OPTIONS" :key="k.value" :value="k.value">{{ k.label }}</option>
+              </select>
+            </div>
           </div>
-        </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Text or markdown
+              <span class="ml-1 font-normal text-muted-foreground/70">({{ pasteForm.text.length }} chars, min 20)</span>
+            </label>
+            <textarea
+              v-model="pasteForm.text"
+              rows="10"
+              required
+              minlength="20"
+              maxlength="200000"
+              placeholder="Paste your brand copy here. Section headings (# Heading or === HEADING ===) improve chunking."
+              class="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          <div class="flex items-center justify-end gap-2">
+            <Button
+              type="submit"
+              :disabled="pasteSubmitting || pasteForm.text.trim().length < 20 || !pasteForm.title.trim()"
+            >
+              <Loader2 v-if="pasteSubmitting" class="size-3.5 animate-spin" />
+              Add to knowledge base
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
 
