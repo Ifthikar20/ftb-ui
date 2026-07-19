@@ -22,7 +22,6 @@ import { CAPTURE_TYPES } from '@/constants/captureTypes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import AlertsTable from '@/components/brand_security/AlertsTable.vue'
-import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
@@ -238,14 +237,6 @@ async function dismissAlert(alert) {
   } catch { toast.error('Failed to dismiss') }
 }
 
-async function saveConfig(payload) {
-  try {
-    await brandSecurity.saveConfig(websiteId.value, payload)
-    toast.success('Configuration saved')
-    await loadConfig()
-  } catch { toast.error('Failed to save configuration') }
-}
-
 function formatLastRun(v) {
   if (!v) return null
   return new Date(v).toLocaleString()
@@ -376,16 +367,13 @@ function formatLastRun(v) {
       </CardContent>
     </Card>
 
-    <!-- ── Monitoring config ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">What we watch</h2>
-      <p class="text-sm text-muted-foreground">
-        Brand terms and negative keywords the scans search for across LLMs, search pages and social
-      </p>
-    </div>
-    <MonitoringConfigPanel
-      :config="config"
-      @save="saveConfig"
-    />
+    <p class="text-xs text-muted-foreground">
+      Brand terms and negative keywords that drive these scans are managed on the
+      <router-link
+        :to="`/llm-ranking/${websiteId}/brand-input`"
+        class="font-medium text-foreground hover:underline"
+      >Brand Input</router-link>
+      tab, alongside your reference content.
+    </p>
   </div>
 </template>

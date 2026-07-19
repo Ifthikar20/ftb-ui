@@ -18,6 +18,7 @@ import {
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
 import ragApi from '@/api/rag'
+import brandSecurity from '@/api/brandSecurity'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -25,6 +26,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import FilterBar from '@/components/brand_input/FilterBar.vue'
 import SourceGroup from '@/components/brand_input/SourceGroup.vue'
 import SourceDetailDrawer from '@/components/brand_input/SourceDetailDrawer.vue'
+import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
@@ -273,10 +275,40 @@ async function submitPaste() {
   }
 }
 
+// ── Monitoring config (brand terms + negative keywords) ──────────────
+// Lives here with the rest of the brand inputs: these terms drive the
+// Brand Security scan queries the same way the sources below drive the
+// ground truth those scans are judged against.
+const config = ref({ brand_terms: [], negative_keywords: [] })
+
+async function loadConfig() {
+  try {
+    const { data } = await brandSecurity.config(websiteId.value)
+    config.value = data
+  } catch {
+    /* config lazily created — ignore */
+  }
+}
+
+async function saveConfig(payload) {
+  try {
+    await brandSecurity.saveConfig(websiteId.value, payload)
+    toast.success('Monitoring configuration saved')
+    await loadConfig()
+  } catch {
+    toast.error('Failed to save configuration')
+  }
+}
+
 onMounted(async () => {
-  if (websiteId.value) await loadSources()
+  if (websiteId.value) await Promise.all([loadSources(), loadConfig()])
 })
-watch(websiteId, async (v) => { if (v) { page.value = 1; await loadSources() } })
+watch(websiteId, async (v) => {
+  if (v) {
+    page.value = 1
+    await Promise.all([loadSources(), loadConfig()])
+  }
+})
 </script>
 
 <template>
@@ -478,6 +510,18 @@ watch(websiteId, async (v) => { if (v) { page.value = 1; await loadSources() } }
         </form>
       </CardContent>
     </Card>
+
+    <!-- ── Monitoring config ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Monitoring</h2>
+      <p class="text-sm text-muted-foreground">
+        Brand terms and negative keywords the scans watch for
+      </p>
+    </div>
+    <MonitoringConfigPanel
+      :config="config"
+      @save="saveConfig"
+    />
 
     <!-- ── Ingested sources ── -->
     <div class="flex flex-wrap items-end justify-between gap-2">
