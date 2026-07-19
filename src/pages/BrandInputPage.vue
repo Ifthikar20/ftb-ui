@@ -9,30 +9,80 @@
  * and are the source of truth every Brand Security agent checks LLM
  * answers against.
  */
-import { ref, computed, watch, onMounted } from 'vue'
-import { ChevronRight, Link2, FileText, Trash2, RefreshCw, Loader2, Globe, BookOpen, Package, FileCode, ShieldCheck } from '@lucide/vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import {
+  ChevronRight, Link2, FileText, Loader2, RefreshCw,
+  Globe, BookOpen, Package, FileCode, ShieldCheck,
+} from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
-import rag from '@/api/rag'
+import ragApi from '@/api/rag'
+import brandSecurity from '@/api/brandSecurity'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+
+import FilterBar from '@/components/brand_input/FilterBar.vue'
+import SourceGroup from '@/components/brand_input/SourceGroup.vue'
+import SourceDetailDrawer from '@/components/brand_input/SourceDetailDrawer.vue'
+import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
 const websiteId = computed(() => appStore.activeWebsite?.id || null)
 
-// ── Sources list ────────────────────────────────────────────────────────
+// ── Sources list (paginated + filtered server-side) ────────────────────
 const sources = ref([])
+const stats = ref({ total: 0, ready: 0, ingesting: 0, pending: 0, failed: 0 })
+const pageMeta = ref({ count: 0, next: null, previous: null })
 const listLoading = ref(false)
+
+const filters = ref({
+  status: '',
+  kind: '',
+  domain: '',
+  search: '',
+})
+const page = ref(1)
+const pageSize = 25
+
+// Debounce search input so we don't fire a request per keystroke.
+let searchTimer = null
+watch(() => filters.value.search, () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 1
+    loadSources()
+  }, 250)
+})
+watch([
+  () => filters.value.status,
+  () => filters.value.kind,
+  () => filters.value.domain,
+], () => { page.value = 1; loadSources() })
+watch(page, () => loadSources())
 
 async function loadSources() {
   if (!websiteId.value) return
   listLoading.value = true
   try {
-    const res = await rag.listSources(websiteId.value)
+    const params = { page: page.value, page_size: pageSize }
+    if (filters.value.status) params.status = filters.value.status
+    if (filters.value.kind) params.kind = filters.value.kind
+    if (filters.value.domain) params.domain = filters.value.domain
+    if (filters.value.search) params.search = filters.value.search
+
+    const res = await ragApi.listSources(websiteId.value, params)
     sources.value = res.data || []
+    const meta = res.meta || {}
+    pageMeta.value = {
+      count: meta.count || 0,
+      next: meta.next,
+      previous: meta.previous,
+    }
+    if (meta.stats) stats.value = meta.stats
+    syncIngestPolling()
   } catch {
     toast.error('Failed to load brand sources')
   } finally {
@@ -40,7 +90,120 @@ async function loadSources() {
   }
 }
 
-// ── Add source form ────────────────────────────────────────────────────
+// ── Live ingest status ────────────────────────────────────────────────
+// URL ingest runs on a background worker: the POST returns 202 and the
+// source moves pending -> ingesting -> ready/failed server-side. Poll the
+// list while anything is still in flight so the user watches the status
+// change instead of wondering whether the click did anything.
+const POLL_MS = 4000
+const POLL_MAX = 75 // give up after ~5 minutes
+// Keep polling for a few rounds even when nothing looks active yet — a
+// just-queued crawl has no source rows until the worker fetches the first
+// page, so an immediate "nothing in flight" reading would stop too early.
+const POLL_MIN_ROUNDS = 5
+
+let ingestTimer = null
+let pollRounds = 0
+
+const activeIngestCount = computed(
+  () => (stats.value.pending || 0) + (stats.value.ingesting || 0),
+)
+
+function startIngestPolling() {
+  pollRounds = 0
+  if (ingestTimer) return
+  ingestTimer = setInterval(async () => {
+    pollRounds += 1
+    await loadSources()
+    if (
+      (activeIngestCount.value === 0 && pollRounds >= POLL_MIN_ROUNDS)
+      || pollRounds >= POLL_MAX
+    ) {
+      stopIngestPolling()
+    }
+  }, POLL_MS)
+}
+
+function stopIngestPolling() {
+  if (ingestTimer) {
+    clearInterval(ingestTimer)
+    ingestTimer = null
+  }
+}
+
+// Called after every list load: if the server says something is still
+// pending or ingesting, make sure a poll loop is running (covers page
+// reloads while a crawl started earlier is still working).
+function syncIngestPolling() {
+  if (activeIngestCount.value > 0 && !ingestTimer) startIngestPolling()
+}
+
+onBeforeUnmount(stopIngestPolling)
+
+function clearFilters() {
+  filters.value = { status: '', kind: '', domain: '', search: '' }
+  page.value = 1
+  loadSources()
+}
+
+// Domain grouping (derived from the current page). This is a pure UI
+// transform — the backend returns a flat paginated list; we group by
+// `domain` client-side so a 50-page crawl collapses into one node.
+const groupedSources = computed(() => {
+  const map = new Map()
+  for (const s of sources.value) {
+    const host = s.domain || 'other'
+    if (!map.has(host)) {
+      map.set(host, { host, sources: [], chunks: 0, ready: 0, pending: 0, ingesting: 0, failed: 0 })
+    }
+    const g = map.get(host)
+    g.sources.push(s)
+    g.chunks += s.chunk_count || 0
+    if (s.status && Object.prototype.hasOwnProperty.call(g, s.status)) {
+      g[s.status] += 1
+    }
+  }
+  return [...map.values()].sort((a, b) => b.sources.length - a.sources.length)
+})
+
+// Domains that exist across the current page, so the FilterBar's domain
+// dropdown reflects reality. When pagination is on this is only the
+// current page's domains — good enough as a discoverability aid.
+const domainOptions = computed(() => groupedSources.value.map((g) => g.host))
+
+const totalPages = computed(() => Math.max(1, Math.ceil(pageMeta.value.count / pageSize)))
+
+// ── Detail drawer ─────────────────────────────────────────────────────
+const selectedSource = ref(null)
+function openDetail(source) { selectedSource.value = source }
+function closeDetail() { selectedSource.value = null }
+
+async function reingestSource(source) {
+  try {
+    await ragApi.reingestSource(websiteId.value, source.id)
+    toast.success('Reingest queued — status updates below')
+    await loadSources()
+    startIngestPolling()
+  } catch (err) {
+    const msg = err?.response?.data?.error
+      || err?.response?.data?.error?.message
+      || 'Failed to queue reingest'
+    toast.error(msg)
+  }
+}
+
+async function deleteSource(source) {
+  if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
+  try {
+    await ragApi.deleteSource(websiteId.value, source.id)
+    toast.success('Source deleted')
+    await loadSources()
+  } catch {
+    toast.error('Failed to delete source')
+  }
+}
+
+// ── Add-URL form ───────────────────────────────────────────────────────
 const KIND_OPTIONS = [
   { value: 'homepage', label: 'Homepage', icon: Globe },
   { value: 'blog',     label: 'Blog post', icon: BookOpen },
@@ -64,10 +227,16 @@ async function submitSource() {
   if (!websiteId.value || !form.value.url) return
   submitting.value = true
   try {
-    await rag.addSource(websiteId.value, { ...form.value })
-    toast.success(form.value.crawl ? 'Site crawl queued' : 'URL queued for ingest')
+    await ragApi.addSource(websiteId.value, { ...form.value })
+    toast.success(
+      form.value.crawl
+        ? 'Site crawl queued — pages appear below as they are ingested'
+        : 'URL queued — watch its status update below',
+    )
     form.value = { url: '', title: '', kind: 'other', crawl: false, page_cap: 12, depth: 1 }
+    page.value = 1
     await loadSources()
+    startIngestPolling()
   } catch (err) {
     const msg = err?.response?.data?.error
       || err?.response?.data?.url?.[0]
@@ -78,36 +247,68 @@ async function submitSource() {
   }
 }
 
-async function deleteSource(source) {
-  if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
+// ── Paste-text form ───────────────────────────────────────────────────
+const pasteForm = ref({
+  title: '',
+  kind: 'other',
+  text: '',
+})
+const pasteSubmitting = ref(false)
+
+async function submitPaste() {
+  if (!websiteId.value || pasteForm.value.text.trim().length < 20 || !pasteForm.value.title.trim()) return
+  pasteSubmitting.value = true
   try {
-    await rag.deleteSource(websiteId.value, source.id)
-    toast.success('Source deleted')
+    await ragApi.uploadText(websiteId.value, { ...pasteForm.value })
+    toast.success('Text added to knowledge base')
+    pasteForm.value = { title: '', kind: 'other', text: '' }
+    page.value = 1
     await loadSources()
-  } catch {
-    toast.error('Failed to delete source')
+  } catch (err) {
+    const msg = err?.response?.data?.error
+      || err?.response?.data?.text?.[0]
+      || err?.response?.data?.title?.[0]
+      || 'Failed to save text'
+    toast.error(msg)
+  } finally {
+    pasteSubmitting.value = false
   }
 }
 
-// ── Status pill styling ────────────────────────────────────────────────
-function statusClass(status) {
-  const s = String(status || '').toLowerCase()
-  if (s === 'ready' || s === 'indexed' || s === 'success') {
-    return 'bg-[color:var(--chart-2)]/15 text-[color:var(--chart-2)]'
+// ── Monitoring config (brand terms + negative keywords) ──────────────
+// Lives here with the rest of the brand inputs: these terms drive the
+// Brand Security scan queries the same way the sources below drive the
+// ground truth those scans are judged against.
+const config = ref({ brand_terms: [], negative_keywords: [] })
+
+async function loadConfig() {
+  try {
+    const { data } = await brandSecurity.config(websiteId.value)
+    config.value = data
+  } catch {
+    /* config lazily created — ignore */
   }
-  if (s === 'processing' || s === 'pending' || s === 'queued') {
-    return 'bg-[color:var(--chart-3)]/15 text-[color:var(--chart-3)]'
+}
+
+async function saveConfig(payload) {
+  try {
+    await brandSecurity.saveConfig(websiteId.value, payload)
+    toast.success('Monitoring configuration saved')
+    await loadConfig()
+  } catch {
+    toast.error('Failed to save configuration')
   }
-  if (s === 'failed' || s === 'error') {
-    return 'bg-destructive/15 text-destructive'
-  }
-  return 'bg-secondary text-muted-foreground'
 }
 
 onMounted(async () => {
-  if (websiteId.value) await loadSources()
+  if (websiteId.value) await Promise.all([loadSources(), loadConfig()])
 })
-watch(websiteId, async (v) => { if (v) await loadSources() })
+watch(websiteId, async (v) => {
+  if (v) {
+    page.value = 1
+    await Promise.all([loadSources(), loadConfig()])
+  }
+})
 </script>
 
 <template>
@@ -241,98 +442,182 @@ watch(websiteId, async (v) => { if (v) await loadSources() })
             </Button>
           </div>
         </form>
-
-        <!-- Markdown / file upload — placeholder pending backend work -->
-        <div class="mt-6 flex items-start gap-3 rounded-lg border border-dashed border-border bg-secondary/40 px-4 py-4">
-          <FileText class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div class="flex-1">
-            <div class="text-sm font-semibold text-foreground">Markdown &amp; text upload</div>
-            <p class="mt-0.5 text-xs text-muted-foreground">
-              Coming soon. Backend endpoint <code class="rounded bg-muted px-1 py-0.5">/rag/&lt;website_id&gt;/sources/upload/</code>
-              is not yet wired — until then, publish your source content at a URL and add it above.
-            </p>
-          </div>
-        </div>
       </CardContent>
     </Card>
+
+    <!-- ── Paste text / markdown ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Or paste your brand material</h2>
+      <p class="text-sm text-muted-foreground">
+        Brand deck copy, FAQ answers, tone-of-voice notes, product one-pagers — anything that describes
+        how your brand should be represented. Text or markdown, no URL required.
+      </p>
+    </div>
+
+    <Card>
+      <CardContent class="pt-6">
+        <form class="flex flex-col gap-4" @submit.prevent="submitPaste">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</label>
+              <div class="relative">
+                <FileText class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  v-model="pasteForm.title"
+                  type="text"
+                  required
+                  placeholder="e.g. Brand voice notes, Refund policy, About us copy"
+                  class="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kind</label>
+              <select
+                v-model="pasteForm.kind"
+                class="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option v-for="k in KIND_OPTIONS" :key="k.value" :value="k.value">{{ k.label }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Text or markdown
+              <span class="ml-1 font-normal text-muted-foreground/70">({{ pasteForm.text.length }} chars, min 20)</span>
+            </label>
+            <textarea
+              v-model="pasteForm.text"
+              rows="10"
+              required
+              minlength="20"
+              maxlength="200000"
+              placeholder="Paste your brand copy here. Section headings (# Heading or === HEADING ===) improve chunking."
+              class="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          <div class="flex items-center justify-end gap-2">
+            <Button
+              type="submit"
+              :disabled="pasteSubmitting || pasteForm.text.trim().length < 20 || !pasteForm.title.trim()"
+            >
+              <Loader2 v-if="pasteSubmitting" class="size-3.5 animate-spin" />
+              Add to knowledge base
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+
+    <!-- ── Monitoring config ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Monitoring</h2>
+      <p class="text-sm text-muted-foreground">
+        Brand terms and negative keywords the scans watch for
+      </p>
+    </div>
+    <MonitoringConfigPanel
+      :config="config"
+      @save="saveConfig"
+    />
 
     <!-- ── Ingested sources ── -->
     <div class="flex flex-wrap items-end justify-between gap-2">
       <div>
         <h2 class="text-lg font-bold text-foreground">Brand sources</h2>
         <p class="text-sm text-muted-foreground">
-          {{ sources.length }} source{{ sources.length === 1 ? '' : 's' }} indexed. Deleting removes all chunks from the vector store.
+          {{ stats.total }} source{{ stats.total === 1 ? '' : 's' }} indexed across
+          {{ domainOptions.length }} domain{{ domainOptions.length === 1 ? '' : 's' }} on this page.
+          Click a row to inspect chunks or test a query against just that source.
         </p>
+      </div>
+    </div>
+
+    <!-- Live ingest activity: visible feedback that a queued URL or crawl
+         is actually being worked on, without the user having to refresh. -->
+    <div
+      v-if="activeIngestCount > 0"
+      class="flex items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3"
+    >
+      <Loader2 class="size-4 animate-spin text-muted-foreground" />
+      <div class="text-sm text-foreground">
+        {{ activeIngestCount }} source{{ activeIngestCount === 1 ? '' : 's' }} being ingested —
+        chunked, embedded and added to your knowledge base.
+        <span class="text-muted-foreground">Statuses below refresh automatically.</span>
       </div>
     </div>
 
     <Card>
       <CardContent class="pt-6">
-        <div v-if="listLoading && !sources.length" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-          <Loader2 class="size-4 animate-spin" /> Loading sources…
+        <FilterBar
+          v-model:status="filters.status"
+          v-model:kind="filters.kind"
+          v-model:search="filters.search"
+          v-model:domain="filters.domain"
+          :stats="stats"
+          :domain-options="domainOptions"
+          @clear="clearFilters"
+        />
+
+        <div class="mt-4">
+          <div v-if="listLoading && !sources.length" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 class="size-4 animate-spin" /> Loading sources…
+          </div>
+
+          <div v-else-if="!sources.length" class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+            <template v-if="stats.total === 0">
+              No brand sources yet. Add your first URL above to teach the RAG about your brand.
+            </template>
+            <template v-else>
+              No sources match this filter. Try clearing filters, or search another term.
+            </template>
+          </div>
+
+          <div v-else class="flex flex-col gap-3">
+            <SourceGroup
+              v-for="group in groupedSources"
+              :key="group.host"
+              :group="group"
+              @select="openDetail"
+              @reingest="reingestSource"
+              @delete="deleteSource"
+            />
+          </div>
         </div>
 
-        <div v-else-if="!sources.length" class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No brand sources yet. Add your first URL above to teach the RAG about your brand.
-        </div>
-
-        <div v-else class="divide-y divide-border">
-          <div
-            v-for="s in sources"
-            :key="s.id"
-            class="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
-          >
-            <!-- Kind icon -->
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
-              <Globe v-if="s.kind === 'homepage'" class="size-4" />
-              <BookOpen v-else-if="s.kind === 'blog'" class="size-4" />
-              <Package v-else-if="s.kind === 'product'" class="size-4" />
-              <FileCode v-else-if="s.kind === 'docs'" class="size-4" />
-              <ShieldCheck v-else-if="s.kind === 'review'" class="size-4" />
-              <Link2 v-else class="size-4" />
-            </span>
-
-            <!-- Title + URL -->
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-semibold text-foreground">
-                {{ s.title || s.url }}
-              </div>
-              <div class="mt-0.5 truncate text-xs text-muted-foreground">
-                <a
-                  :href="s.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="hover:text-foreground hover:underline"
-                >{{ s.url }}</a>
-              </div>
-              <div v-if="s.error_message" class="mt-1 text-xs text-destructive">
-                {{ s.error_message }}
-              </div>
-            </div>
-
-            <!-- Meta pills -->
-            <div class="flex items-center gap-2">
-              <span class="hidden rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-block">
-                {{ s.kind_display || s.kind }}
-              </span>
-              <span class="text-xs tabular-nums text-muted-foreground" :title="s.chunk_count + ' chunks in index'">
-                {{ s.chunk_count || 0 }} chunks
-              </span>
-              <span
-                class="rounded-md px-2 py-0.5 text-xs font-semibold capitalize"
-                :class="statusClass(s.status)"
-              >{{ s.status_display || s.status }}</span>
-              <button
-                class="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                :title="'Delete ' + (s.title || s.url)"
-                @click="deleteSource(s)"
-              >
-                <Trash2 class="size-4" />
-              </button>
-            </div>
+        <!-- Pagination -->
+        <div v-if="pageMeta.count > pageSize" class="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <p class="text-xs text-muted-foreground">
+            Page {{ page }} of {{ totalPages }} · {{ pageMeta.count }} total
+          </p>
+          <div class="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="!pageMeta.previous || listLoading"
+              @click="page = Math.max(1, page - 1)"
+            >Previous</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="!pageMeta.next || listLoading"
+              @click="page = Math.min(totalPages, page + 1)"
+            >Next</Button>
           </div>
         </div>
       </CardContent>
     </Card>
+
+    <!-- Detail drawer -->
+    <SourceDetailDrawer
+      v-if="selectedSource"
+      :website-id="websiteId"
+      :source="selectedSource"
+      @close="closeDetail"
+      @reingested="loadSources"
+      @deleted="loadSources"
+    />
   </div>
 </template>

@@ -1,25 +1,20 @@
 import api from './client'
 
+// Brand Security is presented to the user as a findings feed: scans run
+// in the background (scheduled, or kicked off with runScan) and every
+// issue they catch lands in the alerts list. Agent management endpoints
+// exist server-side but are intentionally not exposed in the UI anymore.
 export default {
-  overview: (websiteId) =>
-    api.get(`/brand-security/websites/${websiteId}/overview/`),
-
-  // Agents ---------------------------------------------------------------
-  agents: (websiteId) =>
-    api.get(`/brand-security/websites/${websiteId}/agents/`),
-  updateAgent: (websiteId, agentId, payload) =>
-    api.patch(
-      `/brand-security/websites/${websiteId}/agents/${agentId}/`,
-      payload,
-    ),
-  runAgent: (websiteId, agentId) =>
-    api.post(`/brand-security/websites/${websiteId}/agents/${agentId}/run/`),
-
-  // Scans ----------------------------------------------------------------
+  // Scans -----------------------------------------------------------------
+  // POST returns 202 {queued: true, agents: [...]} — the scan runs on a
+  // background worker. Poll scanStatus() until running flips to false.
   runScan: (websiteId, only = null) =>
     api.post(`/brand-security/websites/${websiteId}/scan/`, only ? { only } : {}),
+  scanStatus: (websiteId) =>
+    api.get(`/brand-security/websites/${websiteId}/scan/status/`),
 
-  // Alerts ---------------------------------------------------------------
+  // Findings --------------------------------------------------------------
+  // params: { status, severity: [], issue: [], source: [] }
   alerts: (websiteId, params = {}) =>
     api.get(`/brand-security/websites/${websiteId}/alerts/`, { params }),
   resolveAlert: (alertId) =>
@@ -27,21 +22,9 @@ export default {
   dismissAlert: (alertId) =>
     api.post(`/brand-security/alerts/${alertId}/dismiss/`),
 
-  // Config ---------------------------------------------------------------
+  // Monitoring config -----------------------------------------------------
   config: (websiteId) =>
     api.get(`/brand-security/websites/${websiteId}/config/`),
   saveConfig: (websiteId, payload) =>
     api.put(`/brand-security/websites/${websiteId}/config/`, payload),
-
-  // Prompts (per-agent) --------------------------------------------------
-  prompts: (websiteId, agentId = null) => {
-    const params = agentId ? { agent_id: agentId } : {}
-    return api.get(`/brand-security/websites/${websiteId}/prompts/`, { params })
-  },
-  createPrompt: (websiteId, text, agentId = 'llm_truth') =>
-    api.post(`/brand-security/websites/${websiteId}/prompts/`, {
-      text, agent_id: agentId,
-    }),
-  deletePrompt: (promptId) =>
-    api.delete(`/brand-security/prompts/${promptId}/`),
 }
