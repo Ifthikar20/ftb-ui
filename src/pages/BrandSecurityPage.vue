@@ -1,110 +1,106 @@
 <script setup>
 /**
- * Brand Security page.
+ * Brand Security page (Alerts tab).
  *
- * Independent agents inspect the brand across specific vectors (LLMs, SERPs,
- * social, trends, impersonation). Every alert on this page is stamped with
- * the agent that raised it via `AgentBadge`, so the user always sees *what*
- * was caught and *who* caught it.
+ * Findings-first: background scans check what LLMs, search pages, and
+ * social discussions say about the brand — using keywords built from the
+ * brand terms below and benchmarked against the reference material on the
+ * Brand Input tab. This page only shows what those scans captured, with
+ * each finding labeled by capture type (narrative watch, sentiment issue,
+ * inaccurate claim, look-alike brand, ...). There is no agent management
+ * surface here by design.
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
-import { ChevronRight, Play, RefreshCw } from '@lucide/vue'
+import { ChevronRight, Play, RefreshCw, BookOpen, ArrowRight } from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
 import brandSecurity from '@/api/brandSecurity'
+import ragApi from '@/api/rag'
+import { CAPTURE_TYPES } from '@/constants/captureTypes'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import HealthScoreCard from '@/components/brand_security/HealthScoreCard.vue'
-import AgentsGrid from '@/components/brand_security/AgentsGrid.vue'
-import InactiveAgentCard from '@/components/brand_security/InactiveAgentCard.vue'
 import AlertsTable from '@/components/brand_security/AlertsTable.vue'
-import AgentConfigDrawer from '@/components/brand_security/AgentConfigDrawer.vue'
-import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
 const websiteId = computed(() => appStore.activeWebsite?.id || null)
 
-const overview = ref({})
-const agents = ref([])
 const alerts = ref([])
 const config = ref({ brand_terms: [], negative_keywords: [] })
-const prompts = ref([])
+const loadingAlerts = ref(false)
 
-const loading = reactive({ overview: false, agents: false, alerts: false })
-const scanRunning = ref(false)
-const runningAgentIds = ref(new Set())
-const drawerOpen = ref(false)
-const drawerAgent = ref(null)
+// null = not loaded yet; 0 = first visit, no reference content ingested.
+const brandSourcesTotal = ref(null)
 
-const filter = reactive({ agent_id: [], severity: [], status: 'open' })
+const scanning = ref(false)
+const scanStartedAt = ref(null)
+const lastRunAt = ref(null)
 
-const agentsById = computed(() =>
-  Object.fromEntries(agents.value.map((a) => [a.agent_id, a])),
-)
-const activeAgents = computed(() => agents.value.filter((a) => a.enabled))
-const inactiveAgents = computed(() => agents.value.filter((a) => !a.enabled))
-const activatingIds = ref(new Set())
+// Dropdown-backed filters: single value each, '' = no filter. Dropdowns
+// (rather than chip rows) so option lists can grow as more capture types
+// and modes are added.
+const filter = reactive({ type: '', severity: '', status: 'open' })
 
-let pollTimer = null
+const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'dismissed', label: 'Dismissed' },
+  { value: '', label: 'All statuses' },
+]
+
+const TYPE_OPTIONS = [
+  { value: '', label: 'All types' },
+  ...CAPTURE_TYPES.map((t) => ({ value: t.key, label: t.label })),
+]
+
+const SEVERITY_OPTIONS = [
+  { value: '', label: 'All severities' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+]
 
 onMounted(async () => {
-  if (websiteId.value) await refreshAll()
+  if (websiteId.value) await initPage()
 })
 watch(websiteId, async (v) => {
-  if (v) await refreshAll()
+  if (v) await initPage()
 })
-onBeforeUnmount(stopPolling)
+onBeforeUnmount(stopScanPolling)
 
-async function refreshAll() {
+async function initPage() {
   await Promise.all([
-    loadOverview(),
-    loadAgents(),
     loadAlerts(),
     loadConfig(),
-    loadPrompts(),
+    loadBrandSourceStats(),
+    syncScanStatus(),
   ])
 }
 
-async function loadOverview() {
-  loading.overview = true
-  try {
-    const { data } = await brandSecurity.overview(websiteId.value)
-    overview.value = data
-  } catch {
-    toast.error('Failed to load overview')
-  } finally {
-    loading.overview = false
-  }
-}
-async function loadAgents() {
-  loading.agents = true
-  try {
-    const { data } = await brandSecurity.agents(websiteId.value)
-    agents.value = data
-  } catch {
-    toast.error('Failed to load agents')
-  } finally {
-    loading.agents = false
-  }
-}
 async function loadAlerts() {
-  loading.alerts = true
+  loadingAlerts.value = true
   try {
-    const params = {}
-    if (filter.agent_id.length) params.agent_id = filter.agent_id
-    if (filter.severity.length) params.severity = filter.severity
-    if (filter.status) params.status = filter.status
+    // URLSearchParams so a capture type's issue codes serialize as
+    // repeated bare keys (issue=a&issue=b) — what DRF's getlist() reads.
+    // Axios' default array serialization (issue[]=a) would be ignored.
+    const params = new URLSearchParams()
+    if (filter.type) {
+      const type = CAPTURE_TYPES.find((t) => t.key === filter.type)
+      ;(type?.issues || []).forEach((issue) => params.append('issue', issue))
+    }
+    if (filter.severity) params.append('severity', filter.severity)
+    if (filter.status) params.append('status', filter.status)
     const { data } = await brandSecurity.alerts(websiteId.value, params)
     alerts.value = data.results || data
   } catch {
-    toast.error('Failed to load alerts')
+    toast.error('Failed to load findings')
   } finally {
-    loading.alerts = false
+    loadingAlerts.value = false
   }
 }
+
 async function loadConfig() {
   try {
     const { data } = await brandSecurity.config(websiteId.value)
@@ -113,166 +109,173 @@ async function loadConfig() {
     /* config lazily created — ignore */
   }
 }
-async function loadPrompts() {
+
+// The first-visit guide keys off whether any reference content exists in
+// the RAG knowledge base. One source is enough to consider setup done.
+async function loadBrandSourceStats() {
   try {
-    const { data } = await brandSecurity.prompts(websiteId.value)
-    prompts.value = data.results || data
+    const res = await ragApi.listSources(websiteId.value, { page: 1, page_size: 1 })
+    brandSourcesTotal.value = res.meta?.stats?.total ?? (res.data?.length || 0)
   } catch {
-    /* empty prompt list is fine */
+    // Unknown — do not block the page on the guide check.
+    brandSourcesTotal.value = null
   }
 }
+
+const isFirstVisit = computed(() => brandSourcesTotal.value === 0)
 
 // ── Filters ─────────────────────────────────────────────────────────────
 
-function toggleAgentFilter(agentId) {
-  const idx = filter.agent_id.indexOf(agentId)
-  if (idx === -1) filter.agent_id.push(agentId)
-  else filter.agent_id.splice(idx, 1)
-  loadAlerts()
-}
-function toggleSeverityFilter(sev) {
-  const idx = filter.severity.indexOf(sev)
-  if (idx === -1) filter.severity.push(sev)
-  else filter.severity.splice(idx, 1)
-  loadAlerts()
-}
-function setStatus(s) {
-  filter.status = s
+function setFilter(key, value) {
+  filter[key] = value
   loadAlerts()
 }
 
-// ── Actions ─────────────────────────────────────────────────────────────
+// ── Scan lifecycle ──────────────────────────────────────────────────────
+// POST /scan/ queues the work on a background worker and returns 202.
+// We then poll /scan/status/ until running flips false, so the button
+// reflects real progress instead of guessing at a duration.
 
-async function runFullScan() {
-  scanRunning.value = true
+let scanPollTimer = null
+const SCAN_POLL_MS = 3000
+const SCAN_POLL_MAX = 200 // 10 minutes
+
+let scanPollCount = 0
+
+const scanElapsed = ref(0)
+let elapsedTimer = null
+
+async function runScan() {
+  scanning.value = true
+  scanStartedAt.value = Date.now()
+  startElapsedTicker()
   try {
-    await brandSecurity.runScan(websiteId.value)
-    toast.success('Scan started')
-    startPolling()
+    const { data } = await brandSecurity.runScan(websiteId.value)
+    if (!data?.queued) {
+      toast.error('Nothing to scan — monitoring is not configured yet')
+      finishScan()
+      return
+    }
+    toast.success('Scan started — findings will appear below as they come in')
+    startScanPolling()
   } catch {
     toast.error('Failed to start scan')
-    scanRunning.value = false
+    finishScan()
   }
 }
 
-async function runOneAgent(agent) {
-  runningAgentIds.value = new Set(runningAgentIds.value).add(agent.agent_id)
+function startScanPolling() {
+  stopScanPolling()
+  scanPollCount = 0
+  scanPollTimer = setInterval(async () => {
+    scanPollCount += 1
+    try {
+      const { data } = await brandSecurity.scanStatus(websiteId.value)
+      lastRunAt.value = data.last_run_at
+      if (!data.running) {
+        finishScan()
+        await loadAlerts()
+        toast.success(`Scan complete — ${data.open_alerts} open finding${data.open_alerts === 1 ? '' : 's'}`)
+      } else if (scanPollCount >= SCAN_POLL_MAX) {
+        finishScan()
+        await loadAlerts()
+        toast.error('The scan is taking longer than expected. Findings will keep appearing — refresh later.')
+      }
+    } catch {
+      /* transient poll failure — keep trying until the cap */
+    }
+  }, SCAN_POLL_MS)
+}
+
+// On page load, resume the scanning state if a scan is already running
+// (e.g. the user refreshed mid-scan or a scheduled scan is in flight).
+async function syncScanStatus() {
   try {
-    await brandSecurity.runAgent(websiteId.value, agent.agent_id)
-    toast.success(`${agent.display_name} ran`)
-    await Promise.all([loadOverview(), loadAgents(), loadAlerts()])
+    const { data } = await brandSecurity.scanStatus(websiteId.value)
+    lastRunAt.value = data.last_run_at
+    if (data.running) {
+      scanning.value = true
+      scanStartedAt.value = Date.now()
+      startElapsedTicker()
+      startScanPolling()
+    }
   } catch {
-    toast.error(`${agent.display_name} failed`)
-  } finally {
-    const next = new Set(runningAgentIds.value)
-    next.delete(agent.agent_id)
-    runningAgentIds.value = next
+    /* status endpoint unavailable — leave the button usable */
   }
 }
 
-function openConfigure(agent) {
-  drawerAgent.value = agent
-  drawerOpen.value = true
+function finishScan() {
+  scanning.value = false
+  stopScanPolling()
+  stopElapsedTicker()
 }
-async function saveAgentConfig(payload) {
-  if (!drawerAgent.value) return
-  try {
-    await brandSecurity.updateAgent(websiteId.value, drawerAgent.value.agent_id, payload)
-    await loadAgents()
-    toast.success('Agent updated')
-  } catch {
-    toast.error('Failed to update agent')
+
+function stopScanPolling() {
+  if (scanPollTimer) {
+    clearInterval(scanPollTimer)
+    scanPollTimer = null
   }
 }
 
-async function activateAgent(agent) {
-  activatingIds.value = new Set(activatingIds.value).add(agent.agent_id)
-  try {
-    await brandSecurity.updateAgent(
-      websiteId.value, agent.agent_id, { enabled: true },
-    )
-    toast.success(`${agent.display_name} is now active`)
-    await Promise.all([loadAgents(), loadPrompts()])
-  } catch {
-    toast.error(`Failed to activate ${agent.display_name}`)
-  } finally {
-    const next = new Set(activatingIds.value)
-    next.delete(agent.agent_id)
-    activatingIds.value = next
+function startElapsedTicker() {
+  stopElapsedTicker()
+  scanElapsed.value = 0
+  elapsedTimer = setInterval(() => {
+    if (scanStartedAt.value) {
+      scanElapsed.value = Math.round((Date.now() - scanStartedAt.value) / 1000)
+    }
+  }, 1000)
+}
+function stopElapsedTicker() {
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+    elapsedTimer = null
   }
 }
+
+// ── Finding actions ─────────────────────────────────────────────────────
 
 async function resolveAlert(alert) {
   try {
     await brandSecurity.resolveAlert(alert.id)
-    await Promise.all([loadAlerts(), loadOverview(), loadAgents()])
+    await loadAlerts()
   } catch { toast.error('Failed to resolve') }
 }
 async function dismissAlert(alert) {
   try {
     await brandSecurity.dismissAlert(alert.id)
-    await Promise.all([loadAlerts(), loadOverview(), loadAgents()])
+    await loadAlerts()
   } catch { toast.error('Failed to dismiss') }
 }
 
-async function saveConfig(payload) {
-  try {
-    await brandSecurity.saveConfig(websiteId.value, payload)
-    toast.success('Configuration saved')
-    await loadConfig()
-  } catch { toast.error('Failed to save configuration') }
-}
-async function addPrompt(text, agentId = 'llm_truth') {
-  try {
-    await brandSecurity.createPrompt(websiteId.value, text, agentId)
-    await loadPrompts()
-  } catch { toast.error('Failed to add prompt') }
-}
-async function deletePrompt(prompt) {
-  try {
-    await brandSecurity.deletePrompt(prompt.id)
-    await loadPrompts()
-  } catch { toast.error('Failed to delete prompt') }
-}
-
-// ── Polling while a scan is running ────────────────────────────────────
-
-let pollAttempts = 0
-function startPolling() {
-  stopPolling()
-  pollAttempts = 0
-  pollTimer = setInterval(async () => {
-    pollAttempts += 1
-    await Promise.all([loadOverview(), loadAgents(), loadAlerts()])
-    const anyRunning = agents.value.some((a) => a.last_status === 'running')
-    if (!anyRunning || pollAttempts >= 60) {
-      stopPolling()
-      scanRunning.value = false
-    }
-  }, 2500)
-}
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
+function formatLastRun(v) {
+  if (!v) return null
+  return new Date(v).toLocaleString()
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- ── Header / breadcrumb row (matches URLs page) ── -->
+    <!-- ── Header / breadcrumb row ── -->
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
         <span class="font-medium text-foreground">LLM Dashboard</span>
         <ChevronRight class="size-3.5" />
         <span class="font-semibold text-foreground">Brand Security</span>
       </div>
-      <Button :disabled="scanRunning" @click="runFullScan">
-        <RefreshCw v-if="scanRunning" class="size-3.5 animate-spin" />
-        <Play v-else class="size-3.5" />
-        {{ scanRunning ? 'Scanning...' : 'Run all agents' }}
-      </Button>
+      <div class="flex items-center gap-3">
+        <span v-if="scanning" class="text-xs text-muted-foreground">
+          Scanning for {{ scanElapsed }}s — findings update when it completes
+        </span>
+        <span v-else-if="formatLastRun(lastRunAt)" class="text-xs text-muted-foreground">
+          Last checked {{ formatLastRun(lastRunAt) }}
+        </span>
+        <Button :disabled="scanning || !websiteId" @click="runScan">
+          <RefreshCw v-if="scanning" class="size-3.5 animate-spin" />
+          <Play v-else class="size-3.5" />
+          {{ scanning ? 'Scanning...' : 'Scan now' }}
+        </Button>
+      </div>
     </div>
 
     <!-- ── Tab strip: siblings of the same feature ── -->
@@ -287,130 +290,108 @@ function stopPolling() {
       >Brand Input</router-link>
     </div>
 
-    <!-- ── Intro ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">Brand Security</h2>
-      <p class="text-sm text-muted-foreground">
-        Independent agents watch your brand across LLMs, SERPs, social and trends.
-        Each alert is stamped with the agent that caught it.
-      </p>
-    </div>
-
-    <!-- ── Health score ── -->
-    <HealthScoreCard :overview="overview" />
-
-    <!-- ── Active agents ── -->
-    <div class="flex flex-wrap items-end justify-between gap-2">
-      <div>
-        <h2 class="text-lg font-bold text-foreground">Active agents</h2>
-        <p class="text-sm text-muted-foreground">
-          {{ activeAgents.length }} agent{{ activeAgents.length === 1 ? '' : 's' }} running on their schedule
-        </p>
-      </div>
-    </div>
-    <Card v-if="activeAgents.length">
+    <!-- ── First-visit guide: no reference content yet ── -->
+    <Card v-if="isFirstVisit" class="border-dashed">
       <CardContent class="pt-6">
-        <AgentsGrid
-          :agents="activeAgents"
-          :running-ids="runningAgentIds"
-          @run="runOneAgent"
-          @configure="openConfigure"
-        />
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-start gap-3">
+            <div class="rounded-lg bg-secondary p-2.5">
+              <BookOpen class="size-5 text-foreground" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-foreground">Start by teaching us your brand</h2>
+              <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
+                Before we can tell you what is wrong out there, we need to know what is right.
+                Add your site pages, docs, or paste brand copy on the Brand Input tab — that
+                reference content is the benchmark every finding on this page is checked against.
+              </p>
+            </div>
+          </div>
+          <router-link :to="`/llm-ranking/${websiteId}/brand-input`">
+            <Button>
+              Add reference content
+              <ArrowRight class="size-3.5" />
+            </Button>
+          </router-link>
+        </div>
       </CardContent>
     </Card>
-    <div v-else class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-      No agents active yet. Activate one below to start monitoring.
-    </div>
 
-    <!-- ── Not active ── -->
-    <template v-if="inactiveAgents.length">
-      <div>
-        <h2 class="text-lg font-bold text-foreground">Not active</h2>
-        <p class="text-sm text-muted-foreground">Click a card to activate an agent</p>
-      </div>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <InactiveAgentCard
-          v-for="agent in inactiveAgents"
-          :key="agent.agent_id"
-          :agent="agent"
-          :busy="activatingIds.has(agent.agent_id)"
-          @activate="activateAgent"
-        />
-      </div>
-    </template>
-
-    <!-- ── Alerts ── -->
+    <!-- ── Intro ── -->
     <div>
-      <h2 class="text-lg font-bold text-foreground">Alerts</h2>
-      <p class="text-sm text-muted-foreground">Every issue caught by your active agents</p>
+      <h2 class="text-lg font-bold text-foreground">Findings</h2>
+      <p class="text-sm text-muted-foreground">
+        We check LLM answers, search pages and AI overviews for keywords about your brand,
+        your content and your description
+        <template v-if="config.brand_terms?.length">
+          ({{ config.brand_terms.slice(0, 4).join(', ') }}<template v-if="config.brand_terms.length > 4"> and {{ config.brand_terms.length - 4 }} more</template>)
+        </template>
+        and benchmark what we find against your Brand Input material. Each finding below is
+        labeled with the type of capture.
+      </p>
     </div>
 
     <Card>
       <CardContent class="pt-6">
-        <!-- Filter row: status segmented control + agent chips + severity chips -->
+        <!-- Filter row: dropdowns so option lists can grow without
+             crowding the toolbar as more capture types and modes ship. -->
         <div class="mb-4 flex flex-wrap items-center gap-2">
-          <!-- Status: segmented control -->
-          <div class="flex items-center rounded-lg border border-border p-0.5">
-            <button
-              v-for="s in ['open', 'resolved', 'dismissed']" :key="s"
-              class="rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors"
-              :class="filter.status === s
-                ? 'bg-secondary text-foreground'
-                : 'text-muted-foreground hover:text-foreground'"
-              @click="setStatus(s)"
-            >{{ s }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</label>
+            <select
+              :value="filter.status"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('status', $event.target.value)"
+            >
+              <option v-for="opt in STATUS_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
           </div>
 
-          <!-- Agent chips -->
-          <button
-            v-for="agent in agents" :key="agent.agent_id"
-            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:border-ring"
-            :class="filter.agent_id.includes(agent.agent_id)
-              ? 'border-ring text-foreground'
-              : 'border-border text-muted-foreground'"
-            @click="toggleAgentFilter(agent.agent_id)"
-          >{{ agent.display_name }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</label>
+            <select
+              :value="filter.type"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('type', $event.target.value)"
+            >
+              <option v-for="opt in TYPE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
 
-          <!-- Severity chips -->
-          <button
-            v-for="sev in ['high', 'medium', 'low']" :key="sev"
-            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium capitalize transition-colors hover:border-ring"
-            :class="filter.severity.includes(sev)
-              ? 'border-ring text-foreground'
-              : 'border-border text-muted-foreground'"
-            @click="toggleSeverityFilter(sev)"
-          >{{ sev }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</label>
+            <select
+              :value="filter.severity"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('severity', $event.target.value)"
+            >
+              <option v-for="opt in SEVERITY_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <AlertsTable
           :alerts="alerts"
-          :agents-by-id="agentsById"
-          :loading="loading.alerts"
+          :loading="loadingAlerts"
           @resolve="resolveAlert"
           @dismiss="dismissAlert"
         />
       </CardContent>
     </Card>
 
-    <!-- ── Monitoring config ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">Monitoring</h2>
-      <p class="text-sm text-muted-foreground">Brand terms and negative keywords the agents watch for</p>
-    </div>
-    <MonitoringConfigPanel
-      :config="config"
-      @save="saveConfig"
-    />
-
-    <AgentConfigDrawer
-      v-model:open="drawerOpen"
-      :agent="drawerAgent"
-      :prompts="prompts"
-      :running="drawerAgent ? runningAgentIds.has(drawerAgent.agent_id) : false"
-      @save="saveAgentConfig"
-      @run="runOneAgent"
-      @add-prompt="addPrompt"
-      @delete-prompt="deletePrompt"
-    />
+    <p class="text-xs text-muted-foreground">
+      Brand terms and negative keywords that drive these scans are managed on the
+      <router-link
+        :to="`/llm-ranking/${websiteId}/brand-input`"
+        class="font-medium text-foreground hover:underline"
+      >Brand Input</router-link>
+      tab, alongside your reference content.
+    </p>
   </div>
 </template>
