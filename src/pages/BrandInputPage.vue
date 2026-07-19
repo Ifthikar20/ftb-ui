@@ -9,7 +9,7 @@
  * and are the source of truth every Brand Security agent checks LLM
  * answers against.
  */
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import {
   ChevronRight, Link2, FileText, Loader2, RefreshCw,
   Globe, BookOpen, Package, FileCode, ShieldCheck,
@@ -80,12 +80,63 @@ async function loadSources() {
       previous: meta.previous,
     }
     if (meta.stats) stats.value = meta.stats
+    syncIngestPolling()
   } catch {
     toast.error('Failed to load brand sources')
   } finally {
     listLoading.value = false
   }
 }
+
+// ── Live ingest status ────────────────────────────────────────────────
+// URL ingest runs on a background worker: the POST returns 202 and the
+// source moves pending -> ingesting -> ready/failed server-side. Poll the
+// list while anything is still in flight so the user watches the status
+// change instead of wondering whether the click did anything.
+const POLL_MS = 4000
+const POLL_MAX = 75 // give up after ~5 minutes
+// Keep polling for a few rounds even when nothing looks active yet — a
+// just-queued crawl has no source rows until the worker fetches the first
+// page, so an immediate "nothing in flight" reading would stop too early.
+const POLL_MIN_ROUNDS = 5
+
+let ingestTimer = null
+let pollRounds = 0
+
+const activeIngestCount = computed(
+  () => (stats.value.pending || 0) + (stats.value.ingesting || 0),
+)
+
+function startIngestPolling() {
+  pollRounds = 0
+  if (ingestTimer) return
+  ingestTimer = setInterval(async () => {
+    pollRounds += 1
+    await loadSources()
+    if (
+      (activeIngestCount.value === 0 && pollRounds >= POLL_MIN_ROUNDS)
+      || pollRounds >= POLL_MAX
+    ) {
+      stopIngestPolling()
+    }
+  }, POLL_MS)
+}
+
+function stopIngestPolling() {
+  if (ingestTimer) {
+    clearInterval(ingestTimer)
+    ingestTimer = null
+  }
+}
+
+// Called after every list load: if the server says something is still
+// pending or ingesting, make sure a poll loop is running (covers page
+// reloads while a crawl started earlier is still working).
+function syncIngestPolling() {
+  if (activeIngestCount.value > 0 && !ingestTimer) startIngestPolling()
+}
+
+onBeforeUnmount(stopIngestPolling)
 
 function clearFilters() {
   filters.value = { status: '', kind: '', domain: '', search: '' }
@@ -128,8 +179,9 @@ function closeDetail() { selectedSource.value = null }
 async function reingestSource(source) {
   try {
     await ragApi.reingestSource(websiteId.value, source.id)
-    toast.success('Reingest queued')
+    toast.success('Reingest queued — status updates below')
     await loadSources()
+    startIngestPolling()
   } catch (err) {
     const msg = err?.response?.data?.error
       || err?.response?.data?.error?.message
@@ -174,10 +226,15 @@ async function submitSource() {
   submitting.value = true
   try {
     await ragApi.addSource(websiteId.value, { ...form.value })
-    toast.success(form.value.crawl ? 'Site crawl queued' : 'URL queued for ingest')
+    toast.success(
+      form.value.crawl
+        ? 'Site crawl queued — pages appear below as they are ingested'
+        : 'URL queued — watch its status update below',
+    )
     form.value = { url: '', title: '', kind: 'other', crawl: false, page_cap: 12, depth: 1 }
     page.value = 1
     await loadSources()
+    startIngestPolling()
   } catch (err) {
     const msg = err?.response?.data?.error
       || err?.response?.data?.url?.[0]
@@ -431,6 +488,20 @@ watch(websiteId, async (v) => { if (v) { page.value = 1; await loadSources() } }
           {{ domainOptions.length }} domain{{ domainOptions.length === 1 ? '' : 's' }} on this page.
           Click a row to inspect chunks or test a query against just that source.
         </p>
+      </div>
+    </div>
+
+    <!-- Live ingest activity: visible feedback that a queued URL or crawl
+         is actually being worked on, without the user having to refresh. -->
+    <div
+      v-if="activeIngestCount > 0"
+      class="flex items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3"
+    >
+      <Loader2 class="size-4 animate-spin text-muted-foreground" />
+      <div class="text-sm text-foreground">
+        {{ activeIngestCount }} source{{ activeIngestCount === 1 ? '' : 's' }} being ingested —
+        chunked, embedded and added to your knowledge base.
+        <span class="text-muted-foreground">Statuses below refresh automatically.</span>
       </div>
     </div>
 

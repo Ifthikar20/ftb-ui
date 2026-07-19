@@ -5,11 +5,10 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Check, X, ChevronRight, ShieldCheck, ShieldAlert } from '@lucide/vue'
-import AgentBadge from './AgentBadge.vue'
+import { captureTypeForIssue, sourceLabel } from '@/constants/captureTypes'
 
-const props = defineProps({
+defineProps({
   alerts: { type: Array, default: () => [] },
-  agentsById: { type: Object, default: () => ({}) },
   loading: { type: Boolean, default: false },
 })
 const emit = defineEmits(['resolve', 'dismiss'])
@@ -20,9 +19,8 @@ const severityStyle = computed(() => ({
   low:    'bg-slate-100 text-slate-700',
 }))
 
-// Track which alert rows have their "Verified against N brand sources"
-// detail panel expanded. A Set keeps toggling O(1) and avoids re-render
-// churn from a computed map.
+// Track which finding rows have their detail panel expanded. A Set keeps
+// toggling O(1) and avoids re-render churn from a computed map.
 const expanded = ref(new Set())
 
 function toggle(id) {
@@ -52,20 +50,19 @@ function formatDate(v) {
       <TableHeader>
         <TableRow>
           <TableHead class="w-8"></TableHead>
-          <TableHead>Agent</TableHead>
+          <TableHead>Type</TableHead>
           <TableHead>Severity</TableHead>
-          <TableHead>Issue</TableHead>
-          <TableHead>Title</TableHead>
+          <TableHead>Finding</TableHead>
           <TableHead>Verified against</TableHead>
-          <TableHead>Source</TableHead>
+          <TableHead>Found in</TableHead>
           <TableHead>Detected</TableHead>
           <TableHead class="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <TableRow v-if="!alerts.length">
-          <TableCell colspan="9" class="text-center text-sm text-muted-foreground py-8">
-            {{ loading ? 'Loading...' : 'No alerts. Run a scan to check for issues.' }}
+          <TableCell colspan="8" class="text-center text-sm text-muted-foreground py-8">
+            {{ loading ? 'Loading...' : 'No findings yet. Run a scan to check what is being said about your brand.' }}
           </TableCell>
         </TableRow>
         <template v-for="alert in alerts" :key="alert.id">
@@ -80,11 +77,11 @@ function formatDate(v) {
               />
             </TableCell>
             <TableCell>
-              <AgentBadge
-                :agent-id="alert.agent_id"
-                :display-name="agentsById[alert.agent_id]?.display_name || alert.agent_id"
-                :color="agentsById[alert.agent_id]?.color || 'slate'"
-              />
+              <span
+                class="inline-flex whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium"
+                :class="captureTypeForIssue(alert.issue).badgeClass"
+                :title="captureTypeForIssue(alert.issue).blurb"
+              >{{ captureTypeForIssue(alert.issue).label }}</span>
             </TableCell>
             <TableCell>
               <span
@@ -92,7 +89,6 @@ function formatDate(v) {
                 :class="severityStyle[alert.severity] || 'bg-slate-100'"
               >{{ alert.severity }}</span>
             </TableCell>
-            <TableCell class="text-sm">{{ alert.issue }}</TableCell>
             <TableCell class="max-w-md">
               <div class="text-sm font-medium truncate">{{ alert.title || alert.prompt_text || '-' }}</div>
               <div class="text-xs text-muted-foreground truncate">{{ alert.detail || alert.snippet }}</div>
@@ -115,7 +111,9 @@ function formatDate(v) {
                 Ungrounded
               </span>
             </TableCell>
-            <TableCell class="text-xs uppercase text-muted-foreground">{{ alert.source }}</TableCell>
+            <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+              {{ sourceLabel(alert.source) }}<template v-if="alert.model"> · {{ alert.model }}</template>
+            </TableCell>
             <TableCell class="text-xs text-muted-foreground whitespace-nowrap">{{ formatDate(alert.detected_at) }}</TableCell>
             <TableCell class="text-right" @click.stop>
               <div class="flex justify-end gap-1">
@@ -139,10 +137,17 @@ function formatDate(v) {
 
           <TableRow v-if="expanded.has(alert.id)" class="bg-muted/30 hover:bg-muted/30">
             <TableCell></TableCell>
-            <TableCell colspan="8" class="py-4">
+            <TableCell colspan="7" class="py-4">
               <div class="flex flex-col gap-3">
+                <div class="text-xs text-muted-foreground">
+                  {{ captureTypeForIssue(alert.issue).blurb }}
+                  <template v-if="alert.prompt_text">
+                    — captured while checking <span class="font-medium text-foreground">"{{ alert.prompt_text }}"</span>
+                  </template>
+                </div>
+
                 <div v-if="alert.snippet" class="text-xs">
-                  <div class="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">LLM answer</div>
+                  <div class="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">What was said</div>
                   <div class="rounded-md border bg-background p-3 text-sm leading-relaxed text-foreground/90">
                     {{ alert.snippet }}
                   </div>
@@ -160,7 +165,7 @@ function formatDate(v) {
                   >
                     No brand reference material matched this prompt. Add pages or paste
                     text on the <strong class="text-foreground">Brand Input</strong> tab
-                    so future alerts can be verified against your own facts.
+                    so future findings can be verified against your own facts.
                   </div>
 
                   <div v-else class="flex flex-col gap-2">
