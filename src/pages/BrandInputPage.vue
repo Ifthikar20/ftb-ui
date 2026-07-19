@@ -10,29 +10,76 @@
  * answers against.
  */
 import { ref, computed, watch, onMounted } from 'vue'
-import { ChevronRight, Link2, FileText, Trash2, RefreshCw, Loader2, Globe, BookOpen, Package, FileCode, ShieldCheck } from '@lucide/vue'
+import {
+  ChevronRight, Link2, FileText, Loader2, RefreshCw,
+  Globe, BookOpen, Package, FileCode, ShieldCheck,
+} from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
-import rag from '@/api/rag'
+import ragApi from '@/api/rag'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+
+import FilterBar from '@/components/brand_input/FilterBar.vue'
+import SourceGroup from '@/components/brand_input/SourceGroup.vue'
+import SourceDetailDrawer from '@/components/brand_input/SourceDetailDrawer.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
 const websiteId = computed(() => appStore.activeWebsite?.id || null)
 
-// ── Sources list ────────────────────────────────────────────────────────
+// ── Sources list (paginated + filtered server-side) ────────────────────
 const sources = ref([])
+const stats = ref({ total: 0, ready: 0, ingesting: 0, pending: 0, failed: 0 })
+const pageMeta = ref({ count: 0, next: null, previous: null })
 const listLoading = ref(false)
+
+const filters = ref({
+  status: '',
+  kind: '',
+  domain: '',
+  search: '',
+})
+const page = ref(1)
+const pageSize = 25
+
+// Debounce search input so we don't fire a request per keystroke.
+let searchTimer = null
+watch(() => filters.value.search, () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 1
+    loadSources()
+  }, 250)
+})
+watch([
+  () => filters.value.status,
+  () => filters.value.kind,
+  () => filters.value.domain,
+], () => { page.value = 1; loadSources() })
+watch(page, () => loadSources())
 
 async function loadSources() {
   if (!websiteId.value) return
   listLoading.value = true
   try {
-    const res = await rag.listSources(websiteId.value)
+    const params = { page: page.value, page_size: pageSize }
+    if (filters.value.status) params.status = filters.value.status
+    if (filters.value.kind) params.kind = filters.value.kind
+    if (filters.value.domain) params.domain = filters.value.domain
+    if (filters.value.search) params.search = filters.value.search
+
+    const res = await ragApi.listSources(websiteId.value, params)
     sources.value = res.data || []
+    const meta = res.meta || {}
+    pageMeta.value = {
+      count: meta.count || 0,
+      next: meta.next,
+      previous: meta.previous,
+    }
+    if (meta.stats) stats.value = meta.stats
   } catch {
     toast.error('Failed to load brand sources')
   } finally {
@@ -40,7 +87,69 @@ async function loadSources() {
   }
 }
 
-// ── Add source form ────────────────────────────────────────────────────
+function clearFilters() {
+  filters.value = { status: '', kind: '', domain: '', search: '' }
+  page.value = 1
+  loadSources()
+}
+
+// Domain grouping (derived from the current page). This is a pure UI
+// transform — the backend returns a flat paginated list; we group by
+// `domain` client-side so a 50-page crawl collapses into one node.
+const groupedSources = computed(() => {
+  const map = new Map()
+  for (const s of sources.value) {
+    const host = s.domain || 'other'
+    if (!map.has(host)) {
+      map.set(host, { host, sources: [], chunks: 0, ready: 0, pending: 0, ingesting: 0, failed: 0 })
+    }
+    const g = map.get(host)
+    g.sources.push(s)
+    g.chunks += s.chunk_count || 0
+    if (s.status && Object.prototype.hasOwnProperty.call(g, s.status)) {
+      g[s.status] += 1
+    }
+  }
+  return [...map.values()].sort((a, b) => b.sources.length - a.sources.length)
+})
+
+// Domains that exist across the current page, so the FilterBar's domain
+// dropdown reflects reality. When pagination is on this is only the
+// current page's domains — good enough as a discoverability aid.
+const domainOptions = computed(() => groupedSources.value.map((g) => g.host))
+
+const totalPages = computed(() => Math.max(1, Math.ceil(pageMeta.value.count / pageSize)))
+
+// ── Detail drawer ─────────────────────────────────────────────────────
+const selectedSource = ref(null)
+function openDetail(source) { selectedSource.value = source }
+function closeDetail() { selectedSource.value = null }
+
+async function reingestSource(source) {
+  try {
+    await ragApi.reingestSource(websiteId.value, source.id)
+    toast.success('Reingest queued')
+    await loadSources()
+  } catch (err) {
+    const msg = err?.response?.data?.error
+      || err?.response?.data?.error?.message
+      || 'Failed to queue reingest'
+    toast.error(msg)
+  }
+}
+
+async function deleteSource(source) {
+  if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
+  try {
+    await ragApi.deleteSource(websiteId.value, source.id)
+    toast.success('Source deleted')
+    await loadSources()
+  } catch {
+    toast.error('Failed to delete source')
+  }
+}
+
+// ── Add-URL form ───────────────────────────────────────────────────────
 const KIND_OPTIONS = [
   { value: 'homepage', label: 'Homepage', icon: Globe },
   { value: 'blog',     label: 'Blog post', icon: BookOpen },
@@ -64,9 +173,10 @@ async function submitSource() {
   if (!websiteId.value || !form.value.url) return
   submitting.value = true
   try {
-    await rag.addSource(websiteId.value, { ...form.value })
+    await ragApi.addSource(websiteId.value, { ...form.value })
     toast.success(form.value.crawl ? 'Site crawl queued' : 'URL queued for ingest')
     form.value = { url: '', title: '', kind: 'other', crawl: false, page_cap: 12, depth: 1 }
+    page.value = 1
     await loadSources()
   } catch (err) {
     const msg = err?.response?.data?.error
@@ -78,7 +188,7 @@ async function submitSource() {
   }
 }
 
-// ── Paste text form ───────────────────────────────────────────────────
+// ── Paste-text form ───────────────────────────────────────────────────
 const pasteForm = ref({
   title: '',
   kind: 'other',
@@ -90,9 +200,10 @@ async function submitPaste() {
   if (!websiteId.value || pasteForm.value.text.trim().length < 20 || !pasteForm.value.title.trim()) return
   pasteSubmitting.value = true
   try {
-    await rag.uploadText(websiteId.value, { ...pasteForm.value })
+    await ragApi.uploadText(websiteId.value, { ...pasteForm.value })
     toast.success('Text added to knowledge base')
     pasteForm.value = { title: '', kind: 'other', text: '' }
+    page.value = 1
     await loadSources()
   } catch (err) {
     const msg = err?.response?.data?.error
@@ -105,36 +216,10 @@ async function submitPaste() {
   }
 }
 
-async function deleteSource(source) {
-  if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
-  try {
-    await rag.deleteSource(websiteId.value, source.id)
-    toast.success('Source deleted')
-    await loadSources()
-  } catch {
-    toast.error('Failed to delete source')
-  }
-}
-
-// ── Status pill styling ────────────────────────────────────────────────
-function statusClass(status) {
-  const s = String(status || '').toLowerCase()
-  if (s === 'ready' || s === 'indexed' || s === 'success') {
-    return 'bg-[color:var(--chart-2)]/15 text-[color:var(--chart-2)]'
-  }
-  if (s === 'processing' || s === 'pending' || s === 'queued') {
-    return 'bg-[color:var(--chart-3)]/15 text-[color:var(--chart-3)]'
-  }
-  if (s === 'failed' || s === 'error') {
-    return 'bg-destructive/15 text-destructive'
-  }
-  return 'bg-secondary text-muted-foreground'
-}
-
 onMounted(async () => {
   if (websiteId.value) await loadSources()
 })
-watch(websiteId, async (v) => { if (v) await loadSources() })
+watch(websiteId, async (v) => { if (v) { page.value = 1; await loadSources() } })
 </script>
 
 <template>
@@ -268,7 +353,6 @@ watch(websiteId, async (v) => { if (v) await loadSources() })
             </Button>
           </div>
         </form>
-
       </CardContent>
     </Card>
 
@@ -343,78 +427,82 @@ watch(websiteId, async (v) => { if (v) await loadSources() })
       <div>
         <h2 class="text-lg font-bold text-foreground">Brand sources</h2>
         <p class="text-sm text-muted-foreground">
-          {{ sources.length }} source{{ sources.length === 1 ? '' : 's' }} indexed. Deleting removes all chunks from the vector store.
+          {{ stats.total }} source{{ stats.total === 1 ? '' : 's' }} indexed across
+          {{ domainOptions.length }} domain{{ domainOptions.length === 1 ? '' : 's' }} on this page.
+          Click a row to inspect chunks or test a query against just that source.
         </p>
       </div>
     </div>
 
     <Card>
       <CardContent class="pt-6">
-        <div v-if="listLoading && !sources.length" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-          <Loader2 class="size-4 animate-spin" /> Loading sources…
+        <FilterBar
+          v-model:status="filters.status"
+          v-model:kind="filters.kind"
+          v-model:search="filters.search"
+          v-model:domain="filters.domain"
+          :stats="stats"
+          :domain-options="domainOptions"
+          @clear="clearFilters"
+        />
+
+        <div class="mt-4">
+          <div v-if="listLoading && !sources.length" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 class="size-4 animate-spin" /> Loading sources…
+          </div>
+
+          <div v-else-if="!sources.length" class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+            <template v-if="stats.total === 0">
+              No brand sources yet. Add your first URL above to teach the RAG about your brand.
+            </template>
+            <template v-else>
+              No sources match this filter. Try clearing filters, or search another term.
+            </template>
+          </div>
+
+          <div v-else class="flex flex-col gap-3">
+            <SourceGroup
+              v-for="group in groupedSources"
+              :key="group.host"
+              :group="group"
+              @select="openDetail"
+              @reingest="reingestSource"
+              @delete="deleteSource"
+            />
+          </div>
         </div>
 
-        <div v-else-if="!sources.length" class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No brand sources yet. Add your first URL above to teach the RAG about your brand.
-        </div>
-
-        <div v-else class="divide-y divide-border">
-          <div
-            v-for="s in sources"
-            :key="s.id"
-            class="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
-          >
-            <!-- Kind icon -->
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
-              <Globe v-if="s.kind === 'homepage'" class="size-4" />
-              <BookOpen v-else-if="s.kind === 'blog'" class="size-4" />
-              <Package v-else-if="s.kind === 'product'" class="size-4" />
-              <FileCode v-else-if="s.kind === 'docs'" class="size-4" />
-              <ShieldCheck v-else-if="s.kind === 'review'" class="size-4" />
-              <Link2 v-else class="size-4" />
-            </span>
-
-            <!-- Title + URL -->
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-semibold text-foreground">
-                {{ s.title || s.url }}
-              </div>
-              <div class="mt-0.5 truncate text-xs text-muted-foreground">
-                <a
-                  :href="s.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="hover:text-foreground hover:underline"
-                >{{ s.url }}</a>
-              </div>
-              <div v-if="s.error_message" class="mt-1 text-xs text-destructive">
-                {{ s.error_message }}
-              </div>
-            </div>
-
-            <!-- Meta pills -->
-            <div class="flex items-center gap-2">
-              <span class="hidden rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground sm:inline-block">
-                {{ s.kind_display || s.kind }}
-              </span>
-              <span class="text-xs tabular-nums text-muted-foreground" :title="s.chunk_count + ' chunks in index'">
-                {{ s.chunk_count || 0 }} chunks
-              </span>
-              <span
-                class="rounded-md px-2 py-0.5 text-xs font-semibold capitalize"
-                :class="statusClass(s.status)"
-              >{{ s.status_display || s.status }}</span>
-              <button
-                class="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                :title="'Delete ' + (s.title || s.url)"
-                @click="deleteSource(s)"
-              >
-                <Trash2 class="size-4" />
-              </button>
-            </div>
+        <!-- Pagination -->
+        <div v-if="pageMeta.count > pageSize" class="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <p class="text-xs text-muted-foreground">
+            Page {{ page }} of {{ totalPages }} · {{ pageMeta.count }} total
+          </p>
+          <div class="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="!pageMeta.previous || listLoading"
+              @click="page = Math.max(1, page - 1)"
+            >Previous</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="!pageMeta.next || listLoading"
+              @click="page = Math.min(totalPages, page + 1)"
+            >Next</Button>
           </div>
         </div>
       </CardContent>
     </Card>
+
+    <!-- Detail drawer -->
+    <SourceDetailDrawer
+      v-if="selectedSource"
+      :website-id="websiteId"
+      :source="selectedSource"
+      @close="closeDetail"
+      @reingested="loadSources"
+      @deleted="loadSources"
+    />
   </div>
 </template>
