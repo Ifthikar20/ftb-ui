@@ -38,7 +38,29 @@ const scanning = ref(false)
 const scanStartedAt = ref(null)
 const lastRunAt = ref(null)
 
-const filter = reactive({ types: [], severity: [], status: 'open' })
+// Dropdown-backed filters: single value each, '' = no filter. Dropdowns
+// (rather than chip rows) so option lists can grow as more capture types
+// and modes are added.
+const filter = reactive({ type: '', severity: '', status: 'open' })
+
+const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'dismissed', label: 'Dismissed' },
+  { value: '', label: 'All statuses' },
+]
+
+const TYPE_OPTIONS = [
+  { value: '', label: 'All types' },
+  ...CAPTURE_TYPES.map((t) => ({ value: t.key, label: t.label })),
+]
+
+const SEVERITY_OPTIONS = [
+  { value: '', label: 'All severities' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+]
 
 onMounted(async () => {
   if (websiteId.value) await initPage()
@@ -60,14 +82,15 @@ async function initPage() {
 async function loadAlerts() {
   loadingAlerts.value = true
   try {
-    // URLSearchParams so multi-value filters serialize as repeated bare
-    // keys (issue=a&issue=b) — what DRF's getlist() reads. Axios' default
-    // array serialization (issue[]=a) would be silently ignored.
+    // URLSearchParams so a capture type's issue codes serialize as
+    // repeated bare keys (issue=a&issue=b) — what DRF's getlist() reads.
+    // Axios' default array serialization (issue[]=a) would be ignored.
     const params = new URLSearchParams()
-    filter.types
-      .flatMap((key) => CAPTURE_TYPES.find((t) => t.key === key)?.issues || [])
-      .forEach((issue) => params.append('issue', issue))
-    filter.severity.forEach((sev) => params.append('severity', sev))
+    if (filter.type) {
+      const type = CAPTURE_TYPES.find((t) => t.key === filter.type)
+      ;(type?.issues || []).forEach((issue) => params.append('issue', issue))
+    }
+    if (filter.severity) params.append('severity', filter.severity)
     if (filter.status) params.append('status', filter.status)
     const { data } = await brandSecurity.alerts(websiteId.value, params)
     alerts.value = data.results || data
@@ -103,20 +126,8 @@ const isFirstVisit = computed(() => brandSourcesTotal.value === 0)
 
 // ── Filters ─────────────────────────────────────────────────────────────
 
-function toggleTypeFilter(key) {
-  const idx = filter.types.indexOf(key)
-  if (idx === -1) filter.types.push(key)
-  else filter.types.splice(idx, 1)
-  loadAlerts()
-}
-function toggleSeverityFilter(sev) {
-  const idx = filter.severity.indexOf(sev)
-  if (idx === -1) filter.severity.push(sev)
-  else filter.severity.splice(idx, 1)
-  loadAlerts()
-}
-function setStatus(s) {
-  filter.status = s
+function setFilter(key, value) {
+  filter[key] = value
   loadAlerts()
 }
 
@@ -322,40 +333,47 @@ function formatLastRun(v) {
 
     <Card>
       <CardContent class="pt-6">
-        <!-- Filter row: status segmented control + capture-type chips + severity chips -->
+        <!-- Filter row: dropdowns so option lists can grow without
+             crowding the toolbar as more capture types and modes ship. -->
         <div class="mb-4 flex flex-wrap items-center gap-2">
-          <!-- Status: segmented control -->
-          <div class="flex items-center rounded-lg border border-border p-0.5">
-            <button
-              v-for="s in ['open', 'resolved', 'dismissed']" :key="s"
-              class="rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors"
-              :class="filter.status === s
-                ? 'bg-secondary text-foreground'
-                : 'text-muted-foreground hover:text-foreground'"
-              @click="setStatus(s)"
-            >{{ s }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</label>
+            <select
+              :value="filter.status"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('status', $event.target.value)"
+            >
+              <option v-for="opt in STATUS_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
           </div>
 
-          <!-- Capture-type chips -->
-          <button
-            v-for="t in CAPTURE_TYPES" :key="t.key"
-            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:border-ring"
-            :class="filter.types.includes(t.key)
-              ? 'border-ring text-foreground'
-              : 'border-border text-muted-foreground'"
-            :title="t.blurb"
-            @click="toggleTypeFilter(t.key)"
-          >{{ t.label }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</label>
+            <select
+              :value="filter.type"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('type', $event.target.value)"
+            >
+              <option v-for="opt in TYPE_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
 
-          <!-- Severity chips -->
-          <button
-            v-for="sev in ['high', 'medium', 'low']" :key="sev"
-            class="inline-flex items-center rounded-lg border bg-card px-3 py-1.5 text-xs font-medium capitalize transition-colors hover:border-ring"
-            :class="filter.severity.includes(sev)
-              ? 'border-ring text-foreground'
-              : 'border-border text-muted-foreground'"
-            @click="toggleSeverityFilter(sev)"
-          >{{ sev }}</button>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</label>
+            <select
+              :value="filter.severity"
+              class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="setFilter('severity', $event.target.value)"
+            >
+              <option v-for="opt in SEVERITY_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <AlertsTable
