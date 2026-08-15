@@ -11,20 +11,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
 const props = defineProps({
   prompts: { type: Array, default: () => [] },
 })
 
-const FALLBACK = [
-  { prompt: 'best project management tools for startups', visibility: 64, position: 1, change: 8 },
-  { prompt: 'how to automate marketing workflows', visibility: 51, position: 2, change: 3 },
-  { prompt: 'AI productivity software comparison', visibility: 47, position: 2, change: 0 },
-  { prompt: 'top CRM platforms 2026', visibility: 38, position: 4, change: -2 },
-  { prompt: 'growth hacking strategies for SaaS', visibility: 29, position: 6, change: 5 },
-]
-
-const rows = computed(() => (props.prompts?.length ? props.prompts : FALLBACK))
+const rows = computed(() => props.prompts || [])
 
 function changeMeta(change) {
   if (change > 0) return { icon: ArrowUpRight, cls: 'text-[color:var(--chart-2)]', label: `+${change}` }
@@ -40,7 +33,12 @@ function changeMeta(change) {
       <CardDescription>How your brand ranks across monitored prompts</CardDescription>
     </CardHeader>
     <CardContent class="px-0">
-      <Table>
+      <EmptyState
+        v-if="!rows.length"
+        title="No prompts measured yet"
+        body="Tracked prompts and their placements appear here after an audit completes."
+      />
+      <Table v-else>
         <TableHeader>
           <TableRow>
             <TableHead class="pl-6">Prompt</TableHead>

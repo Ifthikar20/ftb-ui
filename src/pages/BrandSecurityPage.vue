@@ -10,8 +10,8 @@
  * inaccurate claim, look-alike brand, ...). There is no agent management
  * surface here by design.
  */
-import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
-import { ChevronRight, Play, RefreshCw, BookOpen, ArrowRight } from '@lucide/vue'
+import { ref, computed, watch, onMounted, reactive } from 'vue'
+import { ChevronRight, BookOpen, ArrowRight } from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
@@ -33,10 +33,6 @@ const loadingAlerts = ref(false)
 
 // null = not loaded yet; 0 = first visit, no reference content ingested.
 const brandSourcesTotal = ref(null)
-
-const scanning = ref(false)
-const scanStartedAt = ref(null)
-const lastRunAt = ref(null)
 
 // Dropdown-backed filters: single value each, '' = no filter. Dropdowns
 // (rather than chip rows) so option lists can grow as more capture types
@@ -68,14 +64,12 @@ onMounted(async () => {
 watch(websiteId, async (v) => {
   if (v) await initPage()
 })
-onBeforeUnmount(stopScanPolling)
 
 async function initPage() {
   await Promise.all([
     loadAlerts(),
     loadConfig(),
     loadBrandSourceStats(),
-    syncScanStatus(),
   ])
 }
 
@@ -131,108 +125,6 @@ function setFilter(key, value) {
   loadAlerts()
 }
 
-// ── Scan lifecycle ──────────────────────────────────────────────────────
-// POST /scan/ queues the work on a background worker and returns 202.
-// We then poll /scan/status/ until running flips false, so the button
-// reflects real progress instead of guessing at a duration.
-
-let scanPollTimer = null
-const SCAN_POLL_MS = 3000
-const SCAN_POLL_MAX = 200 // 10 minutes
-
-let scanPollCount = 0
-
-const scanElapsed = ref(0)
-let elapsedTimer = null
-
-async function runScan() {
-  scanning.value = true
-  scanStartedAt.value = Date.now()
-  startElapsedTicker()
-  try {
-    const { data } = await brandSecurity.runScan(websiteId.value)
-    if (!data?.queued) {
-      toast.error('Nothing to scan — monitoring is not configured yet')
-      finishScan()
-      return
-    }
-    toast.success('Scan started — findings will appear below as they come in')
-    startScanPolling()
-  } catch {
-    toast.error('Failed to start scan')
-    finishScan()
-  }
-}
-
-function startScanPolling() {
-  stopScanPolling()
-  scanPollCount = 0
-  scanPollTimer = setInterval(async () => {
-    scanPollCount += 1
-    try {
-      const { data } = await brandSecurity.scanStatus(websiteId.value)
-      lastRunAt.value = data.last_run_at
-      if (!data.running) {
-        finishScan()
-        await loadAlerts()
-        toast.success(`Scan complete — ${data.open_alerts} open finding${data.open_alerts === 1 ? '' : 's'}`)
-      } else if (scanPollCount >= SCAN_POLL_MAX) {
-        finishScan()
-        await loadAlerts()
-        toast.error('The scan is taking longer than expected. Findings will keep appearing — refresh later.')
-      }
-    } catch {
-      /* transient poll failure — keep trying until the cap */
-    }
-  }, SCAN_POLL_MS)
-}
-
-// On page load, resume the scanning state if a scan is already running
-// (e.g. the user refreshed mid-scan or a scheduled scan is in flight).
-async function syncScanStatus() {
-  try {
-    const { data } = await brandSecurity.scanStatus(websiteId.value)
-    lastRunAt.value = data.last_run_at
-    if (data.running) {
-      scanning.value = true
-      scanStartedAt.value = Date.now()
-      startElapsedTicker()
-      startScanPolling()
-    }
-  } catch {
-    /* status endpoint unavailable — leave the button usable */
-  }
-}
-
-function finishScan() {
-  scanning.value = false
-  stopScanPolling()
-  stopElapsedTicker()
-}
-
-function stopScanPolling() {
-  if (scanPollTimer) {
-    clearInterval(scanPollTimer)
-    scanPollTimer = null
-  }
-}
-
-function startElapsedTicker() {
-  stopElapsedTicker()
-  scanElapsed.value = 0
-  elapsedTimer = setInterval(() => {
-    if (scanStartedAt.value) {
-      scanElapsed.value = Math.round((Date.now() - scanStartedAt.value) / 1000)
-    }
-  }, 1000)
-}
-function stopElapsedTicker() {
-  if (elapsedTimer) {
-    clearInterval(elapsedTimer)
-    elapsedTimer = null
-  }
-}
-
 // ── Finding actions ─────────────────────────────────────────────────────
 
 async function resolveAlert(alert) {
@@ -248,10 +140,6 @@ async function dismissAlert(alert) {
   } catch { toast.error('Failed to dismiss') }
 }
 
-function formatLastRun(v) {
-  if (!v) return null
-  return new Date(v).toLocaleString()
-}
 </script>
 
 <template>
@@ -259,22 +147,14 @@ function formatLastRun(v) {
     <!-- ── Header / breadcrumb row ── -->
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <span class="font-medium text-foreground">LLM Dashboard</span>
+        <span class="font-medium text-foreground">AI Visibility</span>
         <ChevronRight class="size-3.5" />
         <span class="font-semibold text-foreground">Brand Security</span>
       </div>
       <div class="flex items-center gap-3">
-        <span v-if="scanning" class="text-xs text-muted-foreground">
-          Scanning for {{ scanElapsed }}s — findings update when it completes
+        <span class="text-xs text-muted-foreground">
+          Findings appear automatically as audits complete
         </span>
-        <span v-else-if="formatLastRun(lastRunAt)" class="text-xs text-muted-foreground">
-          Last checked {{ formatLastRun(lastRunAt) }}
-        </span>
-        <Button :disabled="scanning || !websiteId" @click="runScan">
-          <RefreshCw v-if="scanning" class="size-3.5 animate-spin" />
-          <Play v-else class="size-3.5" />
-          {{ scanning ? 'Scanning...' : 'Scan now' }}
-        </Button>
       </div>
     </div>
 

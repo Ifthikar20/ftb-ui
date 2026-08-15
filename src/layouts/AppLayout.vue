@@ -308,7 +308,7 @@ const searchPages = [
   { name: 'dashboard', label: 'Dashboard', description: 'Overview of all your projects', category: 'Navigation', route: '/dashboard', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>' },
   { name: 'websites', label: 'Projects', description: 'Manage your tracked websites', category: 'Navigation', route: '/websites', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><line x1="1" y1="8" x2="15" y2="8"/><ellipse cx="8" cy="8" rx="3" ry="7"/></svg>' },
   { name: 'analytics', label: 'SEO Analytics', description: 'Search performance, traffic sources, engagement', category: 'Intelligence', routeFn: () => analyticsRoute.value, icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V6l4-4 4 4 4-4v12"/></svg>' },
-  { name: 'llm-ranking', label: 'LLM Dashboard', description: 'AI visibility scoring across LLMs', category: 'Intelligence', routeFn: () => llmRankingRoute.value, icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>' },
+  { name: 'prompt-library', label: 'Prompts', description: 'The questions we ask each AI model', category: 'Intelligence', routeFn: () => promptLibraryRoute.value, icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>' },
   { name: 'billing', label: 'Billing', description: 'Subscription plans and payment', category: 'Account', route: '/billing', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="1" y1="7" x2="15" y2="7"/></svg>' },
   { name: 'settings', label: 'Settings', description: 'Account settings and preferences', category: 'Account', route: '/settings', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4"/></svg>' },
 ]
@@ -438,11 +438,9 @@ const pageKey = computed(() => {
   return recordId ? `${base}-${recordId}` : base
 })
 const analyticsRoute = computed(() => websiteId.value ? `/analytics/${websiteId.value}` : '/websites')
-const llmRankingRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}` : '/websites')
 const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/prompts` : '/websites')
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
-const contentStudioRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/content` : '/websites')
 const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
 
 const navMain = computed(() => [
@@ -458,14 +456,15 @@ const navMain = computed(() => [
     items: [
       { title: 'SEO Analytics', to: analyticsRoute.value, icon: BarChart3, match: '/analytics' },
       {
-        title: 'LLM Dashboard', to: llmRankingRoute.value, icon: Brain, match: '/llm-ranking',
+        // The LLM Dashboard page is gone; this is now a grouping header for
+        // its former children and points at Prompts, the most-used of them.
+        title: 'AI Visibility', to: promptLibraryRoute.value, icon: Brain, match: '/llm-ranking',
         alwaysOpen: true,
         children: [
           { title: 'URLs', to: sourcesUrlsRoute.value, match: '/urls' },
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
-          { title: 'Content', to: contentStudioRoute.value, match: '/content' },
         ],
       },
       { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },

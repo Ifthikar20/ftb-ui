@@ -1,24 +1,37 @@
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Flame, TrendingUp, Zap, Radio } from '@lucide/vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import EmptyState from '@/components/ui/EmptyState.vue'
+
+// Trends must be supplied by the caller from a measured source. This card
+// previously shipped three invented keywords with invented growth figures
+// under an "AI-Powered" badge; nothing generated them and they were
+// identical for every account. It now renders only what it is given.
+const props = defineProps({
+  trends: { type: Array, default: () => [] },
+  // Integration suggestions are product configuration, not measurements —
+  // they stay declarative but are overridable.
+  integrations: {
+    type: Array,
+    default: () => ([
+      { type: 'slack', name: 'Slack', desc: 'Get trend alerts directly in your channels' },
+      { type: 'discord', name: 'Discord', desc: 'Share weekly insights with your team' },
+      { type: 'telegram', name: 'Telegram', desc: 'Receive instant growth milestone alerts' },
+    ]),
+  },
+})
 
 const router = useRouter()
-function goToIntegrations() { router.push('/integrations') }
+function goToIntegrations() { router.push('/app/integrations') }
 
-const trends = [
-  { keyword: '"AI productivity tools"', volume: '↑ 340% this week', icon: Flame, relevance: 'High Match', cls: 'text-destructive' },
-  { keyword: '"automation workflows"', volume: '↑ 120% this month', icon: TrendingUp, relevance: 'Medium', cls: 'text-[color:var(--chart-3)]' },
-  { keyword: '"growth hacking 2026"', volume: '↑ 85% trending', icon: Zap, relevance: 'Opportunity', cls: 'text-[color:var(--chart-4)]' },
-]
+const ICONS = { hot: Flame, rising: TrendingUp, opportunity: Zap }
+function iconFor(t) { return ICONS[t.kind] || TrendingUp }
 
-const suggestedIntegrations = [
-  { type: 'slack', name: 'Slack', desc: 'Get trend alerts directly in your channels' },
-  { type: 'discord', name: 'Discord', desc: 'Share weekly insights with your team' },
-  { type: 'telegram', name: 'Telegram', desc: 'Receive instant growth milestone alerts' },
-]
+const rows = computed(() => props.trends || [])
 </script>
 
 <template>
@@ -28,27 +41,33 @@ const suggestedIntegrations = [
         <TrendingUp class="size-4 text-[color:var(--chart-4)]" />
         Trend Insights
       </CardTitle>
-      <Badge>AI-Powered</Badge>
+      <Badge v-if="rows.length">AI-Powered</Badge>
     </CardHeader>
     <CardContent class="pt-0">
       <p class="mb-4 text-xs leading-relaxed text-muted-foreground">
         FetchBot analyzes trending topics and keywords to find growth opportunities for your business.
       </p>
 
-      <div class="flex flex-col gap-2">
+      <EmptyState
+        v-if="!rows.length"
+        title="No trends detected yet"
+        body="Trending topics are derived from your prompt results. They appear here once enough audits have run to establish a baseline."
+      />
+
+      <div v-else class="flex flex-col gap-2">
         <div
-          v-for="trend in trends"
+          v-for="trend in rows"
           :key="trend.keyword"
           class="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2.5"
         >
           <div class="flex items-center gap-3">
-            <component :is="trend.icon" class="size-4" :class="trend.cls" />
+            <component :is="iconFor(trend)" class="size-4" :class="trend.cls" />
             <div>
               <span class="block text-sm font-semibold text-card-foreground">{{ trend.keyword }}</span>
               <span class="text-xs text-muted-foreground">{{ trend.volume }}</span>
             </div>
           </div>
-          <Badge variant="secondary">{{ trend.relevance }}</Badge>
+          <Badge v-if="trend.relevance" variant="secondary">{{ trend.relevance }}</Badge>
         </div>
       </div>
 
@@ -59,7 +78,7 @@ const suggestedIntegrations = [
         </h4>
         <div class="flex flex-col gap-2">
           <div
-            v-for="intg in suggestedIntegrations"
+            v-for="intg in integrations"
             :key="intg.name"
             class="flex items-center gap-3 rounded-lg bg-muted/60 px-3 py-2.5"
           >

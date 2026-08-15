@@ -1,27 +1,23 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Eye, Smile, ArrowUpDown, PieChart, ChevronDown } from '@lucide/vue'
-import { fallbackMatrix } from './placeholders'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
 const props = defineProps({
   matrix: { type: Object, default: null },
   activeName: { type: String, default: '' },
+  ctaLabel: { type: String, default: '' },
+  ctaTo: { type: String, default: '' },
 })
 
-// If the parent hands us a real matrix — even if it's empty — trust it
-// and render the empty state instead of falling back to demo brands.
-// Only when no matrix was passed at all (null) do we show the
-// scaffolding. That way the LLM Dashboard never shows YNAB/Quicken for
-// an education website.
-const hasReal = computed(
-  () => props.matrix && Array.isArray(props.matrix.models) && Array.isArray(props.matrix.rows),
-)
-const isEmpty = computed(
-  () => hasReal.value && (!props.matrix.rows.length || !props.matrix.models.length),
-)
-const data = computed(
-  () => hasReal.value ? props.matrix : fallbackMatrix(props.activeName),
-)
+// The matrix is rendered only from measured results. Missing and empty are
+// treated identically — both mean "nothing to show" — so no combination of
+// props can produce demo brands.
+const data = computed(() => ({
+  models: props.matrix?.models || [],
+  rows: props.matrix?.rows || [],
+}))
+const isEmpty = computed(() => !data.value.models.length || !data.value.rows.length)
 
 const metric = ref('visibility')
 const metrics = [
@@ -82,13 +78,13 @@ const gridCols = computed(() => `minmax(120px,max-content) repeat(${data.value.m
       </button>
     </div>
 
-    <div v-if="isEmpty" class="flex flex-col items-center justify-center gap-1 px-6 py-10 text-center">
-      <p class="text-sm font-semibold text-foreground">Not enough data yet</p>
-      <p class="max-w-md text-[12px] text-muted-foreground">
-        The matrix fills in as your prompts get measured against LLM
-        providers and Search Insights collects competing brands.
-      </p>
-    </div>
+    <EmptyState
+      v-if="isEmpty"
+      title="Not enough data yet"
+      body="The matrix fills in as your prompts get measured against each AI model and competing brands are collected."
+      :cta-label="ctaLabel"
+      :cta-to="ctaTo"
+    />
     <div v-else class="overflow-x-auto p-3">
       <div role="table" class="grid min-w-full gap-x-0 gap-y-1" :style="{ gridTemplateColumns: gridCols }">
         <div class="contents">
