@@ -1,14 +1,15 @@
 <script setup>
 import { computed } from 'vue'
 import { Card } from '@/components/ui/card'
-import { fallbackDomainTypes } from './placeholders'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
 const props = defineProps({
   data: { type: Object, default: null },
   title: { type: String, default: 'Domain types' },
 })
 
-const model = computed(() => props.data || fallbackDomainTypes())
+const model = computed(() => props.data)
+const hasData = computed(() => Boolean(model.value?.types?.length))
 </script>
 
 <template>
@@ -18,12 +19,20 @@ const model = computed(() => props.data || fallbackDomainTypes())
         <h2 class="text-sm font-bold text-foreground">{{ title }}</h2>
         <p class="mt-0.5 text-[11px] text-muted-foreground">Where retrieved sources come from</p>
       </div>
-      <span class="text-[10px] font-semibold text-muted-foreground">Total: {{ model.total }}</span>
+      <span v-if="hasData" class="text-[10px] font-semibold text-muted-foreground">
+        Total: {{ model.total }}
+      </span>
     </div>
 
     <div class="h-px w-full bg-border" />
 
-    <div class="space-y-2 p-4">
+    <EmptyState
+      v-if="!hasData"
+      title="No sources yet"
+      body="The split between corporate, community and reference sources appears once citations are collected."
+    />
+
+    <div v-else class="space-y-2 p-4">
       <div v-for="t in model.types" :key="t.label" class="space-y-0.5">
         <div class="flex items-center justify-between text-[12px]">
           <span class="flex items-center gap-1.5 font-semibold text-foreground">

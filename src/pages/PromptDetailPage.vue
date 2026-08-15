@@ -235,6 +235,11 @@
       </div>
     </div>
 
+    <!-- Brand security findings raised from this prompt's own responses -->
+    <section style="margin-top: 28px">
+      <PromptSecurityFindings :website-id="websiteId" :prompt-id="promptId" />
+    </section>
+
     <!-- Visibility by model -->
     <section class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
@@ -544,6 +549,7 @@ import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BrandLogo from '@/components/BrandLogo.vue'
+import PromptSecurityFindings from '@/components/prompt_library/PromptSecurityFindings.vue'
 
 const MODELS = {
   chatgpt: { label: 'ChatGPT', abbr: 'GP', color: '#10a37f' },

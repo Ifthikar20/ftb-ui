@@ -7,15 +7,17 @@ import {
 } from 'chart.js'
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
-import { fallbackBrands } from './placeholders'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import llmRanking from '@/api/llm_ranking'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
 const props = defineProps({
-  brands: { type: Array, default: null },
+  brands: { type: Array, default: () => [] },
   activeName: { type: String, default: '' },
   websiteId: { type: String, default: '' },
+  ctaLabel: { type: String, default: '' },
+  ctaTo: { type: String, default: '' },
 })
 
 const view = ref('both')
@@ -51,8 +53,6 @@ function gradientFor(color) {
   }
 }
 
-const brandList = computed(() => (props.brands?.length ? props.brands : fallbackBrands(props.activeName)))
-
 // Real series from the backend, when a websiteId is supplied. Shape:
 // { labels, brand[], competitor[], brand_current, competitor_current,
 //   brand_delta_pct, competitor_delta_pct, has_data }
@@ -72,42 +72,48 @@ async function loadOverview() {
 onMounted(loadOverview)
 watch(() => props.websiteId, loadOverview)
 
-function syntheticSeries(base, seed) {
-  return Array.from({ length: POINTS }, (_, i) => {
-    const drift = (i / (POINTS - 1)) * base * 0.18
-    const wobble = Math.sin((i + seed) * 0.8) * Math.min(2.5, base * 0.06)
-    return Math.max(0, +(base - base * 0.1 + drift + wobble).toFixed(1))
-  })
+// Whether the backend returned a real measured series. Everything below
+// renders from it or not at all — there is no synthetic fallback, so the
+// chart can never show a trend the user did not earn.
+const hasData = computed(() => Boolean(overview.value?.has_data))
+
+// A line chart needs at least two measured points to mean anything. With
+// one audit the old chart drew eleven zero-months and a cliff, which read
+// as "visibility was 0% all year" when those months were simply never
+// measured. Below the threshold we show current standing as a ranked bar
+// comparison instead — it answers "where do I rank" directly.
+const MIN_TREND_POINTS = 2
+const measuredPeriods = computed(() => overview.value?.measured_periods ?? 0)
+const showTrend = computed(() => hasData.value && measuredPeriods.value >= MIN_TREND_POINTS)
+
+// Ranked standing for the bar view, straight from the overview payload.
+const ranked = computed(() => {
+  const list = (props.brands || []).filter(b => typeof b.visibility === 'number')
+  return list.slice(0, 8)
+})
+const maxVisibility = computed(
+  () => Math.max(1, ...ranked.value.map(b => b.visibility)),
+)
+function barWidth(v) {
+  return Math.max(2, (v / maxVisibility.value) * 100)
 }
 
 const labels = computed(() => overview.value?.labels?.length ? overview.value.labels : LABELS.slice(0, POINTS))
 
-const brandSeries = computed(() => {
-  if (overview.value?.has_data) return overview.value.brand
-  return syntheticSeries(brandList.value[0]?.visibility ?? 60, 1)
-})
-const compSeries = computed(() => {
-  if (overview.value?.has_data) return overview.value.competitor
-  const rest = brandList.value.slice(1)
-  const compAvg = rest.length ? rest.reduce((s, b) => s + b.visibility, 0) / rest.length : 4
-  return syntheticSeries(compAvg, 4)
-})
+const brandSeries = computed(() => (hasData.value ? overview.value.brand : []))
+const compSeries = computed(() => (hasData.value ? overview.value.competitor : []))
 
 const avg = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0)
 
 // Headline value is the current month — what readers expect above a trendline.
 // Backend hands us a computed `brand_current` already; fall back to the last
 // series point when there's no real data.
-const brandCurrent = computed(() => {
-  if (overview.value?.has_data) return Math.round(overview.value.brand_current)
-  const s = brandSeries.value
-  return s.length ? Math.round(s[s.length - 1]) : 0
-})
-const compCurrent = computed(() => {
-  if (overview.value?.has_data) return Math.round(overview.value.competitor_current)
-  const s = compSeries.value
-  return s.length ? Math.round(s[s.length - 1]) : 0
-})
+const brandCurrent = computed(
+  () => (hasData.value ? Math.round(overview.value.brand_current) : null),
+)
+const compCurrent = computed(
+  () => (hasData.value ? Math.round(overview.value.competitor_current) : null),
+)
 
 // Delta = last 3-month mean vs prior 3-month mean, as a % change of the
 // prior window. Falls back to first-vs-last for shorter series. Sign drives
@@ -127,25 +133,27 @@ function trendDelta(series) {
   return ((last - first) / Math.abs(first)) * 100
 }
 
-const brandDelta = computed(() => {
-  if (overview.value?.has_data) return overview.value.brand_delta_pct ?? 0
-  return trendDelta(brandSeries.value)
-})
-const compDelta = computed(() => {
-  if (overview.value?.has_data) return overview.value.competitor_delta_pct ?? 0
-  return trendDelta(compSeries.value)
-})
+const brandDelta = computed(
+  () => (hasData.value ? overview.value.brand_delta_pct ?? trendDelta(brandSeries.value) : 0),
+)
+const compDelta = computed(
+  () => (hasData.value ? overview.value.competitor_delta_pct ?? trendDelta(compSeries.value) : 0),
+)
 
 function fmtDelta(d) {
-  if (!Number.isFinite(d) || d === 0) return '0%'
   const sign = d > 0 ? '+' : '−'
   return `${sign}${Math.abs(d).toFixed(1)}%`
 }
 
+// Only show a delta badge when there were enough measured periods to
+// compute one. A "0%" badge on a single audit implies "flat since last
+// time" when there was no last time.
+const showDelta = computed(
+  () => showTrend.value && Number.isFinite(brandDelta.value) && brandDelta.value !== 0,
+)
+
 const showBrand = computed(() => view.value === 'both' || view.value === 'brand')
 const showComp = computed(() => view.value === 'both' || view.value === 'competitors')
-
-const usingSampleData = computed(() => !overview.value?.has_data)
 
 const baseDataset = {
   fill: true,
@@ -206,6 +214,10 @@ const chartOptions = computed(() => {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    // Unmeasured months arrive as null. Leave them as breaks in the line
+    // rather than joining across them, which would imply we measured a
+    // value we never took.
+    spanGaps: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
@@ -242,23 +254,24 @@ const chartOptions = computed(() => {
       <div class="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 class="inline-flex items-center gap-1.5 text-[22px] font-extrabold leading-tight tracking-tight text-foreground">
-            Visibility Overview
+            {{ showTrend ? 'Visibility Overview' : 'Where you rank right now' }}
             <span
               class="inline-flex"
-              title="Visibility = share of scanned AI answers that mention your brand. Measured across Claude, GPT-4, Gemini, and Perplexity for prompts in your tracked categories."
+              title="Visibility = share of scanned AI answers that mention your brand. Measured across the AI models you have configured, for the prompts in your latest audit."
             >
               <Info class="size-4 text-muted-foreground" />
             </span>
           </h2>
           <p class="mt-1 text-sm text-muted-foreground">
-            % of scanned AI answers mentioning your brand · last 12 months
-            <span
-              v-if="usingSampleData"
-              class="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
-            >Sample data</span>
+            <template v-if="showTrend">
+              % of scanned AI answers mentioning your brand · last 12 months
+            </template>
+            <template v-else>
+              % of AI answers mentioning each brand · from your latest audit
+            </template>
           </p>
         </div>
-        <div class="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
+        <div v-if="showTrend" class="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
           <button
             v-for="t in tabs"
             :key="t.key"
@@ -270,12 +283,13 @@ const chartOptions = computed(() => {
         </div>
       </div>
 
-      <div class="mb-1 flex gap-6">
+      <div v-if="hasData" class="mb-1 flex gap-6">
         <div v-if="showBrand">
           <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brand Visibility</p>
           <div class="mt-0.5 flex items-baseline gap-2">
             <span class="text-[28px] font-extrabold text-foreground">{{ brandCurrent }}%</span>
             <span
+              v-if="showDelta"
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="brandDelta >= 0
                 ? 'bg-[#E8F5E9] text-[#008A05]'
@@ -293,6 +307,7 @@ const chartOptions = computed(() => {
           <div class="mt-0.5 flex items-baseline gap-2">
             <span class="text-[28px] font-extrabold text-foreground">{{ compCurrent }}%</span>
             <span
+              v-if="showTrend && Number.isFinite(compDelta) && compDelta !== 0"
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="compDelta >= 0
                 ? 'bg-[#E8F5E9] text-[#008A05]'
@@ -309,7 +324,54 @@ const chartOptions = computed(() => {
 
     <div class="mt-4 h-px w-full bg-border" />
 
-    <div class="py-4 pl-0 pr-2">
+    <EmptyState
+      v-if="!hasData"
+      title="No visibility measured yet"
+      body="This chart tracks how often AI assistants mention your brand over time. It starts filling in after your first completed audit."
+      :cta-label="ctaLabel"
+      :cta-to="ctaTo"
+    />
+
+    <!-- One measured period: a trend line would be fabricated, so show a
+         ranked comparison of where each brand actually stands. -->
+    <div v-else-if="!showTrend" class="px-7 py-5">
+      <div class="space-y-2.5">
+        <div v-for="b in ranked" :key="b.name" class="flex items-center gap-3">
+          <div class="w-32 shrink-0 truncate text-right text-[13px]" :title="b.name">
+            <span :class="b.is_target ? 'font-extrabold text-foreground' : 'text-muted-foreground'">
+              {{ b.name }}
+            </span>
+          </div>
+          <div class="h-6 min-w-0 flex-1 overflow-hidden rounded-md bg-muted/60">
+            <div
+              class="flex h-full items-center justify-end rounded-md pr-2 transition-all"
+              :style="{
+                width: barWidth(b.visibility) + '%',
+                background: b.is_target ? '#FF385C' : '#C9CDD2',
+              }"
+            >
+              <span
+                class="text-[11px] font-bold tabular-nums"
+                :class="b.is_target ? 'text-white' : 'text-foreground/70'"
+              >{{ b.visibility }}%</span>
+            </div>
+          </div>
+          <span
+            v-if="b.is_target"
+            class="shrink-0 rounded border border-[#008A05]/30 bg-[#E8F5E9] px-1 text-[10px] font-bold text-[#008A05]"
+          >YOU</span>
+          <span v-else class="w-[30px] shrink-0" />
+        </div>
+      </div>
+
+      <p class="mt-4 border-t border-border pt-3 text-[12px] text-muted-foreground">
+        Based on {{ measuredPeriods }} measured period. A month-by-month trend
+        appears here once a second audit completes — until then there is
+        nothing to chart over time.
+      </p>
+    </div>
+
+    <div v-else class="py-4 pl-0 pr-2">
       <div class="h-[300px]">
         <Line :data="chartData" :options="chartOptions" />
       </div>

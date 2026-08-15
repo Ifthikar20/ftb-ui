@@ -1,24 +1,29 @@
 <script setup>
 import { computed } from 'vue'
 import { Info } from '@lucide/vue'
-import { fallbackInsightKpis } from './placeholders'
 
+// Headline and KPI cells are supplied by the backend
+// (overview.headline / overview.insight_kpis), computed from measured
+// audits. There is deliberately no default copy here: an account with no
+// data must not be told how it is performing.
 const props = defineProps({
-  title: { type: String, default: "You're #1 in AI Visibility" },
-  subtitle: { type: String, default: 'You appear in most AI answers and are often the default choice' },
-  kpis: { type: Array, default: null },
+  headline: { type: Object, default: null },
+  kpis: { type: Array, default: () => [] },
 })
 
-const cells = computed(() => (props.kpis?.length ? props.kpis : fallbackInsightKpis()))
+const cells = computed(() => props.kpis || [])
+const title = computed(() => props.headline?.title || '')
+const subtitle = computed(() => props.headline?.subtitle || '')
+const show = computed(() => Boolean(title.value) || cells.value.length > 0)
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl border border-border bg-card">
-    <div class="border-b border-border px-5 py-4">
+  <div v-if="show" class="overflow-hidden rounded-2xl border border-border bg-card">
+    <div v-if="title" class="border-b border-border px-5 py-4">
       <h1 class="text-xl font-extrabold tracking-tight text-foreground">{{ title }}</h1>
-      <p class="mt-1 text-sm text-muted-foreground">{{ subtitle }}</p>
+      <p v-if="subtitle" class="mt-1 text-sm text-muted-foreground">{{ subtitle }}</p>
     </div>
-    <div class="flex flex-wrap items-stretch sm:flex-nowrap">
+    <div v-if="cells.length" class="flex flex-wrap items-stretch sm:flex-nowrap">
       <div
         v-for="cell in cells"
         :key="cell.label"
@@ -33,7 +38,11 @@ const cells = computed(() => (props.kpis?.length ? props.kpis : fallbackInsightK
             <span v-if="cell.dot" class="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
             {{ cell.value }}
           </span>
-          <span v-if="cell.delta" class="text-[13px] font-semibold tabular-nums" :class="cell.up ? 'text-[#008A05]' : 'text-[#C13515]'">{{ cell.delta }}</span>
+          <span
+            v-if="cell.delta"
+            class="text-[13px] font-semibold tabular-nums"
+            :class="cell.up ? 'text-[#008A05]' : 'text-[#C13515]'"
+          >{{ cell.delta }}</span>
         </div>
       </div>
     </div>

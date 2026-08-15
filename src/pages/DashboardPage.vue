@@ -24,7 +24,7 @@
       <template v-else>
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-2xl font-bold tracking-tight">
-            Hi, Welcome back 👋
+            Good {{ timeOfDay }}, {{ firstName }}
           </h2>
         </div>
 
@@ -36,7 +36,21 @@
           </TabsList>
 
           <TabsContent value="overview" class="space-y-6">
-            <OverviewSection :active-name="activeName" :website-id="activeWebsiteId" />
+            <!-- Audit scheduling lives here now: it is the only way to
+                 trigger the audits that populate everything below. -->
+            <AuditSchedule
+              :website-id="activeWebsiteId"
+              :website-name="activeName"
+              :industry="activeIndustry"
+              @ran="refetchDashboard"
+            />
+
+            <OverviewSection
+              :active-name="activeName"
+              :website-id="activeWebsiteId"
+              :overview="overview"
+              :setup-state="setupState"
+            />
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
@@ -94,6 +108,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
 import OverviewSection from '@/components/overview/OverviewSection.vue'
+import AuditSchedule from '@/components/dashboard/AuditSchedule.vue'
 
 import AnalyticsFilters from '@/components/dashboard/AnalyticsFilters.vue'
 import KpiCards from '@/components/dashboard/KpiCards.vue'
@@ -116,6 +131,7 @@ const authStore = useAuthStore()
 const appStore = useAppStore()
 const activeName = computed(() => appStore.activeWebsite?.name || '')
 const activeWebsiteId = computed(() => appStore.activeWebsite?.id || '')
+const activeIndustry = computed(() => appStore.activeWebsite?.industry || '')
 const firstName = computed(() => (authStore.user?.full_name || 'there').split(' ')[0])
 
 // First-run onboarding shows as an overlay over the dashboard rather
@@ -146,6 +162,8 @@ const chartSeries = ref(null)
 const analyticsBreakdowns = ref(null)
 const analyticsDeepDive = ref(null)
 const availablePrompts = ref([])
+const overview = ref(null)
+const setupState = ref(null)
 const filters = ref({ range: '30d', start: '', end: '', prompts: [] })
 
 function buildParams() {
@@ -173,6 +191,8 @@ async function refetchDashboard() {
     analyticsDeepDive.value = d.analytics_deep_dive || null
     availablePrompts.value = d.analytics_deep_dive?.available_prompts || availablePrompts.value
     chartSeries.value = d.visibility_series || null
+    overview.value = d.overview || null
+    setupState.value = d.setup_state || null
   } catch (e) {
     console.error('Dashboard load error', e)
   } finally {
@@ -180,23 +200,5 @@ async function refetchDashboard() {
   }
 }
 
-onMounted(async () => {
-  try {
-    const dashRes = await dashboardApi.get(buildParams())
-    const d = dashRes.data?.data || dashRes.data
-    stats.value = d.stats || []
-    actions.value = d.actions || []
-    activity.value = d.activity || []
-    quickActions.value = d.quick_actions || []
-    prompts.value = d.prompts || []
-    analyticsBreakdowns.value = d.analytics_breakdowns || null
-    analyticsDeepDive.value = d.analytics_deep_dive || null
-    availablePrompts.value = d.analytics_deep_dive?.available_prompts || []
-    chartSeries.value = d.visibility_series || null
-  } catch (e) {
-    console.error('Dashboard load error', e)
-  } finally {
-    loading.value = false
-  }
-})
+onMounted(refetchDashboard)
 </script>

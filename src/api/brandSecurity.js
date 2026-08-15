@@ -1,22 +1,21 @@
 import api from './client'
 
-// Brand Security is presented to the user as a findings feed: scans run
-// in the background (scheduled, or kicked off with runScan) and every
-// issue they catch lands in the alerts list. Agent management endpoints
-// exist server-side but are intentionally not exposed in the UI anymore.
+// Brand Security is a findings feed with no scan step. Findings are derived
+// from the AI answers an audit already collected — the response auditor runs
+// as each audit completes, so an alert exists the moment the answer that
+// caused it does. There is nothing for the user to trigger.
 export default {
-  // Scans -----------------------------------------------------------------
-  // POST returns 202 {queued: true, agents: [...]} — the scan runs on a
-  // background worker. Poll scanStatus() until running flips to false.
-  runScan: (websiteId, only = null) =>
-    api.post(`/brand-security/websites/${websiteId}/scan/`, only ? { only } : {}),
-  scanStatus: (websiteId) =>
-    api.get(`/brand-security/websites/${websiteId}/scan/status/`),
-
   // Findings --------------------------------------------------------------
-  // params: { status, severity: [], issue: [], source: [] }
+  // params: { status, severity: [], issue: [], source: [], result, source_prompt }
   alerts: (websiteId, params = {}) =>
     api.get(`/brand-security/websites/${websiteId}/alerts/`, { params }),
+  // Findings raised from the audit responses for one library prompt. Used by
+  // the prompt detail page so a reader sees the risk attached to the exact
+  // answers shown on that page.
+  alertsForPrompt: (websiteId, promptId) =>
+    api.get(`/brand-security/websites/${websiteId}/alerts/`, {
+      params: { source_prompt: promptId },
+    }),
   resolveAlert: (alertId) =>
     api.post(`/brand-security/alerts/${alertId}/resolve/`),
   dismissAlert: (alertId) =>

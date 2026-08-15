@@ -316,7 +316,7 @@ watch(websiteId, async (v) => {
     <!-- ── Header / breadcrumb ── -->
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <span class="font-medium text-foreground">LLM Dashboard</span>
+        <span class="font-medium text-foreground">AI Visibility</span>
         <ChevronRight class="size-3.5" />
         <span class="font-semibold text-foreground">Brand Input</span>
       </div>

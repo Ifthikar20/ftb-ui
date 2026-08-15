@@ -7,14 +7,12 @@ const props = defineProps({
   actions: { type: Array, default: () => [] },
 })
 
-const FALLBACK = [
-  { label: 'Add a tracked prompt', desc: 'Monitor a new query for brand visibility', to: '/prompt-library' },
-  { label: 'Connect an integration', desc: 'Link analytics and ad platforms', to: '/integrations' },
-  { label: 'Review content drafts', desc: 'AI-generated content waiting for review', to: '/content-studio' },
-  { label: 'Check LLM rankings', desc: 'See how you rank across AI models', to: '/llm-ranking' },
-]
-
-const items = computed(() => (props.actions?.length ? props.actions : FALLBACK))
+// Actions come from the dashboard payload, which builds them against real
+// routes for the active website. The previous hardcoded fallback pointed at
+// four paths that no longer resolve (/prompt-library, /integrations,
+// /content-studio, /llm-ranking all need a website id or no longer exist),
+// so it rendered dead links whenever it showed.
+const items = computed(() => props.actions || [])
 </script>
 
 <template>

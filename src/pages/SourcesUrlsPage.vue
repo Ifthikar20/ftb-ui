@@ -297,10 +297,6 @@ function totalRetrievalsLabel() {
         <ChevronRight class="size-3.5" />
         <span class="font-semibold text-foreground">URLs</span>
       </div>
-      <div class="flex items-center gap-2 text-sm">
-        <span class="text-muted-foreground">Trial ends in</span>
-        <span class="rounded-md bg-[color:var(--chart-3)]/15 px-2 py-0.5 text-xs font-semibold text-[color:var(--chart-3)]">4 days</span>
-      </div>
     </div>
 
     <!-- ── Global filter pills ── -->

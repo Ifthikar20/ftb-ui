@@ -145,7 +145,13 @@ const routes = [
     protect('/websites', 'websites', () => import('@/pages/WebsitesListPage.vue')),
     protect('/websites/:id', 'website-detail', () => import('@/pages/WebsiteDetailPage.vue'), true),
     protect('/analytics/:websiteId', 'analytics', () => import('@/pages/AnalyticsPage.vue'), true),
-    protect('/llm-ranking/:websiteId', 'llm-ranking', () => import('@/pages/LLMRankingPage.vue'), true),
+    // The LLM Dashboard page was removed — its Overview block duplicated the
+    // main Dashboard, and scheduling moved there. Bare /llm-ranking/:id now
+    // redirects to Prompts, the most useful surviving child page.
+    {
+      path: '/llm-ranking/:websiteId',
+      redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/prompts` }),
+    },
     protect('/llm-ranking/:websiteId/prompts', 'prompt-library', () => import('@/pages/PromptLibraryPage.vue'), true),
     protect('/llm-ranking/:websiteId/prompts/:promptId/detail', 'prompt-detail', () => import('@/pages/PromptDetailPage.vue'), true),
     // /saved-prompts is preserved as a redirect to the Prompt Library 'Saved' tab
@@ -168,8 +174,6 @@ const routes = [
         path: '/llm-ranking/:websiteId/brand-vault',
         redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/brand-security`, query: to.query }),
     },
-    protect('/llm-ranking/:websiteId/content', 'content-studio', () => import('@/pages/ContentStudioPage.vue'), true),
-    protect('/llm-ranking/:websiteId/content/drafts/:draftId', 'content-studio-draft', () => import('@/pages/DraftEditorPage.vue'), true),
     // Legacy /app-onboarding redirects to the dashboard. The
     // onboarding flow is now a modal overlay rendered by
     // DashboardPage when the session marks the user as needing
@@ -298,7 +302,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Guard: project-specific pages require an active project
-    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input', 'content-studio', 'content-studio-draft']
+    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input']
     if (projectPages.includes(to.name) && auth.isAuthenticated) {
         const app = useAppStore()
         if (!app.activeWebsite) {
