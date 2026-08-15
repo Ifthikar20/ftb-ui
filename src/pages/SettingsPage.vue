@@ -45,13 +45,8 @@
           <CardHeader class="flex flex-row items-center justify-between gap-4 space-y-0">
             <CardTitle class="flex items-center gap-2">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-              AI Usage &amp; Tokens
+              AI Usage
             </CardTitle>
-            <select v-model="usagePeriod" @change="loadUsage" class="rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
           </CardHeader>
           <CardContent>
             <div v-if="usageLoading" class="flex items-center gap-2.5 p-8 text-sm text-muted-foreground">
@@ -60,206 +55,90 @@
             </div>
 
             <div v-else-if="usage">
-              <!-- Monthly Cap Progress -->
-              <div v-if="usage.cap_status && usage.cap_status.cap_usd > 0" class="mb-5 rounded-lg border border-border bg-muted px-3.5 py-3">
-                <div class="mb-1.5 flex justify-between text-sm text-foreground">
-                  <span class="font-semibold">Monthly AI spend</span>
-                  <span class="text-muted-foreground">
-                    ${{ usage.cap_status.spent_usd.toFixed(2) }} / ${{ usage.cap_status.cap_usd.toFixed(2) }}
-                    ({{ usage.cap_status.pct }}%)
+              <!-- Monthly allowance, expressed in tokens. Dollar figures stay
+                   in the database for audit; the user-facing unit is usage. -->
+              <div v-if="usage.cap_status && usage.cap_status.capacity_tokens > 0" class="mb-6 rounded-xl border border-border bg-muted px-4 py-3.5">
+                <div class="mb-1.5 flex items-baseline justify-between">
+                  <span class="text-sm font-semibold text-foreground">Monthly usage</span>
+                  <span class="text-sm text-muted-foreground">
+                    {{ formatTokens(usage.cap_status.used_tokens) }} of ~{{ formatTokens(usage.cap_status.capacity_tokens) }} tokens<span class="align-super text-[10px]">*</span>
+                    <span class="ml-1 font-semibold text-foreground">({{ usage.cap_status.pct }}%)</span>
                   </span>
                 </div>
                 <div class="h-2 overflow-hidden rounded bg-border">
                   <div
                     class="cap-bar-fill h-full"
-                    :class="{ 'cap-bar-warn': usage.cap_status.pct >= 80, 'cap-bar-exceeded': usage.cap_status.exceeded }"
-                    :style="{ width: Math.min(100, usage.cap_status.pct) + '%' }"
+                    :class="{ 'cap-bar-warn': usage.cap_status.warning, 'cap-bar-exceeded': usage.cap_status.exceeded }"
+                    :style="{ width: Math.min(100, usage.cap_status.pct || 0) + '%' }"
                   ></div>
                 </div>
-                <p v-if="usage.cap_status.exceeded" class="mt-2 text-xs text-destructive">
-                  Cap reached. New AI runs will be blocked until next month or until you raise the cap.
+                <p class="mt-1.5 text-[11px] text-muted-foreground">
+                  Allowance renews {{ new Date(usage.cap_status.resets_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) }}.
                 </p>
-                <div class="mt-2.5 flex items-center gap-2">
-                  <label class="text-xs font-semibold text-muted-foreground" for="capInput">Cap (USD)</label>
-                  <input
-                    id="capInput"
-                    v-model.number="capInput"
-                    type="number"
-                    step="1"
-                    min="0"
-                    class="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :disabled="capSaving"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    :disabled="capSaving || capInput === usage.cap_status.cap_usd"
-                    @click="saveCap"
-                  >{{ capSaving ? 'Saving…' : 'Save' }}</Button>
-                  <span v-if="capError" class="text-xs text-destructive">{{ capError }}</span>
-                </div>
-              </div>
-              <div v-else-if="usage.cap_status" class="mb-5 rounded-lg border border-border bg-muted px-3.5 py-3 text-xs italic text-muted-foreground">
-                <div>No monthly spend cap set. Add one to control runaway AI cost.</div>
-                <div class="mt-2.5 flex items-center gap-2 not-italic">
-                  <label class="text-xs font-semibold text-muted-foreground" for="capInputNew">Cap (USD)</label>
-                  <input
-                    id="capInputNew"
-                    v-model.number="capInput"
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="50"
-                    class="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    :disabled="capSaving"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    :disabled="capSaving || !capInput"
-                    @click="saveCap"
-                  >{{ capSaving ? 'Saving…' : 'Set cap' }}</Button>
-                  <span v-if="capError" class="text-xs text-destructive">{{ capError }}</span>
-                </div>
+                <p v-if="usage.cap_status.exceeded" class="mt-2 text-xs font-semibold text-destructive">
+                  Monthly allowance reached. AI features resume at the renewal date.
+                </p>
+                <p v-else-if="usage.cap_status.warning" class="mt-2 text-xs font-semibold text-[#B25E09]">
+                  Over 80% of this month's allowance used.
+                </p>
               </div>
 
-              <!-- Totals Row -->
-              <div class="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+              <!-- Month + week, one screen, no period picker -->
+              <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(usage.totals.calls) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">API Calls</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(monthTotals.tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · 30 days</div>
                 </div>
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.total_tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total Tokens</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(monthTotals.calls) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · 30 days</div>
                 </div>
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.input_tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Input Tokens</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(weekTotals.tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · 7 days</div>
                 </div>
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.output_tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Output Tokens</div>
-                </div>
-                <div class="rounded-xl border border-border bg-accent p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-[color:var(--chart-1)]">${{ usage.totals.estimated_cost_usd.toFixed(4) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Est. Cost</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(weekTotals.calls) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · 7 days</div>
                 </div>
               </div>
 
-              <!-- Module Breakdown -->
-              <div class="mb-5" v-if="usage.by_module.length">
-                <h4 class="usage-section-title">Usage by Module</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Module</TableHead>
-                      <TableHead>Calls</TableHead>
-                      <TableHead>Tokens</TableHead>
-                      <TableHead>Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="m in usage.by_module" :key="m.module">
-                      <TableCell class="font-semibold text-foreground">
-                        <span class="inline-flex items-center gap-2">
-                          <span class="module-dot" :class="m.module"></span>
-                          {{ moduleLabels[m.module] || m.module }}
-                        </span>
-                      </TableCell>
-                      <TableCell>{{ formatNum(m.calls) }}</TableCell>
-                      <TableCell>{{ formatTokens(m.tokens) }}</TableCell>
-                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ m.cost.toFixed(4) }}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              <!-- Provider Breakdown -->
-              <div class="mb-5" v-if="usage.by_provider && usage.by_provider.length">
-                <h4 class="usage-section-title">Usage by Provider</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Calls</TableHead>
-                      <TableHead>Tokens</TableHead>
-                      <TableHead>Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="p in usage.by_provider" :key="p.provider">
-                      <TableCell class="font-medium text-muted-foreground">{{ providerLabels[p.provider] || p.provider }}</TableCell>
-                      <TableCell>{{ formatNum(p.calls) }}</TableCell>
-                      <TableCell>{{ formatTokens(p.tokens) }}</TableCell>
-                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ p.cost.toFixed(4) }}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              <!-- Role Split -->
-              <div class="mb-5" v-if="usage.by_role && usage.by_role.length">
-                <h4 class="usage-section-title">Upstream vs Internal Parsing</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Calls</TableHead>
-                      <TableHead>Tokens</TableHead>
-                      <TableHead>Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="r in usage.by_role" :key="r.role">
-                      <TableCell class="font-medium text-muted-foreground">{{ roleLabels[r.role] || r.role }}</TableCell>
-                      <TableCell>{{ formatNum(r.calls) }}</TableCell>
-                      <TableCell>{{ formatTokens(r.tokens) }}</TableCell>
-                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ r.cost.toFixed(4) }}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              <!-- Model Breakdown -->
-              <div class="mb-5" v-if="usage.by_model.length">
-                <h4 class="usage-section-title">Usage by Model</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Model</TableHead>
-                      <TableHead>Calls</TableHead>
-                      <TableHead>Tokens</TableHead>
-                      <TableHead>Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="m in usage.by_model" :key="m.model_name">
-                      <TableCell class="font-mono text-xs font-medium text-muted-foreground">{{ m.model_name }}</TableCell>
-                      <TableCell>{{ formatNum(m.calls) }}</TableCell>
-                      <TableCell>{{ formatTokens(m.tokens) }}</TableCell>
-                      <TableCell class="font-semibold text-[color:var(--chart-1)]">${{ m.cost.toFixed(4) }}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              <!-- Daily Chart -->
-              <div class="mb-5" v-if="usage.daily.length">
-                <h4 class="usage-section-title">Daily Token Usage</h4>
+              <!-- Daily usage (last 30 days) -->
+              <div class="mb-6" v-if="dailySeries.length">
+                <h4 class="usage-section-title">Daily usage</h4>
                 <div class="usage-chart">
-                  <div v-for="d in usage.daily" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} calls`">
-                    <div class="chart-bar" :style="{ height: barHeight(d.tokens) + '%' }"></div>
+                  <div v-for="d in dailySeries" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} requests`">
+                    <div class="chart-bar" :style="{ height: pctOfMax(d.tokens, dailySeries) + '%' }"></div>
                     <span class="chart-label">{{ formatDay(d.day) }}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Empty state -->
-              <div v-if="!usage.by_module.length" class="flex flex-col items-center gap-2.5 p-8 text-center">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded yet. Token tracking starts automatically when you use AI features like Lead Finder, Agents, Messaging, or LLM Dashboard.</p>
+              <!-- Weekly usage (last 12 weeks) -->
+              <div class="mb-6" v-if="weeklySeries.length">
+                <h4 class="usage-section-title">Weekly usage</h4>
+                <div class="usage-chart">
+                  <div v-for="w in weeklySeries" :key="w.week" class="chart-bar-wrap" :title="`Week of ${formatDay(w.week)}: ${formatTokens(w.tokens)} tokens, ${w.calls} requests`">
+                    <div class="chart-bar" :style="{ height: pctOfMax(w.tokens, weeklySeries) + '%' }"></div>
+                    <span class="chart-label">{{ formatDay(w.week) }}</span>
+                  </div>
+                </div>
               </div>
+
+              <!-- Empty state -->
+              <div v-if="!usage.totals.calls" class="flex flex-col items-center gap-2.5 p-8 text-center">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded yet. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
+              </div>
+
+              <p class="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
+                <span class="align-super text-[10px]">*</span>
+                Token capacity is an estimate and varies with the mix of AI models
+                your account uses. Usage is calculated against the current market
+                rates of the underlying AI providers (Anthropic, OpenAI, xAI,
+                Perplexity, Google); allowances may be adjusted if provider
+                pricing changes.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -315,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import notificationsApi from '@/api/notifications'
@@ -343,11 +222,65 @@ const notifPrefs = ref({
 
 // ── AI Usage ──
 const usage = ref(null)
-const capInput = ref(0)
-const capSaving = ref(false)
-const capError = ref('')
 const usageLoading = ref(false)
-const usagePeriod = ref('30')
+
+// Last-7-days rollup derived client-side from the 30-day daily series, so
+// month and week share one screen without a period picker or second fetch.
+const weekTotals = computed(() => {
+  const daily = usage.value?.daily || []
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 6)
+  cutoff.setHours(0, 0, 0, 0)
+  let tokens = 0, calls = 0
+  for (const d of daily) {
+    if (d.day && new Date(d.day) >= cutoff) {
+      tokens += d.tokens || 0
+      calls += d.calls || 0
+    }
+  }
+  return { tokens, calls }
+})
+
+// Client-side rollups from the 90-day daily series: the daily chart shows
+// the last 30 days, the weekly chart buckets the full window by week, and
+// the tiles sum fixed ranges — one fetch, no period picker.
+function entriesSince(days) {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - (days - 1))
+  cutoff.setHours(0, 0, 0, 0)
+  return (usage.value?.daily || []).filter(d => d.day && new Date(d.day) >= cutoff)
+}
+
+const dailySeries = computed(() => entriesSince(30))
+
+const monthTotals = computed(() => {
+  let tokens = 0, calls = 0
+  for (const d of dailySeries.value) { tokens += d.tokens || 0; calls += d.calls || 0 }
+  return { tokens, calls }
+})
+
+const weeklySeries = computed(() => {
+  const buckets = new Map()
+  for (const d of usage.value?.daily || []) {
+    if (!d.day) continue
+    const date = new Date(d.day)
+    // Bucket by the Monday of the entry's week.
+    const monday = new Date(date)
+    monday.setDate(date.getDate() - ((date.getDay() + 6) % 7))
+    const key = monday.toISOString().slice(0, 10)
+    const b = buckets.get(key) || { week: key, tokens: 0, calls: 0 }
+    b.tokens += d.tokens || 0
+    b.calls += d.calls || 0
+    buckets.set(key, b)
+  }
+  return [...buckets.values()].sort((a, b) => a.week.localeCompare(b.week))
+})
+
+function pctOfMax(value, series) {
+  const max = Math.max(...series.map(x => x.tokens || 0))
+  return max > 0 ? Math.max(4, (value / max) * 100) : 4
+}
+
 
 const moduleLabels = {
   llm_ranking: 'LLM Dashboard',
@@ -403,14 +336,15 @@ async function loadUsage() {
     // ``accessToken`` — so the request silently 401'd and the Usage
     // card stayed empty).
     const token = authStore.accessToken || localStorage.getItem('access_token')
-    const res = await fetch(`/api/v1/auth/me/ai-usage/?days=${usagePeriod.value}`, {
+    const res = await fetch('/api/v1/auth/me/ai-usage/?days=90', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
     if (res.ok) {
-      usage.value = await res.json()
-      // Seed the cap input from server so the Save button can detect changes.
-      const cap = usage.value?.cap_status?.cap_usd
-      if (typeof cap === 'number') capInput.value = cap
+      // Responses are enveloped {success, data} by the API middleware;
+      // assigning the wrapper left every field undefined and the tab
+      // permanently on its empty state.
+      const body = await res.json()
+      usage.value = body?.data || body
     } else {
       console.warn('AI usage fetch returned', res.status)
     }
@@ -421,36 +355,6 @@ async function loadUsage() {
   }
 }
 
-async function saveCap() {
-  capError.value = ''
-  const value = Number(capInput.value)
-  if (Number.isNaN(value) || value < 0) {
-    capError.value = 'Enter a non-negative number.'
-    return
-  }
-  capSaving.value = true
-  try {
-    const token = authStore.token || localStorage.getItem('access_token')
-    const res = await fetch('/api/v1/auth/me/', {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ monthly_ai_cost_cap_usd: value }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      capError.value = body?.detail || 'Could not save cap.'
-      return
-    }
-    await loadUsage()
-  } catch (e) {
-    capError.value = 'Network error. Try again.'
-  } finally {
-    capSaving.value = false
-  }
-}
 
 onMounted(async () => {
   if (authStore.user) {

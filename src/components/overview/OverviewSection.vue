@@ -20,7 +20,12 @@ const props = defineProps({
   // these cards can have data, plus the copy and CTA for it.
   setupState: { type: Object, default: null },
   showFilters: { type: Boolean, default: true },
+  // Filter state owned by the parent page; FilterBar patches it and the
+  // parent refetches. filterOptions is the payload's filter_options block.
+  filters: { type: Object, default: () => ({}) },
+  filterOptions: { type: Object, default: null },
 })
+const emit = defineEmits(['update:filters'])
 
 const hasData = computed(() => Boolean(props.overview?.has_data))
 const brands = computed(() => props.overview?.brands || [])
@@ -31,18 +36,45 @@ const prompts = computed(() => props.overview?.prompts || [])
 const headline = computed(() => props.overview?.headline || null)
 const insightKpis = computed(() => props.overview?.insight_kpis || [])
 
+// Any non-default filter engaged. Distinct from needsSetup: a filter that
+// empties the window is a different situation from an account that has
+// never measured anything, and must keep the pills visible so the user
+// can clear what they set.
+const filtersActive = computed(() => {
+  const f = props.filters || {}
+  return Boolean(
+    (f.range && f.range !== '30d') || f.model || f.tag || f.topic,
+  )
+})
+
 // Before anything has been measured we replace the whole card grid with a
 // single instruction rather than stacking five identical empty cards.
 const needsSetup = computed(
-  () => !hasData.value && props.setupState && props.setupState.step !== 'ready',
+  () => !hasData.value && !filtersActive.value
+    && props.setupState && props.setupState.step !== 'ready',
+)
+const filteredEmpty = computed(
+  () => !hasData.value && filtersActive.value,
 )
 const ctaLabel = computed(() => props.setupState?.cta_label || '')
 const ctaTo = computed(() => props.setupState?.cta_to || '')
+
+function clearFilters() {
+  emit('update:filters', {
+    ...props.filters, range: '30d', model: '', tag: '', topic: '',
+  })
+}
 </script>
 
 <template>
   <div class="space-y-6">
-    <FilterBar v-if="showFilters && hasData" :project-name="activeName" />
+    <FilterBar
+      v-if="showFilters && (hasData || filtersActive)"
+      :project-name="activeName"
+      :filters="filters"
+      :options="filterOptions"
+      @update:filters="emit('update:filters', $event)"
+    />
 
     <EmptyState
       v-if="needsSetup"
@@ -52,6 +84,21 @@ const ctaTo = computed(() => props.setupState?.cta_to || '')
       :cta-label="setupState.cta_label"
       :cta-to="setupState.cta_to"
     />
+
+    <div
+      v-else-if="filteredEmpty"
+      class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center"
+    >
+      <p class="text-sm font-semibold text-foreground">No results match these filters</p>
+      <p class="max-w-md text-[12px] leading-relaxed text-muted-foreground">
+        Nothing was measured in this combination of time range, model, tag
+        and topic. Widen the range or clear the filters.
+      </p>
+      <button
+        class="mt-1 text-[13px] font-bold text-foreground underline underline-offset-2"
+        @click="clearFilters"
+      >Clear filters</button>
+    </div>
 
     <template v-else>
       <InsightsSummary :headline="headline" :kpis="insightKpis" />

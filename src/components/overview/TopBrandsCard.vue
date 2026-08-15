@@ -3,9 +3,10 @@ import { ref, computed } from 'vue'
 import { ChevronDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import EmptyState from '@/components/ui/EmptyState.vue'
-
-// Avatar colours are presentation, not data — safe to keep local.
-const AVATAR_COLORS = ['#FF385C', '#00A699', '#FC642D', '#484848', '#767676', '#008489', '#5B8DEF']
+// Real company logos with a cached resolver (site crawl -> Clearbit ->
+// favicon guess) and a deterministic initial badge as the final fallback,
+// so an unresolvable brand still gets a stable mark instead of a broken img.
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const props = defineProps({
   brands: { type: Array, default: () => [] },
@@ -29,12 +30,6 @@ const expanded = ref(null)
 
 function toggle(i) {
   expanded.value = expanded.value === i ? null : i
-}
-function initials(name) {
-  return (name || '?').trim().charAt(0).toUpperCase()
-}
-function color(i) {
-  return AVATAR_COLORS[i % AVATAR_COLORS.length]
 }
 function summary(b) {
   const n = b.prompts?.length || 0
@@ -82,10 +77,7 @@ function rank(v) {
             @mouseleave="hovered = null"
             @click="toggle(i)"
           >
-            <div
-              class="flex size-[42px] shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-white"
-              :style="{ background: color(i) }"
-            >{{ initials(b.name) }}</div>
+            <BrandLogo :name="b.name" :size="42" class="shrink-0" />
 
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-bold text-foreground">{{ b.name }}</p>

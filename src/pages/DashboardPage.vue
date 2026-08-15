@@ -50,13 +50,20 @@
               :website-id="activeWebsiteId"
               :overview="overview"
               :setup-state="setupState"
+              :filters="filters"
+              :filter-options="filterOptions"
+              @update:filters="onFiltersUpdate"
             />
           </TabsContent>
 
           <TabsContent value="analytics" class="space-y-4">
+            <!-- merge-only on update (Apply emits both events; refetching
+                 here too would double-fetch), spread so the pills' keys
+                 survive this tab's partial payload. -->
             <AnalyticsFilters
-              v-model="filters"
+              :model-value="filters"
               :available-prompts="availablePrompts"
+              @update:model-value="next => { filters = { ...filters, ...next } }"
               @apply="refetchDashboard"
             />
 
@@ -164,7 +171,15 @@ const analyticsDeepDive = ref(null)
 const availablePrompts = ref([])
 const overview = ref(null)
 const setupState = ref(null)
-const filters = ref({ range: '30d', start: '', end: '', prompts: [] })
+// range/start/end/prompts drive the Analytics tab's form; model/tag/topic
+// are the Overview pills. One shared object so both tabs stay in sync.
+const filters = ref({
+  range: '30d', start: '', end: '', prompts: [],
+  model: '', tag: '', topic: '',
+})
+// filter_options from the payload. Kept across refetches so pill menus
+// don't blank out while a filtered request is in flight.
+const filterOptions = ref(null)
 
 function buildParams() {
   const params = {}
@@ -174,7 +189,17 @@ function buildParams() {
     if (filters.value.end) params.end = filters.value.end
   }
   if (filters.value.prompts?.length) params.prompts = filters.value.prompts
+  if (filters.value.model) params.models = filters.value.model
+  if (filters.value.tag) params.tags = filters.value.tag
+  if (filters.value.topic) params.topics = filters.value.topic
   return params
+}
+
+function onFiltersUpdate(next) {
+  // Spread so a partial patch from either tab never drops the other
+  // tab's keys (AnalyticsFilters emits only its own fields).
+  filters.value = { ...filters.value, ...next }
+  refetchDashboard()
 }
 
 async function refetchDashboard() {
@@ -193,6 +218,7 @@ async function refetchDashboard() {
     chartSeries.value = d.visibility_series || null
     overview.value = d.overview || null
     setupState.value = d.setup_state || null
+    filterOptions.value = d.filter_options || filterOptions.value
   } catch (e) {
     console.error('Dashboard load error', e)
   } finally {

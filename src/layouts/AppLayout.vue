@@ -488,21 +488,31 @@ function isChildActive(child) {
 }
 
 const breadcrumbs = computed(() => {
+  // Detail pages append the entity they show (e.g. the prompt text) via
+  // appStore.setBreadcrumbTail; the nav tree only knows section names.
+  const tail = appStore.breadcrumbTail
+    ? [{ label: appStore.breadcrumbTail }]
+    : []
+
   const path = route.path
   for (const group of navMain.value) {
     for (const item of group.items) {
       if (item.children) {
         for (const child of item.children) {
           if (isChildActive(child))
-            return [{ label: item.title, to: item.to }, { label: child.title, to: child.to }]
+            return [
+              { label: item.title, to: item.to },
+              { label: child.title, to: child.to },
+              ...tail,
+            ]
         }
       }
       if (path === item.match || path.startsWith(item.match))
-        return [{ label: item.title, to: item.to }]
+        return [{ label: item.title, to: item.to }, ...tail]
     }
   }
   const name = String(route.name || 'Page').replace(/[-_]/g, ' ')
-  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }]
+  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }, ...tail]
 })
 
 function switchWebsite(id) {

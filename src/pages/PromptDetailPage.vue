@@ -533,7 +533,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bar } from 'vue-chartjs'
 import {
@@ -545,6 +545,7 @@ import {
   Globe, Inbox, Link2, MessageSquare, PieChart, Repeat, Sparkles, Tag, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
+import { useAppStore } from '@/stores/app'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -894,6 +895,7 @@ onMounted(loadThenMaybeScan)
 onBeforeUnmount(() => {
   stopScanPoll()
   stopElapsedTimer()
+  appStore.setBreadcrumbTail('')
 })
 
 // Navigating between two prompt-detail URLs reuses this component, so
@@ -925,6 +927,16 @@ const promptTextShort = computed(() => {
   const t = promptText.value
   return t.length > 60 ? t.slice(0, 60) + '…' : t
 })
+
+// Surface the prompt under inspection in the header breadcrumb, so the
+// trail reads FetchBot / AI Visibility / Prompts / <prompt text> instead
+// of stopping at the section name. AppLayout wraps pages in <keep-alive>,
+// so navigation deactivates rather than unmounts this component — the
+// tail must be cleared on deactivate and restored on activate.
+const appStore = useAppStore()
+watch(promptTextShort, t => appStore.setBreadcrumbTail(t), { immediate: true })
+onDeactivated(() => appStore.setBreadcrumbTail(''))
+onActivated(() => appStore.setBreadcrumbTail(promptTextShort.value))
 const demandLevel = computed(() => {
   const score = Number(detail.value?.prompt?.demand_score) || 0
   if (score >= 0.75) return 4

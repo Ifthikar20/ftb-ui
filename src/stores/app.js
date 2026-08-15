@@ -48,6 +48,15 @@ export const useAppStore = defineStore('app', () => {
         sidebarCollapsed.value = !sidebarCollapsed.value
     }
 
+    // Last breadcrumb segment for detail pages. The header breadcrumb is
+    // derived from the nav tree, which only knows sections — a page showing
+    // one entity (a prompt, an audit) sets this so the trail names what is
+    // actually on screen. Pages must clear it on unmount.
+    const breadcrumbTail = ref('')
+    function setBreadcrumbTail(label) {
+        breadcrumbTail.value = String(label || '')
+    }
+
     function setActiveWebsite(website) {
         activeWebsite.value = website
     }
@@ -81,5 +90,7 @@ export const useAppStore = defineStore('app', () => {
         setPlanInfo,
         setActiveWebsite,
         setWebsites,
+        breadcrumbTail,
+        setBreadcrumbTail,
     }
 })

@@ -8,6 +8,7 @@ import {
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import llmRanking from '@/api/llm_ranking'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
@@ -337,10 +338,15 @@ const chartOptions = computed(() => {
     <div v-else-if="!showTrend" class="px-7 py-5">
       <div class="space-y-2.5">
         <div v-for="b in ranked" :key="b.name" class="flex items-center gap-3">
-          <div class="w-32 shrink-0 truncate text-right text-[13px]" :title="b.name">
-            <span :class="b.is_target ? 'font-extrabold text-foreground' : 'text-muted-foreground'">
-              {{ b.name }}
-            </span>
+          <div
+            class="flex w-40 shrink-0 items-center justify-end gap-1.5 text-right text-[13px]"
+            :title="b.name"
+          >
+            <span
+              class="truncate"
+              :class="b.is_target ? 'font-extrabold text-foreground' : 'text-muted-foreground'"
+            >{{ b.name }}</span>
+            <BrandLogo :name="b.name" :size="18" class="shrink-0" />
           </div>
           <div class="h-6 min-w-0 flex-1 overflow-hidden rounded-md bg-muted/60">
             <div
