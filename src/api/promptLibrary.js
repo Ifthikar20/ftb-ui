@@ -31,8 +31,10 @@ export default {
     promptFanouts: (websiteId, promptId) =>
         api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/fanouts/`),
 
-    crawlPrompt: (websiteId, promptId) =>
-        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`),
+    // payload: { mode: 'missing' } queries only models that never answered
+    // (silent gap-fill); omit for a full re-run of every configured model.
+    crawlPrompt: (websiteId, promptId, payload = {}) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`, payload),
 
     // Page-level sentiment: fetch + analyze the URLs this prompt's answers
     // cited (explicit trigger — spends AI credits). Poll promptDetailAgg's

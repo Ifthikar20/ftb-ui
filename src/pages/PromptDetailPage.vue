@@ -597,7 +597,7 @@
     <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
       <div v-if="lastFanoutRun" class="pd-fanout-meta">
         <span class="pd-mute">Last fan-out:</span>
-        <span class="pd-status" :class="`is-${lastFanoutRun.status === 'completed' ? 'active' : 'inactive'}`">
+        <span class="pd-status" :class="`is-${['complete', 'completed'].includes(lastFanoutRun.status) ? 'active' : 'inactive'}`">
           <span class="pd-status-dot"></span>
           {{ lastFanoutRun.status }}
         </span>
@@ -798,7 +798,7 @@ async function loadThenMaybeScan() {
   )
   if (missingConfigured) {
     autoScanDone.value = true
-    runScan()
+    runScan('missing')   // silent gap-fill: only never-tried models
   }
 }
 
@@ -857,11 +857,14 @@ const scanInFlight = ref(false)
 const scanQueued = ref(false)
 let scanPollTimer = null
 
-async function runScan() {
+async function runScan(mode) {
   if (scanInFlight.value) return
   scanInFlight.value = true
+  // Click handlers pass an Event object — anything that isn't the explicit
+  // gap-fill sentinel means a FULL re-run of every configured model.
+  const payload = mode === 'missing' ? { mode: 'missing' } : {}
   try {
-    const { data } = await promptLibrary.crawlPrompt(websiteId, promptId)
+    const { data } = await promptLibrary.crawlPrompt(websiteId, promptId, payload)
     scanQueued.value = !!data?.queued
     // Refresh the detail (the synchronous fallback path writes results
     // immediately; the queued path needs polling until completed_at is set).
@@ -881,7 +884,10 @@ function startScanPoll() {
     elapsed += 1
     try { await load() } catch { /* ignore polling failures */ }
     const latest = detail.value?.latest_scan
-    const done = latest && (latest.status === 'completed' || latest.status === 'failed')
+    // Backend PromptCrawlRun status is 'complete' (no trailing d) — the
+    // old 'completed' comparison never matched, so the poller ran its full
+    // cap and the button sat on "Scan queued" for ~11 minutes per scan.
+    const done = latest && ['complete', 'completed', 'failed'].includes(latest.status)
     // Poll until the run resolves. The cap is past the backend's 10-minute
     // staleness window (6s x 110 ≈ 11 min) so a scan that dies mid-run gets
     // healed to "failed" on one of these reloads instead of ticking forever.
@@ -948,7 +954,7 @@ const scanStatusKind = computed(() => {
   const s = detail.value?.latest_scan?.status
   if (s === 'running' || s === 'pending') return 'running'
   if (s === 'failed') return 'failed'
-  if (s === 'completed') return 'ok'
+  if (s === 'complete' || s === 'completed') return 'ok'
   return ''
 })
 
@@ -964,7 +970,7 @@ const scanStatusLine = computed(() => {
       ? `Scan ${label} · ${formatDuration(elapsed)} elapsed`
       : `Scan ${label}`
   }
-  if (ls.status === 'completed') {
+  if (ls.status === 'complete' || ls.status === 'completed') {
     const ran = ls.started_at && ls.completed_at
       ? Math.max(0, (new Date(ls.completed_at) - new Date(ls.started_at)) / 1000)
       : null
