@@ -88,7 +88,16 @@
       <div class="pd-meta">
         <div class="pd-meta-label"><CircleDot :size="12" :stroke-width="2"/>Status</div>
         <div class="pd-meta-val">
-          <span class="pd-status" :class="`is-${detail?.status || 'inactive'}`">
+          <span
+            v-if="scanStatusKind === 'running'"
+            class="pd-status is-scanning"
+            :title="SCAN_PATIENCE_TIP"
+          >
+            <span class="pd-status-dot"></span>
+            {{ scanStatusWord }}<template v-if="scanElapsedLabel"> · {{ scanElapsedLabel }}</template>
+            <sup class="pd-status-help">?</sup>
+          </span>
+          <span v-else class="pd-status" :class="`is-${detail?.status || 'inactive'}`">
             <span class="pd-status-dot"></span>
             {{ detail?.status === 'active' ? 'Active' : 'Inactive' }}
           </span>
@@ -973,6 +982,25 @@ const scanErrorLine = computed(() => {
   return ls?.status === 'failed' ? (ls.error || 'unknown error') : ''
 })
 
+/* Scan-aware Status cell: while a scan is queued/running the cell reads
+ * "Queued to scan"/"Scanning · 42s" with a live timer and a patience
+ * tooltip, instead of a static "Active" that hides the work in flight. */
+const SCAN_PATIENCE_TIP =
+  'A scan is asking every configured AI model this prompt and analyzing '
+  + 'their answers. It usually takes one to three minutes — no need to '
+  + 'wait here, results are saved automatically and appear when you '
+  + 'return or refresh.'
+const scanStatusWord = computed(() => {
+  if (scanInFlight.value) return 'Starting scan'
+  return detail.value?.latest_scan?.status === 'pending' ? 'Queued to scan' : 'Scanning'
+})
+const scanElapsedLabel = computed(() => {
+  const started = detail.value?.latest_scan?.started_at
+  if (!started) return ''
+  const s = Math.max(0, Math.floor((nowTick.value - new Date(started).getTime()) / 1000))
+  return formatDuration(s)
+})
+
 watch(scanStatusKind, (kind) => {
   if (kind === 'running') startElapsedTimer()
   else stopElapsedTimer()
@@ -1516,6 +1544,17 @@ function onFaviconError(ev, d) {
 .pd-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pd-status.is-active { background: color-mix(in oklab, var(--chart-2) 14%, transparent); color: var(--chart-2); }
 .pd-status.is-inactive { background: var(--muted); color: var(--muted-foreground); }
+/* Scan in flight: amber pill, pulsing dot, live elapsed timer, "?" hint. */
+.pd-status.is-scanning {
+  background: rgba(245, 158, 11, 0.12); color: #b45309;
+  font-variant-numeric: tabular-nums; cursor: help;
+}
+.pd-status.is-scanning .pd-status-dot { animation: pd-scan-pulse 1.2s ease-in-out infinite; }
+.pd-status-help { font-size: 0.62rem; font-weight: 700; opacity: 0.7; margin-left: 1px; }
+@keyframes pd-scan-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
 
 .pd-overview-head { margin-bottom: 14px; }
 .pd-section-title {
