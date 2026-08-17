@@ -128,14 +128,6 @@ export default {
     disable: (promptId) =>
         api.post(`/prompt-library/prompts/${promptId}/disable/`),
 
-    // ── Benchmark packs (reference material used to score LLM answers) ──
-    listBenchmarks: (websiteId) =>
-        api.get(`/prompt-library/websites/${websiteId}/benchmarks/`),
-    createBenchmark: (websiteId, payload) =>
-        api.post(`/prompt-library/websites/${websiteId}/benchmarks/`, payload),
-    deleteBenchmark: (websiteId, packId) =>
-        api.delete(`/prompt-library/websites/${websiteId}/benchmarks/${packId}/`),
-
     // ── Test environments ─────────────────────────────────────────
     // Named buckets of BrandPrompts. Shared surface between the Saved
     // view (group by env, bulk-move prompts) and the Model Test page

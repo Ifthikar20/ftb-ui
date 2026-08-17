@@ -462,7 +462,7 @@ const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${webs
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
 const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
-const benchmarksRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/benchmarks` : '/websites')
+const brandInputRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-input` : '/websites')
 
 const navMain = computed(() => [
   {
@@ -486,7 +486,7 @@ const navMain = computed(() => [
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
-          { title: 'Benchmarks', to: benchmarksRoute.value, match: '/benchmarks' },
+          { title: 'Brand Input', to: brandInputRoute.value, match: '/brand-input' },
         ],
       },
       { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },

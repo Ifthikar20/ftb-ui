@@ -2,23 +2,22 @@
 /**
  * Brand Input page.
  *
- * Sibling of BrandSecurityPage. Where the security page shows alerts
- * caught by the monitoring agents, this page teaches the RAG model
- * what the brand actually says about itself. URLs, MD files, or
- * plain-text notes registered here become chunks in the vector store
- * and are the source of truth every Brand Security agent checks LLM
- * answers against.
+ * The single place to feed the platform's understanding of the brand.
+ * URLs, pasted markdown, and quick notes all become chunks in the RAG
+ * knowledge base — the store that audits, agents, and the Brand
+ * Security judges actually read from. One input card with three tabs;
+ * everything added shows up in the sources list below with a live
+ * ingest status.
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import {
-  ChevronRight, Link2, FileText, Loader2, RefreshCw,
+  ChevronRight, Link2, FileText, Loader2, RefreshCw, StickyNote,
   Globe, BookOpen, Package, FileCode, ShieldCheck,
 } from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useToast } from '@/composables/useToast'
 import ragApi from '@/api/rag'
-import brandSecurity from '@/api/brandSecurity'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,11 +25,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import FilterBar from '@/components/brand_input/FilterBar.vue'
 import SourceGroup from '@/components/brand_input/SourceGroup.vue'
 import SourceDetailDrawer from '@/components/brand_input/SourceDetailDrawer.vue'
-import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
 const websiteId = computed(() => appStore.activeWebsite?.id || null)
+
+// ── Input card tabs ───────────────────────────────────────────────────
+const INPUT_TABS = [
+  { key: 'url',   label: 'Add URL',       icon: Link2 },
+  { key: 'paste', label: 'Paste content', icon: FileText },
+  { key: 'note',  label: 'Quick note',    icon: StickyNote },
+]
+const inputTab = ref('url')
 
 // ── Sources list (paginated + filtered server-side) ────────────────────
 const sources = ref([])
@@ -193,7 +199,7 @@ async function reingestSource(source) {
 }
 
 async function deleteSource(source) {
-  if (!confirm(`Delete "${source.title || source.url}"? This removes it from the RAG index.`)) return
+  if (!confirm(`Delete "${source.title || source.url}"? This removes it from your brand knowledge.`)) return
   try {
     await ragApi.deleteSource(websiteId.value, source.id)
     toast.success('Source deleted')
@@ -260,7 +266,7 @@ async function submitPaste() {
   pasteSubmitting.value = true
   try {
     await ragApi.uploadText(websiteId.value, { ...pasteForm.value })
-    toast.success('Text added to knowledge base')
+    toast.success('Content added to your brand knowledge')
     pasteForm.value = { title: '', kind: 'other', text: '' }
     page.value = 1
     await loadSources()
@@ -275,38 +281,44 @@ async function submitPaste() {
   }
 }
 
-// ── Monitoring config (brand terms + negative keywords) ──────────────
-// Lives here with the rest of the brand inputs: these terms drive the
-// Brand Security scan queries the same way the sources below drive the
-// ground truth those scans are judged against.
-const config = ref({ brand_terms: [], negative_keywords: [] })
+// ── Quick-note form ───────────────────────────────────────────────────
+// Same upload endpoint as paste — a note is just short free text with a
+// title, filed under kind "other". Kept as its own tab so jotting a fact
+// ("We never offer lifetime deals") doesn't feel like a document upload.
+const noteForm = ref({ title: '', text: '' })
+const noteSubmitting = ref(false)
 
-async function loadConfig() {
+async function submitNote() {
+  if (!websiteId.value || noteForm.value.text.trim().length < 20 || !noteForm.value.title.trim()) return
+  noteSubmitting.value = true
   try {
-    const { data } = await brandSecurity.config(websiteId.value)
-    config.value = data
-  } catch {
-    /* config lazily created — ignore */
-  }
-}
-
-async function saveConfig(payload) {
-  try {
-    await brandSecurity.saveConfig(websiteId.value, payload)
-    toast.success('Monitoring configuration saved')
-    await loadConfig()
-  } catch {
-    toast.error('Failed to save configuration')
+    await ragApi.uploadText(websiteId.value, {
+      title: noteForm.value.title,
+      kind: 'other',
+      text: noteForm.value.text,
+    })
+    toast.success('Note added to your brand knowledge')
+    noteForm.value = { title: '', text: '' }
+    page.value = 1
+    await loadSources()
+  } catch (err) {
+    const msg = err?.response?.data?.error
+      || err?.response?.data?.text?.[0]
+      || err?.response?.data?.title?.[0]
+      || 'Failed to save note'
+    toast.error(msg)
+  } finally {
+    noteSubmitting.value = false
   }
 }
 
 onMounted(async () => {
-  if (websiteId.value) await Promise.all([loadSources(), loadConfig()])
+  if (websiteId.value) await loadSources()
 })
 watch(websiteId, async (v) => {
   if (v) {
     page.value = 1
-    await Promise.all([loadSources(), loadConfig()])
+    await loadSources()
   }
 })
 </script>
@@ -326,38 +338,35 @@ watch(websiteId, async (v) => {
       </Button>
     </div>
 
-    <!-- ── Tab strip: siblings of the same feature ── -->
-    <div class="flex items-center gap-1 border-b border-border">
-      <router-link
-        :to="`/llm-ranking/${websiteId}/brand-security`"
-        class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >Alerts</router-link>
-      <router-link
-        :to="`/llm-ranking/${websiteId}/brand-input`"
-        class="border-b-2 border-foreground px-3 py-2 text-sm font-semibold text-foreground"
-      >Brand Input</router-link>
-    </div>
-
     <!-- ── Intro ── -->
     <div>
-      <h2 class="text-lg font-bold text-foreground">Teach the RAG what your brand knows about itself</h2>
+      <h2 class="text-lg font-bold text-foreground">Teach the platform your brand</h2>
       <p class="text-sm text-muted-foreground">
-        Add URLs, docs, and knowledge pages here. Every source you add is chunked, embedded, and
-        stored — the Brand Security agents then compare LLM answers against these chunks to catch
-        hallucinations and misalignments before your customers see them.
+        URLs, pasted content, and quick notes added here become part of the platform's
+        understanding of your brand — used to ground audits, agents, and Brand Security checks.
       </p>
     </div>
 
-    <!-- ── Add source ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">Add a source</h2>
-      <p class="text-sm text-muted-foreground">One URL, or a full-site crawl (up to 50 pages).</p>
-    </div>
-
+    <!-- ── Single input card with tabs ── -->
     <Card>
       <CardContent class="pt-6">
-        <form class="flex flex-col gap-4" @submit.prevent="submitSource">
-          <!-- URL input -->
+        <!-- Tab switch -->
+        <div class="mb-5 flex rounded-xl bg-secondary p-1">
+          <button
+            v-for="t in INPUT_TABS"
+            :key="t.key"
+            type="button"
+            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors"
+            :class="inputTab === t.key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="inputTab = t.key"
+          >
+            <component :is="t.icon" class="size-3.5" />
+            {{ t.label }}
+          </button>
+        </div>
+
+        <!-- URL tab -->
+        <form v-if="inputTab === 'url'" class="flex flex-col gap-4" @submit.prevent="submitSource">
           <div class="flex flex-col gap-1.5">
             <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">URL</label>
             <div class="relative">
@@ -372,7 +381,6 @@ watch(websiteId, async (v) => {
             </div>
           </div>
 
-          <!-- Title (optional) + Kind row -->
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title (optional)</label>
@@ -394,7 +402,6 @@ watch(websiteId, async (v) => {
             </div>
           </div>
 
-          <!-- Crawl mode toggle -->
           <div class="flex items-start gap-3 rounded-lg border border-border bg-card px-4 py-3">
             <button
               type="button"
@@ -442,21 +449,13 @@ watch(websiteId, async (v) => {
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
 
-    <!-- ── Paste text / markdown ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">Or paste your brand material</h2>
-      <p class="text-sm text-muted-foreground">
-        Brand deck copy, FAQ answers, tone-of-voice notes, product one-pagers — anything that describes
-        how your brand should be represented. Text or markdown, no URL required.
-      </p>
-    </div>
-
-    <Card>
-      <CardContent class="pt-6">
-        <form class="flex flex-col gap-4" @submit.prevent="submitPaste">
+        <!-- Paste tab -->
+        <form v-else-if="inputTab === 'paste'" class="flex flex-col gap-4" @submit.prevent="submitPaste">
+          <p class="text-sm text-muted-foreground">
+            Brand deck copy, FAQ answers, product one-pagers, markdown files — anything that
+            describes how your brand should be represented.
+          </p>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</label>
@@ -504,36 +503,57 @@ watch(websiteId, async (v) => {
               :disabled="pasteSubmitting || pasteForm.text.trim().length < 20 || !pasteForm.title.trim()"
             >
               <Loader2 v-if="pasteSubmitting" class="size-3.5 animate-spin" />
-              Add to knowledge base
+              Add to brand knowledge
+            </Button>
+          </div>
+        </form>
+
+        <!-- Quick-note tab -->
+        <form v-else class="flex flex-col gap-4" @submit.prevent="submitNote">
+          <p class="text-sm text-muted-foreground">
+            A quick fact or rule the platform should always know — pricing positions,
+            things your brand never claims, naming conventions.
+          </p>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</label>
+            <div class="relative">
+              <StickyNote class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                v-model="noteForm.title"
+                type="text"
+                required
+                placeholder="e.g. No lifetime deals, Pricing policy, Founder story"
+                class="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Note
+              <span class="ml-1 font-normal text-muted-foreground/70">({{ noteForm.text.length }} chars, min 20)</span>
+            </label>
+            <textarea
+              v-model="noteForm.text"
+              rows="5"
+              required
+              minlength="20"
+              maxlength="200000"
+              placeholder="e.g. We never discount more than 20%, and we don't offer a free tier."
+              class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <Button
+              type="submit"
+              :disabled="noteSubmitting || noteForm.text.trim().length < 20 || !noteForm.title.trim()"
+            >
+              <Loader2 v-if="noteSubmitting" class="size-3.5 animate-spin" />
+              Save note
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-
-    <!-- ── Monitoring config ── -->
-    <div>
-      <h2 class="text-lg font-bold text-foreground">Monitoring</h2>
-      <p class="text-sm text-muted-foreground">
-        Brand terms and negative keywords the scans watch for
-      </p>
-    </div>
-    <MonitoringConfigPanel
-      :config="config"
-      @save="saveConfig"
-    />
-
-    <!-- ── Ingested sources ── -->
-    <div class="flex flex-wrap items-end justify-between gap-2">
-      <div>
-        <h2 class="text-lg font-bold text-foreground">Brand sources</h2>
-        <p class="text-sm text-muted-foreground">
-          {{ stats.total }} source{{ stats.total === 1 ? '' : 's' }} indexed across
-          {{ domainOptions.length }} domain{{ domainOptions.length === 1 ? '' : 's' }} on this page.
-          Click a row to inspect chunks or test a query against just that source.
-        </p>
-      </div>
-    </div>
 
     <!-- Live ingest activity: visible feedback that a queued URL or crawl
          is actually being worked on, without the user having to refresh. -->
@@ -544,13 +564,22 @@ watch(websiteId, async (v) => {
       <Loader2 class="size-4 animate-spin text-muted-foreground" />
       <div class="text-sm text-foreground">
         {{ activeIngestCount }} source{{ activeIngestCount === 1 ? '' : 's' }} being ingested —
-        chunked, embedded and added to your knowledge base.
+        chunked, embedded and added to your brand knowledge.
         <span class="text-muted-foreground">Statuses below refresh automatically.</span>
       </div>
     </div>
 
+    <!-- ── What the platform knows ── -->
     <Card>
       <CardContent class="pt-6">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-foreground">Your brand knowledge</h2>
+          <p class="text-sm text-muted-foreground">
+            {{ stats.total }} source{{ stats.total === 1 ? '' : 's' }} indexed.
+            Click a row to inspect its content or test a query against it.
+          </p>
+        </div>
+
         <FilterBar
           v-model:status="filters.status"
           v-model:kind="filters.kind"
@@ -568,7 +597,8 @@ watch(websiteId, async (v) => {
 
           <div v-else-if="!sources.length" class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             <template v-if="stats.total === 0">
-              No brand sources yet. Add your first URL above to teach the RAG about your brand.
+              Nothing here yet. Add a URL, paste content, or save a note above — it becomes
+              part of your brand knowledge and shows up in this list.
             </template>
             <template v-else>
               No sources match this filter. Try clearing filters, or search another term.

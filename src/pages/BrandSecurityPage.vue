@@ -22,6 +22,7 @@ import { CAPTURE_TYPES } from '@/constants/captureTypes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import AlertsTable from '@/components/brand_security/AlertsTable.vue'
+import MonitoringConfigPanel from '@/components/brand_security/MonitoringConfigPanel.vue'
 
 const appStore = useAppStore()
 const toast = useToast()
@@ -104,6 +105,19 @@ async function loadConfig() {
   }
 }
 
+// Monitoring settings (brand terms + negative keywords) live on this page:
+// they configure what the security scans watch for, so they belong beside
+// the findings those scans produce.
+async function saveConfig(payload) {
+  try {
+    await brandSecurity.saveConfig(websiteId.value, payload)
+    toast.success('Monitoring configuration saved')
+    await loadConfig()
+  } catch {
+    toast.error('Failed to save configuration')
+  }
+}
+
 // The first-visit guide keys off whether any reference content exists in
 // the RAG knowledge base. One source is enough to consider setup done.
 async function loadBrandSourceStats() {
@@ -158,18 +172,6 @@ async function dismissAlert(alert) {
       </div>
     </div>
 
-    <!-- ── Tab strip: siblings of the same feature ── -->
-    <div class="flex items-center gap-1 border-b border-border">
-      <router-link
-        :to="`/llm-ranking/${websiteId}/brand-security`"
-        class="border-b-2 border-foreground px-3 py-2 text-sm font-semibold text-foreground"
-      >Alerts</router-link>
-      <router-link
-        :to="`/llm-ranking/${websiteId}/brand-input`"
-        class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >Brand Input</router-link>
-    </div>
-
     <!-- ── First-visit guide: no reference content yet ── -->
     <Card v-if="isFirstVisit" class="border-dashed">
       <CardContent class="pt-6">
@@ -182,7 +184,7 @@ async function dismissAlert(alert) {
               <h2 class="text-base font-bold text-foreground">Start by teaching us your brand</h2>
               <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
                 Before we can tell you what is wrong out there, we need to know what is right.
-                Add your site pages, docs, or paste brand copy on the Brand Input tab — that
+                Add your site pages, docs, or paste brand copy on the Brand Input page — that
                 reference content is the benchmark every finding on this page is checked against.
               </p>
             </div>
@@ -265,13 +267,22 @@ async function dismissAlert(alert) {
       </CardContent>
     </Card>
 
-    <p class="text-xs text-muted-foreground">
-      Brand terms and negative keywords that drive these scans are managed on the
-      <router-link
-        :to="`/llm-ranking/${websiteId}/brand-input`"
-        class="font-medium text-foreground hover:underline"
-      >Brand Input</router-link>
-      tab, alongside your reference content.
-    </p>
+    <!-- ── Monitoring settings ── -->
+    <div>
+      <h2 class="text-lg font-bold text-foreground">Monitoring settings</h2>
+      <p class="text-sm text-muted-foreground">
+        Brand terms and negative keywords the scans watch for. Reference content the
+        findings are checked against lives on the
+        <router-link
+          :to="`/llm-ranking/${websiteId}/brand-input`"
+          class="font-medium text-foreground hover:underline"
+        >Brand Input</router-link>
+        page.
+      </p>
+    </div>
+    <MonitoringConfigPanel
+      :config="config"
+      @save="saveConfig"
+    />
   </div>
 </template>
