@@ -6,6 +6,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ExternalLink, Check, X, ChevronRight, ShieldCheck, ShieldAlert } from '@lucide/vue'
 import { captureTypeForIssue, sourceLabel } from '@/constants/captureTypes'
+import { safeHref } from '@/utils/safeHref'
 
 defineProps({
   alerts: { type: Array, default: () => [] },
@@ -119,7 +120,7 @@ function formatDate(v) {
               <div class="flex justify-end gap-1">
                 <a
                   v-if="alert.source_url"
-                  :href="alert.source_url" target="_blank" rel="noopener"
+                  :href="safeHref(alert.source_url)" target="_blank" rel="noopener"
                   class="inline-flex size-8 items-center justify-center rounded hover:bg-muted"
                   title="Open source"
                 >
@@ -181,7 +182,7 @@ function formatDate(v) {
                           </span>
                           <a
                             v-if="chunk.source_url && !chunk.source_url.startsWith('paste://') && !chunk.source_url.startsWith('audit://')"
-                            :href="chunk.source_url" target="_blank" rel="noopener"
+                            :href="safeHref(chunk.source_url)" target="_blank" rel="noopener"
                             class="truncate font-medium text-foreground hover:underline"
                           >{{ chunk.section_label || chunk.source_url }}</a>
                           <span

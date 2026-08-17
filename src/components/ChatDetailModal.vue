@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import BrandLogo from '@/components/BrandLogo.vue'
+import { safeHref } from '@/utils/safeHref'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -177,7 +178,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
           <!-- Sources -->
           <div>
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sources</div>
-            <a v-for="(s, i) in detail.sources" :key="i" :href="s.url" target="_blank" rel="noopener"
+            <a v-for="(s, i) in detail.sources" :key="i" :href="safeHref(s.url)" target="_blank" rel="noopener"
               class="mb-2 flex items-start gap-2 rounded-lg px-1 py-1 hover:bg-secondary">
               <img :src="faviconFor(s.apex_domain)" alt="" class="mt-0.5 size-4 shrink-0 rounded-sm" @error="onFaviconError" />
               <span class="min-w-0">

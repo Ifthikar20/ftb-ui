@@ -62,7 +62,7 @@
                   </span>
                   <div class="min-w-0 flex-1">
                     <a
-                      :href="c.url"
+                      :href="safeHref(c.url)"
                       target="_blank"
                       rel="noopener noreferrer"
                       class="block truncate font-medium text-indigo-700 hover:underline"
@@ -104,6 +104,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { safeHref } from '@/utils/safeHref'
 import SourceClassBadge from './SourceClassBadge.vue'
 
 const props = defineProps({

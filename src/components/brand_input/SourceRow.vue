@@ -6,6 +6,7 @@
  */
 import { Globe, BookOpen, Package, FileCode, ShieldCheck, Link2, FileText, Trash2, RefreshCw } from '@lucide/vue'
 import StatusPill from './StatusPill.vue'
+import { safeHref } from '@/utils/safeHref'
 
 defineProps({
   source: { type: Object, required: true },
@@ -53,7 +54,7 @@ const KIND_ICON = {
         </template>
         <a
           v-else
-          :href="source.url"
+          :href="safeHref(source.url)"
           target="_blank"
           rel="noopener noreferrer"
           class="hover:text-foreground hover:underline"
