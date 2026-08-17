@@ -535,11 +535,12 @@
           >
             <TableCell>
               <span v-if="c.status === 'complete'" class="pd-chat-preview">{{ c.response_preview || c.prompt }}</span>
-              <span v-else-if="c.status === 'unavailable'" class="pd-chat-state is-unavail">
-                Service unavailable<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
-              </span>
-              <span v-else-if="c.status === 'failed'" class="pd-chat-state is-failed">
-                Failed<span v-if="c.error" class="pd-chat-state-detail"> — {{ c.error }}</span>
+              <span
+                v-else-if="c.status === 'unavailable' || c.status === 'failed'"
+                class="pd-chat-state is-unavail"
+                :title="c.error || 'This model did not return an answer on this scan. It will be tried again on the next scan.'"
+              >
+                No response from this model
               </span>
               <span v-else class="pd-chat-state is-pending">Awaiting response…</span>
             </TableCell>
@@ -978,7 +979,9 @@ const scanStatusLine = computed(() => {
 
 const scanErrorLine = computed(() => {
   const ls = detail.value?.latest_scan
-  return ls?.status === 'failed' ? (ls.error || 'unknown error') : ''
+  return ls?.status === 'failed'
+    ? (ls.error || 'The scan could not complete. The issue has been logged.')
+    : ''
 })
 
 /* Scan-aware Status cell: while a scan is queued/running the cell reads
