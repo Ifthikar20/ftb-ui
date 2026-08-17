@@ -34,6 +34,12 @@ export default {
     crawlPrompt: (websiteId, promptId) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`),
 
+    // Page-level sentiment: fetch + analyze the URLs this prompt's answers
+    // cited (explicit trigger — spends AI credits). Poll promptDetailAgg's
+    // page_scan for progress.
+    scanPromptSources: (websiteId, promptId) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/scan-sources/`),
+
     // ── Per-prompt run schedule (daily/weekly/monthly) ──
     getPromptSchedule: (websiteId, promptId) =>
         api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`),

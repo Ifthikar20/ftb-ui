@@ -333,6 +333,23 @@
             <Link2 :size="14" :stroke-width="2"/>
             By citation count
           </h3>
+          <div class="pd-pagescan">
+            <span v-if="pageScanStatusLine" class="pd-pagescan-status" :class="`is-${pageScan?.status}`">
+              {{ pageScanStatusLine }}
+            </span>
+            <button
+              type="button"
+              class="pd-pagescan-btn"
+              :disabled="pageScanRunning || !topDomains.length"
+              :title="'Fetches the cited pages and scores how ' + brandLabel
+                + ' is portrayed on each. Uses AI credits — runs only when you click.'"
+              @click="scanSources"
+            >
+              <Globe :size="13" :stroke-width="2" />
+              {{ pageScanRunning ? 'Scanning sources…'
+                : (pageScan?.status === 'complete' ? 'Re-scan sources' : 'Scan cited sources') }}
+            </button>
+          </div>
         </div>
         <div class="pd-table-wrap">
           <Table class="pd-table">
@@ -347,7 +364,10 @@
                   <span class="pd-th-help" :title="HELP.cited_in">Cited in<sup>?</sup></span>
                 </TableHead>
                 <TableHead class="num">
-                  <span class="pd-th-help" :title="HELP.domain_sentiment">Sentiment<sup>?</sup></span>
+                  <span class="pd-th-help" :title="HELP.domain_sentiment">In answers<sup>?</sup></span>
+                </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.page_sentiment">On page<sup>?</sup></span>
                 </TableHead>
                 <TableHead>
                   <span class="pd-th-help" :title="HELP.domain_type">Type<sup>?</sup></span>
@@ -387,6 +407,26 @@
                   </span>
                   <span v-else class="text-muted" :title="`${brandLabel} was not mentioned in the answers citing this domain`">—</span>
                 </TableCell>
+                <TableCell class="num">
+                  <span
+                    v-if="d.page_sentiment != null"
+                    class="pd-sent"
+                    :title="`How ${brandLabel} is portrayed on this domain's cited page: ` + sentimentTip(d.page_sentiment)"
+                  >
+                    <span class="pd-sent-dot" :class="sentimentClass(d.page_sentiment)"></span>
+                    {{ d.page_sentiment }}
+                  </span>
+                  <span
+                    v-else-if="d.page_analyzed"
+                    class="text-muted"
+                    :title="`Page analyzed — ${brandLabel} was not mentioned on it`"
+                  >—</span>
+                  <span
+                    v-else
+                    class="text-muted"
+                    :title="pageScanRunning ? 'Scan in progress…' : 'Not scanned yet — use Scan cited sources'"
+                  >{{ pageScanRunning ? '…' : '—' }}</span>
+                </TableCell>
                 <TableCell>
                   <span class="pd-type-pill" :class="`is-${(d.source_class || 'other').toLowerCase()}`">
                     {{ typeLabel(d.source_class) }}
@@ -394,7 +434,7 @@
                 </TableCell>
               </TableRow>
               <TableRow v-if="!topDomains.length">
-                <TableCell colspan="6" class="pd-table-empty">No citations yet.</TableCell>
+                <TableCell colspan="7" class="pd-table-empty">No citations yet.</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -980,10 +1020,18 @@ const selectedRunLabel = computed(() => {
   return r ? shortDate(r.ran_at) : ''
 })
 
-onMounted(() => { loadThenMaybeScan(); loadSchedule() })
+onMounted(async () => {
+  await loadThenMaybeScan()
+  loadSchedule()
+  // Landing on a source scan another tab started: resume polling it.
+  if (['pending', 'running'].includes(detail.value?.page_scan?.status)) {
+    startPageScanPoll()
+  }
+})
 onBeforeUnmount(() => {
   stopScanPoll()
   stopElapsedTimer()
+  stopPageScanPoll()
   appStore.setBreadcrumbTail('')
 })
 
@@ -1010,8 +1058,10 @@ watch(() => route.params.promptId, (newId, oldId) => {
   period.value = 'all'
   selectedRun.value = null
   schedule.value = null
+  domainsExpanded.value = false
   stopScanPoll()
   stopElapsedTimer()
+  stopPageScanPoll()
   loadThenMaybeScan()
   loadSchedule()
 })
@@ -1049,6 +1099,57 @@ const DOMAINS_PREVIEW = 10
 const domainsExpanded = ref(false)
 const visibleDomains = computed(() =>
   domainsExpanded.value ? topDomains.value : topDomains.value.slice(0, DOMAINS_PREVIEW))
+
+/* ── "Scan cited sources": page-level sentiment via Source Intelligence ──
+ * Explicit trigger only (it spends AI credits). The backend seeds a
+ * SourceScan with this prompt's cited URLs; we poll the detail payload's
+ * page_scan until it resolves, which also refreshes the On-page column. */
+const pageScan = computed(() => detail.value?.page_scan || null)
+const pageScanRunning = computed(() =>
+  scanSourcesBusy.value
+  || ['pending', 'running'].includes(pageScan.value?.status))
+const pageScanStatusLine = computed(() => {
+  const s = pageScan.value
+  if (!s) return ''
+  if (s.status === 'complete') {
+    const when = s.completed_at ? shortDate(s.completed_at) : ''
+    return `Pages scanned${when ? ` ${when}` : ''} · ${s.analyzed_count}/${s.results_count} analyzed`
+  }
+  if (s.status === 'failed') return 'Last source scan failed'
+  return ''
+})
+const scanSourcesBusy = ref(false)
+let pageScanPollTimer = null
+function stopPageScanPoll() {
+  if (pageScanPollTimer) { clearInterval(pageScanPollTimer); pageScanPollTimer = null }
+}
+function startPageScanPoll() {
+  stopPageScanPoll()
+  let ticks = 0
+  pageScanPollTimer = setInterval(async () => {
+    ticks += 1
+    try { await load() } catch { /* keep polling */ }
+    const status = detail.value?.page_scan?.status
+    // ~6 min cap: a scan fetches up to 10 pages + analyses; well past that
+    // it has failed server-side and the next reload will say so.
+    if (status === 'complete' || status === 'failed' || ticks > 60) stopPageScanPoll()
+  }, 6000)
+}
+async function scanSources() {
+  if (scanSourcesBusy.value || pageScanRunning.value) return
+  scanSourcesBusy.value = true
+  try {
+    await promptLibrary.scanPromptSources(websiteId, promptId)
+    await load()
+    if (['pending', 'running'].includes(detail.value?.page_scan?.status)) {
+      startPageScanPoll()
+    }
+  } catch (e) {
+    error.value = e?.displayMessage || 'Could not start the source scan.'
+  } finally {
+    scanSourcesBusy.value = false
+  }
+}
 
 const TYPE_LABELS = {
   your_site: 'Your site',
@@ -1110,10 +1211,15 @@ const HELP = {
     + '(news, blogs), Corporate (company sites), Reference (wikis, docs), Institutional '
     + '(gov, edu), your own site, or a competitor.',
   domain_sentiment:
-    'Sentiment: how positively AI talks about your brand in the answers that cite this '
+    'In answers: how positively AI talks about your brand in the answers that cite this '
     + 'domain (positive 85 / neutral 55 / negative 25, averaged). Measured from the AI '
     + 'answers themselves, not from the domain’s own pages. Blank when the brand was not '
     + 'mentioned in any answer citing the domain.',
+  page_sentiment:
+    'On page: how your brand is portrayed on the cited page itself, measured by fetching '
+    + 'the page and analyzing its content (0–100; higher is better). Produced by "Scan '
+    + 'cited sources" — it runs only when you click, because it uses AI credits. Blank '
+    + 'with a dash when the page was analyzed but never mentions your brand.',
   types_card:
     'What kinds of sources AI answers pulled from, by share of citations. The colored '
     + 'score next to a type is your brand’s sentiment in the answers grounded in that '
@@ -1857,6 +1963,20 @@ function onFaviconError(ev, d) {
 /* Domain drill-through */
 .pd-domain-row.is-clickable { cursor: pointer; }
 .pd-domain-row.is-clickable:hover { background: var(--muted); }
+
+/* "Scan cited sources" (page-level sentiment) */
+.pd-pagescan { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pd-pagescan-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--card); font: inherit; font-size: 0.8rem; font-weight: 600;
+  color: var(--foreground); cursor: pointer;
+}
+.pd-pagescan-btn:hover { background: var(--muted); }
+.pd-pagescan-btn:disabled { opacity: 0.55; cursor: progress; }
+.pd-pagescan-btn svg { color: var(--muted-foreground); }
+.pd-pagescan-status { font-size: 0.75rem; color: var(--muted-foreground); }
+.pd-pagescan-status.is-failed { color: #b91c1c; }
 .pd-domains-more {
   padding: 10px 14px;
   border-top: 1px solid var(--border);
