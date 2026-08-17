@@ -94,9 +94,21 @@
           </span>
         </div>
       </div>
-      <div v-if="detail?.prompt?.effectiveness_score != null" class="pd-meta">
-        <div class="pd-meta-label"><Trophy :size="12" :stroke-width="2"/>Effectiveness</div>
-        <div class="pd-meta-val">{{ detail.prompt.effectiveness_score }}<span class="pd-mute"> / 100</span></div>
+      <div class="pd-meta">
+        <div class="pd-meta-label"><Cpu :size="12" :stroke-width="2"/>Models</div>
+        <div class="pd-meta-val">
+          <span v-if="respondingModels.length" class="pd-models-cell" :title="modelsMetaTip">
+            <span
+              v-for="m in respondingModels"
+              :key="m.provider"
+              class="pd-model-dot pd-model-dot-sm"
+              :style="{ background: modelStyle(m.model).color }"
+              :title="`${m.label}: ${m.responses} ${m.responses === 1 ? 'response' : 'responses'}`"
+            >{{ modelStyle(m.model).abbr }}</span>
+            <span class="pd-models-count">{{ respondingModels.length }} of {{ configuredModels.length }} responding</span>
+          </span>
+          <span v-else class="pd-mute" title="No model has answered this prompt yet — run a scan">None yet</span>
+        </div>
       </div>
     </div>
 
@@ -121,6 +133,43 @@
     </div>
     <div v-else-if="detail && !topBrands.length" class="pd-empty-note">
       {{ succeededResponses }} {{ succeededResponses === 1 ? 'response' : 'responses' }} captured — no known brand named. See Recent chats below.
+    </div>
+
+    <!-- Page-level data scope: the period window and run selection feed the
+         backend query, so they re-scope EVERYTHING below (trend, brands,
+         domains, chats) — which is why they live here, not inside a card. -->
+    <div v-if="detail" class="pd-scopebar">
+      <span class="pd-scope-label">
+        <CalendarClock :size="13" :stroke-width="2"/>
+        Data scope
+      </span>
+      <div class="pd-period-pills" role="tablist" aria-label="Time window">
+        <button
+          v-for="p in PERIODS"
+          :key="p.value"
+          type="button"
+          class="pd-period-pill"
+          :class="{ 'is-on': period === p.value }"
+          @click="setPeriod(p.value)"
+        >{{ p.label }}</button>
+      </div>
+      <label v-if="(detail.runs || []).length" class="pd-run-select">
+        <select
+          :value="selectedRun || ''"
+          aria-label="Show a single run"
+          @change="setRun($event.target.value || null)"
+        >
+          <option value="">All runs ({{ detail.runs.length }})</option>
+          <option v-for="r in detail.runs" :key="r.run_id" :value="r.run_id">
+            {{ shortDate(r.ran_at) }} · {{ r.visibility_pct }}%
+          </option>
+        </select>
+      </label>
+      <span v-if="selectedRun" class="pd-scope-note">
+        Showing a single run<template v-if="selectedRunLabel"> from {{ selectedRunLabel }}</template> —
+        every section below reflects only that run.
+        <button type="button" class="pd-inline-link" @click="setRun(null)">Show all runs</button>
+      </span>
     </div>
 
     <!-- Overview: Visibility chart + Top brands table -->
@@ -156,28 +205,6 @@
               @click="trendMetric = key"
             >{{ m.label }}</button>
           </div>
-          <div class="pd-period-pills" role="tablist" aria-label="Time window">
-            <button
-              v-for="p in PERIODS"
-              :key="p.value"
-              type="button"
-              class="pd-period-pill"
-              :class="{ 'is-on': period === p.value }"
-              @click="setPeriod(p.value)"
-            >{{ p.label }}</button>
-          </div>
-          <label v-if="(detail.runs || []).length" class="pd-run-select">
-            <select
-              :value="selectedRun || ''"
-              aria-label="Drill into a single run"
-              @change="setRun($event.target.value || null)"
-            >
-              <option value="">All runs ({{ detail.runs.length }})</option>
-              <option v-for="r in detail.runs" :key="r.run_id" :value="r.run_id">
-                {{ shortDate(r.ran_at) }} · {{ r.visibility_pct }}%
-              </option>
-            </select>
-          </label>
         </div>
       </div>
       <div class="pd-chart pd-trend-chart">
@@ -195,11 +222,6 @@
           <p>{{ activeMetric.emptyNote(brandLabel) }}</p>
         </div>
       </div>
-      <p v-if="selectedRun" class="pd-drill-note">
-        Showing a single run<template v-if="selectedRunLabel"> from {{ selectedRunLabel }}</template>
-        in the breakdown below.
-        <button type="button" class="pd-inline-link" @click="setRun(null)">Show all runs</button>
-      </p>
     </div>
 
     <div class="pd-grid pd-grid-2">
@@ -624,8 +646,8 @@ import {
   CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend,
 } from 'chart.js'
 import {
-  BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Folder,
-  Globe, Inbox, Link2, MessageSquare, Repeat, Sparkles, Trophy,
+  BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Cpu,
+  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Sparkles, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
@@ -1073,6 +1095,22 @@ onDeactivated(() => appStore.setBreadcrumbTail(''))
 onActivated(() => appStore.setBreadcrumbTail(promptTextShort.value))
 
 const topBrands = computed(() => (detail.value?.brands || []).slice(0, 7))
+
+/* ── Models responding to this prompt (meta strip). Straight from
+ * by_model: a model counts as responding when it has captured answers. ── */
+const configuredModels = computed(() =>
+  (detail.value?.by_model || []).filter((m) => m.configured))
+const respondingModels = computed(() =>
+  (detail.value?.by_model || []).filter((m) => (m.responses || 0) > 0))
+const modelsMetaTip = computed(() => {
+  const parts = respondingModels.value.map(
+    (m) => `${m.label}: ${m.responses} ${m.responses === 1 ? 'answer' : 'answers'}`)
+  const silent = configuredModels.value
+    .filter((m) => !(m.responses || 0))
+    .map((m) => m.label)
+  if (silent.length) parts.push(`No answers yet: ${silent.join(', ')}`)
+  return parts.join(' · ')
+})
 const succeededResponses = computed(() => {
   // Sum of provider.responses across by_model — counts only cells that
   // returned text, not failed/unavailable ones, so the banner accurately
@@ -1590,7 +1628,19 @@ function onFaviconError(ev, d) {
   color: var(--foreground); cursor: pointer; max-width: 240px;
 }
 .pd-trend-chart { height: 240px; }
-.pd-drill-note { margin: 10px 2px 0; font-size: 0.82rem; color: var(--muted-foreground); }
+/* Page-level data-scope bar: window + run selection for everything below. */
+.pd-scopebar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  padding: 10px 14px; margin-bottom: 4px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+}
+.pd-scope-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--muted-foreground);
+}
+.pd-scope-label svg { color: var(--muted-foreground); }
+.pd-scope-note { font-size: 0.82rem; color: var(--muted-foreground); }
 .pd-inline-link {
   appearance: none; border: none; background: none; padding: 0; font: inherit;
   color: var(--foreground); font-weight: 600; text-decoration: underline;
