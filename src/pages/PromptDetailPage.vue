@@ -67,8 +67,13 @@
     <!-- Metadata strip -->
     <div class="pd-meta-grid">
       <div class="pd-meta">
-        <div class="pd-meta-label"><Clock :size="12" :stroke-width="2"/>Prompt created</div>
-        <div class="pd-meta-val">{{ relativeTime(detail?.prompt?.created_at) }}</div>
+        <div class="pd-meta-label"><Clock :size="12" :stroke-width="2"/>Last ran</div>
+        <div class="pd-meta-val">
+          <template v-if="lastRanAt">
+            <span :title="relativeTime(lastRanAt)">{{ ranDate(lastRanAt) }} · {{ ranTime(lastRanAt) }}</span>
+          </template>
+          <span v-else class="pd-mute">Never</span>
+        </div>
       </div>
       <div class="pd-meta">
         <div class="pd-meta-label"><Folder :size="12" :stroke-width="2"/>Group</div>
@@ -978,13 +983,10 @@ const scanStatusLine = computed(() => {
       ? `Scan ${label} · ${formatDuration(elapsed)} elapsed`
       : `Scan ${label}`
   }
-  if (ls.status === 'complete' || ls.status === 'completed') {
-    const ran = ls.started_at && ls.completed_at
-      ? Math.max(0, (new Date(ls.completed_at) - new Date(ls.started_at)) / 1000)
-      : null
-    const took = ran != null ? ` in ${formatDuration(ran)}` : ''
-    return `Last scan completed ${relativeTime(ls.completed_at)}${took}`
-  }
+  // Completed scans show nothing here: the exact run time lives in the
+  // "Last ran" meta cell, and the old relative label ("2 min ago") only
+  // re-rendered while a scan was running, so it silently went stale.
+  if (ls.status === 'complete' || ls.status === 'completed') return ''
   if (ls.status === 'failed') {
     return `Last scan failed ${relativeTime(ls.completed_at || ls.started_at)}`
   }
@@ -1161,6 +1163,15 @@ onDeactivated(() => appStore.setBreadcrumbTail(''))
 onActivated(() => appStore.setBreadcrumbTail(promptTextShort.value))
 
 const topBrands = computed(() => (detail.value?.brands || []).slice(0, 7))
+
+// When the prompt last actually ran: the newest run in the series (covers
+// both audits and single-prompt scans), falling back to the latest crawl's
+// completion stamp.
+const lastRanAt = computed(() => {
+  const runs = detail.value?.runs || []
+  if (runs.length) return runs[runs.length - 1].ran_at
+  return detail.value?.latest_scan?.completed_at || null
+})
 
 /* ── Models responding to this prompt (meta strip). Straight from
  * by_model: a model counts as responding when it has captured answers. ── */
