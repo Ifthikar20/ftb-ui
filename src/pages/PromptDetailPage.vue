@@ -115,6 +115,10 @@
     <!-- Tags + template -->
     <div v-if="promptTags.length || detail?.prompt?.template_text" class="pd-meta-extra">
       <div v-if="promptTags.length" class="pd-tag-row">
+        <span
+          class="pd-template-label"
+          title="Tags you assigned to this prompt — used to filter and group prompts on the Prompts page"
+        >Tags</span>
         <span v-for="t in promptTags" :key="t" class="pd-tag-chip">{{ t }}</span>
       </div>
       <div
@@ -143,16 +147,6 @@
         <CalendarClock :size="13" :stroke-width="2"/>
         Data scope
       </span>
-      <div class="pd-period-pills" role="tablist" aria-label="Time window">
-        <button
-          v-for="p in PERIODS"
-          :key="p.value"
-          type="button"
-          class="pd-period-pill"
-          :class="{ 'is-on': period === p.value }"
-          @click="setPeriod(p.value)"
-        >{{ p.label }}</button>
-      </div>
       <label v-if="(detail.runs || []).length" class="pd-run-select">
         <select
           :value="selectedRun || ''"
@@ -204,6 +198,16 @@
               :title="m.explainer(brandLabel)"
               @click="trendMetric = key"
             >{{ m.label }}</button>
+          </div>
+          <div class="pd-period-pills" role="tablist" aria-label="Time window">
+            <button
+              v-for="p in PERIODS"
+              :key="p.value"
+              type="button"
+              class="pd-period-pill"
+              :class="{ 'is-on': period === p.value }"
+              @click="setPeriod(p.value)"
+            >{{ p.label }}</button>
           </div>
         </div>
       </div>
