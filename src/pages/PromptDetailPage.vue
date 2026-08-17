@@ -346,6 +346,9 @@
                 <TableHead>
                   <span class="pd-th-help" :title="HELP.cited_in">Cited in<sup>?</sup></span>
                 </TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.domain_sentiment">Sentiment<sup>?</sup></span>
+                </TableHead>
                 <TableHead>
                   <span class="pd-th-help" :title="HELP.domain_type">Type<sup>?</sup></span>
                 </TableHead>
@@ -373,6 +376,17 @@
                   </template>
                   <template v-else>{{ d.retrieved_pct }}%</template>
                 </TableCell>
+                <TableCell class="num">
+                  <span
+                    v-if="d.brand_sentiment != null"
+                    class="pd-sent"
+                    :title="sentimentTip(d.brand_sentiment)"
+                  >
+                    <span class="pd-sent-dot" :class="sentimentClass(d.brand_sentiment)"></span>
+                    {{ d.brand_sentiment }}
+                  </span>
+                  <span v-else class="text-muted" :title="`${brandLabel} was not mentioned in the answers citing this domain`">—</span>
+                </TableCell>
                 <TableCell>
                   <span class="pd-type-pill" :class="`is-${(d.source_class || 'other').toLowerCase()}`">
                     {{ typeLabel(d.source_class) }}
@@ -380,7 +394,7 @@
                 </TableCell>
               </TableRow>
               <TableRow v-if="!topDomains.length">
-                <TableCell colspan="5" class="pd-table-empty">No citations yet.</TableCell>
+                <TableCell colspan="6" class="pd-table-empty">No citations yet.</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -398,7 +412,7 @@
         <div class="pd-card-head">
           <h3>
             <PieChart :size="14" :stroke-width="2"/>
-            Domain types
+            <span class="pd-th-help" :title="HELP.types_card">Domain types<sup>?</sup></span>
           </h3>
           <span class="pd-card-meta">{{ detail?.total_retrievals || 0 }} retrievals</span>
         </div>
@@ -406,6 +420,19 @@
           <li v-for="t in domainTypes" :key="t.key">
             <span class="pd-type-dot" :class="`is-${(t.key || 'other').toLowerCase()}`"></span>
             <span class="pd-type-name">{{ typeLabel(t.key) }}</span>
+            <span
+              v-if="t.brand_sentiment != null"
+              class="pd-sent pd-type-sent"
+              :title="`${brandLabel} sentiment in answers grounded in ${typeLabel(t.key)} sources: ${sentimentTip(t.brand_sentiment)}`"
+            >
+              <span class="pd-sent-dot" :class="sentimentClass(t.brand_sentiment)"></span>
+              {{ t.brand_sentiment }}
+            </span>
+            <span
+              v-else
+              class="pd-type-sent text-muted"
+              :title="`${brandLabel} was not mentioned in the answers citing ${typeLabel(t.key)} sources`"
+            >—</span>
             <span class="pd-type-pct">{{ t.pct }}%</span>
           </li>
           <li v-if="!domainTypes.length" class="pd-empty-inline" style="padding: 12px">
@@ -1082,6 +1109,16 @@ const HELP = {
     'Type: what kind of site the domain is — UGC (forums, social, reviews), Editorial '
     + '(news, blogs), Corporate (company sites), Reference (wikis, docs), Institutional '
     + '(gov, edu), your own site, or a competitor.',
+  domain_sentiment:
+    'Sentiment: how positively AI talks about your brand in the answers that cite this '
+    + 'domain (positive 85 / neutral 55 / negative 25, averaged). Measured from the AI '
+    + 'answers themselves, not from the domain’s own pages. Blank when the brand was not '
+    + 'mentioned in any answer citing the domain.',
+  types_card:
+    'What kinds of sources AI answers pulled from, by share of citations. The colored '
+    + 'score next to a type is your brand’s sentiment in the answers grounded in that '
+    + 'source type — e.g. whether answers leaning on forums talk about you differently '
+    + 'from answers leaning on news sites.',
 }
 
 const BRAND_COLORS = [
@@ -1566,7 +1603,8 @@ function onFaviconError(ev, d) {
 .pd-types { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .pd-types li {
   display: grid;
-  grid-template-columns: 10px 1fr auto;
+  /* dot | name | (optional brand-sentiment) | share */
+  grid-template-columns: 10px 1fr auto auto;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -1585,6 +1623,8 @@ function onFaviconError(ev, d) {
 .pd-type-dot.is-other { background: #94a3b8; }
 .pd-type-name { color: var(--foreground); }
 .pd-type-pct { font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
+/* Brand-sentiment score on a type row: sits between name and share. */
+.pd-type-sent { font-variant-numeric: tabular-nums; font-size: 0.8rem; }
 
 .pd-loading { padding: 40px 0; text-align: center; color: var(--muted-foreground); }
 
