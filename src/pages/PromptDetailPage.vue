@@ -522,7 +522,9 @@
             <TableHead>Mentions</TableHead>
             <TableHead>Sources</TableHead>
             <TableHead>Location</TableHead>
-            <TableHead class="num">Created</TableHead>
+            <TableHead class="num">
+              <span class="pd-th-help" title="When this model answer was captured — the date and time the prompt was run against the model.">Last ran<sup>?</sup></span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -574,7 +576,13 @@
               </span>
             </TableCell>
             <TableCell>{{ c.country ? flag(c.country) + ' ' + c.country : '—' }}</TableCell>
-            <TableCell class="num">{{ c.created_at ? relativeTime(c.created_at) : '—' }}</TableCell>
+            <TableCell class="num pd-ran-cell">
+              <template v-if="c.created_at">
+                <span class="pd-ran-date" :title="relativeTime(c.created_at)">{{ ranDate(c.created_at) }}</span>
+                <span class="pd-ran-time">{{ ranTime(c.created_at) }}</span>
+              </template>
+              <span v-else class="text-muted">—</span>
+            </TableCell>
           </TableRow>
           <TableRow v-if="!recentChats.length">
             <TableCell colspan="7" style="text-align:center; color: var(--muted-foreground); padding: 28px 0">
@@ -1059,6 +1067,21 @@ function shortDate(v) {
   return Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+// Exact run timestamp for the Recent-chats "Last ran" column: real date
+// and time, not a relative "2d ago" (that moves to the hover tooltip).
+function ranDate(v) {
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return ''
+  const opts = { month: 'short', day: 'numeric' }
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric'
+  return d.toLocaleDateString(undefined, opts)
+}
+function ranTime(v) {
+  const d = new Date(v)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
 }
 function setPeriod(p) {
   if (period.value === p) return
@@ -1784,6 +1807,11 @@ function onFaviconError(ev, d) {
 .pd-type-pill.is-your_site { background: rgba(255,107,53,0.14); color: #c2410c; }
 .pd-type-pill.is-competitor { background: rgba(239,68,68,0.14); color: #b91c1c; }
 .pd-type-pill.is-other { background: var(--muted); color: var(--muted-foreground); }
+
+/* Recent chats "Last ran": exact date over time, relative age on hover. */
+.pd-ran-cell { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pd-ran-date { display: block; font-weight: 500; color: var(--foreground); cursor: help; }
+.pd-ran-time { display: block; font-size: 0.75rem; color: var(--muted-foreground); }
 
 .pd-loading { padding: 40px 0; text-align: center; color: var(--muted-foreground); }
 
