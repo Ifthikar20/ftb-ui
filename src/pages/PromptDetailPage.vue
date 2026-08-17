@@ -14,10 +14,6 @@
     <header class="pd-header">
       <div class="pd-header-top">
         <div>
-          <div class="pd-header-eyebrow">
-            <Sparkles :size="12" :stroke-width="2" />
-            <span>Prompt</span>
-          </div>
           <h1 class="pd-title">{{ promptText || 'Loading…' }}</h1>
         </div>
         <div v-if="detail" class="pd-header-actions">
@@ -660,7 +656,7 @@ import {
 } from 'chart.js'
 import {
   BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Cpu,
-  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Sparkles, Trophy,
+  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
@@ -788,13 +784,16 @@ async function loadThenMaybeScan() {
     return
   }
 
-  // Auto-fill gaps: scan when any configured model still has no answer
-  // for this prompt. The crawler skips models that already answered and
-  // retries a missing one once, so this only queries what's missing and
-  // stops once every configured model has responded. Bounded to once per
-  // mount so it can't loop on a genuinely broken model.
+  // Auto-fill gaps: scan when a configured model has never been TRIED for
+  // this prompt. A model with recorded failed/unavailable attempts is not
+  // retried automatically — a broken key used to make every page visit
+  // fire a doomed (billable) scan forever. Manual "Run scan" still retries
+  // everything.
   const missingConfigured = (d.by_model || []).some(
-    (m) => m.configured && (m.responses || 0) === 0,
+    (m) => m.configured
+      && (m.responses || 0) === 0
+      && (m.failed || 0) === 0
+      && (m.unavailable || 0) === 0,
   )
   if (missingConfigured) {
     autoScanDone.value = true
@@ -992,7 +991,10 @@ const SCAN_PATIENCE_TIP =
   + 'return or refresh.'
 const scanStatusWord = computed(() => {
   if (scanInFlight.value) return 'Starting scan'
-  return detail.value?.latest_scan?.status === 'pending' ? 'Queued to scan' : 'Scanning'
+  if (detail.value?.latest_scan?.status === 'pending') return 'Queued to scan'
+  // First-ever scan = "Learning"; re-scans of a prompt with history =
+  // "Relearning" — the platform is refreshing what it knows.
+  return (detail.value?.runs || []).length ? 'Relearning' : 'Learning'
 })
 const scanElapsedLabel = computed(() => {
   const started = detail.value?.latest_scan?.started_at
@@ -1481,20 +1483,6 @@ function onFaviconError(ev, d) {
 .pd-bc-current { color: var(--foreground); font-weight: 500; }
 
 .pd-header { margin-bottom: 28px; }
-.pd-header-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  background: color-mix(in oklab, var(--primary) 10%, transparent);
-  color: var(--primary);
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-}
 .pd-title {
   margin: 0;
   font-size: 2rem;
