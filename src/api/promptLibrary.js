@@ -23,14 +23,26 @@ export default {
     listBrandPrompts: (websiteId) =>
         api.get(`/prompt-library/websites/${websiteId}/brand-prompts/`),
 
-    promptDetailAgg: (websiteId, promptId) =>
-        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/detail/`),
+    // params: { run?: <audit_id>, period?: '7d'|'30d'|'90d'|'1y'|'all' }
+    // for the time-series Overview (trend + single-run drill-in).
+    promptDetailAgg: (websiteId, promptId, params = {}) =>
+        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/detail/`, { params }),
 
     promptFanouts: (websiteId, promptId) =>
         api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/fanouts/`),
 
     crawlPrompt: (websiteId, promptId) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`),
+
+    // ── Per-prompt run schedule (daily/weekly/monthly) ──
+    getPromptSchedule: (websiteId, promptId) =>
+        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`),
+
+    savePromptSchedule: (websiteId, promptId, payload) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`, payload),
+
+    deletePromptSchedule: (websiteId, promptId) =>
+        api.delete(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`),
 
     reextractPrompt: (websiteId, promptId) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/reextract/`),

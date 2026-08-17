@@ -168,6 +168,7 @@ const routes = [
         redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/search-insights`, query: to.query }),
     },
     protect('/llm-ranking/:websiteId/brand-security', 'brand-security', () => import('@/pages/BrandSecurityPage.vue'), true),
+    protect('/llm-ranking/:websiteId/benchmarks', 'benchmarks', () => import('@/pages/BenchmarksPage.vue'), true),
     protect('/llm-ranking/:websiteId/brand-input', 'brand-input', () => import('@/pages/BrandInputPage.vue'), true),
     // Old brand-vault path redirects so bookmarks keep working.
     {

@@ -41,6 +41,16 @@
           >
             {{ toggleInFlight ? '…' : (detail?.status === 'active' ? 'Disable prompt' : 'Enable prompt') }}
           </button>
+          <button
+            type="button"
+            class="pd-schedule-btn"
+            :class="{ 'is-scheduled': !!schedule }"
+            :title="schedule?.next_run_at ? `Next run ${shortDate(schedule.next_run_at)}` : 'Run this prompt automatically on a cadence'"
+            @click="showSchedule = true"
+          >
+            <CalendarClock :size="14" :stroke-width="2" />
+            {{ schedule ? 'Scheduled' : 'Schedule prompt' }}
+          </button>
         </div>
       </div>
       <div v-if="scanStatusLine" class="pd-scan-status" :class="`is-${scanStatusKind}`">
@@ -50,27 +60,29 @@
       </div>
     </header>
 
+    <PromptScheduleModal
+      v-model="showSchedule"
+      :website-id="websiteId"
+      :prompt-id="promptId"
+      @changed="onScheduleChanged"
+      @run-now="runScan"
+    />
+
     <!-- Metadata strip -->
     <div class="pd-meta-grid">
       <div class="pd-meta">
-        <div class="pd-meta-label"><Clock :size="12" :stroke-width="2"/>Date added</div>
+        <div class="pd-meta-label"><Clock :size="12" :stroke-width="2"/>Prompt created</div>
         <div class="pd-meta-val">{{ relativeTime(detail?.prompt?.created_at) }}</div>
       </div>
       <div class="pd-meta">
-        <div class="pd-meta-label"><Tag :size="12" :stroke-width="2"/>Topic</div>
-        <div class="pd-meta-val">{{ detail?.prompt?.topic || '—' }}</div>
+        <div class="pd-meta-label"><Folder :size="12" :stroke-width="2"/>Group</div>
+        <div class="pd-meta-val">{{ detail?.prompt?.topic || 'Default prompts' }}</div>
       </div>
       <div class="pd-meta">
-        <div class="pd-meta-label"><Activity :size="12" :stroke-width="2"/>Demand</div>
-        <div class="pd-meta-val pd-meta-bars">
-          <span v-for="i in 4" :key="i" class="pd-bar" :class="{ 'is-on': demandLevel >= i }"></span>
-        </div>
-      </div>
-      <div class="pd-meta">
-        <div class="pd-meta-label"><Globe :size="12" :stroke-width="2"/>Location</div>
+        <div class="pd-meta-label"><Globe :size="12" :stroke-width="2"/>Prompt origin</div>
         <div class="pd-meta-val">
-          <template v-if="detail?.prompt?.location">{{ flag(detail.prompt.location) }} {{ detail.prompt.location }}</template>
-          <template v-else>Global</template>
+          <template v-if="detail?.prompt?.location">{{ flag(detail.prompt.location) }} {{ countryName(detail.prompt.location) }}</template>
+          <template v-else>🌐 Global</template>
         </div>
       </div>
       <div class="pd-meta">
@@ -120,6 +132,76 @@
       <p class="pd-section-sub">How often each brand appears in AI-generated discussions of this prompt.</p>
     </section>
 
+    <!-- Trend across runs: one chart, three explicit metrics (visibility /
+         position / sentiment) switched by the toggle, each with its own
+         plain-English explainer so "performance" is never ambiguous. -->
+    <div v-if="detail" class="pd-card pd-trend-card">
+      <div class="pd-card-head pd-trend-head">
+        <div class="pd-trend-title">
+          <h3>
+            <ChartLine :size="14" :stroke-width="2"/>
+            {{ activeMetric.title }}
+          </h3>
+          <p class="pd-trend-explainer">{{ activeMetric.explainer(brandLabel) }}</p>
+        </div>
+        <div class="pd-trend-controls">
+          <div class="pd-metric-pills" role="tablist" aria-label="Metric">
+            <button
+              v-for="(m, key) in TREND_METRICS"
+              :key="key"
+              type="button"
+              class="pd-period-pill"
+              :class="{ 'is-on': trendMetric === key }"
+              :title="m.explainer(brandLabel)"
+              @click="trendMetric = key"
+            >{{ m.label }}</button>
+          </div>
+          <div class="pd-period-pills" role="tablist" aria-label="Time window">
+            <button
+              v-for="p in PERIODS"
+              :key="p.value"
+              type="button"
+              class="pd-period-pill"
+              :class="{ 'is-on': period === p.value }"
+              @click="setPeriod(p.value)"
+            >{{ p.label }}</button>
+          </div>
+          <label v-if="(detail.runs || []).length" class="pd-run-select">
+            <select
+              :value="selectedRun || ''"
+              aria-label="Drill into a single run"
+              @change="setRun($event.target.value || null)"
+            >
+              <option value="">All runs ({{ detail.runs.length }})</option>
+              <option v-for="r in detail.runs" :key="r.run_id" :value="r.run_id">
+                {{ shortDate(r.ran_at) }} · {{ r.visibility_pct }}%
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="pd-chart pd-trend-chart">
+        <Line v-if="runsChartData" :data="runsChartData" :options="runsChartOptions" />
+        <div v-else-if="trendNeedsMoreRuns" class="pd-empty-inline">
+          <ChartLine :size="30" :stroke-width="1.5"/>
+          <p>
+            This prompt needs at least two runs to chart a trend.
+            <button type="button" class="pd-inline-link" @click="showSchedule = true">Schedule it</button>
+            to build history automatically, or run a scan now.
+          </p>
+        </div>
+        <div v-else class="pd-empty-inline">
+          <ChartLine :size="30" :stroke-width="1.5"/>
+          <p>{{ activeMetric.emptyNote(brandLabel) }}</p>
+        </div>
+      </div>
+      <p v-if="selectedRun" class="pd-drill-note">
+        Showing a single run<template v-if="selectedRunLabel"> from {{ selectedRunLabel }}</template>
+        in the breakdown below.
+        <button type="button" class="pd-inline-link" @click="setRun(null)">Show all runs</button>
+      </p>
+    </div>
+
     <div class="pd-grid pd-grid-2">
       <div class="pd-card">
         <div class="pd-card-head">
@@ -128,7 +210,7 @@
             Visibility
           </h3>
           <span class="pd-card-meta">
-            Across {{ detail?.total_responses || 0 }} model responses
+            Across {{ detail?.total_responses || 0 }} model responses<template v-if="selectedRun"> · this run</template>
           </span>
         </div>
         <div class="pd-chart">
@@ -235,122 +317,6 @@
       </div>
     </div>
 
-    <!-- Brand security findings raised from this prompt's own responses -->
-    <section style="margin-top: 28px">
-      <PromptSecurityFindings :website-id="websiteId" :prompt-id="promptId" />
-    </section>
-
-    <!-- Visibility by model -->
-    <section class="pd-overview-head" style="margin-top: 28px">
-      <h2 class="pd-section-title">
-        <BarChart3 :size="16" :stroke-width="2"/>
-        Visibility by model
-      </h2>
-      <p class="pd-section-sub">
-        How often {{ brandLabel }} appears in each model's answers to this prompt.
-        <span v-if="modelCompletion" class="pd-completion" :class="{ 'is-busy': scanStatusKind === 'running' }">
-          · {{ modelCompletion }}
-        </span>
-      </p>
-    </section>
-
-    <div class="pd-card">
-      <div class="pd-bymodel">
-        <div v-for="m in (detail?.by_model || [])" :key="m.provider" class="pd-bymodel-row">
-          <span class="pd-model-dot" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
-          <span class="pd-bymodel-name">{{ m.label }}</span>
-          <span v-if="!m.configured" class="pd-bymodel-na">Not configured</span>
-          <span v-else-if="!m.responses && m.unavailable" class="pd-bymodel-na pd-bymodel-unavail">
-            Service unavailable
-          </span>
-          <span v-else-if="!m.responses && m.failed" class="pd-bymodel-na pd-bymodel-unavail">
-            Couldn't reach model — will retry
-          </span>
-          <span v-else-if="!m.responses && scanStatusKind === 'running'" class="pd-bymodel-na pd-bymodel-scanning">
-            Scanning…
-          </span>
-          <template v-else-if="m.responses">
-            <div class="pd-bymodel-bar"><span :style="{ width: m.visibility_pct + '%' }"></span></div>
-            <span class="pd-bymodel-val">{{ m.visibility_pct }}%</span>
-            <span class="pd-bymodel-done" title="Model answered">✓ answered</span>
-          </template>
-          <span v-else class="pd-bymodel-na pd-bymodel-nodata">No data yet</span>
-        </div>
-        <div v-if="!(detail?.by_model || []).length" class="pd-mute" style="padding: 8px 0">No model data yet.</div>
-      </div>
-
-      <!-- Per-model rank distribution -->
-      <div v-if="modelsWithRanks.length" class="pd-rank-dist">
-        <div class="pd-rank-dist-head">Rank distribution per model</div>
-        <div v-for="m in modelsWithRanks" :key="m.provider" class="pd-rank-row">
-          <span class="pd-rank-row-label">
-            <span class="pd-model-dot pd-model-dot-sm" :style="{ background: modelStyle(m.model).color }">{{ modelStyle(m.model).abbr }}</span>
-            {{ m.label }}
-            <span v-if="m.avg_rank != null" class="pd-mute">· avg #{{ m.avg_rank }}</span>
-          </span>
-          <div class="pd-rank-stack">
-            <span
-              v-for="r in rankBucketOrder"
-              :key="r"
-              class="pd-rank-seg"
-              :class="rankBucketClass(r)"
-              :style="{ flexGrow: m.rank_buckets[r] || 0 }"
-              :title="`Rank ${r}: ${m.rank_buckets[r] || 0}`"
-            >
-              <span v-if="m.rank_buckets[r]">{{ m.rank_buckets[r] }}</span>
-            </span>
-          </div>
-        </div>
-        <div class="pd-rank-legend">
-          <span v-for="r in rankBucketOrder" :key="r" class="pd-rank-legend-item">
-            <span class="pd-rank-legend-dot" :class="rankBucketClass(r)" />
-            Rank {{ r }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fanout queries -->
-    <section v-if="fanouts.length || lastFanoutRun" class="pd-overview-head" style="margin-top: 28px">
-      <h2 class="pd-section-title">
-        <Repeat :size="16" :stroke-width="2"/>
-        Fanout queries
-      </h2>
-      <p class="pd-section-sub">Related sub-queries a search-augmented model would run to research this prompt.</p>
-    </section>
-
-    <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
-      <div v-if="lastFanoutRun" class="pd-fanout-meta">
-        <span class="pd-mute">Last fan-out:</span>
-        <span class="pd-status" :class="`is-${lastFanoutRun.status === 'completed' ? 'active' : 'inactive'}`">
-          <span class="pd-status-dot"></span>
-          {{ lastFanoutRun.status }}
-        </span>
-        <span class="pd-mute">
-          · {{ lastFanoutRun.fanout_count || 0 }} sub-queries
-          · {{ lastFanoutRun.source_count || 0 }} sources
-        </span>
-      </div>
-      <div v-if="fanouts.length" class="pd-fanout-list">
-        <div v-for="f in pagedFanouts" :key="f.id" class="pd-fanout-item">
-          <span class="pd-fanout-num">{{ f._n }}</span>
-          <span class="pd-fanout-text">{{ f.text }}</span>
-        </div>
-      </div>
-      <div v-if="fanoutPageCount > 1" class="pd-pager">
-        <button class="pd-pager-btn" :disabled="fanoutPage === 0" @click="fanoutPage--">‹ Prev</button>
-        <span class="pd-pager-info">
-          {{ fanoutPage * FANOUT_PAGE_SIZE + 1 }}–{{ Math.min((fanoutPage + 1) * FANOUT_PAGE_SIZE, fanouts.length) }}
-          of {{ fanouts.length }}
-        </span>
-        <button class="pd-pager-btn" :disabled="fanoutPage >= fanoutPageCount - 1" @click="fanoutPage++">Next ›</button>
-      </div>
-      <div v-if="!fanouts.length" class="pd-empty-inline" style="padding: 20px 0">
-        <Inbox :size="28" :stroke-width="1.5"/>
-        <p>No fan-out queries captured yet.</p>
-      </div>
-    </div>
-
     <!-- Top Domains + Domain type breakdown -->
     <section class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
@@ -360,7 +326,7 @@
       <p class="pd-section-sub">Domains AI models retrieved when answering this prompt.</p>
     </section>
 
-    <div class="pd-grid pd-grid-2">
+    <div class="pd-grid pd-grid-domains">
       <div class="pd-card">
         <div class="pd-card-head">
           <h3>
@@ -374,32 +340,39 @@
               <TableRow>
                 <TableHead class="num">#</TableHead>
                 <TableHead>Domain</TableHead>
-                <TableHead class="num">Retrieved</TableHead>
-                <TableHead class="num">Citation rate</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead class="num">
+                  <span class="pd-th-help" :title="HELP.citations">Citations<sup>?</sup></span>
+                </TableHead>
+                <TableHead>
+                  <span class="pd-th-help" :title="HELP.cited_in">Cited in<sup>?</sup></span>
+                </TableHead>
+                <TableHead>
+                  <span class="pd-th-help" :title="HELP.domain_type">Type<sup>?</sup></span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow
-                v-for="(d, i) in topDomains"
+                v-for="(d, i) in visibleDomains"
                 :key="d.apex_domain"
                 class="pd-domain-row"
                 :class="{ 'is-clickable': (d.sample_result_ids || []).length }"
+                :title="(d.sample_result_ids || []).length ? 'Click to open a chat that cited this domain' : ''"
                 @click="openCitingChats(d)"
               >
                 <TableCell class="num">{{ i + 1 }}</TableCell>
                 <TableCell>
                   <img :src="faviconFor(d.apex_domain)" :alt="d.domain" class="pd-favicon" @error="onFaviconError($event, d)"/>
                   <a :href="`https://${d.apex_domain}`" target="_blank" rel="noopener" @click.stop>{{ d.apex_domain }}</a>
-                  <span
-                    v-if="(d.sample_result_ids || []).length"
-                    class="pd-domain-cited"
-                  >
-                    · {{ d.sample_result_ids.length }} {{ d.sample_result_ids.length === 1 ? 'chat' : 'chats' }}
-                  </span>
                 </TableCell>
-                <TableCell class="num">{{ d.retrieved_pct }}%</TableCell>
-                <TableCell class="num">{{ d.citation_rate.toFixed(1) }}</TableCell>
+                <TableCell class="num">{{ d.count }}</TableCell>
+                <TableCell>
+                  <template v-if="d.answers_total != null">
+                    {{ d.answers_citing }} of {{ d.answers_total }} answers
+                    <span class="pd-mute">· {{ d.retrieved_pct }}%</span>
+                  </template>
+                  <template v-else>{{ d.retrieved_pct }}%</template>
+                </TableCell>
                 <TableCell>
                   <span class="pd-type-pill" :class="`is-${(d.source_class || 'other').toLowerCase()}`">
                     {{ typeLabel(d.source_class) }}
@@ -411,6 +384,13 @@
               </TableRow>
             </TableBody>
           </Table>
+          <div v-if="topDomains.length > DOMAINS_PREVIEW" class="pd-domains-more">
+            <button type="button" class="pd-inline-link" @click="domainsExpanded = !domainsExpanded">
+              {{ domainsExpanded
+                ? 'Show top 10 only'
+                : `Show all ${topDomains.length} domains` }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -516,6 +496,52 @@
       </Table>
     </div>
 
+    <!-- Fanout queries -->
+    <section v-if="fanouts.length || lastFanoutRun" class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <Repeat :size="16" :stroke-width="2"/>
+        Fanout queries
+      </h2>
+      <p class="pd-section-sub">Related sub-queries a search-augmented model would run to research this prompt.</p>
+    </section>
+
+    <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
+      <div v-if="lastFanoutRun" class="pd-fanout-meta">
+        <span class="pd-mute">Last fan-out:</span>
+        <span class="pd-status" :class="`is-${lastFanoutRun.status === 'completed' ? 'active' : 'inactive'}`">
+          <span class="pd-status-dot"></span>
+          {{ lastFanoutRun.status }}
+        </span>
+        <span class="pd-mute">
+          · {{ lastFanoutRun.fanout_count || 0 }} sub-queries
+          · {{ lastFanoutRun.source_count || 0 }} sources
+        </span>
+      </div>
+      <div v-if="fanouts.length" class="pd-fanout-list">
+        <div v-for="f in pagedFanouts" :key="f.id" class="pd-fanout-item">
+          <span class="pd-fanout-num">{{ f._n }}</span>
+          <span class="pd-fanout-text">{{ f.text }}</span>
+        </div>
+      </div>
+      <div v-if="fanoutPageCount > 1" class="pd-pager">
+        <button class="pd-pager-btn" :disabled="fanoutPage === 0" @click="fanoutPage--">‹ Prev</button>
+        <span class="pd-pager-info">
+          {{ fanoutPage * FANOUT_PAGE_SIZE + 1 }}–{{ Math.min((fanoutPage + 1) * FANOUT_PAGE_SIZE, fanouts.length) }}
+          of {{ fanouts.length }}
+        </span>
+        <button class="pd-pager-btn" :disabled="fanoutPage >= fanoutPageCount - 1" @click="fanoutPage++">Next ›</button>
+      </div>
+      <div v-if="!fanouts.length" class="pd-empty-inline" style="padding: 20px 0">
+        <Inbox :size="28" :stroke-width="1.5"/>
+        <p>No fan-out queries captured yet.</p>
+      </div>
+    </div>
+
+    <!-- Brand security findings raised from this prompt's own responses (moved to bottom) -->
+    <section style="margin-top: 28px">
+      <PromptSecurityFindings :website-id="websiteId" :prompt-id="promptId" />
+    </section>
+
     <div v-if="loading && !detail" class="pd-loading">Loading prompt analytics…</div>
     <div v-if="error" class="pd-error">{{ error }}</div>
 
@@ -535,18 +561,19 @@
 <script setup>
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bar } from 'vue-chartjs'
+import { Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
-  CategoryScale, LinearScale, BarElement, Tooltip, Legend,
+  CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend,
 } from 'chart.js'
 import {
-  Activity, BarChart3, ChartLine, ChevronLeft, CircleDot, Clock,
-  Globe, Inbox, Link2, MessageSquare, PieChart, Repeat, Sparkles, Tag, Trophy,
+  BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Folder,
+  Globe, Inbox, Link2, MessageSquare, PieChart, Repeat, Sparkles, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
+import PromptScheduleModal from '@/components/prompt_library/PromptScheduleModal.vue'
 import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BrandLogo from '@/components/BrandLogo.vue'
@@ -575,8 +602,18 @@ function flag(code) {
   if (!code || code.length !== 2) return '🌐'
   return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)))
 }
+// Full country name from an ISO-2 code (e.g. "LK" -> "Sri Lanka").
+function countryName(code) {
+  if (!code) return ''
+  if (code.length !== 2) return code
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code.toUpperCase()) || code
+  } catch (_) {
+    return code
+  }
+}
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend)
 
 const route = useRoute()
 // Read fresh from the route each access: Vue Router reuses this component
@@ -589,11 +626,24 @@ const detail = ref(null)
 const loading = ref(true)
 const error = ref('')
 
+/* ── Time-series Overview controls ── */
+const PERIODS = [
+  { value: 'all', label: 'All' },
+  { value: '7d', label: '7d' },
+  { value: '30d', label: '30d' },
+  { value: '90d', label: '90d' },
+]
+const period = ref('all')          // window applied to the trend + breakdown
+const selectedRun = ref(null)      // audit_id when drilled into a single run
+
 async function load() {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await promptLibrary.promptDetailAgg(websiteId, promptId)
+    const params = {}
+    if (period.value && period.value !== 'all') params.period = period.value
+    if (selectedRun.value) params.run = selectedRun.value
+    const { data } = await promptLibrary.promptDetailAgg(websiteId, promptId, params)
     detail.value = data?.data || data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Could not load prompt analytics.'
@@ -700,30 +750,6 @@ async function loadFanouts() {
 const promptTags = computed(() => {
   const raw = detail.value?.prompt?.tags || []
   return Array.isArray(raw) ? raw.filter(Boolean) : []
-})
-
-/* ── Rank distribution view-model ── */
-const rankBucketOrder = ['1', '2-3', '4-10', '11+']
-const rankBucketClassMap = { '1': 'is-1', '2-3': 'is-2-3', '4-10': 'is-4-10', '11+': 'is-11plus' }
-function rankBucketClass(r) { return rankBucketClassMap[r] || 'is-other' }
-const modelsWithRanks = computed(() => {
-  return (detail.value?.by_model || []).filter((m) => {
-    if (!m.rank_buckets) return false
-    return rankBucketOrder.some((r) => (m.rank_buckets[r] || 0) > 0)
-  })
-})
-
-// Completion summary for the Visibility-by-model section: how many of the
-// configured models have actually answered this prompt. Makes "0%"
-// unambiguous (answered, not mentioned) vs. work still in progress.
-const modelCompletion = computed(() => {
-  const models = (detail.value?.by_model || []).filter((m) => m.configured)
-  if (!models.length) return ''
-  const answered = models.filter((m) => (m.responses || 0) > 0).length
-  if (scanStatusKind.value === 'running') {
-    return `Scanning… ${answered}/${models.length} models answered`
-  }
-  return `${answered}/${models.length} models answered`
 })
 
 /* ── Domain drill-through ── */
@@ -891,7 +917,43 @@ function relativeTime(iso) {
   return `${d}d ago`
 }
 
-onMounted(loadThenMaybeScan)
+/* ── Per-prompt schedule ── */
+const showSchedule = ref(false)
+const schedule = ref(null)
+async function loadSchedule() {
+  try {
+    const { data } = await promptLibrary.getPromptSchedule(websiteId, promptId)
+    schedule.value = data?.data?.schedule ?? data?.schedule ?? null
+  } catch {
+    schedule.value = null
+  }
+}
+function onScheduleChanged(s) { schedule.value = s }
+
+/* ── Trend period window + single-run drill-in ── */
+function shortDate(v) {
+  if (!v) return ''
+  const d = new Date(v)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+function setPeriod(p) {
+  if (period.value === p) return
+  period.value = p
+  selectedRun.value = null   // a new window invalidates any drill-in
+  load()
+}
+function setRun(runId) {
+  selectedRun.value = runId || null
+  load()
+}
+const selectedRunLabel = computed(() => {
+  const r = (detail.value?.runs || []).find((x) => x.run_id === selectedRun.value)
+  return r ? shortDate(r.ran_at) : ''
+})
+
+onMounted(() => { loadThenMaybeScan(); loadSchedule() })
 onBeforeUnmount(() => {
   stopScanPoll()
   stopElapsedTimer()
@@ -917,9 +979,14 @@ watch(() => route.params.promptId, (newId, oldId) => {
   scanQueued.value = false
   chatOpen.value = false
   chatIndex.value = 0
+  // Reset the time-series controls + schedule so nothing leaks across prompts.
+  period.value = 'all'
+  selectedRun.value = null
+  schedule.value = null
   stopScanPoll()
   stopElapsedTimer()
   loadThenMaybeScan()
+  loadSchedule()
 })
 
 const promptText = computed(() => detail.value?.prompt?.text || '')
@@ -937,14 +1004,6 @@ const appStore = useAppStore()
 watch(promptTextShort, t => appStore.setBreadcrumbTail(t), { immediate: true })
 onDeactivated(() => appStore.setBreadcrumbTail(''))
 onActivated(() => appStore.setBreadcrumbTail(promptTextShort.value))
-const demandLevel = computed(() => {
-  const score = Number(detail.value?.prompt?.demand_score) || 0
-  if (score >= 0.75) return 4
-  if (score >= 0.5)  return 3
-  if (score >= 0.25) return 2
-  if (score > 0)     return 1
-  return 0
-})
 
 const topBrands = computed(() => (detail.value?.brands || []).slice(0, 7))
 const succeededResponses = computed(() => {
@@ -956,6 +1015,13 @@ const succeededResponses = computed(() => {
 })
 const topDomains = computed(() => detail.value?.top_domains || [])
 const domainTypes = computed(() => detail.value?.domain_types || [])
+
+// The domain list can run to 25 rows and dominate the page — show the top
+// 10 and let the user expand the rest on demand.
+const DOMAINS_PREVIEW = 10
+const domainsExpanded = ref(false)
+const visibleDomains = computed(() =>
+  domainsExpanded.value ? topDomains.value : topDomains.value.slice(0, DOMAINS_PREVIEW))
 
 const TYPE_LABELS = {
   your_site: 'Your site',
@@ -1005,6 +1071,17 @@ const HELP = {
   position:
     'Position: the brand’s average rank when it appears in a model’s ranked list '
     + '(#1 = listed first). Lower is better. Blank when no model ranked it in a list.',
+  citations:
+    'Citations: the total number of times AI answers linked to a page on this domain '
+    + 'for this prompt. One answer can cite the same domain several times.',
+  cited_in:
+    'Cited in: how many of the captured model answers referenced this domain at least '
+    + 'once. "1 of 3 answers · 33%" = one in three AI answers pulled information from it. '
+    + 'Failed model calls are excluded.',
+  domain_type:
+    'Type: what kind of site the domain is — UGC (forums, social, reviews), Editorial '
+    + '(news, blogs), Corporate (company sites), Reference (wikis, docs), Institutional '
+    + '(gov, edu), your own site, or a competitor.',
 }
 
 const BRAND_COLORS = [
@@ -1036,6 +1113,131 @@ const chartOptions = {
     x: { grid: { display: false } },
   },
 }
+
+/* ── Trend across runs (Line): one point per run this prompt appeared in.
+ * Three explicit metrics behind a toggle, so "performance" is never vague:
+ *   visibility — likelihood of being mentioned (share of answers naming you)
+ *   position   — rank when mentioned (#1 best, axis reversed so up = better)
+ *   sentiment  — tone when mentioned (85 positive / 55 neutral / 25 negative)
+ * All three series ship in detail.runs; switching metrics is client-only. */
+const trendMetric = ref('visibility')
+const TREND_METRICS = {
+  visibility: {
+    label: 'Visibility',
+    title: 'Visibility over time',
+    color: '#6366f1',
+    colorActive: '#4338ca',
+    fillColor: 'rgba(99,102,241,0.12)',
+    accessor: (r) => r.visibility_pct,
+    format: (v) => `${v}% of AI answers mentioned`,
+    explainer: (brand) =>
+      `How likely AI is to mention ${brand}: the share of model answers in each `
+      + 'run that name it. Higher is better.',
+    emptyNote: () => 'No visibility data for these runs yet.',
+    yScale: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+  },
+  position: {
+    label: 'Position',
+    title: 'Ranking position over time',
+    color: '#f59e0b',
+    colorActive: '#b45309',
+    fillColor: 'rgba(245,158,11,0.10)',
+    accessor: (r) => r.avg_position,
+    format: (v) => `average position #${v} when mentioned`,
+    explainer: (brand) =>
+      `Where ${brand} ranks in AI answers when it IS mentioned (#1 = listed `
+      + 'first). Lower is better, so up on this chart means improving.',
+    emptyNote: (brand) =>
+      `${brand} hasn't been ranked in these runs yet — position appears once `
+      + 'models mention it in a ranked list.',
+    // Reversed so #1 sits at the top: visually climbing = improving rank.
+    yScale: { reverse: true, min: 1, suggestedMax: 5, ticks: { stepSize: 1, callback: (v) => '#' + v }, grid: { color: 'rgba(0,0,0,0.05)' } },
+  },
+  sentiment: {
+    label: 'Sentiment',
+    title: 'Sentiment over time',
+    color: '#10b981',
+    colorActive: '#047857',
+    fillColor: 'rgba(16,185,129,0.10)',
+    accessor: (r) => r.sentiment_score,
+    format: (v) => `sentiment ${v}/100 (${v >= 70 ? 'positive' : v >= 50 ? 'neutral' : 'negative'})`,
+    explainer: (brand) =>
+      `How positively AI talks about ${brand} when it appears: each mention `
+      + 'scores positive 85, neutral 55 or negative 25, averaged per run. Higher is better.',
+    emptyNote: (brand) =>
+      `No sentiment yet — it's measured from runs where models mention ${brand}.`,
+    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+  },
+}
+const activeMetric = computed(() => TREND_METRICS[trendMetric.value])
+// brandLabel already exists above (used by Recent chats) — reused here.
+const trendNeedsMoreRuns = computed(() => (detail.value?.runs || []).length < 2)
+
+const runsChartData = computed(() => {
+  const runs = detail.value?.runs || []
+  if (runs.length < 2) return null   // a trend needs at least two points
+  const m = activeMetric.value
+  const data = runs.map((r) => m.accessor(r))
+  // Position/sentiment only exist for runs where the brand was mentioned;
+  // an all-null series renders as the metric-specific empty note instead.
+  if (!data.some((v) => v != null)) return null
+  return {
+    labels: runs.map((r) => shortDate(r.ran_at)),
+    datasets: [{
+      label: m.label,
+      data,
+      borderColor: m.color,
+      backgroundColor: m.fillColor,
+      fill: trendMetric.value !== 'position',
+      spanGaps: true,          // bridge runs with no value (not mentioned)
+      tension: 0.3,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: runs.map((r) =>
+        (selectedRun.value && r.run_id === selectedRun.value) ? m.colorActive : m.color),
+    }],
+  }
+})
+const runsChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  // Click a point to drill the breakdown below into that single run.
+  onClick: (_evt, els) => {
+    if (els && els.length) {
+      const r = (detail.value?.runs || [])[els[0].index]
+      if (r) setRun(r.run_id)
+    }
+  },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        // Lead with the active metric, then the other two for context, plus
+        // how many answers the run had — every point self-explains.
+        label: (ctx) => {
+          const r = (detail.value?.runs || [])[ctx.dataIndex] || {}
+          const m = activeMetric.value
+          const parts = [m.format(ctx.parsed.y)]
+          if (trendMetric.value !== 'visibility' && r.visibility_pct != null) {
+            parts.push(`visibility ${r.visibility_pct}%`)
+          }
+          if (trendMetric.value !== 'position' && r.avg_position != null) {
+            parts.push(`avg position #${r.avg_position}`)
+          }
+          if (trendMetric.value !== 'sentiment' && r.sentiment_score != null) {
+            parts.push(`sentiment ${r.sentiment_score}`)
+          }
+          if (r.answers != null) parts.push(`${r.answers} model answers in this run`)
+          return parts
+        },
+      },
+    },
+  },
+  scales: {
+    y: activeMetric.value.yScale,
+    x: { grid: { display: false } },
+  },
+}))
 
 function faviconFor(domain) {
   if (!domain) return ''
@@ -1158,6 +1360,9 @@ function onFaviconError(ev, d) {
 .pd-grid { display: grid; gap: 18px; }
 .pd-grid-2 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
 @media (max-width: 960px) { .pd-grid-2 { grid-template-columns: 1fr; } }
+/* Top domains gets the width; Domain types is a compact side card. */
+.pd-grid-domains { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); }
+@media (max-width: 960px) { .pd-grid-domains { grid-template-columns: 1fr; } }
 
 .pd-card {
   background: var(--card);
@@ -1210,6 +1415,56 @@ function onFaviconError(ev, d) {
 }
 .pd-empty-inline svg { color: var(--muted-foreground); opacity: 0.55; }
 .pd-empty-inline p { margin: 0; }
+
+/* Schedule button (header actions) */
+.pd-schedule-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--card); font: inherit; font-size: 0.82rem; font-weight: 600;
+  color: var(--foreground); cursor: pointer;
+}
+.pd-schedule-btn:hover { background: var(--muted); }
+.pd-schedule-btn svg { color: var(--muted-foreground); }
+.pd-schedule-btn.is-scheduled { border-color: var(--foreground); }
+.pd-schedule-btn.is-scheduled svg { color: var(--foreground); }
+
+/* Trend-over-time card (visibility / position / sentiment toggle) */
+.pd-trend-card { margin-bottom: 18px; }
+.pd-trend-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pd-trend-title { min-width: 0; max-width: 520px; }
+.pd-trend-explainer {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.pd-trend-controls { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* Metric pills share the period-pill look but sit in their own bordered
+   group so "what am I measuring" reads separately from "over what window". */
+.pd-metric-pills {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 9px;
+}
+.pd-period-pills { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border-radius: 9px; }
+.pd-period-pill {
+  appearance: none; border: none; background: transparent; padding: 4px 12px;
+  border-radius: 7px; font: inherit; font-size: 0.78rem; font-weight: 600;
+  color: var(--muted-foreground); cursor: pointer;
+}
+.pd-period-pill.is-on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
+.pd-run-select select {
+  appearance: none; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--card); padding: 6px 10px; font: inherit; font-size: 0.8rem;
+  color: var(--foreground); cursor: pointer; max-width: 240px;
+}
+.pd-trend-chart { height: 240px; }
+.pd-drill-note { margin: 10px 2px 0; font-size: 0.82rem; color: var(--muted-foreground); }
+.pd-inline-link {
+  appearance: none; border: none; background: none; padding: 0; font: inherit;
+  color: var(--foreground); font-weight: 600; text-decoration: underline;
+  text-underline-offset: 2px; cursor: pointer;
+}
+.pd-inline-link:hover { opacity: 0.8; }
 
 .pd-table-wrap { overflow-x: auto; }
 .pd-table {
@@ -1562,10 +1817,11 @@ function onFaviconError(ev, d) {
 /* Domain drill-through */
 .pd-domain-row.is-clickable { cursor: pointer; }
 .pd-domain-row.is-clickable:hover { background: var(--muted); }
-.pd-domain-cited {
-  margin-left: 6px;
-  font-size: 0.72rem;
-  color: var(--muted-foreground);
+.pd-domains-more {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.82rem;
 }
 
 .pd-fanout-list { display: flex; flex-direction: column; gap: 2px; }

@@ -4,15 +4,33 @@
       <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
           <SidebarMenu>
+            <!-- FetchBot brand mark. Placed in the sidebar header (not the page)
+                 so it collapses to the logo icon when the sidebar is collapsed
+                 and shows the wordmark when expanded. Links home. -->
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child size="lg" tooltip="FetchBot">
+                <router-link to="/dashboard">
+                  <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                  </div>
+                  <div class="grid flex-1 text-left text-sm leading-tight">
+                    <span class="truncate font-semibold">FetchBot</span>
+                    <span class="truncate text-xs text-muted-foreground">AI visibility</span>
+                  </div>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <!-- Project switcher. Uses the project's initial as its avatar so it
+                 reads as the current project, distinct from the brand above. -->
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                      <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                  <SidebarMenuButton :tooltip="appStore.activeWebsite?.name || 'Select project'" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <div class="flex aspect-square size-6 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-[0.7rem] font-semibold text-sidebar-foreground">
+                      {{ (appStore.activeWebsite?.name || 'P').charAt(0).toUpperCase() }}
                     </div>
-                    <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{ appStore.activeWebsite?.name || 'FetchBot' }}</span>
+                    <div class="grid flex-1 text-left leading-tight">
+                      <span class="truncate text-sm">{{ appStore.activeWebsite?.name || 'Select project' }}</span>
                       <span class="truncate text-xs text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
                     </div>
                     <ChevronsUpDown class="ml-auto size-4" />
@@ -115,7 +133,9 @@
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem class="hidden md:block">
-                  <BreadcrumbLink as="router-link" to="/dashboard">FetchBot</BreadcrumbLink>
+                  <BreadcrumbLink as="router-link" to="/dashboard" aria-label="Home" class="flex items-center">
+                    <Home class="size-4" />
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <template v-for="(crumb, i) in breadcrumbs" :key="i">
                   <BreadcrumbSeparator class="hidden md:block" />
@@ -279,7 +299,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
-  Search, Plus, LogOut, ChevronsUpDown,
+  Search, Plus, LogOut, ChevronsUpDown, Home,
   LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
   ShieldCheck, FileText, Plug, CreditCard, Settings, Bot,
 } from '@lucide/vue'
@@ -442,6 +462,7 @@ const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${webs
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
 const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
+const benchmarksRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/benchmarks` : '/websites')
 
 const navMain = computed(() => [
   {
@@ -465,6 +486,7 @@ const navMain = computed(() => [
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
+          { title: 'Benchmarks', to: benchmarksRoute.value, match: '/benchmarks' },
         ],
       },
       { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
