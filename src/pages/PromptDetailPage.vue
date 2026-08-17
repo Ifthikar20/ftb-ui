@@ -452,33 +452,54 @@
         <div class="pd-card-head">
           <h3>
             <PieChart :size="14" :stroke-width="2"/>
-            <span class="pd-th-help" :title="HELP.types_card">Domain types<sup>?</sup></span>
+            <span class="pd-th-help" :title="HELP.tone_card">Source tone<sup>?</sup></span>
           </h3>
-          <span class="pd-card-meta">{{ detail?.total_retrievals || 0 }} retrievals</span>
+          <span v-if="toneCounts.scanned" class="pd-card-meta">
+            {{ toneCounts.scanned }} of {{ topDomains.length }} sources scored
+          </span>
         </div>
-        <ul class="pd-types">
-          <li v-for="t in domainTypes" :key="t.key">
-            <span class="pd-type-dot" :class="`is-${(t.key || 'other').toLowerCase()}`"></span>
-            <span class="pd-type-name">{{ typeLabel(t.key) }}</span>
-            <span
-              v-if="t.brand_sentiment != null"
-              class="pd-sent pd-type-sent"
-              :title="`${brandLabel} sentiment in answers grounded in ${typeLabel(t.key)} sources: ${sentimentTip(t.brand_sentiment)}`"
-            >
-              <span class="pd-sent-dot" :class="sentimentClass(t.brand_sentiment)"></span>
-              {{ t.brand_sentiment }}
-            </span>
-            <span
-              v-else
-              class="pd-type-sent text-muted"
-              :title="`${brandLabel} was not mentioned in the answers citing ${typeLabel(t.key)} sources`"
-            >—</span>
-            <span class="pd-type-pct">{{ t.pct }}%</span>
+
+        <!-- Split bar: how the scored sources lean overall. -->
+        <div v-if="toneCounts.scanned" class="pd-tone-bar" aria-hidden="true">
+          <span class="pd-tone-seg is-pos" :style="{ flexGrow: toneCounts.positive }"></span>
+          <span class="pd-tone-seg is-neu" :style="{ flexGrow: toneCounts.neutral }"></span>
+          <span class="pd-tone-seg is-neg" :style="{ flexGrow: toneCounts.negative }"></span>
+        </div>
+        <div v-if="toneCounts.scanned" class="pd-tone-legend">
+          <span class="pd-tone-leg"><span class="pd-sent-dot is-pos"></span>{{ toneCounts.positive }} positive</span>
+          <span class="pd-tone-leg"><span class="pd-sent-dot is-neu"></span>{{ toneCounts.neutral }} neutral</span>
+          <span class="pd-tone-leg"><span class="pd-sent-dot is-neg"></span>{{ toneCounts.negative }} negative</span>
+        </div>
+
+        <ul v-if="toneCounts.scanned" class="pd-types pd-tone-list">
+          <li
+            v-for="d in tonedDomains"
+            :key="d.apex_domain"
+            :title="`Overall tone of the page AI cited on ${d.apex_domain} — averaged across every brand and product it discusses, not just ${brandLabel}.`"
+          >
+            <span class="pd-sent-dot" :class="sentimentClass(d.page_tone)"></span>
+            <a
+              class="pd-tone-domain"
+              :class="sentimentClass(d.page_tone)"
+              :href="`https://${d.apex_domain}`"
+              target="_blank"
+              rel="noopener"
+            >{{ d.apex_domain }}</a>
+            <span class="pd-type-pct">{{ d.page_tone }}</span>
           </li>
-          <li v-if="!domainTypes.length" class="pd-empty-inline" style="padding: 12px">
-            No retrievals yet.
+          <li v-if="toneCounts.unscanned" class="pd-tone-more">
+            + {{ toneCounts.unscanned }} cited {{ toneCounts.unscanned === 1 ? 'source' : 'sources' }} not scanned yet
           </li>
         </ul>
+
+        <div v-else class="pd-empty-inline" style="padding: 20px 12px">
+          <PieChart :size="26" :stroke-width="1.5"/>
+          <p>
+            Score the tone of every cited page — positive, neutral or
+            negative content — with
+            <button type="button" class="pd-inline-link" :disabled="pageScanRunning" @click="scanSources">Scan cited sources</button>.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -1091,7 +1112,24 @@ const succeededResponses = computed(() => {
   return (detail.value?.by_model || []).reduce((n, m) => n + (m.responses || 0), 0)
 })
 const topDomains = computed(() => detail.value?.top_domains || [])
-const domainTypes = computed(() => detail.value?.domain_types || [])
+
+/* ── Source tone: overall sentiment of each cited page (all brands it
+ * discusses, not just ours), from the page scan. Negative pages first —
+ * AI citing negative-toned content is what needs attention. ── */
+const tonedDomains = computed(() =>
+  topDomains.value
+    .filter((d) => d.page_tone != null)
+    .sort((a, b) => a.page_tone - b.page_tone))
+const toneCounts = computed(() => {
+  const scored = tonedDomains.value
+  return {
+    scanned: scored.length,
+    positive: scored.filter((d) => d.page_tone >= 70).length,
+    neutral: scored.filter((d) => d.page_tone >= 50 && d.page_tone < 70).length,
+    negative: scored.filter((d) => d.page_tone < 50).length,
+    unscanned: topDomains.value.length - scored.length,
+  }
+})
 
 // The domain list can run to 25 rows and dominate the page — show the top
 // 10 and let the user expand the rest on demand.
@@ -1220,11 +1258,11 @@ const HELP = {
     + 'the page and analyzing its content (0–100; higher is better). Produced by "Scan '
     + 'cited sources" — it runs only when you click, because it uses AI credits. Blank '
     + 'with a dash when the page was analyzed but never mentions your brand.',
-  types_card:
-    'What kinds of sources AI answers pulled from, by share of citations. The colored '
-    + 'score next to a type is your brand’s sentiment in the answers grounded in that '
-    + 'source type — e.g. whether answers leaning on forums talk about you differently '
-    + 'from answers leaning on news sites.',
+  tone_card:
+    'Source tone: the overall sentiment of each page AI cited for this prompt — averaged '
+    + 'across every brand and product the page discusses, not just yours. Green = the '
+    + 'cited content is positive-toned, red = negative. Scored by "Scan cited sources"; '
+    + 'unscanned pages are listed as pending.',
 }
 
 const BRAND_COLORS = [
@@ -1718,19 +1756,31 @@ function onFaviconError(ev, d) {
   font-size: 0.88rem;
 }
 .pd-types li:last-child { border-bottom: none; }
-.pd-type-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted-foreground); }
-.pd-type-dot.is-corporate { background: #f59e0b; }
-.pd-type-dot.is-ugc { background: #6366f1; }
-.pd-type-dot.is-reference { background: #8b5cf6; }
-.pd-type-dot.is-editorial { background: #10b981; }
-.pd-type-dot.is-institutional { background: #06b6d4; }
-.pd-type-dot.is-your_site { background: #ff6b35; }
-.pd-type-dot.is-competitor { background: #ef4444; }
-.pd-type-dot.is-other { background: #94a3b8; }
-.pd-type-name { color: var(--foreground); }
 .pd-type-pct { font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
-/* Brand-sentiment score on a type row: sits between name and share. */
-.pd-type-sent { font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+
+/* Source-tone card: color-coded overall sentiment of each cited page. */
+.pd-tone-bar {
+  display: flex; height: 8px; margin: 2px 12px 8px;
+  border-radius: 999px; overflow: hidden; background: var(--muted);
+}
+.pd-tone-seg { flex-basis: 0; }
+.pd-tone-seg.is-pos { background: #10b981; }
+.pd-tone-seg.is-neu { background: #9ca3af; }
+.pd-tone-seg.is-neg { background: #ef4444; }
+.pd-tone-legend {
+  display: flex; flex-wrap: wrap; gap: 12px; margin: 0 12px 6px;
+  font-size: 0.75rem; color: var(--muted-foreground);
+}
+.pd-tone-leg { display: inline-flex; align-items: center; gap: 5px; }
+.pd-tone-list li { grid-template-columns: 10px 1fr auto; }
+.pd-tone-domain { color: var(--foreground); text-decoration: none; }
+.pd-tone-domain:hover { text-decoration: underline; text-underline-offset: 2px; }
+.pd-tone-domain.is-pos { color: #047857; }
+.pd-tone-domain.is-neg { color: #b91c1c; }
+.pd-tone-more {
+  font-size: 0.78rem; color: var(--muted-foreground);
+  display: block !important; padding: 10px 12px;
+}
 
 .pd-loading { padding: 40px 0; text-align: center; color: var(--muted-foreground); }
 
