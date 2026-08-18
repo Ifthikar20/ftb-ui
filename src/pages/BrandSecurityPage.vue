@@ -132,6 +132,18 @@ async function loadBrandSourceStats() {
 
 const isFirstVisit = computed(() => brandSourcesTotal.value === 0)
 
+// Terms highlighted in finding snapshots: the configured brand terms plus
+// the website's own name, so brand mentions light up even before any
+// monitoring terms have been added.
+const highlightBrandTerms = computed(() => {
+  const terms = [...(config.value.brand_terms || [])]
+  const name = appStore.activeWebsite?.name
+  if (name && !terms.some((t) => t.toLowerCase() === name.toLowerCase())) {
+    terms.push(name)
+  }
+  return terms
+})
+
 // ── Filters ─────────────────────────────────────────────────────────────
 
 function setFilter(key, value) {
@@ -261,6 +273,8 @@ async function dismissAlert(alert) {
         <AlertsTable
           :alerts="alerts"
           :loading="loadingAlerts"
+          :brand-terms="highlightBrandTerms"
+          :negative-keywords="config.negative_keywords || []"
           @resolve="resolveAlert"
           @dismiss="dismissAlert"
         />
