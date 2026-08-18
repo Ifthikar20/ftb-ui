@@ -3,76 +3,87 @@
 /* shadcn-vue dark mode is driven by the app's existing data-theme toggle */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* shadcn-vue design tokens, mapped to the FetchBot brand palette */
+/* shadcn-vue design tokens, mapped to the FetchBot brand palette.
+   Design language: warm off-white surfaces, near-black ink, a single
+   purple accent used sparingly. Dark pill buttons, hairline borders,
+   almost no shadows. */
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
+  --foreground: #1a1a18;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1a1a18;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #1e293b;
+  --popover-foreground: #1a1a18;
+  --primary: #1e1e1e;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
-  --muted: #f5f6f8;
-  --muted-foreground: #64748b;
-  --accent: #eef2ff;
-  --accent-foreground: #1e293b;
-  --destructive: #ef4444;
+  --secondary: #f4f4f2;
+  --secondary-foreground: #1e1e1e;
+  --muted: #f4f4f2;
+  --muted-foreground: #6b6b66;
+  --accent: #f2edfc;
+  --accent-foreground: #3d1f8f;
+  --destructive: #c2483d;
   --destructive-foreground: #ffffff;
-  --border: rgba(15, 23, 42, 0.08);
-  --input: rgba(15, 23, 42, 0.12);
-  --ring: #2f6bed;
-  --chart-1: #2f6bed;
-  --chart-2: #22c55e;
-  --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
+  --border: rgba(20, 20, 18, 0.08);
+  --input: rgba(20, 20, 18, 0.14);
+  --ring: #7232e0;
+  --chart-1: #7232e0;
+  --chart-2: #1e1e1e;
+  --chart-3: #a5a5a0;
+  --chart-4: #3f8f5f;
+  --chart-5: #b07d28;
   --radius: 0.625rem;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #1e293b;
+  --sidebar: #f7f7f5;
+  --sidebar-foreground: #1a1a18;
+  --sidebar-primary: #1e1e1e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef2ff;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: rgba(15, 23, 42, 0.08);
-  --sidebar-ring: #2f6bed;
+  --sidebar-accent: #ecece9;
+  --sidebar-accent-foreground: #1a1a18;
+  --sidebar-border: rgba(20, 20, 18, 0.08);
+  --sidebar-ring: #7232e0;
+  /* Brand Security severity scale — the single source for every severity
+     badge, dot, tile and evidence mark. */
+  --severity-high: #c2483d;
+  --severity-medium: #b07d28;
+  --severity-low: #6b6b66;
 }
 
 [data-theme="dark"] {
-  --background: #1e2132;
-  --foreground: #e2e8f0;
-  --card: #1e2132;
-  --card-foreground: #e2e8f0;
-  --popover: #1e2132;
-  --popover-foreground: #e2e8f0;
-  --primary: #e2e8f0;
-  --primary-foreground: #0f1117;
-  --secondary: #252840;
-  --secondary-foreground: #e2e8f0;
-  --muted: #1a1d2b;
-  --muted-foreground: #94a3b8;
-  --accent: #252840;
-  --accent-foreground: #e2e8f0;
-  --destructive: #f87171;
-  --destructive-foreground: #0f1117;
-  --border: rgba(255, 255, 255, 0.08);
+  --background: #191918;
+  --foreground: #ebebe8;
+  --card: #1f1f1e;
+  --card-foreground: #ebebe8;
+  --popover: #1f1f1e;
+  --popover-foreground: #ebebe8;
+  --primary: #ebebe8;
+  --primary-foreground: #161615;
+  --secondary: #292927;
+  --secondary-foreground: #ebebe8;
+  --muted: #242422;
+  --muted-foreground: #9c9c96;
+  --accent: #2b2438;
+  --accent-foreground: #cdb8f5;
+  --destructive: #d9776d;
+  --destructive-foreground: #161615;
+  --border: rgba(255, 255, 255, 0.09);
   --input: rgba(255, 255, 255, 0.14);
-  --ring: #6b9eff;
-  --chart-1: #6b9eff;
-  --chart-2: #4ade80;
-  --chart-3: #fbbf24;
-  --chart-4: #a78bfa;
-  --chart-5: #f87171;
-  --sidebar: #181b29;
-  --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #6b9eff;
-  --sidebar-primary-foreground: #0f1117;
-  --sidebar-accent: #252840;
-  --sidebar-accent-foreground: #e2e8f0;
+  --ring: #9d7bea;
+  --chart-1: #9d7bea;
+  --chart-2: #ebebe8;
+  --chart-3: #6b6b66;
+  --chart-4: #6fb98d;
+  --chart-5: #d0a656;
+  --sidebar: #161615;
+  --sidebar-foreground: #ebebe8;
+  --sidebar-primary: #9d7bea;
+  --sidebar-primary-foreground: #161615;
+  --sidebar-accent: #262624;
+  --sidebar-accent-foreground: #ebebe8;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #6b9eff;
+  --sidebar-ring: #9d7bea;
+  --severity-high: #d9776d;
+  --severity-medium: #d0a656;
+  --severity-low: #9c9c96;
 }
 
 @theme inline {
@@ -108,6 +119,9 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-severity-high: var(--severity-high);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-low: var(--severity-low);
 }
 
 /*
@@ -117,16 +131,16 @@
  */
 @theme {
   /* Brand Colors */
-  --color-brand-primary: #1e293b;
-  --color-brand-accent: #5B8DEF;
-  --color-brand-accent-hover: #4A7DE0;
-  --color-brand-highlight: #93b4f5;
+  --color-brand-primary: #1e1e1e;
+  --color-brand-accent: #7232e0;
+  --color-brand-accent-hover: #5f24c4;
+  --color-brand-highlight: #cdb8f5;
 
   /* Status Colors */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: #3f8f5f;
+  --color-warning: #b07d28;
+  --color-danger: #c2483d;
+  --color-info: #7232e0;
 
   /* Radii */
   --radius-sm: 8px;
@@ -135,14 +149,14 @@
   --radius-xl: 24px;
   --radius-2xl: 28px;
 
-  /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-  --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.07);
-  --shadow-elevated: 0 12px 40px rgba(0,0,0,0.08);
+  /* Shadows — hairline borders do the work; shadows barely whisper */
+  --shadow-card: 0 1px 2px rgba(20, 20, 18, 0.04);
+  --shadow-card-hover: 0 2px 8px rgba(20, 20, 18, 0.06);
+  --shadow-elevated: 0 12px 32px rgba(20, 20, 18, 0.10);
 
   /* Fonts */
-  --font-family-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-family-display: 'DM Serif Display', Georgia, serif;
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Spacing scale extras */
   --spacing-18: 4.5rem;

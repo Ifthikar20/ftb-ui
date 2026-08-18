@@ -1663,8 +1663,14 @@ const trafficChartOptions = {
 }
 
 // Sources — Horizontal Bar chart
+// Sources whose sessions arrived from an AI assistant carry an "(AI)"
+// suffix so the new traffic channel is visible in the chart labels.
+function sourceLabelWithChannel(s) {
+  return s.medium === 'ai' ? `${s.name} (AI)` : s.name
+}
+
 const sourcesChartData = computed(() => ({
-  labels: sources.value.map(s => s.name),
+  labels: sources.value.map(sourceLabelWithChannel),
   datasets: [{
     label: 'Sessions',
     data: sources.value.map(s => s.sessions || 0),
@@ -1783,7 +1789,7 @@ const radarChartOptions = {
 
 // Traffic Sources — PolarArea (alternative view)
 const polarChartData = computed(() => ({
-  labels: sources.value.map(s => s.name),
+  labels: sources.value.map(sourceLabelWithChannel),
   datasets: [{
     data: sources.value.map(s => s.sessions || 0),
     backgroundColor: [

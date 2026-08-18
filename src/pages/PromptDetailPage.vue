@@ -521,9 +521,12 @@
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead style="width: 44%">Chat</TableHead>
+            <TableHead style="width: 42%">Chat</TableHead>
             <TableHead>{{ brandLabel }} mentioned</TableHead>
             <TableHead class="num">Position</TableHead>
+            <TableHead class="num">
+              <span class="pd-th-help" title="How closely this answer reflects your own brand facts and key messages from Brand Input, 0-100.">Alignment<sup>?</sup></span>
+            </TableHead>
             <TableHead>Mentions</TableHead>
             <TableHead>Sources</TableHead>
             <TableHead>Location</TableHead>
@@ -555,6 +558,7 @@
               <span :class="c.brand_mentioned ? 'pd-yes' : 'pd-no'">{{ c.brand_mentioned ? 'Yes' : 'No' }}</span>
             </TableCell>
             <TableCell class="num">{{ c.position ?? '—' }}</TableCell>
+            <TableCell class="num">{{ c.alignment ?? '—' }}</TableCell>
             <TableCell>
               <span class="pd-icon-row">
                 <span
@@ -590,12 +594,70 @@
             </TableCell>
           </TableRow>
           <TableRow v-if="!recentChats.length">
-            <TableCell colspan="7" style="text-align:center; color: var(--muted-foreground); padding: 28px 0">
+            <TableCell colspan="8" style="text-align:center; color: var(--muted-foreground); padding: 28px 0">
               No chats yet for this prompt.
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+    </div>
+
+    <!-- Brand alignment -->
+    <section class="pd-overview-head" style="margin-top: 28px">
+      <h2 class="pd-section-title">
+        <Target :size="16" :stroke-width="2"/>
+        Brand alignment
+      </h2>
+      <p class="pd-section-sub">How closely the AI answers to this prompt reflect your own brand facts and key messages from Brand Input.</p>
+    </section>
+
+    <div class="pd-card" style="padding: 18px 20px">
+      <template v-if="brandAlignment && (brandAlignment.state === 'scored' || brandAlignment.state === 'extraction_pending')">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom: 14px">
+          <span
+            style="font-size: 22px; font-weight: 800; color: var(--foreground)"
+          >{{ brandAlignment.avg_score != null ? Math.round(brandAlignment.avg_score) : '—' }}<span style="font-size:13px; font-weight:600; color: var(--muted-foreground)"> / 100</span></span>
+          <span class="pd-mute" style="font-size: 12px">
+            {{ brandAlignment.scored }} of {{ brandAlignment.total }} answers benchmarked
+          </span>
+          <span v-if="brandAlignment.state === 'extraction_pending'" class="pd-mute" style="font-size: 12px">
+            · Scored against your pasted content — brand facts are still being extracted, coverage sharpens once they land.
+          </span>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px">
+          <div>
+            <div class="pd-section-sub" style="font-weight: 600; margin-bottom: 6px">Messages AI reflects</div>
+            <p v-for="(m, i) in brandAlignment.top_reflected" :key="'r' + i" style="font-size: 13px; color: var(--foreground); margin: 0 0 6px">
+              {{ m.text }} <span class="pd-mute">({{ m.count }})</span>
+            </p>
+            <p v-if="!brandAlignment.top_reflected.length" class="pd-mute" style="font-size: 12px">Nothing reflected yet.</p>
+          </div>
+          <div>
+            <div class="pd-section-sub" style="font-weight: 600; margin-bottom: 6px">Messages AI misses</div>
+            <p v-for="(m, i) in brandAlignment.top_missing" :key="'m' + i" style="font-size: 13px; color: var(--muted-foreground); margin: 0 0 6px">
+              {{ m.text }} <span class="pd-mute">({{ m.count }})</span>
+            </p>
+            <p v-if="!brandAlignment.top_missing.length" class="pd-mute" style="font-size: 12px">No relevant messages are missing.</p>
+          </div>
+        </div>
+        <div v-if="brandAlignment.unsupported_samples.length" style="margin-top: 14px">
+          <div class="pd-section-sub" style="font-weight: 600; margin-bottom: 6px">Claims not backed by your material</div>
+          <p v-for="(s, i) in brandAlignment.unsupported_samples" :key="'u' + i" style="font-size: 12px; font-style: italic; color: var(--muted-foreground); margin: 0 0 4px">
+            "{{ s.text }}" <span v-if="s.provider">— {{ s.provider }}</span>
+          </p>
+        </div>
+      </template>
+      <p v-else-if="brandAlignment && brandAlignment.state === 'no_brand_input'" class="pd-mute" style="font-size: 13px; margin: 0">
+        Add your pages, pasted copy or quick notes on the
+        <router-link :to="`/llm-ranking/${websiteId}/brand-input`" style="color: var(--foreground); font-weight: 600">Brand Input</router-link>
+        page and every answer here will be benchmarked against what you want to be known for.
+      </p>
+      <p v-else-if="brandAlignment && brandAlignment.state === 'embeddings_unavailable'" class="pd-mute" style="font-size: 13px; margin: 0">
+        Semantic embeddings are not configured, so alignment cannot be scored.
+      </p>
+      <p v-else class="pd-mute" style="font-size: 13px; margin: 0">
+        Alignment appears after the next scan of this prompt.
+      </p>
     </div>
 
     <!-- Fanout queries -->
@@ -670,7 +732,7 @@ import {
 } from 'chart.js'
 import {
   BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Cpu,
-  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Trophy,
+  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Target, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
@@ -1029,6 +1091,7 @@ watch(scanStatusKind, (kind) => {
 /* ── Recent chats + chat modal ── */
 const brandLabel = computed(() => detail.value?.brand_label || 'your brand')
 const recentChats = computed(() => detail.value?.recent_chats || [])
+const brandAlignment = computed(() => detail.value?.brand_alignment || null)
 const chatOpen = ref(false)
 const chatIndex = ref(0)
 const currentChatId = computed(() => recentChats.value[chatIndex.value]?.result_id || '')
@@ -1413,6 +1476,22 @@ const TREND_METRICS = {
       + 'scores positive 85, neutral 55 or negative 25, averaged per run. Higher is better.',
     emptyNote: (brand) =>
       `No sentiment yet — it's measured from runs where models mention ${brand}.`,
+    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+  },
+  alignment: {
+    label: 'Alignment',
+    title: 'Brand alignment over time',
+    color: '#0ea5e9',
+    colorActive: '#0369a1',
+    fillColor: 'rgba(14,165,233,0.10)',
+    accessor: (r) => r.alignment_avg,
+    format: (v) => `alignment ${v}/100 with your brand material`,
+    explainer: (brand) =>
+      `How closely AI answers reflect ${brand}'s own facts and key messages `
+      + 'from Brand Input, averaged per run. Higher is better.',
+    emptyNote: () =>
+      'No alignment yet — it appears once answers are benchmarked against '
+      + 'your Brand Input material.',
     yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
   },
 }

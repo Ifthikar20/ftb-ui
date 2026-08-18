@@ -15,7 +15,7 @@ import ragApi from '@/api/rag'
 import { useToast } from '@/composables/useToast'
 import { safeHref } from '@/utils/safeHref'
 import StatusPill from './StatusPill.vue'
-import { timeAgo } from './timeAgo.js'
+import { timeAgo } from '@/utils/timeAgo.js'
 
 const props = defineProps({
   websiteId: { type: String, required: true },

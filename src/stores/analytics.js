@@ -94,6 +94,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             const sourceColors = ['#c9a050', '#1a1a2e', '#27ae60', '#2980b9', '#e74c3c']
             c.sources = sd.map((s, i) => ({
                 name: s.source || s.name || 'direct',
+                // Keep the channel class: "ai" marks sessions referred by
+                // an AI assistant so the UI can badge them.
+                medium: s.medium || '',
                 pct: s.percentage || s.pct || 0,
                 sessions: s.sessions || s.count || 0,
                 color: sourceColors[i % sourceColors.length],

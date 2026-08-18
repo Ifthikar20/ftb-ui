@@ -1,12 +1,25 @@
 import api from './client'
 
 // Brand Security is a findings feed with no scan step. Findings are derived
-// from the AI answers an audit already collected — the response auditor runs
-// as each audit completes, so an alert exists the moment the answer that
-// caused it does. There is nothing for the user to trigger.
+// from the AI answers the audits, prompt runs and chat checks already
+// collected — the response auditor runs as each of those completes, so an
+// alert exists the moment the answer that caused it does. There is nothing
+// for the user to trigger.
 export default {
-  // Findings --------------------------------------------------------------
-  // params: { status, severity: [], issue: [], source: [], result, source_prompt }
+  // Taxonomy ---------------------------------------------------------------
+  // The detector catalog (codes, categories, descriptions, recommended
+  // actions). Global, not website-scoped; fetched once per session.
+  taxonomy: () => api.get('/brand-security/taxonomy/'),
+
+  // Overview ---------------------------------------------------------------
+  // Summary tiles: health_score, open counts by severity/category/detector,
+  // last-checked timing.
+  overview: (websiteId) =>
+    api.get(`/brand-security/websites/${websiteId}/overview/`),
+
+  // Findings ---------------------------------------------------------------
+  // params: { status, severity: [], issue: [], detector_code: [], source: [],
+  //           reference, search, ordering, result, source_prompt }
   alerts: (websiteId, params = {}) =>
     api.get(`/brand-security/websites/${websiteId}/alerts/`, { params }),
   // Findings raised from the audit responses for one library prompt. Used by
