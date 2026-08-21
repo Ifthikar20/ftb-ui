@@ -28,3 +28,9 @@ dist-ssr
 
 .env
 *.env
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key

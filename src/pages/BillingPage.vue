@@ -184,7 +184,7 @@
             <tr><th>Date</th><th>Amount</th><th>Status</th></tr>
           </thead>
           <tbody>
-            <tr v-for="inv in invoices" :key="inv.id || inv.stripe_invoice_id">
+            <tr v-for="inv in invoices" :key="inv.id">
               <td>{{ formatDate(inv.period_start || inv.created_at) }}</td>
               <td class="bp-amount">${{ (inv.amount_paid / 100).toFixed(2) }}</td>
               <td>
@@ -247,14 +247,8 @@ const statusClass = computed(() => {
 })
 
 // True when the subscription is managed by the billing provider (Polar)
-// — gates the "Manage billing" portal button. Falls back to a real
-// (non-mock) Stripe id for any legacy rows.
-const hasManagedSub = computed(() => {
-  const s = subscription.value
-  if (s?.managed) return true
-  return !!s?.stripe_subscription_id &&
-         !String(s.stripe_subscription_id).startsWith('dev_')
-})
+// — gates the "Manage billing" portal button.
+const hasManagedSub = computed(() => !!subscription.value?.managed)
 
 // Infer whether the active subscription is annual from the period
 // length. Stripe annual subs have a ~365d gap; monthly is ~30d. Used

@@ -10,7 +10,6 @@ export default {
     resume: () => api.post('/billing/resume/'),
     portal: () => api.post('/billing/portal/'),
     invoices: () => api.get('/billing/invoices/'),
-    usage: () => api.get('/billing/usage/'),
     // Window is always the current billing period (server-defined).
     tokenUsage: () => api.get('/billing/token-usage/'),
 }
