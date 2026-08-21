@@ -21,23 +21,40 @@
           <div class="bp-current-meta">
             <span class="bp-pill" :class="statusClass">{{ statusLabel }}</span>
             <span
-              v-if="subscription?.current_period_end"
+              v-if="isTrialing && !subscription?.cancel_at_period_end"
+              class="bp-current-note"
+            >
+              {{ daysUntilRenewal }} {{ daysUntilRenewal === 1 ? 'day' : 'days' }} left in your free trial
+            </span>
+            <span
+              v-else-if="subscription?.current_period_end"
               class="bp-current-note"
               :class="{ 'is-warn': subscription.cancel_at_period_end }"
             >
               {{ subscription.cancel_at_period_end ? 'Cancels' : 'Renews' }}
               {{ formatDate(subscription.current_period_end) }}
             </span>
-            <span v-if="isMockSub" class="bp-pill bp-pill--neutral">Test mode</span>
           </div>
+          <template v-if="isTrialing && !subscription?.cancel_at_period_end">
+            <div class="bp-usage-bar" style="margin-top: 10px; max-width: 360px;">
+              <div class="bp-usage-fill" :style="{ width: trialPct + '%' }"></div>
+            </div>
+            <p class="bp-current-note" style="margin-top: 6px;">
+              First charge {{ currentPriceLabel }} on {{ formatDate(subscription.current_period_end) }}
+              — cancel before then and pay nothing.
+            </p>
+          </template>
+          <p v-else-if="subscription?.cancel_at_period_end" class="bp-current-note" style="margin-top: 6px;">
+            Access ends {{ formatDate(subscription.current_period_end) }}. No future charges.
+          </p>
         </div>
         <div class="bp-current-actions">
           <button
-            v-if="hasStripeSub"
+            v-if="hasManagedSub"
             class="bp-btn bp-btn--ghost"
             :disabled="portalLoading"
             @click="openPortal"
-          >{{ portalLoading ? 'Opening…' : 'Manage in Stripe' }}</button>
+          >{{ portalLoading ? 'Opening…' : 'Manage billing' }}</button>
           <button
             v-if="subscription?.cancel_at_period_end"
             class="bp-btn bp-btn--primary"
@@ -54,57 +71,29 @@
       </section>
       <section v-else class="bp-current bp-current--empty">
         <div class="bp-current-info">
-          <span class="bp-eyebrow">No active plan</span>
-          <h2 class="bp-current-name">You're not subscribed yet</h2>
-          <p class="bp-current-note">Pick a plan below to unlock the full app.</p>
+          <span class="bp-eyebrow">Current plan</span>
+          <h2 class="bp-current-name">Free plan</h2>
+          <p class="bp-current-note">
+            Includes
+            <template v-if="tokenUsage?.allowance?.cap_usd">${{ tokenUsage.allowance.cap_usd.toFixed(2) }}</template>
+            <template v-else>a small amount</template>
+            of AI usage per month. Upgrade to Pro for the full allowance and every AI model.
+          </p>
         </div>
       </section>
 
-      <!-- ── At-a-glance row: next charge + payment method ────────── -->
-      <div v-if="currentPlanCode" class="bp-glance">
-        <div class="bp-glance-card">
-          <span class="bp-eyebrow">Next charge</span>
-          <div v-if="subscription?.cancel_at_period_end" class="bp-glance-value">—</div>
-          <div v-else class="bp-glance-value">
-            {{ currentPriceLabel }}
-            <span class="bp-glance-period">{{ currentPeriodLabel }}</span>
-          </div>
-          <p class="bp-glance-note">
-            <template v-if="subscription?.cancel_at_period_end">
-              Access ends {{ formatDate(subscription.current_period_end) }}. No future charges.
-            </template>
-            <template v-else-if="subscription?.current_period_end">
-              On {{ formatDate(subscription.current_period_end) }} · {{ daysUntilRenewal }} days from today
-            </template>
-            <template v-else>
-              Renewal date will appear after the first invoice.
-            </template>
-          </p>
-        </div>
-
-        <div class="bp-glance-card">
-          <span class="bp-eyebrow">Payment method</span>
-          <div class="bp-glance-value">
-            <template v-if="isMockSub">Test mode</template>
-            <template v-else-if="hasStripeSub">On file with Stripe</template>
-            <template v-else>—</template>
-          </div>
-          <p class="bp-glance-note">
-            <template v-if="isMockSub">
-              No real card is stored. This subscription was created in dev mode.
-            </template>
-            <template v-else-if="hasStripeSub">
-              Card details live in Stripe. Use "Manage in Stripe" above to update.
-            </template>
-            <template v-else>
-              Add a payment method by choosing a plan below.
-            </template>
-          </p>
-        </div>
+      <!-- ── Pricing tiers: only while unsubscribed. Subscribed users
+           change plans through the Polar portal (Manage billing). ── -->
+      <div
+        v-if="!currentPlanCode && subscription && subscription.billing_ready === false"
+        class="bp-error"
+        style="margin: 6px 0 2px;"
+      >
+        Checkout is not configured yet — the Polar products have not been
+        set up for this environment. Subscribing is disabled until then.
       </div>
 
-      <!-- ── Pricing tiers (same shape as the paywall) ────────────── -->
-      <div class="bp-toggle" role="tablist" aria-label="Billing cycle">
+      <div v-if="!currentPlanCode" class="bp-toggle" role="tablist" aria-label="Billing cycle">
         <button
           type="button"
           class="bp-toggle-opt"
@@ -122,7 +111,7 @@
         </button>
       </div>
 
-      <section class="bp-tiers">
+      <section v-if="!currentPlanCode" class="bp-tiers">
         <article
           v-for="tier in mainTiers"
           :key="tier.id"
@@ -147,6 +136,7 @@
             </span>
           </div>
           <p class="bp-tier-note" v-if="tier.price !== null">
+            <template v-if="tier.trialDays && !isCurrent(tier)">{{ tier.trialDays }}-day free trial · </template>
             {{ annual ? 'Two months free' : 'Cancel anytime' }}
           </p>
 
@@ -169,16 +159,16 @@
             type="button"
             class="bp-btn"
             :class="{ 'bp-btn--primary': tier.highlight || !currentPlanCode }"
-            :disabled="checkingOut === tier.id"
+            :disabled="checkingOut === tier.id || (tier.price !== null && subscription?.billing_ready === false)"
             @click="changePlan(tier)"
           >
             <span v-if="checkingOut === tier.id" class="bp-spinner" aria-hidden="true"></span>
-            <span v-else>{{ currentPlanCode ? 'Switch to ' + tier.name : 'Choose ' + tier.name }}</span>
+            <span v-else>{{ currentPlanCode ? 'Switch to ' + tier.name : (tier.cta || 'Choose ' + tier.name) }}</span>
           </button>
         </article>
       </section>
 
-      <p v-if="enterpriseTier" class="bp-enterprise">
+      <p v-if="!currentPlanCode && enterpriseTier" class="bp-enterprise">
         Need more? <a href="#" @click.prevent="contactEnterprise">Talk to us about {{ enterpriseTier.name }}</a>
       </p>
 
@@ -207,100 +197,26 @@
         </table>
       </section>
 
-      <!-- ── Usage ────────────────────────────────────────────────── -->
-      <section v-if="usage.length" class="bp-card">
-        <header class="bp-card-head">
-          <h3 class="bp-card-title">Usage this period</h3>
-        </header>
-        <div class="bp-usage">
-          <div v-for="u in usage" :key="u.metric" class="bp-usage-item">
-            <div class="bp-usage-label">{{ formatMetric(u.metric) }}</div>
-            <div class="bp-usage-value">{{ Number(u.count).toLocaleString() }}</div>
-            <div class="bp-usage-bar">
-              <div
-                class="bp-usage-fill"
-                :style="{ width: Math.min((u.count / (u.limit || 1)) * 100, 100) + '%' }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ── AI token usage ────────────────────────────────────────── -->
-      <section v-if="tokenUsage" class="bp-card">
-        <header class="bp-card-head">
-          <h3 class="bp-card-title">AI usage (last {{ tokenUsage.window_days }} days)</h3>
-          <span class="bp-card-sub">
-            {{ Number(tokenUsage.call_count).toLocaleString() }} calls
-          </span>
-        </header>
-        <div class="bp-tok-totals">
-          <div class="bp-tok-tile">
-            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.total_tokens) }}</div>
-            <div class="bp-tok-label">Total tokens</div>
-          </div>
-          <div class="bp-tok-tile">
-            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.input_tokens) }}</div>
-            <div class="bp-tok-label">Input</div>
-          </div>
-          <div class="bp-tok-tile">
-            <div class="bp-tok-num">{{ formatTokens(tokenUsage.totals.output_tokens) }}</div>
-            <div class="bp-tok-label">Output</div>
-          </div>
-          <div class="bp-tok-tile">
-            <div class="bp-tok-num">${{ tokenUsage.totals.cost_usd.toFixed(2) }}</div>
-            <div class="bp-tok-label">Est. cost</div>
-          </div>
-        </div>
-        <div v-if="tokenUsage.by_provider.length" class="bp-tok-block">
-          <h4 class="bp-tok-block-title">By provider</h4>
-          <div v-for="p in tokenUsage.by_provider" :key="p.provider" class="bp-tok-row">
-            <span class="bp-tok-row-label">{{ providerLabel(p.provider) }}</span>
-            <div class="bp-tok-row-bar">
-              <div
-                class="bp-tok-row-fill"
-                :style="{ width: barPct(p.tokens, tokenUsage.totals.total_tokens) + '%' }"
-              ></div>
-            </div>
-            <span class="bp-tok-row-num">{{ formatTokens(p.tokens) }}</span>
-            <span class="bp-tok-row-cost">${{ p.cost_usd.toFixed(3) }}</span>
-          </div>
-        </div>
-        <div v-if="tokenUsage.by_module.length" class="bp-tok-block">
-          <h4 class="bp-tok-block-title">By feature</h4>
-          <div v-for="m in tokenUsage.by_module" :key="m.module" class="bp-tok-row">
-            <span class="bp-tok-row-label">{{ moduleLabel(m.module) }}</span>
-            <div class="bp-tok-row-bar">
-              <div
-                class="bp-tok-row-fill"
-                :style="{ width: barPct(m.tokens, tokenUsage.totals.total_tokens) + '%' }"
-              ></div>
-            </div>
-            <span class="bp-tok-row-num">{{ formatTokens(m.tokens) }}</span>
-            <span class="bp-tok-row-cost">${{ m.cost_usd.toFixed(3) }}</span>
-          </div>
-        </div>
-      </section>
     </template>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import billingApi from '@/api/billing'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { TIERS } from '@/constants/pricing'
 
 const route = useRoute()
+const router = useRouter()
 const toast = useToast()
 const authStore = useAuthStore()
 
 const loading = ref(true)
 const subscription = ref(null)
 const invoices = ref([])
-const usage = ref([])
 const tokenUsage = ref(null)
 const annual = ref(false)
 const checkingOut = ref(null)
@@ -330,14 +246,15 @@ const statusClass = computed(() => {
   return 'bp-pill--neutral'
 })
 
-const hasStripeSub = computed(
-  () => !!subscription.value?.stripe_subscription_id &&
-        !String(subscription.value.stripe_subscription_id).startsWith('dev_'),
-)
-
-const isMockSub = computed(
-  () => String(subscription.value?.stripe_subscription_id || '').startsWith('dev_sub_'),
-)
+// True when the subscription is managed by the billing provider (Polar)
+// — gates the "Manage billing" portal button. Falls back to a real
+// (non-mock) Stripe id for any legacy rows.
+const hasManagedSub = computed(() => {
+  const s = subscription.value
+  if (s?.managed) return true
+  return !!s?.stripe_subscription_id &&
+         !String(s.stripe_subscription_id).startsWith('dev_')
+})
 
 // Infer whether the active subscription is annual from the period
 // length. Stripe annual subs have a ~365d gap; monthly is ~30d. Used
@@ -384,6 +301,18 @@ const daysUntilRenewal = computed(() => {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
 })
 
+const isTrialing = computed(
+  () => subscription.value?.subscription_status === 'trialing',
+)
+
+// Trial progress: elapsed share of the 7-day trial window.
+const trialPct = computed(() => {
+  const total = 7
+  const left = Math.min(total, daysUntilRenewal.value)
+  return Math.round(((total - left) / total) * 100)
+})
+
+
 function isCurrent(tier) { return currentPlanCode.value === tier.planCode }
 
 function priceLabel(tier) {
@@ -397,45 +326,34 @@ function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
-function formatMetric(m) {
-  return (m || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
 
 async function changePlan(tier) {
+  if (tier.price === null) {
+    contactEnterprise()
+    return
+  }
   error.value = ''
   checkingOut.value = tier.id
   try {
-    // Dev path: instant subscription switch via the mock endpoint.
-    // Falls back to real Stripe Checkout on 404 (prod).
-    const res = await billingApi.devSubscribe({
+    // Polar hosted checkout — the backend creates the session and we
+    // redirect. Sandbox/dev uses the same real flow with test cards.
+    const res = await billingApi.checkout({
       plan: tier.planCode,
       annual: annual.value,
     })
-    if (res?.data?.success || res?.data?.data?.dev_mode) {
-      toast.success(`Switched to ${tier.name}.`)
-      await refresh()
-      try { await authStore.fetchSession() } catch (_) {}
+    // CheckoutView's payload is {"success", "data": {"checkout_url"}}.
+    const url = res.data?.data?.checkout_url
+    if (url) {
+      window.location.href = url
       return
     }
-    error.value = "We couldn't switch plans. Please try again."
+    error.value = "We couldn't start checkout. Please try again."
+    toast.error(error.value)
   } catch (e) {
-    if (e?.response?.status === 404) {
-      try {
-        const res = await billingApi.checkout({
-          plan: tier.planCode,
-          annual: annual.value,
-        })
-        const url = res.data?.data?.checkout_url || res.data?.checkout_url
-        if (url) {
-          window.location.href = url
-          return
-        }
-      } catch (e2) {
-        error.value = e2?.response?.data?.error?.message || "We couldn't start checkout."
-      }
-    } else {
-      error.value = e?.response?.data?.error?.message || "We couldn't switch plans."
-    }
+    error.value = e?.response?.data?.error?.message || "We couldn't start checkout."
+    // Loud failure: the inline text alone was easy to miss and made the
+    // button feel dead.
+    toast.error(error.value)
   } finally {
     checkingOut.value = null
   }
@@ -449,7 +367,8 @@ async function openPortal() {
   portalLoading.value = true
   try {
     const res = await billingApi.portal()
-    const url = res.data?.data?.portal_url || res.data?.portal_url
+    // PortalView's payload is {"success", "data": {"portal_url"}}.
+    const url = res.data?.data?.portal_url
     if (url) window.location.href = url
     else toast.error("We couldn't open the billing portal.")
   } catch {
@@ -490,64 +409,49 @@ async function resume() {
 
 async function refresh() {
   try {
-    const [subRes, invRes, usageRes, tokRes] = await Promise.all([
+    const [subRes, invRes, tokRes] = await Promise.all([
       billingApi.getCurrent().catch(() => ({ data: null })),
       billingApi.invoices().catch(() => ({ data: [] })),
-      billingApi.usage().catch(() => ({ data: [] })),
       billingApi.tokenUsage().catch(() => ({ data: null })),
     ])
-    subscription.value = subRes.data?.data || subRes.data || null
-    const inv = invRes.data?.data || invRes.data || []
+    subscription.value = subRes.data || null
+    const inv = invRes.data || []
     invoices.value = Array.isArray(inv) ? inv : (inv.results || [])
-    const u = usageRes.data?.data || usageRes.data || []
-    usage.value = Array.isArray(u) ? u : (u.results || [])
     // Token usage soft-fails to null; the section is v-if'd on that.
-    tokenUsage.value = tokRes.data?.data || tokRes.data || null
+    tokenUsage.value = tokRes.data || null
   } catch (_) {
     // soft-fail; the UI degrades to "no active plan" state
   }
 }
 
-// Compact token count: 1.2M, 340k, 850. Full precision lives in the
-// tooltip if we ever need it (raw number is preserved on the value).
-function formatTokens(n) {
-  const v = Number(n || 0)
-  if (v >= 1_000_000) return (v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1) + 'M'
-  if (v >= 1_000) return (v / 1_000).toFixed(v >= 10_000 ? 0 : 1) + 'k'
-  return v.toLocaleString()
-}
-function barPct(part, total) {
-  if (!total) return 0
-  return Math.max(2, Math.round((part / total) * 100))
-}
-const PROVIDER_LABELS = {
-  anthropic: 'Anthropic · Claude',
-  openai: 'OpenAI · GPT',
-  google: 'Google · Gemini',
-  perplexity: 'Perplexity',
-  meta: 'Meta · Llama',
-  mistral: 'Mistral',
-  cohere: 'Cohere',
-  deepseek: 'DeepSeek',
-  xai: 'xAI · Grok',
-  amazon: 'Amazon · Nova',
-}
-function providerLabel(k) {
-  return PROVIDER_LABELS[k] || (k || 'unknown')
-}
-const MODULE_LABELS = {
-  llm_ranking: 'LLM Ranking',
-  rag: 'RAG / Embeddings',
-  onboarding: 'Onboarding scan',
-}
-function moduleLabel(k) {
-  return MODULE_LABELS[k] || (k || 'other')
-}
+
 
 onMounted(async () => {
   const checkoutParam = route.query.checkout
-  if (checkoutParam === 'success') toast.success('Subscription activated!')
-  else if (checkoutParam === 'canceled') toast.info('Checkout canceled.')
+  const checkoutId = route.query.checkout_id
+  if (checkoutParam === 'success' && checkoutId) {
+    // Returning from Polar checkout: verify server-side and sync the
+    // subscription (works without webhooks in local dev).
+    try {
+      const res = await billingApi.confirm(String(checkoutId))
+      if (res.data?.data?.active) {
+        toast.success('Subscription activated. Welcome to Pro!')
+        try { await authStore.fetchSession() } catch (_) {}
+      } else {
+        toast.info('Checkout received - finalizing. Refresh in a moment.')
+      }
+    } catch (_) {
+      toast.error("We couldn't verify the checkout yet. Refresh in a moment.")
+    }
+    // Drop the one-shot params so a refresh doesn't re-run confirmation.
+    router.replace({ query: {} })
+  } else if (checkoutParam === 'success') {
+    toast.success('Subscription activated!')
+    router.replace({ query: {} })
+  } else if (checkoutParam === 'canceled') {
+    toast.info('Checkout canceled.')
+    router.replace({ query: {} })
+  }
   await refresh()
   loading.value = false
 })
@@ -918,6 +822,15 @@ onMounted(async () => {
 }
 .bp-enterprise a:hover { border-color: var(--bp-accent); }
 .bp-error { margin: 0 0 16px; color: var(--bp-accent); font-size: 13px; }
+
+.bp-link {
+  color: var(--bp-fg);
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid var(--bp-border);
+  transition: border-color 0.2s;
+}
+.bp-link:hover { border-color: var(--bp-fg); }
 
 /* ── Invoices / usage cards ───────────────────────────────── */
 .bp-card {

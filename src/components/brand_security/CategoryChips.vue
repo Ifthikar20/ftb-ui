@@ -4,7 +4,7 @@
  * the taxonomy declares, with open-finding counts. Zero-count chips stay
  * visible but muted: showing the full coverage is part of the message.
  */
-const props = defineProps({
+defineProps({
   // From the brandSecurity store: [{key, label, blurb, icon, count}]
   categories: { type: Array, default: () => [] },
   activeCategory: { type: String, default: '' },

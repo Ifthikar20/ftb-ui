@@ -119,96 +119,49 @@
                 <span>Two months free</span>
                 <span>−${{ selectedTier.price * 2 }}</span>
               </div>
+              <div v-if="selectedTier?.trialDays" class="pw-summary-row pw-summary-row--muted">
+                <span>{{ selectedTier.trialDays }}-day free trial</span>
+                <span>−{{ priceLabel(selectedTier) }}</span>
+              </div>
               <div class="pw-summary-row pw-summary-total">
                 <span>Total due today</span>
-                <span class="pw-summary-amount">{{ priceLabel(selectedTier) }}</span>
+                <span class="pw-summary-amount">{{ selectedTier?.trialDays ? '$0' : priceLabel(selectedTier) }}</span>
               </div>
               <p class="pw-summary-note">
-                Renews {{ annual ? 'yearly' : 'monthly' }} at the same price.
+                <template v-if="selectedTier?.trialDays">
+                  {{ priceLabel(selectedTier) }} {{ annual ? '/year' : '/month' }} after the trial ends.
+                </template>
+                <template v-else>
+                  Renews {{ annual ? 'yearly' : 'monthly' }} at the same price.
+                </template>
                 Cancel any time from Settings → Billing.
               </p>
             </aside>
 
-            <!-- Card form -->
-            <form class="pw-form" @submit.prevent="submitCheckout">
-              <h2 class="pw-form-title">Payment details</h2>
+            <!-- Payment hand-off: card details are collected on the
+                 hosted checkout, never in this app. -->
+            <div class="pw-form">
+              <h2 class="pw-form-title">Payment</h2>
 
-              <label class="pw-field">
-                <span class="pw-label">Cardholder name</span>
-                <input
-                  v-model="card.name"
-                  type="text"
-                  autocomplete="cc-name"
-                  placeholder="Jane Appleseed"
-                  required
-                  class="pw-input"
-                />
-              </label>
-
-              <label class="pw-field">
-                <span class="pw-label">Card number</span>
-                <input
-                  v-model="card.number"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="cc-number"
-                  placeholder="4242 4242 4242 4242"
-                  maxlength="23"
-                  required
-                  class="pw-input"
-                  @input="formatCardNumber"
-                />
-              </label>
-
-              <div class="pw-row">
-                <label class="pw-field">
-                  <span class="pw-label">Expiry</span>
-                  <input
-                    v-model="card.expiry"
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="cc-exp"
-                    placeholder="MM/YY"
-                    maxlength="5"
-                    required
-                    class="pw-input"
-                    @input="formatExpiry"
-                  />
-                </label>
-                <label class="pw-field">
-                  <span class="pw-label">CVC</span>
-                  <input
-                    v-model="card.cvc"
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="cc-csc"
-                    placeholder="123"
-                    maxlength="4"
-                    required
-                    class="pw-input"
-                  />
-                </label>
-                <label class="pw-field">
-                  <span class="pw-label">ZIP</span>
-                  <input
-                    v-model="card.zip"
-                    type="text"
-                    autocomplete="postal-code"
-                    placeholder="94103"
-                    maxlength="10"
-                    required
-                    class="pw-input"
-                  />
-                </label>
-              </div>
+              <p class="pw-summary-desc">
+                You'll finish on our secure checkout, where your card
+                details are collected and stored by our billing provider.
+                <template v-if="selectedTier?.trialDays">
+                  Your {{ selectedTier.trialDays }}-day free trial starts
+                  today — you won't be charged until it ends, and you can
+                  cancel any time before then.
+                </template>
+              </p>
 
               <button
-                type="submit"
+                type="button"
                 class="pw-submit"
                 :disabled="submitting"
+                @click="submitCheckout"
               >
                 <span v-if="submitting" class="pw-spinner" aria-hidden="true"></span>
-                <span v-else>Pay {{ priceLabel(selectedTier) }} & continue</span>
+                <span v-else-if="selectedTier?.trialDays">Start free trial</span>
+                <span v-else>Continue to secure checkout</span>
               </button>
 
               <p v-if="error" class="pw-error">{{ error }}</p>
@@ -218,9 +171,10 @@
                   <rect x="3" y="7" width="10" height="7" rx="1.5"/>
                   <path d="M5 7V5a3 3 0 016 0v2"/>
                 </svg>
-                Encrypted in transit. We never store your full card number.
+                Payments and tax are handled by Polar, our merchant of
+                record. Your card number never touches our servers.
               </p>
-            </form>
+            </div>
           </div>
         </div>
       </Transition>
@@ -229,28 +183,22 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import billingApi from '@/api/billing'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import { TIERS } from '@/constants/pricing'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToast()
 
 const phase = ref('select')        // 'select' | 'checkout'
 const annual = ref(false)
 const selectedTier = ref(null)
 const submitting = ref(false)
 const error = ref('')
-
-const card = reactive({
-  name: '',
-  number: '',
-  expiry: '',
-  cvc: '',
-  zip: '',
-})
 
 const mainTiers = computed(() => TIERS.filter(t => t.price !== null))
 const enterpriseTier = computed(() => TIERS.find(t => t.price === null))
@@ -273,56 +221,27 @@ function contactSales() {
   window.location.href = t?.contactTarget || 'mailto:sales@fetchbot.ai'
 }
 
-// Visual-only formatters. The form accepts dummy data — the backend
-// dev endpoint doesn't validate the card. These just keep the input
-// readable as the user types.
-function formatCardNumber(e) {
-  const raw = e.target.value.replace(/\D/g, '').slice(0, 19)
-  card.number = raw.replace(/(.{4})/g, '$1 ').trim()
-}
-function formatExpiry(e) {
-  const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
-  card.expiry = raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw
-}
-
 async function submitCheckout() {
   if (!selectedTier.value) return
   submitting.value = true
   error.value = ''
   try {
-    // Dev / demo path: hits the mock endpoint, which marks the
-    // subscription ACTIVE without calling Stripe. Any card values
-    // are accepted. Falls back to the real Stripe checkout when the
-    // dev endpoint is disabled (prod) — see the 404 branch.
-    const res = await billingApi.devSubscribe({
+    // Polar hosted checkout — the backend creates the session and we
+    // redirect. The sandbox environment accepts Stripe test cards.
+    const res = await billingApi.checkout({
       plan: selectedTier.value.planCode,
       annual: annual.value,
     })
-    if (res?.data?.success || res?.data?.data?.dev_mode) {
-      await authStore.fetchSession()
-      router.replace('/dashboard')
+    const url = res.data?.data?.checkout_url
+    if (url) {
+      window.location.href = url
       return
     }
-    error.value = "We couldn't complete checkout. Please try again."
+    error.value = "We couldn't start checkout. Please try again."
+    toast.error(error.value)
   } catch (e) {
-    if (e?.response?.status === 404) {
-      // Dev endpoint isn't enabled — fall back to real Stripe.
-      try {
-        const res = await billingApi.checkout({
-          plan: selectedTier.value.planCode,
-          annual: annual.value,
-        })
-        const url = res.data?.data?.checkout_url || res.data?.checkout_url
-        if (url) {
-          window.location.href = url
-          return
-        }
-      } catch (e2) {
-        error.value = e2?.response?.data?.error?.message || "We couldn't start checkout."
-      }
-    } else {
-      error.value = e?.response?.data?.error?.message || "We couldn't complete checkout."
-    }
+    error.value = e?.response?.data?.error?.message || "We couldn't start checkout."
+    toast.error(error.value)
   } finally {
     submitting.value = false
   }

@@ -65,9 +65,14 @@ const FRIENDLY_MESSAGES = {
 
 api.interceptors.response.use(
     (response) => {
-        // Unwrap envelope: { success: true, data: ... }
+        // Every JSON success body from the API is enveloped by the backend
+        // (core/interceptors/response_envelope.py) as {success, data, meta?}.
+        // Unwrap unconditionally so callers always receive one shape:
+        // res.data is the payload, res.meta the pagination block. Bodies
+        // without the envelope (blobs, third-party URLs fetched through
+        // this instance) pass through as the raw axios response.
         if (response.data && response.data.success !== undefined) {
-            return response.data.data !== undefined ? response.data : response
+            return response.data
         }
         return response
     },

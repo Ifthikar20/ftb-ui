@@ -1,7 +1,7 @@
 <script setup>
 import { AvatarImage } from 'reka-ui'
 
-const props = defineProps({
+defineProps({
   src: { type: String, required: true },
   alt: { type: String, default: '' },
 })

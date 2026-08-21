@@ -34,7 +34,7 @@ async function load() {
   error.value = ''
   try {
     const { data } = await brandSecurity.alertsForPrompt(props.websiteId, props.promptId)
-    const payload = data?.data ?? data
+    const payload = data
     alerts.value = Array.isArray(payload) ? payload : (payload?.results ?? [])
   } catch (e) {
     error.value = e.response?.data?.error?.message || 'Could not load brand security findings.'

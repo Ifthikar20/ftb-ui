@@ -49,7 +49,7 @@ async function loadPreview() {
   previewLoading.value = true
   try {
     const { data } = await llmRankingApi.previewPrompts(props.websiteId)
-    preview.value = data?.data || data || null
+    preview.value = data || null
   } catch {
     preview.value = null
   } finally {
@@ -108,7 +108,7 @@ async function loadProviders() {
   if (!props.websiteId) return
   try {
     const { data } = await llmRankingApi.providerHealth(props.websiteId)
-    providers.value = (data?.data || data || {}).providers || []
+    providers.value = (data || {}).providers || []
   } catch {
     providers.value = []
   }
@@ -118,7 +118,7 @@ async function loadSchedule() {
   if (!props.websiteId) return
   try {
     const { data } = await llmRankingApi.getSchedule(props.websiteId)
-    schedule.value = data?.data?.schedule || data?.schedule || null
+    schedule.value = data?.schedule || null
     if (schedule.value) {
       form.value = {
         business_name: schedule.value.business_name || props.websiteName || '',
@@ -153,7 +153,7 @@ async function loadETA() {
   if (!schedule.value) return
   try {
     const { data } = await llmRankingApi.scheduleETA(props.websiteId)
-    scheduleETA.value = data?.data || data || null
+    scheduleETA.value = data || null
   } catch {
     /* best-effort — keep the stale value rather than blanking the row */
   }
@@ -177,7 +177,7 @@ async function save() {
       ...form.value,
       is_enabled: true,
     })
-    schedule.value = data?.data?.schedule || data?.schedule || null
+    schedule.value = data?.schedule || null
     showModal.value = false
     toast.success('Schedule saved. Audits will run automatically.')
     loadETA()
@@ -211,7 +211,7 @@ async function runNow() {
     await loadETA()
     emit('ran')
   } catch (err) {
-    const body = err.response?.data?.data || err.response?.data || {}
+    const body = err.response?.data || {}
     if (body.code === 'no_saved_prompts') {
       runError.value = {
         code: body.code,

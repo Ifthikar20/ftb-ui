@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import websitesApi from '@/api/websites'
 
 /* ── Helper: wrap a protected route in AppLayout ── */
 const protect = (path, name, component, props = false) => ({
@@ -205,14 +206,6 @@ const routes = [
     }
 ]
 
-if (import.meta.env.DEV) {
-    routes.unshift({
-        path: '/design-system',
-        name: 'design-system',
-        component: () => import('@/pages/_DesignSystem.vue'),
-    })
-}
-
 const router = createRouter({
     history: createWebHistory(),
     routes,
@@ -226,11 +219,15 @@ let sessionRestored = false
 // Routes exempt from the onboarding/paywall gate (user is mid-flow fixing their state)
 // Dashboard is intentionally included — the onboarding modal renders
 // on top of the dashboard for first-run users, so the route gate must
-// allow them through.
+// allow them through. Billing is exempt because it is where an unpaid
+// user PAYS: the Polar checkout redirects back to
+// /billing?checkout=success&checkout_id=... before the session knows
+// about the new subscription — bouncing that load to /paywall would
+// drop the checkout_id and strand the activation.
 const GATE_EXEMPT = new Set([
     'login', 'register', 'forgot-password', 'verify-email',
     'landing', 'terms', 'privacy',
-    'dashboard', 'paywall', 'not-found',
+    'dashboard', 'paywall', 'billing', 'not-found',
 ])
 
 router.beforeEach(async (to, from, next) => {
@@ -302,15 +299,38 @@ router.beforeEach(async (to, from, next) => {
         if (route === 'onboarding' && !GATE_EXEMPT.has(to.name)) {
             return next({ name: 'dashboard' })
         }
-        if (route === 'paywall' && to.name !== 'paywall') {
+        // The paywall gate lets /billing through: it is where an unpaid
+        // user pays, and the Polar checkout redirect lands there with
+        // the checkout_id that activates the subscription.
+        if (route === 'paywall' && to.name !== 'paywall' && to.name !== 'billing') {
             return next({ name: 'paywall' })
         }
     }
 
-    // Guard: project-specific pages require an active project
+    // Guard: project-specific pages require an active project. On a cold
+    // load (hard refresh, shared deep link) the store starts empty, so
+    // load the website list here and derive the active website from the
+    // URL instead of bouncing every deep link to /websites. The URL wins
+    // over a stale store selection so a link to website B behaves the
+    // same whether or not website A was active.
     const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input']
-    if (projectPages.includes(to.name) && auth.isAuthenticated) {
+    const needsProject = projectPages.includes(to.name) || !!to.params.websiteId
+    if (needsProject && auth.isAuthenticated) {
         const app = useAppStore()
+        if (!app.websites.length) {
+            try {
+                const { data } = await websitesApi.list({ _silentError: true })
+                app.setWebsites(data || [])
+            } catch { /* fall through to the empty-store bounce below */ }
+        }
+        const wid = to.params.websiteId
+        if (wid) {
+            const target = app.websites.find(w => String(w.id) === String(wid))
+            if (!target) {
+                return next({ name: 'websites' })
+            }
+            app.setActiveWebsite(target)
+        }
         if (!app.activeWebsite) {
             return next({ name: 'websites' })
         }

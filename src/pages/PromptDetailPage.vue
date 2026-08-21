@@ -738,7 +738,6 @@ import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import PromptScheduleModal from '@/components/prompt_library/PromptScheduleModal.vue'
-import { Card } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BrandLogo from '@/components/BrandLogo.vue'
 import PromptSecurityFindings from '@/components/prompt_library/PromptSecurityFindings.vue'
@@ -808,7 +807,7 @@ async function load() {
     if (period.value && period.value !== 'all') params.period = period.value
     if (selectedRun.value) params.run = selectedRun.value
     const { data } = await promptLibrary.promptDetailAgg(websiteId, promptId, params)
-    detail.value = data?.data || data || null
+    detail.value = data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Could not load prompt analytics.'
   } finally {
@@ -894,7 +893,7 @@ const pagedFanouts = computed(() => {
 async function loadFanouts() {
   try {
     const { data } = await promptLibrary.promptFanouts(websiteId, promptId)
-    const payload = data?.data || data || {}
+    const payload = data || {}
     // Re-crawls append a fresh PromptFanout set, so the same sub-query
     // text can repeat. De-dupe by normalised text, keeping first seen.
     const seen = new Set()
@@ -1118,7 +1117,7 @@ const schedule = ref(null)
 async function loadSchedule() {
   try {
     const { data } = await promptLibrary.getPromptSchedule(websiteId, promptId)
-    schedule.value = data?.data?.schedule ?? data?.schedule ?? null
+    schedule.value = data?.schedule ?? null
   } catch {
     schedule.value = null
   }

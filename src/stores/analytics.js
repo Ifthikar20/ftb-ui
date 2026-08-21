@@ -70,7 +70,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             ])
 
             const c = _key(wid)
-            const unwrap = (r) => r.status === 'fulfilled' ? (r.value?.data?.data ?? r.value?.data ?? {}) : {}
+            const unwrap = (r) => r.status === 'fulfilled' ? (r.value?.data ?? {}) : {}
             const unwrapArr = (r) => {
                 const d = unwrap(r)
                 return Array.isArray(d) ? d : []
@@ -128,8 +128,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
                 analyticsApi.retention(wid, { weeks: 8, period }),
                 analyticsApi.engagement(wid, { period }),
             ])
-            _key(wid).retentionData = retRes.data?.data || retRes.data || {}
-            _key(wid).engagementData = engRes.data?.data || engRes.data || {}
+            _key(wid).retentionData = retRes.data || {}
+            _key(wid).engagementData = engRes.data || {}
             _key(wid)._ts.retention = Date.now()
         } catch { /* keep cached */ }
     }
@@ -144,9 +144,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
                 analyticsApi.entryExit(wid, { period }),
                 analyticsApi.journeys(wid, { period }),
             ])
-            _key(wid).flowData = flowRes.data?.data || flowRes.data || {}
-            _key(wid).entryExitData = eeRes.data?.data || eeRes.data || {}
-            _key(wid).journeys = journeyRes.data?.data || journeyRes.data || []
+            _key(wid).flowData = flowRes.data || {}
+            _key(wid).entryExitData = eeRes.data || {}
+            _key(wid).journeys = journeyRes.data || []
             _key(wid)._ts.flows = Date.now()
         } catch { /* keep cached */ }
     }
@@ -156,7 +156,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         if (!wid) return
         try {
             const res = await analyticsApi.liveEvents(wid)
-            _key(wid).liveEvents = res.data?.data || res.data || []
+            _key(wid).liveEvents = res.data || []
         } catch { /* keep cached */ }
     }
 
@@ -166,7 +166,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         if (!wid || !isStale('insights', wid)) return
         try {
             const res = await analyticsApi.insights(wid, { period })
-            _key(wid).insightsData = res.data?.data || res.data || {}
+            _key(wid).insightsData = res.data || {}
             _key(wid)._ts.insights = Date.now()
         } catch { /* keep cached */ }
     }
@@ -177,7 +177,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         if (!wid || !isStale('visitors', wid)) return
         try {
             const res = await analyticsApi.visitors(wid, { period })
-            _key(wid).visitorList = res.data?.data || res.data || []
+            _key(wid).visitorList = res.data || []
             _key(wid)._ts.visitors = Date.now()
         } catch { /* keep cached */ }
     }
@@ -186,7 +186,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         wid = wid || activeWebsiteId.value
         try {
             const res = await analyticsApi.visitorTimeline(wid, vid)
-            _key(wid).timelineEvents = res.data?.data || res.data || []
+            _key(wid).timelineEvents = res.data || []
         } catch { /* keep cached */ }
     }
 

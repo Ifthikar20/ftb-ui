@@ -206,7 +206,7 @@ async function refetchDashboard() {
   try {
     loading.value = true
     const dashRes = await dashboardApi.get(buildParams())
-    const d = dashRes.data?.data || dashRes.data
+    const d = dashRes.data
     stats.value = d.stats || []
     actions.value = d.actions || []
     activity.value = d.activity || []

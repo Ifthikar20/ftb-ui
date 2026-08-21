@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
+import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { safeHref } from '@/utils/safeHref'
@@ -96,7 +96,7 @@ async function load() {
   detail.value = null
   try {
     const res = await citationsApi.chatDetail(props.websiteId, props.resultId)
-    detail.value = res.data?.data || res.data || null
+    detail.value = res.data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Could not load this chat.'
   } finally {

@@ -4,11 +4,13 @@ export default {
     getCurrent: (config) => api.get('/billing/', config),
     getPlans: () => api.get('/billing/plans/'),
     checkout: (data) => api.post('/billing/checkout/', data),
-    devSubscribe: (data) => api.post('/billing/dev-subscribe/', data),
+    // Post-redirect verification of a completed Polar checkout.
+    confirm: (checkoutId) => api.post('/billing/confirm/', { checkout_id: checkoutId }),
     cancel: () => api.post('/billing/cancel/'),
     resume: () => api.post('/billing/resume/'),
     portal: () => api.post('/billing/portal/'),
     invoices: () => api.get('/billing/invoices/'),
     usage: () => api.get('/billing/usage/'),
-    tokenUsage: (days = 30) => api.get('/billing/token-usage/', { params: { days } }),
+    // Window is always the current billing period (server-defined).
+    tokenUsage: () => api.get('/billing/token-usage/'),
 }

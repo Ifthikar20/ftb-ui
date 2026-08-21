@@ -23,7 +23,7 @@ async function decide(decision) {
   try {
     const { data } = await agentsApi.decideAction(props.action.id, decision)
     toast.success(decision === 'approve' ? 'Action approved.' : 'Action dismissed.')
-    emit('updated', data?.data || data)
+    emit('updated', data)
   } catch (e) {
     toast.error(e.displayMessage || 'Could not update action.')
   } finally {

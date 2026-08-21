@@ -90,7 +90,7 @@ async function autoTemplate() {
   autoTemplating.value = true
   try {
     const { data } = await promptLibrary.autoTemplate(text.value)
-    const payload = data?.data || data || {}
+    const payload = data || {}
     if (payload.template_text) {
       text.value = payload.template_text
       if (payload.style) style.value = payload.style
@@ -116,7 +116,7 @@ async function save() {
       intent_bucket: intentBucket.value,
     }
     const { data } = await promptLibrary.createWebsitePrompt(props.websiteId, payload)
-    const row = data?.data || data
+    const row = data
     toast.success('Prompt created.')
     emit('created', row)
     // Keep the modal open and surface related prompts to add next.
@@ -137,7 +137,7 @@ async function fetchSuggestions(seedText) {
   suggestions.value = []
   try {
     const { data } = await promptLibrary.generateRelated({ prompt: seed, count: 5 })
-    const payload = data?.data || data || {}
+    const payload = data || {}
     const items = Array.isArray(payload.generated) ? payload.generated : []
     const seedNorm = norm(seed)
     suggestions.value = items
@@ -156,7 +156,7 @@ async function fetchSuggestions(seedText) {
       })
       .filter((s) => s.template_text && norm(s.text) !== seedNorm)
     if (!suggestions.value.length) suggestError.value = true
-  } catch (e) {
+  } catch {
     suggestError.value = true
   } finally {
     suggestLoading.value = false
@@ -173,7 +173,7 @@ async function addSuggestion(s) {
       intent_bucket: s.intent_bucket,
       text: s.text,
     })
-    const row = data?.data || data
+    const row = data
     s._added = true
     emit('created', row)
     toast.success('Added to library.')

@@ -362,7 +362,7 @@ async function startScan() {
   rotateScanLines()
   try {
     const { data } = await onboardingApi.scan(url)
-    const payload = data?.data || data
+    const payload = data
     if (!payload?.success) {
       throw new Error(payload?.error || 'Could not read this site.')
     }

@@ -55,43 +55,45 @@
             </div>
 
             <div v-else-if="usage">
-              <!-- Monthly allowance, expressed in tokens. Dollar figures stay
-                   in the database for audit; the user-facing unit is usage. -->
-              <div v-if="usage.cap_status && usage.cap_status.capacity_tokens > 0" class="mb-6 rounded-xl border border-border bg-muted px-4 py-3.5">
+              <!-- The allowance is a dollar spend cap — the same number
+                   enforcement uses. Tokens are shown as real counts, never
+                   converted into an invented "token capacity". -->
+              <div v-if="usage.allowance && usage.allowance.cap_usd > 0" class="mb-6 rounded-xl border border-border bg-muted px-4 py-3.5">
                 <div class="mb-1.5 flex items-baseline justify-between">
-                  <span class="text-sm font-semibold text-foreground">Monthly usage</span>
+                  <span class="text-sm font-semibold text-foreground">AI allowance · {{ planLabel(usage.allowance.plan) }} plan · this billing period</span>
                   <span class="text-sm text-muted-foreground">
-                    {{ formatTokens(usage.cap_status.used_tokens) }} of ~{{ formatTokens(usage.cap_status.capacity_tokens) }} tokens<span class="align-super text-[10px]">*</span>
-                    <span class="ml-1 font-semibold text-foreground">({{ usage.cap_status.pct }}%)</span>
+                    ${{ usage.allowance.spent_usd.toFixed(2) }} of ${{ usage.allowance.cap_usd.toFixed(2) }}
+                    <span class="ml-1 font-semibold text-foreground">({{ usage.allowance.pct_used }}%)</span>
                   </span>
                 </div>
                 <div class="h-2 overflow-hidden rounded bg-border">
                   <div
                     class="cap-bar-fill h-full"
-                    :class="{ 'cap-bar-warn': usage.cap_status.warning, 'cap-bar-exceeded': usage.cap_status.exceeded }"
-                    :style="{ width: Math.min(100, usage.cap_status.pct || 0) + '%' }"
+                    :class="{ 'cap-bar-warn': usage.allowance.warning, 'cap-bar-exceeded': usage.allowance.exceeded }"
+                    :style="{ width: Math.min(100, usage.allowance.pct_used || 0) + '%' }"
                   ></div>
                 </div>
                 <p class="mt-1.5 text-[11px] text-muted-foreground">
-                  Allowance renews {{ new Date(usage.cap_status.resets_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) }}.
+                  {{ formatTokens(usage.allowance.used_tokens) }} tokens used this period.
+                  Allowance renews {{ new Date(usage.allowance.resets_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) }}.
                 </p>
-                <p v-if="usage.cap_status.exceeded" class="mt-2 text-xs font-semibold text-destructive">
-                  Monthly allowance reached. AI features resume at the renewal date.
+                <p v-if="usage.allowance.exceeded" class="mt-2 text-xs font-semibold text-destructive">
+                  Allowance reached. AI features resume at the renewal date.
                 </p>
-                <p v-else-if="usage.cap_status.warning" class="mt-2 text-xs font-semibold text-[#B25E09]">
-                  Over 80% of this month's allowance used.
+                <p v-else-if="usage.allowance.warning" class="mt-2 text-xs font-semibold text-[#B25E09]">
+                  Over 80% of this period's allowance used.
                 </p>
               </div>
 
-              <!-- Month + week, one screen, no period picker -->
+              <!-- Billing period + trailing week, one screen -->
               <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(monthTotals.tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · 30 days</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.total_tokens) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · billing period</div>
                 </div>
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(monthTotals.calls) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · 30 days</div>
+                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(usage.totals.calls) }}</div>
+                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · billing period</div>
                 </div>
                 <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
                   <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(weekTotals.tokens) }}</div>
@@ -103,9 +105,9 @@
                 </div>
               </div>
 
-              <!-- Daily usage (last 30 days) -->
+              <!-- Daily usage across the current billing period -->
               <div class="mb-6" v-if="dailySeries.length">
-                <h4 class="usage-section-title">Daily usage</h4>
+                <h4 class="usage-section-title">Daily usage · {{ periodLabel }}</h4>
                 <div class="usage-chart">
                   <div v-for="d in dailySeries" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} requests`">
                     <div class="chart-bar" :style="{ height: pctOfMax(d.tokens, dailySeries) + '%' }"></div>
@@ -114,30 +116,20 @@
                 </div>
               </div>
 
-              <!-- Weekly usage (last 12 weeks) -->
-              <div class="mb-6" v-if="weeklySeries.length">
-                <h4 class="usage-section-title">Weekly usage</h4>
-                <div class="usage-chart">
-                  <div v-for="w in weeklySeries" :key="w.week" class="chart-bar-wrap" :title="`Week of ${formatDay(w.week)}: ${formatTokens(w.tokens)} tokens, ${w.calls} requests`">
-                    <div class="chart-bar" :style="{ height: pctOfMax(w.tokens, weeklySeries) + '%' }"></div>
-                    <span class="chart-label">{{ formatDay(w.week) }}</span>
-                  </div>
-                </div>
-              </div>
-
               <!-- Empty state -->
               <div v-if="!usage.totals.calls" class="flex flex-col items-center gap-2.5 p-8 text-center">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded yet. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
+                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
               </div>
 
               <p class="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
-                <span class="align-super text-[10px]">*</span>
-                Token capacity is an estimate and varies with the mix of AI models
-                your account uses. Usage is calculated against the current market
-                rates of the underlying AI providers (Anthropic, OpenAI, xAI,
-                Perplexity, Google); allowances may be adjusted if provider
-                pricing changes.
+                Token counts are reported by the AI providers per request. Costs
+                are calculated against the current market rates of the underlying
+                providers (Anthropic, OpenAI, xAI, Perplexity, Google); the
+                allowance may be adjusted if provider pricing changes.
+                <template v-if="usage.source === 'polar'">
+                  Token totals are served live from Polar metering.
+                </template>
               </p>
             </div>
           </CardContent>
@@ -197,11 +189,11 @@
 import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import authApi from '@/api/auth'
 import notificationsApi from '@/api/notifications'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -224,8 +216,9 @@ const notifPrefs = ref({
 const usage = ref(null)
 const usageLoading = ref(false)
 
-// Last-7-days rollup derived client-side from the 30-day daily series, so
-// month and week share one screen without a period picker or second fetch.
+// The server returns exactly the current billing period — the daily series
+// IS the window, no client-side re-windowing. The only derived rollup is
+// the trailing-7-days pair of tiles.
 const weekTotals = computed(() => {
   const daily = usage.value?.daily || []
   const cutoff = new Date()
@@ -241,39 +234,15 @@ const weekTotals = computed(() => {
   return { tokens, calls }
 })
 
-// Client-side rollups from the 90-day daily series: the daily chart shows
-// the last 30 days, the weekly chart buckets the full window by week, and
-// the tiles sum fixed ranges — one fetch, no period picker.
-function entriesSince(days) {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - (days - 1))
-  cutoff.setHours(0, 0, 0, 0)
-  return (usage.value?.daily || []).filter(d => d.day && new Date(d.day) >= cutoff)
-}
+const dailySeries = computed(() => usage.value?.daily || [])
 
-const dailySeries = computed(() => entriesSince(30))
-
-const monthTotals = computed(() => {
-  let tokens = 0, calls = 0
-  for (const d of dailySeries.value) { tokens += d.tokens || 0; calls += d.calls || 0 }
-  return { tokens, calls }
-})
-
-const weeklySeries = computed(() => {
-  const buckets = new Map()
-  for (const d of usage.value?.daily || []) {
-    if (!d.day) continue
-    const date = new Date(d.day)
-    // Bucket by the Monday of the entry's week.
-    const monday = new Date(date)
-    monday.setDate(date.getDate() - ((date.getDay() + 6) % 7))
-    const key = monday.toISOString().slice(0, 10)
-    const b = buckets.get(key) || { week: key, tokens: 0, calls: 0 }
-    b.tokens += d.tokens || 0
-    b.calls += d.calls || 0
-    buckets.set(key, b)
-  }
-  return [...buckets.values()].sort((a, b) => a.week.localeCompare(b.week))
+const periodLabel = computed(() => {
+  const p = usage.value?.period
+  if (!p?.start) return ''
+  const opts = { month: 'short', day: 'numeric' }
+  const start = new Date(p.start).toLocaleDateString('en-US', opts)
+  const end = new Date(p.end).toLocaleDateString('en-US', opts)
+  return `${start} – ${end}`
 })
 
 function pctOfMax(value, series) {
@@ -282,33 +251,10 @@ function pctOfMax(value, series) {
 }
 
 
-const moduleLabels = {
-  llm_ranking: 'LLM Dashboard',
-  rag: 'RAG / Embeddings',
-  onboarding: 'Onboarding scan',
-}
-
-const providerLabels = {
-  anthropic: 'Anthropic (Claude)',
-  openai: 'OpenAI (GPT)',
-  google: 'Google (Gemini)',
-  perplexity: 'Perplexity',
-  meta: 'Meta (Llama)',
-  mistral: 'Mistral AI',
-  cohere: 'Cohere',
-  deepseek: 'DeepSeek',
-  xai: 'xAI (Grok)',
-  amazon: 'Amazon (Nova / Bedrock)',
-}
-
-const roleLabels = {
-  upstream: 'Upstream LLM (audit query)',
-  extraction: 'Internal parsing (Haiku extraction)',
-  prompt_generation: 'Prompt generation',
-  context_inference: 'Audit context inference',
-}
-
 function formatNum(n) { return (n || 0).toLocaleString() }
+function planLabel(k) {
+  return { free: 'Free', pro: 'Pro', business: 'Business' }[k] || (k || 'Free')
+}
 function formatTokens(n) {
   if (!n) return '0'
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -322,32 +268,11 @@ function formatDay(isoDate) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function barHeight(tokens) {
-  if (!usage.value?.daily?.length) return 0
-  const max = Math.max(...usage.value.daily.map(d => d.tokens || 0))
-  return max > 0 ? Math.max(4, (tokens / max) * 100) : 4
-}
-
 async function loadUsage() {
   usageLoading.value = true
   try {
-    // Use the auth store's accessToken (the previous code referenced
-    // ``authStore.token`` which doesn't exist — the store exports
-    // ``accessToken`` — so the request silently 401'd and the Usage
-    // card stayed empty).
-    const token = authStore.accessToken || localStorage.getItem('access_token')
-    const res = await fetch('/api/v1/auth/me/ai-usage/?days=90', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-    if (res.ok) {
-      // Responses are enveloped {success, data} by the API middleware;
-      // assigning the wrapper left every field undefined and the tab
-      // permanently on its empty state.
-      const body = await res.json()
-      usage.value = body?.data || body
-    } else {
-      console.warn('AI usage fetch returned', res.status)
-    }
+    const { data } = await authApi.aiUsage()
+    usage.value = data
   } catch (e) {
     console.error('Failed to load AI usage', e)
   } finally {
@@ -366,7 +291,7 @@ onMounted(async () => {
   }
   try {
     const { data } = await notificationsApi.getPreferences()
-    const d = data?.data || data
+    const d = data
     if (d) notifPrefs.value = { ...notifPrefs.value, ...d }
   } catch {}
 

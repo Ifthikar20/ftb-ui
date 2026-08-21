@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
 export const useAppStore = defineStore('app', () => {
     const sidebarCollapsed = ref(false)
@@ -30,7 +30,7 @@ export const useAppStore = defineStore('app', () => {
     // Theme: light only (night mode removed)
     const theme = ref('light')
 
-    function applyTheme(t) {
+    function applyTheme() {
         document.documentElement.setAttribute('data-theme', 'light')
     }
 

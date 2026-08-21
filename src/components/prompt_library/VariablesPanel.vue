@@ -27,7 +27,7 @@ async function load() {
   loading.value = true
   try {
     const { data } = await promptLibrary.getVariables(props.websiteId)
-    const payload = data?.data || data || {}
+    const payload = data || {}
     const provenance = payload.provenance || []
     if (Array.isArray(provenance) && provenance.length) {
       rows.value = provenance.map(r => ({ name: r.name, value: r.value || '', source: r.source || 'user' }))

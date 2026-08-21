@@ -420,7 +420,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, h } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { BookMarked } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -432,7 +432,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import PromptCard from '@/components/prompt_library/PromptCard.vue'
 import ContextInputCard from '@/components/prompt_library/ContextInputCard.vue'
 import VariablesPanel from '@/components/prompt_library/VariablesPanel.vue'
 import NewPromptModal from '@/components/prompt_library/NewPromptModal.vue'
@@ -475,14 +474,12 @@ watch(searchInput, (v) => {
 })
 
 const page = ref(1)
-const pageSize = 24
 
 const newPromptOpen = ref(false)
 const variablesOpen = ref(false)
 const smokeOpen = ref(false)
 const smokeResult = ref(null)
 const activeSmokePromptId = ref(null)
-const synthesizing = ref(false)
 
 // ── Context-driven generation state ──
 const contextInput = ref('')
@@ -520,7 +517,6 @@ const HERO_LINES = [
   },
 ]
 const heroIndex = ref(Math.floor(Math.random() * HERO_LINES.length))
-const heroLine = computed(() => HERO_LINES[heroIndex.value % HERO_LINES.length])
 let heroTimer = null
 onMounted(() => {
   heroTimer = setInterval(() => {
@@ -584,7 +580,7 @@ async function loadSearchSources(uid) {
   searchSourcesByUid.value = { ...searchSourcesByUid.value, [uid]: { loading: true } }
   try {
     const { data } = await promptLibrary.searchSources(text)
-    const payload = data?.data || data || {}
+    const payload = data || {}
     if (payload.provider === 'unconfigured') {
       searchSourcesByUid.value = { ...searchSourcesByUid.value, [uid]: { unconfigured: true, results: [] } }
     } else {
@@ -593,7 +589,7 @@ async function loadSearchSources(uid) {
         [uid]: { results: payload.results || [], provider: payload.provider },
       }
     }
-  } catch (e) {
+  } catch {
     searchSourcesByUid.value = {
       ...searchSourcesByUid.value,
       [uid]: { error: true, results: [] },
@@ -761,14 +757,6 @@ function _escapeHtml(s) {
     .replace(/>/g, '&gt;')
 }
 
-function renderTemplate(template) {
-  if (!template) return ''
-  return _escapeHtml(template).replace(
-    /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g,
-    (_m, name) => `<span class="pl-var-chip">${_escapeHtml(name)}</span>`
-  )
-}
-
 /**
  * Render `text` with each phrase in `keywords` wrapped in a highlight span.
  * Case-insensitive. Longer phrases take priority so 'kettle-boiling or just
@@ -846,7 +834,7 @@ async function onGenerate(text, count) {
       count: clamped,
       persist: false,
     })
-    const payload = data?.data || data || {}
+    const payload = data || {}
     const items = Array.isArray(payload.generated) ? payload.generated : []
     generatedPrompts.value = items.map(_wrap)
     generationProvider.value = payload.provider || ''
@@ -880,7 +868,7 @@ async function onSaveGenerated(prompt) {
       text: prompt.preview_text || prompt.template_text,
     }
     const { data } = await promptLibrary.savePromptToWebsite(websiteId.value, payload)
-    const saved = data?.data || data
+    const saved = data
     prompt._saved = true
     prompt._savedId = saved?.id || null
     toast.success('Saved')
@@ -901,82 +889,14 @@ function onRemoveGenerated(prompt) {
 
 const variablesMap = ref({})  // { name: value }
 
-const styleFilters = [
-  { value: '', label: 'All' },
-  { value: 'story', label: 'Story' },
-  { value: 'question', label: 'Question' },
-  { value: 'comparison', label: 'Comparison' },
-  { value: 'local', label: 'Local' },
-  { value: 'how_to', label: 'How-to' },
-  { value: 'listicle', label: 'Listicle' },
-]
-const sourceFilters = [
-  { value: '', label: 'All' },
-  { value: 'manual', label: 'Manual' },
-  { value: 'reddit', label: 'Reddit' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'claude', label: 'Claude' },
-  { value: 'gsc', label: 'GSC' },
-]
-const effFilters = [
-  { value: '', label: 'All' },
-  { value: 'top', label: 'Top' },
-  { value: 'underperforming', label: 'Underperforming' },
-  { value: 'untested', label: 'Untested' },
-]
-
-const activeIndustryName = computed(
-  () => industries.value.find((i) => i.slug === industrySlug.value)?.name || '',
-)
-
 const resolvedVariables = computed(() => variablesMap.value || {})
-
-const stats = computed(() => {
-  const list = prompts.value
-  const total = list.length
-  const active = list.filter(p => p.is_active !== false).length
-  const scored = list.filter(p => (p.effectiveness_components?.stable) || (p.runs_count || 0) >= 3)
-  const avg = scored.length
-    ? scored.reduce((s, p) => s + (p.effectiveness_score || 0), 0) / scored.length
-    : 0
-  const topLift = scored.filter(p => (p.effectiveness_score || 0) >= 0.7).length
-  return {
-    total,
-    active,
-    avgEff: scored.length ? Math.round(avg * 100) + '%' : '—',
-    topLift: scored.length ? `${topLift}/${scored.length}` : '—',
-  }
-})
-
-const filteredPrompts = computed(() => {
-  let list = prompts.value
-  if (styleFilter.value) list = list.filter(p => p.style === styleFilter.value)
-  if (sourceFilter.value) list = list.filter(p => p.source === sourceFilter.value)
-  if (effFilter.value === 'top') list = list.filter(p => (p.effectiveness_score || 0) >= 0.7 && (p.effectiveness_components?.stable))
-  else if (effFilter.value === 'underperforming') list = list.filter(p => (p.effectiveness_components?.stable) && (p.effectiveness_score || 0) < 0.4)
-  else if (effFilter.value === 'untested') list = list.filter(p => !(p.effectiveness_components?.stable) && (p.runs_count || 0) < 3)
-
-  const sorted = [...list]
-  if (sort.value === 'effectiveness') {
-    sorted.sort((a, b) => (b.effectiveness_score || 0) - (a.effectiveness_score || 0))
-  } else if (sort.value === 'newest') {
-    sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-  } else if (sort.value === 'most_used') {
-    sorted.sort((a, b) => (b.runs_count || 0) - (a.runs_count || 0))
-  } else if (sort.value === 'untested') {
-    sorted.sort((a, b) => (a.runs_count || 0) - (b.runs_count || 0))
-  }
-  return sorted
-})
-
-const pagedPrompts = computed(() => filteredPrompts.value.slice(0, page.value * pageSize))
 
 watch([styleFilter, sourceFilter, effFilter, sort, debouncedSearch], () => { page.value = 1 })
 
 async function loadIndustries() {
   try {
     const { data } = await promptLibrary.getIndustries()
-    industries.value = data?.results || data?.data || data || []
+    industries.value = data || []
   } catch { industries.value = [] }
 }
 
@@ -992,7 +912,7 @@ async function loadPrompts() {
   loading.value = true
   try {
     const { data } = await promptLibrary.listBrandPrompts(websiteId.value)
-    const rows = data?.data?.results || data?.results || data?.data || data || []
+    const rows = data || []
     const list = Array.isArray(rows) ? rows : []
     // The brand-prompts endpoint returns either {brand_prompt, prompt} or
     // a flat Prompt row — normalise to a flat shape the table expects.
@@ -1006,7 +926,7 @@ async function loadTrends() {
   trendsLoading.value = true
   try {
     const { data } = await promptLibrary.getIndustryTrends(industrySlug.value)
-    trends.value = data?.data || data || null
+    trends.value = data || null
   } catch { trends.value = null }
   finally { trendsLoading.value = false }
 }
@@ -1015,7 +935,7 @@ async function loadVariables() {
   if (!websiteId.value) { variablesMap.value = {}; return }
   try {
     const { data } = await promptLibrary.getVariables(websiteId.value)
-    const payload = data?.data || data || {}
+    const payload = data || {}
     variablesMap.value = payload.variables || {}
     // Merge auto provenance values into the resolved map for card display.
     if (Array.isArray(payload.provenance)) {
@@ -1032,15 +952,7 @@ function onVariablesSaved(vars) {
   variablesMap.value = { ...variablesMap.value, ...vars }
 }
 
-async function onPreview(prompt) {
-  try {
-    const { data } = await promptLibrary.preview(prompt.id, websiteId.value)
-    const p = data?.data || data || {}
-    toast.success(p.filled_text ? `Preview: ${(p.filled_text || '').slice(0, 80)}…` : 'Previewed.')
-  } catch (e) { toast.error(e.displayMessage || 'Preview failed.') }
-}
-
-function onSelect() { /* no-op for now */ }
+// eslint-disable-next-line no-unused-vars -- appears intended but unwired; left for review
 function onEdit() { newPromptOpen.value = true }
 
 async function runSmoke(promptId, provider = 'claude') {
@@ -1050,82 +962,15 @@ async function runSmoke(promptId, provider = 'claude') {
   activeSmokePromptId.value = promptId
   try {
     const { data } = await promptLibrary.smokeTest(promptId, { provider, website_id: websiteId.value })
-    smokeResult.value = data?.data || data
+    smokeResult.value = data
   } catch (e) {
     smokeResult.value = { error: e.displayMessage || 'Smoke test failed.', provider }
   }
 }
+// eslint-disable-next-line no-unused-vars -- appears intended but unwired; left for review
 function onSmokeTest(prompt) { runSmoke(prompt.id) }
 
-async function onToggleActive(prompt) {
-  try {
-    const fn = prompt.is_active === false ? promptLibrary.enable : promptLibrary.disable
-    await fn(prompt.id)
-    prompt.is_active = !(prompt.is_active === false ? false : true) ? true : !prompt.is_active
-    toast.success('Updated.')
-    loadPrompts()
-  } catch (e) { toast.error(e.displayMessage || 'Could not toggle.') }
-}
-
-async function onDelete(prompt) {
-  if (!confirm('Delete this prompt? This cannot be undone.')) return
-  try {
-    await promptLibrary.disable(prompt.id)
-    prompts.value = prompts.value.filter(p => p.id !== prompt.id)
-    toast.success('Deleted.')
-  } catch (e) { toast.error(e.displayMessage || 'Could not delete.') }
-}
-
 function onPromptCreated() { loadPrompts() }
-
-async function onSynthesize() {
-  if (!industrySlug.value) { toast.error('Pick an industry first.'); return }
-  const ind = industries.value.find(i => i.slug === industrySlug.value)
-  if (!ind) return
-  synthesizing.value = true
-  try {
-    await promptLibrary.synthesize({ industry_id: ind.id, count: 50 })
-    toast.success('Synthesizing 50 prompts — refresh in a moment.')
-    setTimeout(loadPrompts, 1500)
-  } catch (e) {
-    toast.error(e.displayMessage || 'Synthesis failed.')
-  } finally {
-    synthesizing.value = false
-  }
-}
-
-function formatRelative(iso) {
-  if (!iso) return ''
-  const then = new Date(iso).getTime()
-  const diff = Date.now() - then
-  const mins = Math.round(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins} min ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.round(hrs / 24)
-  return `${days}d ago`
-}
-
-const Sparkline = {
-  props: { values: { type: Array, default: () => [] } },
-  setup(props) {
-    return () => {
-      const v = props.values
-      if (!v.length) return h('span', { style: 'color: var(--muted-foreground); font-size: 11px' }, 'No trend data yet')
-      const w = 720, ht = 56
-      const max = Math.max(...v), min = Math.min(...v)
-      const range = Math.max(1, max - min)
-      const pts = v.map((val, i) => {
-        const x = (i / Math.max(1, v.length - 1)) * w
-        const y = ht - ((val - min) / range) * (ht - 6) - 3
-        return `${x.toFixed(1)},${y.toFixed(1)}`
-      }).join(' ')
-      return h('svg', { width: '100%', height: ht, viewBox: `0 0 ${w} ${ht}`, preserveAspectRatio: 'none', style: 'display:block' },
-        [h('polyline', { points: pts, fill: 'none', stroke: 'var(--primary)', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })])
-    }
-  },
-}
 
 onMounted(async () => {
   await loadIndustries()

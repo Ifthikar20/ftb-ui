@@ -41,7 +41,7 @@ const nextRun = computed(() => fmt(schedule.value?.next_run_at))
 async function loadSchedule() {
   try {
     const { data } = await promptLibrary.getPromptSchedule(props.websiteId, props.promptId)
-    schedule.value = data?.data?.schedule ?? data?.schedule ?? null
+    schedule.value = data?.schedule ?? null
     if (schedule.value?.frequency) frequency.value = schedule.value.frequency
   } catch {
     schedule.value = null
@@ -58,7 +58,7 @@ async function save() {
       frequency: frequency.value,
       is_enabled: true,
     })
-    schedule.value = data?.data?.schedule ?? data?.schedule ?? null
+    schedule.value = data?.schedule ?? null
     emit('changed', schedule.value)
     toast.success('Schedule saved. This prompt will run automatically.')
     open.value = false

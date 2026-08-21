@@ -238,10 +238,10 @@
           </div>
           <div class="cmd-results">
             <template v-if="filteredSearchPages.length">
-              <template v-for="(group, gIdx) in groupedResults" :key="group.label">
+              <template v-for="group in groupedResults" :key="group.label">
                 <div class="cmd-group-label">{{ group.label }}</div>
                 <div
-                  v-for="(item, iIdx) in group.items"
+                  v-for="item in group.items"
                   :key="item.name"
                   class="cmd-item"
                   :class="{ 'cmd-item-active': item._flatIdx === highlightIdx }"
@@ -300,8 +300,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown, Home,
-  LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
-  ShieldCheck, FileText, Plug, CreditCard, Settings, Bot,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -560,8 +559,7 @@ async function createProject() {
   creating.value = true
   createError.value = ''
   try {
-    const { data } = await websitesApi.create(newProject.value)
-    const project = data?.data || data
+    const { data: project } = await websitesApi.create(newProject.value)
     appStore.websites.push(project)
     appStore.setActiveWebsite(project)
     newProject.value = { name: '', url: '', industry: '' }
@@ -587,12 +585,12 @@ onMounted(async () => {
   }
   try {
     const { data } = await websitesApi.list({ _silentError: true })
-    appStore.setWebsites(data?.results || data || [])
+    appStore.setWebsites(data || [])
   } catch {}
   // Fetch plan info for project limits
   try {
     const { data } = await billingApi.getCurrent({ _silentError: true })
-    const plan = data?.plan || data?.data?.plan || 'starter'
+    const plan = data?.plan || 'starter'
     const limits = { starter: 1, growth: 5, scale: -1 }
     appStore.setPlanInfo(plan, limits[plan] ?? 1)
   } catch {}

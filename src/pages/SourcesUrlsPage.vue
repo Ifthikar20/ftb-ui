@@ -327,7 +327,7 @@ async function load() {
     if (selectedTopic.value) params.topic = selectedTopic.value
     if (selectedModel.value) params.provider = selectedModel.value
     const res = await citationsApi.websiteUrls(websiteId.value, params)
-    const data = res.data?.data || res.data || {}
+    const data = res.data || {}
     topics.value = data.topics || []
     chartLabels.value = data.overview?.labels || []
     domainSeries.value = (data.overview?.series || []).map((s, i) => ({

@@ -19,7 +19,7 @@ import { useBrandSecurityStore } from '@/stores/brandSecurity'
 import { safeHref } from '@/utils/safeHref'
 import { timeAgo } from '@/utils/timeAgo.js'
 
-const props = defineProps({
+defineProps({
   alerts: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   // True when any filter/search narrows the list — switches the empty

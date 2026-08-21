@@ -24,6 +24,7 @@ const openMobile = ref(false)
 
 const openProp = toRef(props, 'open')
 const _open = ref(props.defaultOpen)
+// eslint-disable-next-line vue/no-dupe-keys -- computed intentionally shadows the `open` prop (controlled/uncontrolled pattern); script-setup binding wins in the template
 const open = computed(() => openProp.value ?? _open.value)
 
 function setOpen(value) {

@@ -373,7 +373,7 @@ async function load() {
   loading.value = true
   try {
     const { data } = await promptLibrary.savedPromptsAgg(websiteId)
-    const body = data?.data || data || {}
+    const body = data || {}
     rows.value = body.rows || []
     topics.value = body.topics || []
     // Prefer the server's distinct tag list; fall back to deriving from rows.
@@ -613,7 +613,7 @@ const LOCATIONS = ref([{ code: 'US', name: 'United States' }])
 async function loadRegions() {
   try {
     const { data } = await promptLibrary.getRegions()
-    const list = (data?.data || data || {}).countries || []
+    const list = (data || {}).countries || []
     if (list.length) LOCATIONS.value = list
   } catch (_) { /* keep the default */ }
 }
@@ -649,7 +649,7 @@ async function submitAdd() {
       intent_bucket: 'category',
       style: 'question',
     })
-    const body = res?.data?.data || res?.data || {}
+    const body = res?.data || {}
     const n = body.created_count || promptCount.value
     toast.success(`Added ${n} prompt${n === 1 ? '' : 's'} · scanning…`)
     showAdd.value = false
