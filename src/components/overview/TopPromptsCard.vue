@@ -108,7 +108,7 @@ function barColor(v) {
                   :key="prov.name"
                   class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold"
                   :class="prov.mentioned
-                    ? 'bg-[#E8F5E9] text-[#008A05]'
+                    ? 'bg-[#E8F5E9] text-[#008A05] dark:bg-[#4ade80]/15 dark:text-[#4ade80]'
                     : 'bg-muted text-muted-foreground'"
                   :title="prov.mentioned ? 'Mentioned' : 'Not mentioned'"
                 >

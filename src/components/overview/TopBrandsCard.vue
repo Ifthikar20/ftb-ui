@@ -3,9 +3,10 @@ import { ref, computed } from 'vue'
 import { ChevronDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import EmptyState from '@/components/ui/EmptyState.vue'
-
-// Avatar colours are presentation, not data — safe to keep local.
-const AVATAR_COLORS = ['#FF385C', '#00A699', '#FC642D', '#484848', '#767676', '#008489', '#5B8DEF']
+// Real company logos with a cached resolver (site crawl -> Clearbit ->
+// favicon guess) and a deterministic initial badge as the final fallback,
+// so an unresolvable brand still gets a stable mark instead of a broken img.
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const props = defineProps({
   brands: { type: Array, default: () => [] },
@@ -29,12 +30,6 @@ const expanded = ref(null)
 
 function toggle(i) {
   expanded.value = expanded.value === i ? null : i
-}
-function initials(name) {
-  return (name || '?').trim().charAt(0).toUpperCase()
-}
-function color(i) {
-  return AVATAR_COLORS[i % AVATAR_COLORS.length]
 }
 function summary(b) {
   const n = b.prompts?.length || 0
@@ -82,10 +77,7 @@ function rank(v) {
             @mouseleave="hovered = null"
             @click="toggle(i)"
           >
-            <div
-              class="flex size-[42px] shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-white"
-              :style="{ background: color(i) }"
-            >{{ initials(b.name) }}</div>
+            <BrandLogo :name="b.name" :size="42" class="shrink-0" />
 
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-bold text-foreground">{{ b.name }}</p>
@@ -101,7 +93,7 @@ function rank(v) {
               <p
                 v-if="b.trend != null"
                 class="mt-0.5 text-xs font-bold"
-                :class="b.up ? 'text-[#008A05]' : 'text-[#C13515]'"
+                :class="b.up ? 'text-[#008A05] dark:text-[#4ade80]' : 'text-[#C13515] dark:text-[#f87171]'"
               >
                 {{ b.up ? '+' : '-' }}{{ b.trend }}%
               </p>
@@ -132,7 +124,7 @@ function rank(v) {
                   <p class="min-w-0 flex-1 text-[12px] font-medium text-foreground">{{ p.text }}</p>
                   <span
                     v-if="p.beats_you"
-                    class="shrink-0 rounded bg-[#FDECEA] px-1.5 py-0.5 text-[10px] font-bold text-[#C02926]"
+                    class="shrink-0 rounded bg-[#FDECEA] dark:bg-[#f87171]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#C02926] dark:text-[#f87171]"
                   >ABOVE YOU</span>
                 </div>
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">

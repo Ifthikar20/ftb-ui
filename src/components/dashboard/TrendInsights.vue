@@ -18,9 +18,8 @@ const props = defineProps({
   integrations: {
     type: Array,
     default: () => ([
-      { type: 'slack', name: 'Slack', desc: 'Get trend alerts directly in your channels' },
-      { type: 'discord', name: 'Discord', desc: 'Share weekly insights with your team' },
-      { type: 'telegram', name: 'Telegram', desc: 'Receive instant growth milestone alerts' },
+      { type: 'slack', name: 'Slack', desc: 'Daily reports and brand-security alerts in your channels' },
+      { type: 'discord', name: 'Discord', desc: 'Daily reports and /fetchbot commands in your server' },
     ]),
   },
 })

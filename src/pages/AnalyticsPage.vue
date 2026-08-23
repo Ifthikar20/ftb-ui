@@ -6,7 +6,7 @@
         <h1 class="page-title">SEO Analytics</h1>
         <p class="page-subtitle">Search performance, retention, flows, and AI insights.</p>
       </div>
-      <div class="flex gap-8 items-center">
+      <div class="flex gap-2 items-center">
         <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 1v5h5"/><path d="M15 15v-5h-5"/>
@@ -970,9 +970,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAnalyticsStore } from '@/stores/analytics'
+import { useCardPicker } from '@/composables/useCardPicker'
 import analyticsApi from '@/api/analytics'
 import dashboardApi from '@/api/dashboard'
-import { Line, Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
+import { Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import TrafficOverviewCard from '@/components/analytics/TrafficOverviewCard.vue'
 import { Button } from '@/components/ui/button'
@@ -1035,7 +1036,6 @@ const topPages = computed(() => cached.value.topPages || [])
 const sources = computed(() => cached.value.sources || [])
 const devices = computed(() => cached.value.devices || [])
 const countries = computed(() => cached.value.countries || [])
-const realtimeVisitors = computed(() => cached.value.realtimeVisitors || 0)
 const noData = computed(() => cached.value.noData)
 
 // ── Integration status ──
@@ -1050,7 +1050,7 @@ const periodLabel = computed(() => PERIOD_LABELS[period.value] || period.value)
 onMounted(async () => {
   try {
     const { data } = await dashboardApi.get()
-    const d = data?.data || data
+    const d = data
     if (d?.integrations) {
       integrationStatus.value.pixel = d.integrations.pixel?.installed || false
       const svc = d.integrations.services || []
@@ -1080,48 +1080,18 @@ const overviewAvailableCards = [
   { id: 'countries', title: 'Top Countries', desc: 'Visitor breakdown by country', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c-2 2-2 10 0 12M8 2c2 2 2 10 0 12"/></svg>', size: 'half' },
 ]
 
-const OV_DEFAULT = ['traffic', 'sources', 'pages', 'countries']
-const OV_VERSION = 2  // bump to reset all users to defaults
-const _ovStorageKey = computed(() => `ftb_ov_cards_${store.activeWebsiteId}`)
-const _ovVersionKey = computed(() => `ftb_ov_ver_${store.activeWebsiteId}`)
-const overviewCards = ref([...OV_DEFAULT])
-const showOverviewPicker = ref(false)
-
-// Load overview cards from localStorage on mount (with version guard)
-const VALID_OV_IDS = new Set(overviewAvailableCards.map(c => c.id))
-onMounted(() => {
-  try {
-    const ver = parseInt(localStorage.getItem(_ovVersionKey.value) || '0', 10)
-    if (ver >= OV_VERSION) {
-      const saved = localStorage.getItem(_ovStorageKey.value)
-      if (saved) {
-        const parsed = JSON.parse(saved).filter(id => VALID_OV_IDS.has(id))
-        if (parsed.length) overviewCards.value = parsed
-      }
-    } else {
-      // Old version or first time — reset to defaults
-      localStorage.setItem(_ovVersionKey.value, String(OV_VERSION))
-      localStorage.setItem(_ovStorageKey.value, JSON.stringify(OV_DEFAULT))
-    }
-  } catch { /* ignore */ }
+const {
+  cards: overviewCards,
+  showPicker: showOverviewPicker,
+  add: addOverviewCard,
+  remove: removeOverviewCard,
+} = useCardPicker({
+  storageKey: computed(() => `ftb_ov_cards_${store.activeWebsiteId}`),
+  versionKey: computed(() => `ftb_ov_ver_${store.activeWebsiteId}`),
+  availableCards: overviewAvailableCards,
+  defaults: ['traffic', 'sources', 'pages', 'countries'],
+  version: 2,  // bump to reset all users to defaults
 })
-
-function _saveOvCards() {
-  try { localStorage.setItem(_ovStorageKey.value, JSON.stringify(overviewCards.value)) } catch {}
-}
-
-function addOverviewCard(id) {
-  if (!overviewCards.value.includes(id)) {
-    overviewCards.value.push(id)
-    _saveOvCards()
-  }
-  showOverviewPicker.value = false
-}
-
-function removeOverviewCard(id) {
-  overviewCards.value = overviewCards.value.filter(c => c !== id)
-  _saveOvCards()
-}
 
 // ── Customizable Retention Cards ──
 const retAvailableCards = [
@@ -1135,33 +1105,15 @@ const retAvailableCards = [
   { id: 'cohort_matrix', title: 'Cohort Retention', desc: 'Weekly retention heatmap by visitor cohort', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 6h12M2 10h12M6 2v12M10 2v12"/></svg>', size: 'full' },
 ]
 
-const _retStorageKey = computed(() => `ftb_ret_cards_${store.activeWebsiteId}`)
-const retentionCards = ref([])
-const showCardPicker = ref(false)
-
-// Load from localStorage on mount
-onMounted(() => {
-  try {
-    const saved = localStorage.getItem(_retStorageKey.value)
-    if (saved) retentionCards.value = JSON.parse(saved)
-  } catch { /* ignore */ }
+const {
+  cards: retentionCards,
+  showPicker: showCardPicker,
+  add: addRetCard,
+  remove: removeRetCard,
+} = useCardPicker({
+  storageKey: computed(() => `ftb_ret_cards_${store.activeWebsiteId}`),
+  availableCards: retAvailableCards,
 })
-
-function _saveRetCards() {
-  try { localStorage.setItem(_retStorageKey.value, JSON.stringify(retentionCards.value)) } catch {}
-}
-
-function addRetCard(id) {
-  if (retentionCards.value.includes(id)) return
-  retentionCards.value.push(id)
-  _saveRetCards()
-  showCardPicker.value = false
-}
-
-function removeRetCard(id) {
-  retentionCards.value = retentionCards.value.filter(c => c !== id)
-  _saveRetCards()
-}
 
 // ── Customizable Flow Cards ──
 const flowAvailableCards = [
@@ -1170,33 +1122,16 @@ const flowAvailableCards = [
   { id: 'visitor_journeys', title: 'Visitor Journeys', desc: 'Per-session page paths with ML intent scoring and recommendations', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3" cy="8" r="2"/><circle cx="13" cy="4" r="2"/><circle cx="13" cy="12" r="2"/><path d="M5 8h3l3-4M8 8l3 4"/></svg>', size: 'full' },
 ]
 
-const _flowStorageKey = computed(() => `ftb_flow_cards_${store.activeWebsiteId}`)
-const flowCards = ref([])
-const showFlowPicker = ref(false)
-const expandedJourneys = ref(new Set())
-
-onMounted(() => {
-  try {
-    const saved = localStorage.getItem(_flowStorageKey.value)
-    if (saved) flowCards.value = JSON.parse(saved)
-  } catch {}
+const {
+  cards: flowCards,
+  showPicker: showFlowPicker,
+  add: addFlowCard,
+  remove: removeFlowCard,
+} = useCardPicker({
+  storageKey: computed(() => `ftb_flow_cards_${store.activeWebsiteId}`),
+  availableCards: flowAvailableCards,
 })
-
-function _saveFlowCards() {
-  try { localStorage.setItem(_flowStorageKey.value, JSON.stringify(flowCards.value)) } catch {}
-}
-
-function addFlowCard(id) {
-  if (flowCards.value.includes(id)) return
-  flowCards.value.push(id)
-  _saveFlowCards()
-  showFlowPicker.value = false
-}
-
-function removeFlowCard(id) {
-  flowCards.value = flowCards.value.filter(c => c !== id)
-  _saveFlowCards()
-}
+const expandedJourneys = ref(new Set())
 
 // ── Customizable Insight Cards ──
 const insightAvailableCards = [
@@ -1206,32 +1141,15 @@ const insightAvailableCards = [
   { id: 'engagement_health', title: 'Engagement Health', desc: 'Bounce, depth, and return rate with improvement suggestions', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2C4 2 1 8 1 8s3 6 7 6 7-6 7-6-3-6-7-6z"/><circle cx="8" cy="8" r="2"/></svg>', size: 'full' },
 ]
 
-const _insightStorageKey = computed(() => `ftb_insight_cards_${store.activeWebsiteId}`)
-const insightCards = ref([])
-const showInsightPicker = ref(false)
-
-onMounted(() => {
-  try {
-    const saved = localStorage.getItem(_insightStorageKey.value)
-    if (saved) insightCards.value = JSON.parse(saved)
-  } catch {}
+const {
+  cards: insightCards,
+  showPicker: showInsightPicker,
+  add: addInsightCard,
+  remove: removeInsightCard,
+} = useCardPicker({
+  storageKey: computed(() => `ftb_insight_cards_${store.activeWebsiteId}`),
+  availableCards: insightAvailableCards,
 })
-
-function _saveInsightCards() {
-  try { localStorage.setItem(_insightStorageKey.value, JSON.stringify(insightCards.value)) } catch {}
-}
-
-function addInsightCard(id) {
-  if (insightCards.value.includes(id)) return
-  insightCards.value.push(id)
-  _saveInsightCards()
-  showInsightPicker.value = false
-}
-
-function removeInsightCard(id) {
-  insightCards.value = insightCards.value.filter(c => c !== id)
-  _saveInsightCards()
-}
 
 // Computed: filter insights by category
 const allInsights = computed(() => insightsData.value?.insights || [])
@@ -1277,8 +1195,6 @@ const bounceRate = computed(() => {
   const s = stats.value.find(s => s.label?.toLowerCase()?.includes('bounce'))
   return s ? parseInt(s.value) || 0 : 0
 })
-const conversionRate = computed(() => cached.value.conversionRate || 0)
-const avgLoadTime = computed(() => cached.value.avgLoadTime || 0)
 
 // Local UI state
 const showTooltip = ref(null)
@@ -1476,62 +1392,6 @@ const filteredVisitors = computed(() => {
   return list
 })
 
-// ── Flow insights: user-level analysis ──
-const flowInsights = computed(() => {
-  const insights = []
-  const entries = entryExitData.value?.entry_pages || []
-  const exits = entryExitData.value?.exit_pages || []
-  const links = flowData.value?.links || []
-  const jList = journeys.value || []
-  const keyPages = ['/pricing', '/features', '/about', '/signup', '/demo', '/contact', '/blog']
-  const allVisitedPages = new Set()
-  jList.forEach(j => (j.pages || []).forEach(p => allVisitedPages.add(p)))
-  links.forEach(l => { allVisitedPages.add(cleanPath(l.source)); allVisitedPages.add(cleanPath(l.target)) })
-
-  if (jList.length) {
-    jList.forEach((j, idx) => {
-      const pages = j.pages || []
-      if (!pages.length) return
-      const visited = new Set(pages)
-      const viewedProduct = pages.some(p => p.startsWith('/product'))
-      const reachedLogin = pages.some(p => p.includes('login') || p.includes('signup'))
-      const sawPricing = visited.has('/pricing')
-      const name = j.company || j.visitor_hash || `Visitor ${idx + 1}`
-      let intent = 'Browsing', sev = 'dot-neutral'
-      if (reachedLogin) { intent = 'High intent - tried to log in'; sev = 'dot-success' }
-      else if (viewedProduct && sawPricing) { intent = 'Evaluating - viewed product + pricing'; sev = 'dot-info' }
-      else if (viewedProduct) { intent = 'Interested - viewed a product'; sev = 'dot-warning' }
-      else if (pages.length <= 1) { intent = 'Quick visit - single page'; sev = 'dot-muted' }
-      insights.push({ severity: sev, title: name, value: pages.join(' > '), desc: `${intent}. ${pages.length} pages visited${j.duration_secs ? ', ' + formatDuration(j.duration_secs) + ' session' : ''}.` })
-      if (pages.length > 1) {
-        const critical = []
-        if (viewedProduct && !sawPricing) critical.push('/pricing')
-        if (viewedProduct && !visited.has('/signup') && !reachedLogin) critical.push('/signup')
-        if (!visited.has('/features')) critical.push('/features')
-        if (critical.length) {
-          insights.push({ severity: 'dot-danger', title: `${name} - missed pages`, value: critical.join(', '), desc: viewedProduct && !sawPricing ? 'Viewed a product but never saw pricing. Add pricing CTAs on product pages.' : 'Consider adding navigation prompts to guide visitors to these key pages.' })
-        }
-      }
-    })
-  }
-
-  const missedOverall = keyPages.filter(p => !allVisitedPages.has(p))
-  if (missedOverall.length && allVisitedPages.size > 0) {
-    insights.push({ severity: 'dot-danger', title: 'Pages with zero visits', value: missedOverall.join(', '), desc: 'No visitors have reached these pages. Check navigation links and internal linking.' })
-  }
-  if (entries.length) {
-    insights.push({ severity: 'dot-info', title: 'Top landing page', value: cleanPath(entries[0].page), desc: `${entries[0].count} visit${entries[0].count > 1 ? 's' : ''} start here.` })
-  }
-  if (exits.length) {
-    const top = exits[0]
-    const isConversion = cleanPath(top.page).match(/signup|login|checkout|thank/)
-    insights.push({ severity: isConversion ? 'dot-success' : 'dot-danger', title: isConversion ? 'Conversion exit' : 'Top drop-off', value: cleanPath(top.page), desc: isConversion ? `${top.count} visitors leave after ${cleanPath(top.page)}.` : `${top.count} visitors leave from here. Add CTAs or improve content.` })
-  }
-  return insights
-})
-
-
-
 function cleanPath(url) {
   if (!url) return '--'
   try { return new URL(url).pathname } catch { return url.startsWith('/') ? url : '/' + url }
@@ -1592,79 +1452,15 @@ function formatDuration(secs) {
 
 // ════════════ CHART.JS CONFIGURATIONS ════════════
 
-// Traffic Overview — Line chart with gradient fill
-const trafficChartData = computed(() => ({
-  labels: chartData.value.map(d => d.label),
-  datasets: [
-    {
-      label: 'Visitors',
-      data: chartData.value.map(d => d.visitors || 0),
-      borderColor: '#F5A623',
-      backgroundColor: 'rgba(245, 166, 35, 0.12)',
-      fill: true,
-      tension: 0.4,
-      borderWidth: 2.5,
-      pointRadius: 0,
-      pointHoverRadius: 5,
-      pointHoverBackgroundColor: '#F5A623',
-      pointHoverBorderColor: '#fff',
-      pointHoverBorderWidth: 2,
-    },
-    {
-      label: 'Page Views',
-      data: chartData.value.map(d => d.pageviews || 0),
-      borderColor: '#3B82F6',
-      backgroundColor: 'rgba(59, 130, 246, 0.08)',
-      fill: true,
-      tension: 0.4,
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      pointHoverBackgroundColor: '#3B82F6',
-      pointHoverBorderColor: '#fff',
-      pointHoverBorderWidth: 2,
-    },
-  ],
-}))
-
-const trafficChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  plugins: {
-    legend: { display: true, position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, boxWidth: 6 } },
-    tooltip: {
-      backgroundColor: 'rgba(26, 26, 46, 0.95)',
-      titleColor: '#fff',
-      bodyColor: '#ccc',
-      borderColor: 'rgba(91, 141, 239, 0.15)',
-      borderWidth: 1,
-      padding: 12,
-      cornerRadius: 8,
-      displayColors: true,
-      boxWidth: 8,
-      boxHeight: 8,
-      usePointStyle: true,
-    },
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      border: { display: false },
-      ticks: { maxTicksLimit: 8, padding: 8 },
-    },
-    y: {
-      grid: { color: 'rgba(138, 138, 154, 0.08)', drawTicks: false },
-      border: { display: false },
-      ticks: { padding: 12 },
-      beginAtZero: true,
-    },
-  },
+// Sources — Horizontal Bar chart
+// Sources whose sessions arrived from an AI assistant carry an "(AI)"
+// suffix so the new traffic channel is visible in the chart labels.
+function sourceLabelWithChannel(s) {
+  return s.medium === 'ai' ? `${s.name} (AI)` : s.name
 }
 
-// Sources — Horizontal Bar chart
 const sourcesChartData = computed(() => ({
-  labels: sources.value.map(s => s.name),
+  labels: sources.value.map(sourceLabelWithChannel),
   datasets: [{
     label: 'Sessions',
     data: sources.value.map(s => s.sessions || 0),
@@ -1783,7 +1579,7 @@ const radarChartOptions = {
 
 // Traffic Sources — PolarArea (alternative view)
 const polarChartData = computed(() => ({
-  labels: sources.value.map(s => s.name),
+  labels: sources.value.map(sourceLabelWithChannel),
   datasets: [{
     data: sources.value.map(s => s.sessions || 0),
     backgroundColor: [

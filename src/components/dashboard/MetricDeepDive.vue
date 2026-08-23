@@ -54,7 +54,7 @@ function cellStyle(cell) {
     return { background: 'var(--muted, #f1f5f9)', color: 'var(--muted-foreground)' }
   }
   const r = cell.mention_rank
-  if (r === 1) return { background: 'var(--chart-2, #10b981)', color: '#fff' }
+  if (r === 1) return { background: 'var(--chart-2, #10b981)', color: 'var(--primary-foreground, #fff)' }
   if (r != null && r <= 3) return { background: 'rgba(16,185,129,0.65)', color: '#fff' }
   if (r != null && r <= 10) return { background: 'rgba(245,158,11,0.6)', color: '#fff' }
   return { background: 'rgba(148,163,184,0.5)', color: '#fff' }

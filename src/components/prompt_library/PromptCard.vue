@@ -59,6 +59,7 @@ const segments = computed(() => {
   const out = []
   let last = 0
   let m
+  // eslint-disable-next-line vue/no-side-effects-in-computed-properties -- deliberate reset of the shared regex's lastIndex before the exec loop; touches no reactive state
   TEMPLATE_RE.lastIndex = 0
   while ((m = TEMPLATE_RE.exec(body)) !== null) {
     if (m.index > last) {

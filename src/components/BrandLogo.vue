@@ -57,7 +57,7 @@ async function resolve() {
     } else {
       try {
         const { data } = await promptLibrary.brandLogo(props.domain)
-        const url = (data?.data || data)?.logo || ''
+        const url = data?.logo || ''
         cacheSet(key, url)
         if (url) { logoUrl.value = url; return }
       } catch { /* fall through to name lookup */ }

@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 import { CheckCircle2, Loader2, Clock, AlertCircle } from '@lucide/vue'
-import { timeAgo } from './timeAgo.js'
+import { timeAgo } from '@/utils/timeAgo.js'
 
 const props = defineProps({
   source: { type: Object, required: true },

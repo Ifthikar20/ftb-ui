@@ -41,7 +41,7 @@ const show = computed(() => Boolean(title.value) || cells.value.length > 0)
           <span
             v-if="cell.delta"
             class="text-[13px] font-semibold tabular-nums"
-            :class="cell.up ? 'text-[#008A05]' : 'text-[#C13515]'"
+            :class="cell.up ? 'text-[#008A05] dark:text-[#4ade80]' : 'text-[#C13515] dark:text-[#f87171]'"
           >{{ cell.delta }}</span>
         </div>
       </div>

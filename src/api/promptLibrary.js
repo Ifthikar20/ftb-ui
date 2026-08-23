@@ -23,14 +23,34 @@ export default {
     listBrandPrompts: (websiteId) =>
         api.get(`/prompt-library/websites/${websiteId}/brand-prompts/`),
 
-    promptDetailAgg: (websiteId, promptId) =>
-        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/detail/`),
+    // params: { run?: <audit_id>, period?: '7d'|'30d'|'90d'|'1y'|'all' }
+    // for the time-series Overview (trend + single-run drill-in).
+    promptDetailAgg: (websiteId, promptId, params = {}) =>
+        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/detail/`, { params }),
 
     promptFanouts: (websiteId, promptId) =>
         api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/fanouts/`),
 
-    crawlPrompt: (websiteId, promptId) =>
-        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`),
+    // payload: { mode: 'missing' } queries only models that never answered
+    // (silent gap-fill); omit for a full re-run of every configured model.
+    crawlPrompt: (websiteId, promptId, payload = {}) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/crawl/`, payload),
+
+    // Page-level sentiment: fetch + analyze the URLs this prompt's answers
+    // cited (explicit trigger — spends AI credits). Poll promptDetailAgg's
+    // page_scan for progress.
+    scanPromptSources: (websiteId, promptId) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/scan-sources/`),
+
+    // ── Per-prompt run schedule (daily/weekly/monthly) ──
+    getPromptSchedule: (websiteId, promptId) =>
+        api.get(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`),
+
+    savePromptSchedule: (websiteId, promptId, payload) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`, payload),
+
+    deletePromptSchedule: (websiteId, promptId) =>
+        api.delete(`/prompt-library/websites/${websiteId}/prompts/${promptId}/schedule/`),
 
     reextractPrompt: (websiteId, promptId) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/${promptId}/reextract/`),
@@ -102,19 +122,11 @@ export default {
     updateVariables: (websiteId, variables) =>
         api.put(`/prompt-library/websites/${websiteId}/variables/`, { variables }),
 
-    enable: (promptId) =>
-        api.post(`/prompt-library/prompts/${promptId}/enable/`),
-
-    disable: (promptId) =>
-        api.post(`/prompt-library/prompts/${promptId}/disable/`),
-
-    // ── Benchmark packs (reference material used to score LLM answers) ──
-    listBenchmarks: (websiteId) =>
-        api.get(`/prompt-library/websites/${websiteId}/benchmarks/`),
-    createBenchmark: (websiteId, payload) =>
-        api.post(`/prompt-library/websites/${websiteId}/benchmarks/`, payload),
-    deleteBenchmark: (websiteId, packId) =>
-        api.delete(`/prompt-library/websites/${websiteId}/benchmarks/${packId}/`),
+    // Per-website archive of a saved prompt (tenant-scoped on the
+    // BrandPrompt row). Replaces the old enable/disable, which flipped
+    // the shared catalog flag across every tenant.
+    setArchived: (brandPromptId, archived) =>
+        api.patch(`/prompt-library/brand-prompts/${brandPromptId}/`, { is_archived: archived }),
 
     // ── Test environments ─────────────────────────────────────────
     // Named buckets of BrandPrompts. Shared surface between the Saved

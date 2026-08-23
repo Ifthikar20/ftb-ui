@@ -5,12 +5,15 @@
 // page: a finding is a judgement about a specific answer, and the answer is
 // on this page. Reading "negative tone" next to the response that caused it
 // is the difference between an alert you can act on and one you have to go
-// hunting for.
+// hunting for. Each row deep-links into the alert center drawer via its
+// reference; "All findings" lands on the queue pre-scoped to this prompt.
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ShieldAlert, ShieldCheck, ChevronRight } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import brandSecurity from '@/api/brandSecurity'
+import SeverityBadge from '@/components/brand_security/SeverityBadge.vue'
+import { compareSeverity } from '@/constants/severity'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -22,18 +25,7 @@ const loading = ref(true)
 const alerts = ref([])
 const error = ref('')
 
-const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 }
-const SEVERITY_STYLE = {
-  high: 'bg-[#FDECEA] text-[#C02926] border-[#C02926]/20',
-  medium: 'bg-[#FFF4E5] text-[#B25E09] border-[#B25E09]/20',
-  low: 'bg-muted text-muted-foreground border-border',
-}
-
-const sorted = computed(() =>
-  [...alerts.value].sort(
-    (a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9),
-  ),
-)
+const sorted = computed(() => [...alerts.value].sort(compareSeverity))
 const openCount = computed(() => sorted.value.filter(a => a.status === 'open').length)
 
 async function load() {
@@ -42,7 +34,7 @@ async function load() {
   error.value = ''
   try {
     const { data } = await brandSecurity.alertsForPrompt(props.websiteId, props.promptId)
-    const payload = data?.data ?? data
+    const payload = data
     alerts.value = Array.isArray(payload) ? payload : (payload?.results ?? [])
   } catch (e) {
     error.value = e.response?.data?.error?.message || 'Could not load brand security findings.'
@@ -56,8 +48,22 @@ onMounted(load)
 watch(() => props.promptId, load)
 
 function openSecurity() {
-  router.push(`/llm-ranking/${props.websiteId}/brand-security`)
+  router.push({
+    path: `/llm-ranking/${props.websiteId}/brand-security`,
+    query: { prompt: props.promptId },
+  })
 }
+
+// Deep-link one finding straight into the alert-center drawer.
+function openAlert(alert) {
+  router.push({
+    path: `/llm-ranking/${props.websiteId}/brand-security`,
+    query: alert.reference
+      ? { alert: alert.reference, status: '' }
+      : { prompt: props.promptId },
+  })
+}
+
 function label(issue) {
   return (issue || '').replace(/_/g, ' ')
 }
@@ -68,8 +74,8 @@ function label(issue) {
     <div class="flex items-start justify-between gap-3 px-5 pb-3 pt-4">
       <div class="min-w-0">
         <h2 class="inline-flex items-center gap-1.5 text-sm font-bold text-foreground">
-          <ShieldAlert v-if="openCount" class="size-4 text-[#C02926]" />
-          <ShieldCheck v-else class="size-4 text-[#008A05]" />
+          <ShieldAlert v-if="openCount" class="size-4 text-severity-high" />
+          <ShieldCheck v-else class="size-4 text-[color:var(--chart-2)]" />
           Brand security
         </h2>
         <p class="mt-0.5 text-[11px] text-muted-foreground">
@@ -77,7 +83,7 @@ function label(issue) {
         </p>
       </div>
       <button
-        class="shrink-0 text-[11px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        class="shrink-0 text-[11px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         @click="openSecurity"
       >
         All findings
@@ -106,17 +112,27 @@ function label(issue) {
       <li
         v-for="a in sorted"
         :key="a.id"
-        class="border-b border-border/60 px-5 py-3 last:border-b-0"
+        class="border-b border-border/60 last:border-b-0"
       >
-        <div class="flex items-start gap-2">
-          <span
-            class="mt-0.5 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-            :class="SEVERITY_STYLE[a.severity] || SEVERITY_STYLE.low"
-          >{{ a.severity }}</span>
+        <button
+          type="button"
+          class="flex w-full items-start gap-2 px-5 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          :aria-label="`Open finding ${a.reference || a.title || label(a.issue)}`"
+          @click="openAlert(a)"
+        >
+          <SeverityBadge :severity="a.severity" size="sm" class="mt-0.5" />
           <div class="min-w-0 flex-1">
             <p class="text-[13px] font-semibold text-foreground">{{ a.title || label(a.issue) }}</p>
-            <p class="mt-0.5 text-[11px] text-muted-foreground">
-              {{ label(a.issue) }}<span v-if="a.model"> · {{ a.model }}</span>
+            <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
+              <span
+                v-if="a.reference"
+                class="rounded bg-secondary px-1 py-px font-mono text-[10px] text-secondary-foreground"
+              >{{ a.reference }}</span>
+              <span
+                v-if="a.detector_code"
+                class="font-mono text-[10px]"
+              >{{ a.detector_code }}</span>
+              <span>{{ label(a.issue) }}<span v-if="a.model"> · {{ a.model }}</span></span>
             </p>
             <p v-if="a.detail" class="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
               {{ a.detail }}
@@ -129,7 +145,7 @@ function label(issue) {
             </blockquote>
           </div>
           <ChevronRight class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-        </div>
+        </button>
       </li>
     </ul>
   </Card>

@@ -27,13 +27,28 @@ const sentimentColors = {
   negative: 'var(--chart-5, #ef4444)',
 }
 
+const alignmentBandLabels = {
+  aligned: 'Aligned',
+  partial: 'Partially aligned',
+  unaligned: 'Unaligned',
+}
+
+const alignmentBandColors = {
+  aligned: 'var(--chart-2)',
+  partial: 'var(--chart-3)',
+  unaligned: 'var(--chart-5, var(--destructive))',
+}
+
 const visibility = computed(() => props.breakdowns?.visibility?.by_provider || [])
 const position = computed(() => props.breakdowns?.position?.distribution || [])
 const sentimentSplit = computed(() => props.breakdowns?.sentiment?.split || [])
 const sentimentSamples = computed(() => props.breakdowns?.sentiment?.samples || [])
+const alignmentSplit = computed(() => props.breakdowns?.alignment?.split || [])
+const alignmentMissing = computed(() => props.breakdowns?.alignment?.top_missing || [])
 
 const positionTotal = computed(() => props.breakdowns?.position?.total_mentions ?? 0)
 const sentimentTotal = computed(() => props.breakdowns?.sentiment?.total_mentions ?? 0)
+const alignmentTotal = computed(() => props.breakdowns?.alignment?.total_scored ?? 0)
 
 function providerLabel(p) {
   return providerLabels[p] || p
@@ -45,7 +60,7 @@ function sentimentLabel(s) {
 </script>
 
 <template>
-  <div class="grid gap-4 lg:grid-cols-3">
+  <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
     <!-- Visibility breakdown -->
     <Card>
       <CardHeader>
@@ -144,6 +159,43 @@ function sentimentLabel(s) {
         </div>
         <div v-else class="py-8 text-center text-xs text-muted-foreground">
           No mentions with sentiment yet.
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Alignment breakdown -->
+    <Card>
+      <CardHeader>
+        <CardTitle>Brand alignment</CardTitle>
+        <CardDescription>How closely answers reflect your own material.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div v-if="alignmentTotal" class="flex flex-col gap-3">
+          <div v-for="row in alignmentSplit" :key="row.band" class="space-y-1">
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-medium text-card-foreground">{{ alignmentBandLabels[row.band] || row.band }}</span>
+              <span class="tabular-nums text-muted-foreground">
+                {{ row.pct }}% <span class="opacity-60">({{ row.count }})</span>
+              </span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                class="h-full rounded-full"
+                :style="{ width: row.pct + '%', background: alignmentBandColors[row.band] }"
+              />
+            </div>
+          </div>
+          <div v-if="alignmentMissing.length" class="mt-2 space-y-1">
+            <div class="text-xs font-medium text-card-foreground">Messages AI misses most</div>
+            <div
+              v-for="(m, i) in alignmentMissing"
+              :key="i"
+              class="text-xs text-muted-foreground"
+            >{{ m.text }} <span class="opacity-60">({{ m.count }})</span></div>
+          </div>
+        </div>
+        <div v-else class="py-8 text-center text-xs text-muted-foreground">
+          No answers benchmarked against your Brand Input yet.
         </div>
       </CardContent>
     </Card>

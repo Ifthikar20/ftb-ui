@@ -94,7 +94,7 @@ const gridCols = computed(() => `minmax(120px,max-content) repeat(${data.value.m
         <template v-for="row in data.rows" :key="row.brand">
           <div class="flex items-center gap-1.5 px-4 text-sm text-foreground">
             <span class="truncate">{{ row.brand }}</span>
-            <span v-if="row.you" class="inline-flex items-center rounded-md border border-[#008A05]/30 bg-[#E8F5E9] px-1 text-xs font-semibold text-[#008A05]">You</span>
+            <span v-if="row.you" class="inline-flex items-center rounded-md border border-[#008A05]/30 bg-[#E8F5E9] dark:border-[#4ade80]/40 dark:bg-[#4ade80]/15 px-1 text-xs font-semibold text-[#008A05] dark:text-[#4ade80]">You</span>
           </div>
           <div v-for="(v, i) in row.values" :key="i" class="px-0.5 py-0.5">
             <div class="flex h-8 items-center justify-center rounded-lg text-[13px]" :style="cellStyle(v)">{{ v.toFixed(1) }}%</div>

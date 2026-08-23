@@ -12,6 +12,8 @@ export default {
     changePassword: (data) => api.post('/auth/change-password/', data),
     googleAuth: (data) => api.post('/auth/google/', data),
     getMe: () => api.get('/auth/me/'),
+    // Window is always the current billing period (server-defined).
+    aiUsage: () => api.get('/auth/me/ai-usage/'),
     updateMe: (data) => api.put('/auth/me/', data),
     deleteMe: () => api.delete('/auth/me/'),
     exportData: () => api.get('/auth/me/export/'),

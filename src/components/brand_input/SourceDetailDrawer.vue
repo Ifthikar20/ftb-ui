@@ -13,8 +13,9 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { X, Loader2, RefreshCw, Trash2, ExternalLink, FileText, Zap } from '@lucide/vue'
 import ragApi from '@/api/rag'
 import { useToast } from '@/composables/useToast'
+import { safeHref } from '@/utils/safeHref'
 import StatusPill from './StatusPill.vue'
-import { timeAgo } from './timeAgo.js'
+import { timeAgo } from '@/utils/timeAgo.js'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -150,7 +151,7 @@ const lastIngestedLabel = computed(
           </template>
           <a
             v-else
-            :href="source.url"
+            :href="safeHref(source.url)"
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-1 hover:text-foreground hover:underline"

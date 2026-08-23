@@ -7,10 +7,12 @@ import {
   Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 } from 'chart.js'
 import {
-  ChevronRight, MoreHorizontal, Info, Search, Upload, Loader2, ExternalLink,
+  ChevronRight, Search, Loader2, ExternalLink,
 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
+import { cssVar } from '@/lib/theme'
+import MetricInfo from '@/components/sources/MetricInfo.vue'
 import {
   Card, CardHeader, CardTitle, CardContent,
 } from '@/components/ui/card'
@@ -44,23 +46,39 @@ function modelStyle(key) {
   return MODELS[key] || { label: key, color: '#94a3b8', initial: (key || '?')[0].toUpperCase() }
 }
 
+/* Domain-type badges, matching the list page: ownership classes carry
+   the story, tints ride the chart tokens. */
 const DOMAIN_TYPE_STYLES = {
-  Reference: { bg: 'rgba(168,85,247,0.12)', fg: '#a855f7' },
-  Corporate: { bg: 'rgba(249,115,22,0.12)', fg: '#f97316' },
-  Editorial: { bg: 'rgba(91,141,239,0.12)', fg: '#5b8def' },
-  UGC: { bg: 'rgba(34,197,94,0.12)', fg: '#22c55e' },
+  'Your site': 'bg-[color:var(--chart-2)]/12 text-[color:var(--chart-2)]',
+  Competitor: 'bg-[color:var(--chart-3)]/12 text-[color:var(--chart-3)]',
+  Reference: 'bg-[color:var(--chart-4)]/12 text-[color:var(--chart-4)]',
+  Corporate: 'bg-secondary text-secondary-foreground',
+  Editorial: 'bg-[color:var(--chart-1)]/12 text-[color:var(--chart-1)]',
+  UGC: 'bg-accent text-accent-foreground',
 }
-function domainStyle(type) {
-  return DOMAIN_TYPE_STYLES[type] || { bg: 'rgba(100,116,139,0.12)', fg: '#64748b' }
+function domainBadgeClass(type) {
+  return DOMAIN_TYPE_STYLES[type] || 'bg-secondary text-secondary-foreground'
 }
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+/* ── Metric definitions (tooltips) ── */
+const HELP = {
+  urlType: 'Page format classified from the URL and title (listicle, comparison, how-to, and so on).',
+  domainType: 'Who publishes this page: your site, a competitor, or a third-party class like UGC or editorial.',
+  retrievals: 'How many times AI pulled this page up as a candidate source while answering a tracked prompt, versus the previous period.',
+  citationRate: 'Of the times this page was retrieved, how often the answer actually cited it. 100% means every retrieval was cited.',
+  prompts: 'Distinct tracked prompts whose answers retrieved this page.',
+  firstSeen: 'First time any tracked prompt answer retrieved this URL.',
+  lastSeen: 'Most recent time any tracked prompt answer retrieved this URL.',
+  googleClicks: 'Clicks from Google Search for this page over this period, from Search Console (about a 3-day reporting delay).',
+  googleImpressions: 'How often this page appeared in Google results over this period.',
+  googlePosition: 'Impression-weighted average Google position. Lower is better; a negative change means the page moved up.',
+  aiVisits: 'Visits that arrived on this page from an AI assistant, measured by your tracking pixel.',
 }
+
 
 const metrics = computed(() => detail.value?.metrics || {})
 const title = computed(() => metrics.value.title || 'URL')
+const realTraffic = computed(() => detail.value?.real_traffic || null)
 
 function fmtDelta(d) {
   if (d == null) return ''
@@ -70,6 +88,20 @@ function fmtDelta(d) {
 function deltaClass(d) {
   if (d == null || d === 0) return 'text-muted-foreground'
   return d > 0 ? 'text-[color:var(--chart-2)]' : 'text-destructive'
+}
+// Position deltas invert: moving DOWN the number means moving UP the
+// rankings, so negative is the good direction.
+function positionDeltaClass(d) {
+  if (d == null || d === 0) return 'text-muted-foreground'
+  return d < 0 ? 'text-[color:var(--chart-2)]' : 'text-destructive'
+}
+function fmtRate(rate) {
+  return Math.round((rate || 0) * 100) + '%'
+}
+function fmtRateDelta(d) {
+  if (d == null || d === 0) return ''
+  const points = Math.round(d * 100)
+  return points > 0 ? `+${points}pp` : `${points}pp`
 }
 
 /* ── Retrievals over time (current vs previous) ── */
@@ -130,7 +162,7 @@ async function load() {
     if (route.query.topic) params.topic = route.query.topic
     if (route.query.provider) params.provider = route.query.provider
     const res = await citationsApi.websiteUrlDetail(websiteId.value, targetUrl.value, params)
-    detail.value = res.data?.data || res.data || null
+    detail.value = res.data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Failed to load URL details.'
   } finally {
@@ -192,43 +224,95 @@ function fmtTime(iso) {
       <!-- metrics bar -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">URL type <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">URL type <MetricInfo :text="HELP.urlType" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">{{ metrics.url_type }}</div>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">Domain type <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">Domain type <MetricInfo :text="HELP.domainType" /></div>
           <span class="mt-1 inline-block rounded-md px-2 py-0.5 text-xs font-semibold"
-            :style="{ background: domainStyle(metrics.domain_type).bg, color: domainStyle(metrics.domain_type).fg }">{{ metrics.domain_type }}</span>
+            :class="domainBadgeClass(metrics.domain_type)">{{ metrics.domain_type }}</span>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">Retrievals <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">Retrievals <MetricInfo :text="HELP.retrievals" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">
             {{ metrics.retrievals?.value }}
             <span class="text-xs font-medium" :class="deltaClass(metrics.retrievals?.delta)">{{ fmtDelta(metrics.retrievals?.delta) }}</span>
           </div>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">Citation rate <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">Citation rate <MetricInfo :text="HELP.citationRate" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">
-            {{ (metrics.citation_rate?.value ?? 0).toFixed(1) }}
-            <span class="text-xs font-medium" :class="deltaClass(metrics.citation_rate?.delta)">{{ fmtDelta(metrics.citation_rate?.delta) }}</span>
+            {{ fmtRate(metrics.citation_rate?.value) }}
+            <span class="text-xs font-medium" :class="deltaClass(metrics.citation_rate?.delta)">{{ fmtRateDelta(metrics.citation_rate?.delta) }}</span>
           </div>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">No. of prompts <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">No. of prompts <MetricInfo :text="HELP.prompts" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">
             {{ metrics.prompts?.value }}
             <span class="text-xs font-medium" :class="deltaClass(metrics.prompts?.delta)">{{ fmtDelta(metrics.prompts?.delta) }}</span>
           </div>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">First Seen <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">First Seen <MetricInfo :text="HELP.firstSeen" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">{{ fmtTime(metrics.first_seen) }}</div>
         </CardContent></Card>
         <Card><CardContent class="pt-5">
-          <div class="flex items-center gap-1 text-xs text-muted-foreground">Last Seen <Info class="size-3" /></div>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">Last Seen <MetricInfo :text="HELP.lastSeen" /></div>
           <div class="mt-1 text-sm font-semibold text-foreground">{{ fmtTime(metrics.last_seen) }}</div>
         </CardContent></Card>
+      </div>
+
+      <!-- real traffic (your pages only) -->
+      <div v-if="realTraffic">
+        <h2 class="text-base font-bold text-foreground">Real traffic for this page</h2>
+        <p class="mb-3 text-sm text-muted-foreground">
+          What this page earns outside AI answers, over the same period.
+        </p>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <template v-if="realTraffic.gsc">
+            <Card><CardContent class="pt-5">
+              <div class="flex items-center gap-1 text-xs text-muted-foreground">Google clicks <MetricInfo :text="HELP.googleClicks" /></div>
+              <div class="mt-1 text-lg font-bold text-foreground">
+                {{ realTraffic.gsc.clicks }}
+                <span class="text-xs font-medium" :class="deltaClass(realTraffic.gsc.clicks_delta)">{{ fmtDelta(realTraffic.gsc.clicks_delta) }}</span>
+              </div>
+            </CardContent></Card>
+            <Card><CardContent class="pt-5">
+              <div class="flex items-center gap-1 text-xs text-muted-foreground">Google impressions <MetricInfo :text="HELP.googleImpressions" /></div>
+              <div class="mt-1 text-lg font-bold text-foreground">{{ realTraffic.gsc.impressions }}</div>
+            </CardContent></Card>
+            <Card><CardContent class="pt-5">
+              <div class="flex items-center gap-1 text-xs text-muted-foreground">Avg. position <MetricInfo :text="HELP.googlePosition" /></div>
+              <div class="mt-1 text-lg font-bold text-foreground">
+                {{ realTraffic.gsc.position ?? '—' }}
+                <span class="text-xs font-medium" :class="positionDeltaClass(realTraffic.gsc.position_delta)">{{ fmtDelta(realTraffic.gsc.position_delta) }}</span>
+              </div>
+            </CardContent></Card>
+          </template>
+          <Card v-else-if="!realTraffic.gsc_connected" class="lg:col-span-3"><CardContent class="pt-5 text-sm text-muted-foreground">
+            Connect Search Console to see this page's Google clicks, impressions and position.
+            <router-link to="/app/integrations" class="font-medium text-foreground hover:underline">Open integrations</router-link>
+          </CardContent></Card>
+          <Card v-else class="lg:col-span-3"><CardContent class="pt-5 text-sm text-muted-foreground">
+            No Google Search data recorded for this page in this period.
+          </CardContent></Card>
+
+          <Card v-if="realTraffic.ai_visits"><CardContent class="pt-5">
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">AI visits <MetricInfo :text="HELP.aiVisits" /></div>
+            <div class="mt-1 text-lg font-bold text-foreground">
+              {{ realTraffic.ai_visits.value }}
+              <span class="text-xs font-medium" :class="deltaClass(realTraffic.ai_visits.delta)">{{ fmtDelta(realTraffic.ai_visits.delta) }}</span>
+            </div>
+          </CardContent></Card>
+          <Card v-else><CardContent class="pt-5 text-sm text-muted-foreground">
+            <template v-if="realTraffic.pixel_active">No AI-referred visits to this page in this period.</template>
+            <template v-else>
+              Install the tracking pixel to count visits arriving from AI assistants.
+              <router-link to="/app/integrations" class="font-medium text-foreground hover:underline">Open integrations</router-link>
+            </template>
+          </CardContent></Card>
+        </div>
       </div>
 
       <!-- charts -->
@@ -286,7 +370,7 @@ function fmtTime(iso) {
                   <td class="py-3 pr-3 text-foreground">{{ p.prompt }}</td>
                   <td class="py-3 pr-3"><span class="rounded-md bg-secondary px-2 py-0.5 text-xs text-muted-foreground">{{ p.topic }}</span></td>
                   <td class="py-3 pr-3 text-right tabular-nums text-foreground">{{ p.retrieved }}</td>
-                  <td class="py-3 pr-3 text-right tabular-nums text-foreground">{{ (p.citation_rate ?? 0).toFixed(1) }}</td>
+                  <td class="py-3 pr-3 text-right tabular-nums text-foreground">{{ fmtRate(p.citation_rate) }}</td>
                 </tr>
                 <tr v-if="!filteredPrompts.length"><td colspan="4" class="py-6 text-center text-sm text-muted-foreground">No prompts.</td></tr>
               </tbody>
@@ -298,8 +382,8 @@ function fmtTime(iso) {
       <!-- brands mentioned -->
       <Card>
         <CardHeader class="space-y-0">
-          <CardTitle class="text-base">Brands mentioned in {{ title }}</CardTitle>
-          <p class="text-sm text-muted-foreground">Frequency and position of brand appearances in this URL</p>
+          <CardTitle class="text-base">Brands in answers that used this page</CardTitle>
+          <p class="text-sm text-muted-foreground">Which brands the AI answers named, and where, when they sourced this URL</p>
         </CardHeader>
         <CardContent>
           <div class="overflow-x-auto">

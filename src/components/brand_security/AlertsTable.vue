@@ -1,46 +1,55 @@
 <script setup>
-import { computed, ref } from 'vue'
+/**
+ * The alert queue: one flat row per finding, detail lives in the
+ * AlertDetailSheet drawer (opened via the `open` emit). Severity leads
+ * every row; identity (reference + detector code) is always visible so a
+ * finding can be quoted, searched and tracked by its code.
+ */
+import { Check, ExternalLink, ShieldAlert, ShieldCheck, X } from '@lucide/vue'
+
+import { Button } from '@/components/ui/button'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { ExternalLink, Check, X, ChevronRight, ShieldCheck, ShieldAlert } from '@lucide/vue'
-import { captureTypeForIssue, sourceLabel } from '@/constants/captureTypes'
+import SeverityBadge from '@/components/brand_security/SeverityBadge.vue'
+import { categoryForAlert, sourceLabel } from '@/constants/detectors'
+import { useBrandSecurityStore } from '@/stores/brandSecurity'
+import { safeHref } from '@/utils/safeHref'
+import { timeAgo } from '@/utils/timeAgo.js'
 
 defineProps({
   alerts: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  // True when any filter/search narrows the list — switches the empty
+  // state from "no findings" to "nothing matches".
+  filtered: { type: Boolean, default: false },
+  // Whether the status column adds information (hidden when the list is
+  // already scoped to open findings).
+  showStatus: { type: Boolean, default: false },
+  websiteId: { type: String, default: '' },
 })
-const emit = defineEmits(['resolve', 'dismiss'])
+const emit = defineEmits(['open', 'resolve', 'dismiss', 'clear-filters'])
 
-const severityStyle = computed(() => ({
-  high:   'bg-red-50 text-red-700',
-  medium: 'bg-amber-50 text-amber-800',
-  low:    'bg-slate-100 text-slate-700',
-}))
+const store = useBrandSecurityStore()
 
-// Track which finding rows have their detail panel expanded. A Set keeps
-// toggling O(1) and avoids re-render churn from a computed map.
-const expanded = ref(new Set())
-
-function toggle(id) {
-  const next = new Set(expanded.value)
-  next.has(id) ? next.delete(id) : next.add(id)
-  expanded.value = next
+function category(alert) {
+  return categoryForAlert(alert, store.detectorByCode)
 }
 
-function evidenceCount(alert) {
-  return Array.isArray(alert.evidence_chunks) ? alert.evidence_chunks.length : 0
+function grounded(alert) {
+  return Array.isArray(alert.evidence_chunks) && alert.evidence_chunks.length > 0
 }
 
-function formatScore(score) {
-  const n = Number(score)
-  return Number.isFinite(n) ? n.toFixed(2) : '-'
+function lastSeen(alert) {
+  return timeAgo(alert.last_seen_at || alert.detected_at) || '-'
 }
 
-function formatDate(v) {
+function absolute(v) {
   if (!v) return ''
-  return new Date(v).toLocaleString()
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString()
 }
 </script>
 
@@ -49,167 +58,164 @@ function formatDate(v) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead class="w-8"></TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Severity</TableHead>
+          <TableHead class="w-24">Severity</TableHead>
           <TableHead>Finding</TableHead>
-          <TableHead>Verified against</TableHead>
-          <TableHead>Found in</TableHead>
-          <TableHead>Detected</TableHead>
-          <TableHead class="text-right">Actions</TableHead>
+          <TableHead class="w-40">Category</TableHead>
+          <TableHead class="w-36">Source</TableHead>
+          <TableHead class="w-28">Last seen</TableHead>
+          <TableHead v-if="showStatus" class="w-24">Status</TableHead>
+          <TableHead class="w-28 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-if="!alerts.length">
-          <TableCell colspan="8" class="text-center text-sm text-muted-foreground py-8">
-            {{ loading ? 'Loading...' : 'No findings yet. Run a scan to check what is being said about your brand.' }}
+        <!-- Loading skeleton -->
+        <template v-if="loading && !alerts.length">
+          <TableRow v-for="n in 5" :key="`skeleton-${n}`">
+            <TableCell><Skeleton class="h-5 w-16" /></TableCell>
+            <TableCell>
+              <Skeleton class="h-4 w-64" />
+              <Skeleton class="mt-1.5 h-3 w-40" />
+            </TableCell>
+            <TableCell><Skeleton class="h-4 w-24" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-20" /></TableCell>
+            <TableCell><Skeleton class="h-4 w-16" /></TableCell>
+            <TableCell v-if="showStatus"><Skeleton class="h-4 w-14" /></TableCell>
+            <TableCell></TableCell>
+          </TableRow>
+        </template>
+
+        <!-- Empty states -->
+        <TableRow v-else-if="!alerts.length">
+          <TableCell :colspan="showStatus ? 7 : 6" class="p-0">
+            <EmptyState
+              v-if="filtered"
+              title="Nothing matches these filters"
+              body="Widen the severity, category or status filters, or clear them to see every finding."
+            />
+            <EmptyState
+              v-else
+              title="No findings"
+              body="Findings appear automatically as your prompt runs and chat checks complete — there is nothing to trigger manually. Run prompts to give the checks fresh answers to read."
+              cta-label="Run prompts"
+              :cta-to="websiteId ? `/llm-ranking/${websiteId}/prompts` : ''"
+            />
+            <div v-if="filtered" class="flex justify-center pb-6">
+              <Button size="sm" variant="outline" @click="emit('clear-filters')">
+                Clear filters
+              </Button>
+            </div>
           </TableCell>
         </TableRow>
-        <template v-for="alert in alerts" :key="alert.id">
-          <TableRow
-            class="cursor-pointer"
-            @click="toggle(alert.id)"
-          >
-            <TableCell class="w-8 align-top pt-3">
-              <ChevronRight
-                class="size-4 text-muted-foreground transition-transform"
-                :class="{ 'rotate-90': expanded.has(alert.id) }"
-              />
-            </TableCell>
-            <TableCell>
+
+        <!-- Queue rows -->
+        <TableRow
+          v-for="alert in alerts"
+          :key="alert.id"
+          class="cursor-pointer"
+          @click="emit('open', alert)"
+        >
+          <TableCell class="align-top">
+            <SeverityBadge :severity="alert.severity" size="sm" />
+          </TableCell>
+
+          <TableCell class="max-w-xl align-top">
+            <button
+              type="button"
+              class="block max-w-full truncate text-left text-sm font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @click.stop="emit('open', alert)"
+            >{{ alert.title || alert.prompt_text || '-' }}</button>
+            <div class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
               <span
-                class="inline-flex whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium"
-                :class="captureTypeForIssue(alert.issue).badgeClass"
-                :title="captureTypeForIssue(alert.issue).blurb"
-              >{{ captureTypeForIssue(alert.issue).label }}</span>
-            </TableCell>
-            <TableCell>
+                v-if="alert.reference"
+                class="rounded bg-secondary px-1.5 py-px font-mono text-[10px] text-secondary-foreground"
+              >{{ alert.reference }}</span>
               <span
-                class="rounded px-2 py-0.5 text-xs font-medium"
-                :class="severityStyle[alert.severity] || 'bg-slate-100'"
-              >{{ alert.severity }}</span>
-            </TableCell>
-            <TableCell class="max-w-md">
-              <div class="text-sm font-medium truncate">{{ alert.title || alert.prompt_text || '-' }}</div>
-              <div class="text-xs text-muted-foreground truncate">{{ alert.detail || alert.snippet }}</div>
-            </TableCell>
-            <TableCell class="text-xs whitespace-nowrap">
-              <span
-                v-if="evidenceCount(alert) > 0"
-                class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700"
-                :title="'Judged against ' + evidenceCount(alert) + ' brand source(s) from your knowledge base'"
+                v-if="grounded(alert)"
+                class="inline-flex items-center gap-1 whitespace-nowrap text-[color:var(--chart-2)]"
+                :title="`Judged against ${alert.evidence_chunks.length} brand source(s) from your knowledge base`"
               >
                 <ShieldCheck class="size-3" />
-                {{ evidenceCount(alert) }} brand source{{ evidenceCount(alert) === 1 ? '' : 's' }}
+                verified
               </span>
               <span
                 v-else
-                class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-medium text-amber-800"
-                title="No brand material was retrieved for this prompt. Add reference material on the Brand Input tab to improve accuracy."
+                class="inline-flex items-center gap-1 whitespace-nowrap text-severity-medium"
+                title="No brand material was retrieved for this finding. Add reference material on the Brand Input page to improve accuracy."
               >
                 <ShieldAlert class="size-3" />
-                Ungrounded
+                ungrounded
               </span>
-            </TableCell>
-            <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
-              {{ sourceLabel(alert.source) }}<template v-if="alert.model"> · {{ alert.model }}</template>
-            </TableCell>
-            <TableCell class="text-xs text-muted-foreground whitespace-nowrap">{{ formatDate(alert.detected_at) }}</TableCell>
-            <TableCell class="text-right" @click.stop>
-              <div class="flex justify-end gap-1">
-                <a
-                  v-if="alert.source_url"
-                  :href="alert.source_url" target="_blank" rel="noopener"
-                  class="inline-flex size-8 items-center justify-center rounded hover:bg-muted"
-                  title="Open source"
-                >
-                  <ExternalLink class="size-3.5" />
-                </a>
-                <Button size="sm" variant="ghost" title="Resolve" @click="emit('resolve', alert)">
-                  <Check class="size-3.5" />
-                </Button>
-                <Button size="sm" variant="ghost" title="Dismiss" @click="emit('dismiss', alert)">
-                  <X class="size-3.5" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
+              <span class="truncate">{{ alert.snippet || alert.detail }}</span>
+            </div>
+          </TableCell>
 
-          <TableRow v-if="expanded.has(alert.id)" class="bg-muted/30 hover:bg-muted/30">
-            <TableCell></TableCell>
-            <TableCell colspan="7" class="py-4">
-              <div class="flex flex-col gap-3">
-                <div class="text-xs text-muted-foreground">
-                  {{ captureTypeForIssue(alert.issue).blurb }}
-                  <template v-if="alert.prompt_text">
-                    — captured while checking <span class="font-medium text-foreground">"{{ alert.prompt_text }}"</span>
-                  </template>
-                </div>
+          <TableCell class="align-top">
+            <div class="flex flex-col gap-1">
+              <span
+                class="inline-flex w-fit items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium"
+                :class="category(alert).badgeClass"
+                :title="category(alert).blurb"
+              >
+                <component :is="category(alert).icon" class="size-3" aria-hidden="true" />
+                {{ category(alert).label }}
+              </span>
+              <span
+                v-if="alert.detector_code"
+                class="font-mono text-[11px] text-muted-foreground"
+              >{{ alert.detector_code }}</span>
+            </div>
+          </TableCell>
 
-                <div v-if="alert.snippet" class="text-xs">
-                  <div class="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">What was said</div>
-                  <div class="rounded-md border bg-background p-3 text-sm leading-relaxed text-foreground/90">
-                    {{ alert.snippet }}
-                  </div>
-                </div>
+          <TableCell
+            class="align-top text-xs text-muted-foreground"
+            :title="alert.prompt_text"
+          >
+            <span class="whitespace-nowrap">{{ sourceLabel(alert.source) }}</span>
+            <div v-if="alert.model" class="truncate">{{ alert.model }}</div>
+          </TableCell>
 
-                <div class="text-xs">
-                  <div class="mb-1 flex items-center gap-1.5 font-semibold uppercase tracking-wider text-muted-foreground">
-                    <ShieldCheck class="size-3" />
-                    Brand ground truth used by the judge
-                  </div>
+          <TableCell class="whitespace-nowrap align-top text-xs text-muted-foreground">
+            <span :title="absolute(alert.last_seen_at || alert.detected_at)">{{ lastSeen(alert) }}</span>
+            <span
+              v-if="(alert.occurrence_count || 1) > 1"
+              class="ml-1 rounded-full bg-muted px-1.5 text-[10px] font-semibold text-foreground"
+              :aria-label="`${alert.occurrence_count} occurrences`"
+              title="Times this finding recurred across responses"
+            >x{{ alert.occurrence_count }}</span>
+          </TableCell>
 
-                  <div
-                    v-if="evidenceCount(alert) === 0"
-                    class="rounded-md border border-dashed bg-background p-3 text-sm text-muted-foreground"
-                  >
-                    No brand reference material matched this prompt. Add pages or paste
-                    text on the <strong class="text-foreground">Brand Input</strong> tab
-                    so future findings can be verified against your own facts.
-                  </div>
+          <TableCell v-if="showStatus" class="align-top">
+            <span class="text-xs capitalize text-muted-foreground">{{ alert.status }}</span>
+          </TableCell>
 
-                  <div v-else class="flex flex-col gap-2">
-                    <div
-                      v-for="(chunk, idx) in alert.evidence_chunks"
-                      :key="chunk.chunk_id || idx"
-                      class="rounded-md border bg-background p-3"
-                    >
-                      <div class="mb-1 flex items-center justify-between gap-2 text-xs">
-                        <div class="flex items-center gap-2">
-                          <span class="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                            [{{ idx + 1 }}]
-                          </span>
-                          <a
-                            v-if="chunk.source_url && !chunk.source_url.startsWith('paste://') && !chunk.source_url.startsWith('audit://')"
-                            :href="chunk.source_url" target="_blank" rel="noopener"
-                            class="truncate font-medium text-foreground hover:underline"
-                          >{{ chunk.section_label || chunk.source_url }}</a>
-                          <span
-                            v-else
-                            class="truncate font-medium text-foreground"
-                          >{{ chunk.section_label || 'Pasted brand material' }}</span>
-                        </div>
-                        <span class="rounded bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-700">
-                          relevance {{ formatScore(chunk.score) }}
-                        </span>
-                      </div>
-                      <div class="whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
-                        {{ chunk.text }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="alert.detail" class="text-xs">
-                  <div class="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">Judge verdict</div>
-                  <div class="rounded-md border bg-background p-3 text-sm text-foreground/90">
-                    {{ alert.detail }}
-                  </div>
-                </div>
-              </div>
-            </TableCell>
-          </TableRow>
-        </template>
+          <TableCell class="text-right align-top" @click.stop>
+            <div class="flex justify-end gap-1">
+              <a
+                v-if="safeHref(alert.source_url)"
+                :href="safeHref(alert.source_url)" target="_blank" rel="noopener"
+                class="inline-flex size-8 items-center justify-center rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                title="Open source"
+                aria-label="Open source in a new tab"
+              >
+                <ExternalLink class="size-3.5" />
+              </a>
+              <Button
+                v-if="alert.status === 'open'"
+                size="sm" variant="ghost" title="Resolve" aria-label="Resolve finding"
+                @click="emit('resolve', alert)"
+              >
+                <Check class="size-3.5" />
+              </Button>
+              <Button
+                v-if="alert.status === 'open'"
+                size="sm" variant="ghost" title="Dismiss" aria-label="Dismiss finding"
+                @click="emit('dismiss', alert)"
+              >
+                <X class="size-3.5" />
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
       </TableBody>
     </Table>
   </div>

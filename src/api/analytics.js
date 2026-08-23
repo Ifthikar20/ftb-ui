@@ -5,6 +5,9 @@ export default {
     overview: (wid, params) => api.get(`/analytics/${wid}/overview/`, { params }),
     pages: (wid, params) => api.get(`/analytics/${wid}/pages/`, { params }),
     sources: (wid, params) => api.get(`/analytics/${wid}/sources/`, { params }),
+    // Sessions referred by AI assistants (ChatGPT, Perplexity, ...):
+    // {total_sessions, ai_sessions, ai_percentage, providers[]}
+    aiTraffic: (wid, params) => api.get(`/analytics/${wid}/ai-traffic/`, { params }),
     realtime: (wid) => api.get(`/analytics/${wid}/realtime/`),
 
     // Advanced analytics

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import api from '@/api/client'
+import { describeSubscription } from '@/lib/plan'
 
 // localStorage key for the access token. We persist it here so a
 // page reload doesn't kick the user out when the refresh cookie is
@@ -25,6 +26,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     const isAuthenticated = computed(() => !!accessToken.value)
+    // Plan words for every surface (sidebar badge, dropdown, Settings).
+    // Derived from the session's subscription block — never from
+    // user.plan, which is denormalized and defaults to a paid tier.
+    const planState = computed(() => describeSubscription(session.value?.subscription))
     const userInitials = computed(() => {
         if (!user.value?.full_name) return '?'
         return user.value.full_name
@@ -38,8 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function login(email, password) {
         loading.value = true
         try {
-            const { data } = await api.post('/auth/login/', { email, password })
-            const result = data.data || data
+            const { data: result } = await api.post('/auth/login/', { email, password })
             accessToken.value = result.access
             user.value = result.user
             localStorage.setItem('fb-session', '1')
@@ -52,8 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function googleLogin(code, redirectUri) {
         loading.value = true
         try {
-            const { data } = await api.post('/auth/google/', { code, redirect_uri: redirectUri })
-            const result = data.data || data
+            const { data: result } = await api.post('/auth/google/', { code, redirect_uri: redirectUri })
             accessToken.value = result.access
             user.value = result.user
             localStorage.setItem('fb-session', '1')
@@ -67,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
         loading.value = true
         try {
             const { data } = await api.post('/auth/register/', payload)
-            return data.data || data
+            return data
         } finally {
             loading.value = false
         }
@@ -84,7 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function fetchMe() {
         try {
             const { data } = await api.get('/auth/me/', { _silentError: true })
-            user.value = data.data || data
+            user.value = data
             return user.value
         } catch (err) {
             // Only clear auth on a real auth failure (401). Network blips,
@@ -101,7 +104,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function fetchSession() {
         try {
             const { data } = await api.get('/auth/session/', { _silentError: true })
-            session.value = data.data || data
+            session.value = data
             if (session.value?.user) user.value = session.value.user
             return session.value
         } catch {
@@ -112,8 +115,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function refreshToken() {
         try {
-            const { data } = await api.post('/auth/refresh/', {}, { _silentError: true })
-            const result = data.data || data
+            const { data: result } = await api.post('/auth/refresh/', {}, { _silentError: true })
             accessToken.value = result.access
             localStorage.setItem('fb-session', '1')
             return result.access
@@ -150,6 +152,7 @@ export const useAuthStore = defineStore('auth', () => {
         loading,
         isAuthenticated,
         userInitials,
+        planState,
         login,
         googleLogin,
         register,

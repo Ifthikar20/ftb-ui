@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2, Minus } from '@lucide/vue'
+import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import BrandLogo from '@/components/BrandLogo.vue'
+import { safeHref } from '@/utils/safeHref'
 
 const props = defineProps({
   websiteId: { type: String, required: true },
@@ -26,6 +27,14 @@ const MODELS = {
   llama: { label: 'Llama', abbr: 'La', color: '#0ea5e9' },
   nova: { label: 'Nova', abbr: 'No', color: '#64748b' },
 }
+// Alignment score band -> token-based pill styling (same bands as the
+// dashboard breakdown: aligned >= 70, partial 40-69, unaligned < 40).
+function alignmentBandClass(score) {
+  if (score >= 70) return 'bg-[color:var(--chart-2)]/12 text-[color:var(--chart-2)]'
+  if (score >= 40) return 'bg-[color:var(--chart-3)]/12 text-[color:var(--chart-3)]'
+  return 'bg-severity-high/10 text-severity-high'
+}
+
 function modelStyle(key) {
   return MODELS[key] || { label: key || 'Model', abbr: (key || 'M').slice(0, 2), color: '#94a3b8' }
 }
@@ -87,7 +96,7 @@ async function load() {
   detail.value = null
   try {
     const res = await citationsApi.chatDetail(props.websiteId, props.resultId)
-    detail.value = res.data?.data || res.data || null
+    detail.value = res.data || null
   } catch (e) {
     error.value = e?.displayMessage || 'Could not load this chat.'
   } finally {
@@ -175,9 +184,9 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
           </div>
 
           <!-- Sources -->
-          <div>
+          <div class="mb-5">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sources</div>
-            <a v-for="(s, i) in detail.sources" :key="i" :href="s.url" target="_blank" rel="noopener"
+            <a v-for="(s, i) in detail.sources" :key="i" :href="safeHref(s.url)" target="_blank" rel="noopener"
               class="mb-2 flex items-start gap-2 rounded-lg px-1 py-1 hover:bg-secondary">
               <img :src="faviconFor(s.apex_domain)" alt="" class="mt-0.5 size-4 shrink-0 rounded-sm" @error="onFaviconError" />
               <span class="min-w-0">
@@ -187,6 +196,49 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
               <ExternalLink :size="12" class="ml-auto mt-1 shrink-0 text-muted-foreground" />
             </a>
             <div v-if="!detail.sources.length" class="text-xs text-muted-foreground">No sources cited.</div>
+          </div>
+
+          <!-- Brand alignment: how closely this answer reflects the
+               brand's own material -->
+          <div>
+            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brand alignment</div>
+            <template v-if="detail.alignment && detail.alignment.status === 'scored'">
+              <div class="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-bold"
+                :class="alignmentBandClass(detail.alignment.score)">
+                {{ Math.round(detail.alignment.score) }} / 100
+              </div>
+              <div v-if="detail.alignment.reflected?.length" class="mb-2">
+                <div class="mb-1 text-[11px] font-semibold text-muted-foreground">Messages reflected</div>
+                <p v-for="(m, i) in detail.alignment.reflected" :key="'r' + i"
+                  class="mb-1 text-xs leading-relaxed text-foreground/90">{{ m.text }}</p>
+              </div>
+              <div v-if="detail.alignment.missing?.length" class="mb-2">
+                <div class="mb-1 text-[11px] font-semibold text-muted-foreground">Messages missing</div>
+                <p v-for="(m, i) in detail.alignment.missing" :key="'m' + i"
+                  class="mb-1 text-xs leading-relaxed text-muted-foreground">{{ m.text }}</p>
+              </div>
+              <div v-if="detail.alignment.unsupported?.length">
+                <div class="mb-1 text-[11px] font-semibold text-muted-foreground">Claims not backed by your material</div>
+                <p v-for="(m, i) in detail.alignment.unsupported" :key="'u' + i"
+                  class="mb-1 text-xs italic leading-relaxed text-foreground/80">{{ m.text }}</p>
+              </div>
+            </template>
+            <p v-else-if="detail.alignment && detail.alignment.status === 'no_brand_input'"
+              class="text-xs leading-relaxed text-muted-foreground">
+              Add brand knowledge on the
+              <router-link :to="`/llm-ranking/${websiteId}/brand-input`"
+                class="font-medium text-foreground hover:underline">Brand Input</router-link>
+              page to benchmark this answer against your own material.
+            </p>
+            <p v-else-if="detail.alignment && detail.alignment.status === 'no_brand_claims'"
+              class="text-xs leading-relaxed text-muted-foreground">
+              This answer never talks about your brand, so there is nothing to benchmark.
+            </p>
+            <p v-else-if="detail.alignment && detail.alignment.status === 'embeddings_unavailable'"
+              class="text-xs leading-relaxed text-muted-foreground">
+              Semantic embeddings are not configured, so alignment could not be scored.
+            </p>
+            <p v-else class="text-xs text-muted-foreground">Not analyzed yet.</p>
           </div>
         </template>
       </aside>

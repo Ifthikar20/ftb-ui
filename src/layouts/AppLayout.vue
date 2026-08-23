@@ -4,15 +4,33 @@
       <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
           <SidebarMenu>
+            <!-- FetchBot brand mark. Placed in the sidebar header (not the page)
+                 so it collapses to the logo icon when the sidebar is collapsed
+                 and shows the wordmark when expanded. Links home. -->
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child size="lg" tooltip="FetchBot">
+                <router-link to="/dashboard">
+                  <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                  </div>
+                  <div class="grid flex-1 text-left text-sm leading-tight">
+                    <span class="truncate font-semibold">FetchBot</span>
+                    <span class="truncate text-xs text-muted-foreground">AI visibility</span>
+                  </div>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <!-- Project switcher. Uses the project's initial as its avatar so it
+                 reads as the current project, distinct from the brand above. -->
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                      <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                  <SidebarMenuButton :tooltip="appStore.activeWebsite?.name || 'Select project'" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                    <div class="flex aspect-square size-6 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-[0.7rem] font-semibold text-sidebar-foreground">
+                      {{ (appStore.activeWebsite?.name || 'P').charAt(0).toUpperCase() }}
                     </div>
-                    <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{ appStore.activeWebsite?.name || 'FetchBot' }}</span>
+                    <div class="grid flex-1 text-left leading-tight">
+                      <span class="truncate text-sm">{{ appStore.activeWebsite?.name || 'Select project' }}</span>
                       <span class="truncate text-xs text-muted-foreground">{{ appStore.projectLimitLabel }}</span>
                     </div>
                     <ChevronsUpDown class="ml-auto size-4" />
@@ -68,11 +86,21 @@
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <Avatar class="size-8 rounded-lg">
+                    <Avatar class="size-8 rounded-lg" :class="planState.badge?.tone === 'gold' ? 'ring-1 ring-amber-400/70' : ''">
                       <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
                     </Avatar>
                     <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="flex min-w-0 items-center gap-1.5 font-semibold">
+                        <span class="truncate">{{ authStore.user?.full_name || 'User' }}</span>
+                        <!-- Plan mark: gold only once the card has actually
+                             been charged (Active); a free trial is a quiet
+                             neutral TRIAL; past-due is an amber warning. -->
+                        <span
+                          v-if="planState.badge"
+                          class="shrink-0 rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wider"
+                          :class="badgeClass"
+                        >{{ planState.badge.text }}</span>
+                      </span>
                       <span class="truncate text-xs text-muted-foreground">{{ authStore.user?.email || '' }}</span>
                     </div>
                     <ChevronsUpDown class="ml-auto size-4" />
@@ -82,7 +110,9 @@
                   <DropdownMenuLabel class="font-normal">
                     <div class="flex flex-col">
                       <span class="text-sm font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
-                      <span class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }} plan</span>
+                      <!-- Plan from the session's subscription — user.plan is
+                           denormalized and defaults to a paid tier. -->
+                      <span class="text-xs text-muted-foreground">{{ planState.planLabel }}</span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -93,6 +123,11 @@
                   <DropdownMenuItem @select="router.push('/billing')">
                     <CreditCard class="size-4" />
                     <span>Billing</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @select="appStore.toggleTheme()">
+                    <Sun v-if="appStore.isDark" class="size-4" />
+                    <Moon v-else class="size-4" />
+                    <span>{{ appStore.isDark ? 'Light mode' : 'Dark mode' }}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem @select="handleLogout">
@@ -115,7 +150,9 @@
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem class="hidden md:block">
-                  <BreadcrumbLink as="router-link" to="/dashboard">FetchBot</BreadcrumbLink>
+                  <BreadcrumbLink as="router-link" to="/dashboard" aria-label="Home" class="flex items-center">
+                    <Home class="size-4" />
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <template v-for="(crumb, i) in breadcrumbs" :key="i">
                   <BreadcrumbSeparator class="hidden md:block" />
@@ -139,6 +176,17 @@
                 {{ isMac ? '⌘' : 'Ctrl' }}+K
               </span>
             </button>
+            <button
+              v-if="assistantStore.enabled"
+              class="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring hover:bg-background"
+              title="Ask FetchBot"
+              @click="assistantStore.toggle()"
+            >
+              <span class="grid size-5 place-items-center rounded-md text-white" style="background: linear-gradient(135deg, #6d5efc, #9b6bff);">
+                <Sparkles :size="12" :stroke-width="2.2" />
+              </span>
+              <span class="hidden sm:inline">Ask</span>
+            </button>
             <HelpButton />
           </div>
         </header>
@@ -160,6 +208,8 @@
     <router-view />
   </div>
 
+    <!-- Ask FetchBot assistant (global slide-out panel) -->
+    <AskFetchBotPanel />
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
@@ -171,8 +221,8 @@
       <div class="w-[440px] max-w-[90vw] rounded-xl border border-border bg-card p-7 shadow-xl">
         <h3 class="mb-4 text-lg font-bold text-card-foreground">Add New Project</h3>
         <div v-if="!appStore.canCreateProject" class="py-3 text-center text-sm text-muted-foreground">
-          <p>Your <strong>{{ appStore.userPlan }}</strong> plan allows {{ appStore.projectLimit }} project(s).</p>
-          <p class="mt-2">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
+          <p>Your <strong>{{ planState.tierLabel }}</strong> allows {{ appStore.projectLimit }} project(s).</p>
+          <p class="mt-2">Upgrade to <strong>Pro</strong> for up to 5 projects.</p>
           <Button as="router-link" to="/billing" class="mt-4" @click="showAddProject = false">View Plans</Button>
         </div>
         <template v-else>
@@ -218,10 +268,10 @@
           </div>
           <div class="cmd-results">
             <template v-if="filteredSearchPages.length">
-              <template v-for="(group, gIdx) in groupedResults" :key="group.label">
+              <template v-for="group in groupedResults" :key="group.label">
                 <div class="cmd-group-label">{{ group.label }}</div>
                 <div
-                  v-for="(item, iIdx) in group.items"
+                  v-for="item in group.items"
                   :key="item.name"
                   class="cmd-item"
                   :class="{ 'cmd-item-active': item._flatIdx === highlightIdx }"
@@ -261,6 +311,8 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import AskFetchBotPanel from '@/components/assistant/AskFetchBotPanel.vue'
+import { useAssistantStore } from '@/stores/assistant'
 import { Button } from '@/components/ui/button'
 import {
   SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarRail,
@@ -279,9 +331,9 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
-  Search, Plus, LogOut, ChevronsUpDown,
-  LayoutGrid, Globe, BarChart3, Brain, MessageSquare, FlaskConical,
-  ShieldCheck, FileText, Plug, CreditCard, Settings, Bot,
+  Search, Plus, LogOut, ChevronsUpDown, Home,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot, Sparkles,
+  Sun, Moon,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -290,6 +342,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const assistantStore = useAssistantStore()
 
 // Add project modal state
 const showAddProject = ref(false)
@@ -419,6 +472,17 @@ const userInitials = computed(() => {
   return name.split(' ').map(n => n[0]).filter(Boolean).join('').toUpperCase().slice(0, 2)
 })
 
+// Plan words for the sidebar footer come from the shared describer
+// (src/lib/plan.js) over the session's subscription — a free trial is
+// labelled as a trial until Polar has actually charged the card.
+const planState = computed(() => authStore.planState)
+const BADGE_CLASS = {
+  gold: 'bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 text-amber-900 shadow-sm',
+  neutral: 'border border-border bg-muted text-muted-foreground',
+  warn: 'border border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-300',
+}
+const badgeClass = computed(() => BADGE_CLASS[planState.value.badge?.tone] || '')
+
 // Drives the visibility of the sidebar / topbar while the account
 // onboarding modal is in front of everything.
 const sessionNeedsOnboarding = computed(
@@ -442,6 +506,7 @@ const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${webs
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
 const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
+const brandInputRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-input` : '/websites')
 
 const navMain = computed(() => [
   {
@@ -465,6 +530,7 @@ const navMain = computed(() => [
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
+          { title: 'Brand Input', to: brandInputRoute.value, match: '/brand-input' },
         ],
       },
       { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
@@ -488,21 +554,31 @@ function isChildActive(child) {
 }
 
 const breadcrumbs = computed(() => {
+  // Detail pages append the entity they show (e.g. the prompt text) via
+  // appStore.setBreadcrumbTail; the nav tree only knows section names.
+  const tail = appStore.breadcrumbTail
+    ? [{ label: appStore.breadcrumbTail }]
+    : []
+
   const path = route.path
   for (const group of navMain.value) {
     for (const item of group.items) {
       if (item.children) {
         for (const child of item.children) {
           if (isChildActive(child))
-            return [{ label: item.title, to: item.to }, { label: child.title, to: child.to }]
+            return [
+              { label: item.title, to: item.to },
+              { label: child.title, to: child.to },
+              ...tail,
+            ]
         }
       }
       if (path === item.match || path.startsWith(item.match))
-        return [{ label: item.title, to: item.to }]
+        return [{ label: item.title, to: item.to }, ...tail]
     }
   }
   const name = String(route.name || 'Page').replace(/[-_]/g, ' ')
-  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }]
+  return [{ label: name.charAt(0).toUpperCase() + name.slice(1) }, ...tail]
 })
 
 function switchWebsite(id) {
@@ -528,8 +604,7 @@ async function createProject() {
   creating.value = true
   createError.value = ''
   try {
-    const { data } = await websitesApi.create(newProject.value)
-    const project = data?.data || data
+    const { data: project } = await websitesApi.create(newProject.value)
     appStore.websites.push(project)
     appStore.setActiveWebsite(project)
     newProject.value = { name: '', url: '', industry: '' }
@@ -553,15 +628,18 @@ onMounted(async () => {
   if (!authStore.user) {
     try { await authStore.fetchMe() } catch {}
   }
+  // Assistant entitlement / maintenance switch — decides whether the
+  // header trigger renders at all. Fire and forget.
+  assistantStore.loadStatus()
   try {
     const { data } = await websitesApi.list({ _silentError: true })
-    appStore.setWebsites(data?.results || data || [])
+    appStore.setWebsites(data || [])
   } catch {}
-  // Fetch plan info for project limits
+  // Fetch plan info for project limits (plans: free / pro / business)
   try {
     const { data } = await billingApi.getCurrent({ _silentError: true })
-    const plan = data?.plan || data?.data?.plan || 'starter'
-    const limits = { starter: 1, growth: 5, scale: -1 }
+    const plan = data?.plan || 'free'
+    const limits = { free: 1, pro: 5, business: -1 }
     appStore.setPlanInfo(plan, limits[plan] ?? 1)
   } catch {}
   // Search keyboard shortcut

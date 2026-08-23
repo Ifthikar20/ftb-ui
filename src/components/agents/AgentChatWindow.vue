@@ -24,7 +24,7 @@ async function load() {
   loading.value = true
   try {
     const { data } = await agentsApi.chatHistory(props.hiredId)
-    messages.value = data?.data || data || []
+    messages.value = data?.data || []
   } catch (_) {
     messages.value = []
   } finally {
@@ -43,7 +43,7 @@ async function send() {
   scrollDown()
   try {
     const { data } = await agentsApi.sendMessage(props.hiredId, text)
-    const reply = data?.data || data
+    const reply = data
     if (reply) messages.value.push(reply)
     scrollDown()
   } catch (e) {

@@ -233,13 +233,14 @@ const platforms = [
 
 const pixelSnippet = computed(() => {
   if (!createdSite.value) return ''
+  // eslint-disable-next-line no-useless-escape -- the escaped slash keeps a literal closing script tag out of the SFC source, which would terminate this script block
   return `<script src="https://fetchbot.ai/p.js" data-key="${createdSite.value.pixel_key}"><\/script>`
 })
 
 onMounted(async () => {
   try {
     const { data } = await websitesApi.list()
-    websites.value = data?.data || data || []
+    websites.value = data || []
     appStore.setWebsites(websites.value)
   } catch { /* empty */ }
 })
@@ -294,7 +295,7 @@ async function createAndGoToPixel() {
   adding.value = true
   try {
     const { data } = await websitesApi.create(newSite)
-    const site = data?.data || data
+    const site = data
     createdSite.value = site
     websites.value.push(site)
     appStore.setWebsites(websites.value)

@@ -20,6 +20,21 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/ftb-ui
 
 jobs:
+  lint:
+    # Reports ESLint findings on every push. Deliberately NOT a `needs`
+    # of build yet — a red lint job fails the run visibly without
+    # blocking a deploy. Once it has a green history, add
+    # `needs: lint` to build to make it a hard gate.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
   build:
     runs-on: ubuntu-latest
     steps:

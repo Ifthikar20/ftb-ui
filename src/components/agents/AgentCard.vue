@@ -8,7 +8,7 @@ const props = defineProps({
   hired: { type: Object, default: null },
   canHire: { type: Boolean, default: true },
 })
-const emit = defineEmits(['hire', 'open'])
+defineEmits(['hire', 'open'])
 
 const isHired = computed(() => !!props.hired)
 </script>

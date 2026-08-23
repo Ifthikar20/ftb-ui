@@ -143,14 +143,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import websitesApi from '@/api/websites'
+import { useResource } from '@/composables/useResource'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({ id: String })
-const website = ref(null)
+const { data: website } = useResource(() => websitesApi.get(props.id))
 const copied = ref(false)
 
 // Extract just the hostname (no protocol, no trailing slash) for the
@@ -179,15 +180,9 @@ const crawlStatusLabel = computed(() => {
   return 'Waiting'
 })
 
-onMounted(async () => {
-  try {
-    const { data } = await websitesApi.get(props.id)
-    website.value = data?.data || data
-  } catch { /* handle */ }
-})
-
 function copyPixel() {
-  const snippet = `<script src="https://fetchbot.ai/p.js" data-key="${website.value?.pixel_key || ''}">\<\/script>`
+  // eslint-disable-next-line no-useless-escape -- the escaped slash keeps a literal closing script tag out of the SFC source, which would terminate this script block
+  const snippet = `<script src="https://fetchbot.ai/p.js" data-key="${website.value?.pixel_key || ''}"><\/script>`
   navigator.clipboard.writeText(snippet)
   copied.value = true
   setTimeout(() => copied.value = false, 2000)

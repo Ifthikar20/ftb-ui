@@ -43,6 +43,7 @@
 .btn-accent {
   background: var(--brand-accent);
   color: #fff;
+  /* Coloured surface in both themes: white text stays readable. */
   font-weight: 600;
 }
 

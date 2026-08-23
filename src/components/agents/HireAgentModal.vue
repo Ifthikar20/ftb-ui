@@ -25,7 +25,7 @@ watch(() => props.modelValue, async (open) => {
   slackConnectionId.value = ''
   try {
     const { data } = await integrationsApi.list()
-    const rows = data?.data || data || []
+    const rows = data?.data || []
     slackConnections.value = rows.filter((c) => c.platform === 'slack' && c.is_active)
   } catch (_) {
     slackConnections.value = []
@@ -49,7 +49,7 @@ async function confirm() {
     if (slackConnectionId.value) payload.slack_connection_id = slackConnectionId.value
     const { data } = await agentsApi.hire(payload)
     toast.success(`${props.spec.name} hired.`)
-    emit('hired', data?.data || data)
+    emit('hired', data)
     close()
   } catch (e) {
     if (e.response?.status === 402) {

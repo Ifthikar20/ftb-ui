@@ -867,9 +867,6 @@ const scrolled = ref(false)
 const activeCard = ref(0)
 const activeCat = ref(0)
 const activeWhy = ref(0)
-const trackOffset = ref(0)
-const trackRef = ref(null)
-
 
 // Magnetic-tilt for the four AI reply cards. CSS-only transform —
 // JS just sets two custom props off pointer position so the
@@ -888,138 +885,15 @@ function onCardLeave(ev) {
   el.style.setProperty('--ty', '0deg')
 }
 
-/* ── "Our tools for" section ── */
-const toolTab = ref(3) // default to "SEO Intelligence" active
-const toolTabs = [
-  { id: 'seo', label: 'SEO' },
-  { id: 'growth', label: 'Growth' },
-  { id: 'analytics', label: 'Analytics' },
-  { id: 'seo-intel', label: 'SEO Intelligence' },
-]
-
-const toolIndex = ref(3) // default highlight "Lead ID"
-const toolCards = [
-  {
-    id: 'analytics',
-    label: 'Analytics',
-    accent: 'blue',
-    mainValue: '2,847',
-    mainLabel: 'Visitors today',
-    badge: '+18%',
-    badgeTone: 'tone-pos',
-    kind: 'spark',
-    path: 'M0,40 L20,34 L40,32 L60,28 L80,30 L100,22 L120,18 L140,22 L160,14 L180,12 L200,8 L220,6',
-    area: 'M0,40 L20,34 L40,32 L60,28 L80,30 L100,22 L120,18 L140,22 L160,14 L180,12 L200,8 L220,6 L220,52 L0,52 Z',
-    fill: '#0a1f3d',
-    desc: 'Track every visit, session, and source in real time — see what works without sampling.',
-    replaces: 'Google Analytics',
-  },
-  {
-    id: 'heatmaps',
-    label: 'Heatmaps',
-    accent: 'coral',
-    mainValue: '4,132',
-    mainLabel: 'Clicks tracked',
-    badge: '12 hotspots',
-    badgeTone: 'tone-neutral',
-    kind: 'dots',
-    dots: [
-      { x: 22, y: 30, size: 1.4 },
-      { x: 48, y: 22, size: 1.1 },
-      { x: 72, y: 38, size: 1.8 },
-      { x: 30, y: 60, size: 1.2 },
-      { x: 60, y: 68, size: 2.2 },
-      { x: 82, y: 58, size: 1 },
-      { x: 12, y: 76, size: 0.9 },
-      { x: 44, y: 80, size: 1.3 },
-    ],
-    desc: 'See exactly where users click, scroll, and hesitate. Ship UI changes with proof.',
-    replaces: 'Hotjar',
-  },
-  {
-    id: 'keywords',
-    label: 'Keywords',
-    accent: 'green',
-    mainValue: '87',
-    mainLabel: 'Tracked keywords',
-    badge: '+4 new #1s',
-    badgeTone: 'tone-pos',
-    kind: 'keywords',
-    items: [
-      { pos: 3, term: 'ai analytics', delta: '4' },
-      { pos: 1, term: 'visitor tracking', delta: '1' },
-      { pos: 5, term: 'heatmap tool', delta: '6' },
-      { pos: 2, term: 'lead scoring saas', delta: '2' },
-    ],
-    desc: 'Monitor rankings daily, catch movement before competitors, and own the SERP.',
-    replaces: 'Ahrefs',
-  },
-  {
-    id: 'lead-id',
-    label: 'Lead ID',
-    accent: 'rausch',
-    mainValue: '23',
-    mainLabel: 'Companies today',
-    badge: '4 hot leads',
-    badgeTone: 'tone-accent',
-    kind: 'leads',
-    items: [
-      { name: 'Acme Corp', domain: 'acme.com', score: 94 },
-      { name: 'Vector Labs', domain: 'vectorlabs.io', score: 81 },
-      { name: 'Northwind Ltd', domain: 'northwind.co', score: 67 },
-    ],
-    desc: 'Identify companies visiting your site with behavioral scoring and company intel.',
-    replaces: 'Clearbit',
-  },
-]
-
-function posClass(pos) {
-  if (pos === 1) return 'pos-1'
-  if (pos <= 3) return 'pos-3'
-  return 'pos-5'
-}
-function scoreTone(score) {
-  if (score >= 90) return 'score-hot'
-  if (score >= 75) return 'score-warm'
-  return 'score-cool'
-}
-
 /* Typewriter refs */
 const twLine1 = ref(null)
 const twLine2 = ref(null)
 const twLine3 = ref(null)
 const twDone = ref(false)
 
-const cardStep = 280
-const visibleCards = 4
 let cycleTimer = null
 let featureTimer = null
 const featureDwellMs = 4200
-
-const leadColors = ['#131718', '#C65A2F', '#4A7FB0', '#5E6B73']
-
-// ── Chart path helpers ──
-const CHART_W = 220
-const CHART_H = 70
-function chartPoints(series) {
-  const max = Math.max(...series, 1)
-  const stepX = CHART_W / (series.length - 1 || 1)
-  return series.map((v, i) => [i * stepX, CHART_H - (v / max) * (CHART_H - 6) - 3])
-}
-function buildLinePath(series) {
-  const pts = chartPoints(series)
-  if (!pts.length) return ''
-  return pts.reduce((acc, [x, y], i) => acc + (i === 0 ? `M${x},${y}` : ` L${x},${y}`), '')
-}
-function buildAreaPath(series) {
-  const line = buildLinePath(series)
-  if (!line) return ''
-  return `${line} L${CHART_W},${CHART_H} L0,${CHART_H} Z`
-}
-function lastY(series) {
-  const pts = chartPoints(series)
-  return pts.length ? pts[pts.length - 1][1] : CHART_H
-}
 
 function startFeatureAutoAdvance() {
   stopFeatureAutoAdvance()
@@ -1030,23 +904,11 @@ function startFeatureAutoAdvance() {
 function stopFeatureAutoAdvance() {
   if (featureTimer) { clearInterval(featureTimer); featureTimer = null }
 }
-function pauseAutoAdvance() { stopFeatureAutoAdvance() }
-function resumeAutoAdvance() { startFeatureAutoAdvance() }
-
-function scrollCarousel(dir) {
-  const maxOffset = -(features.length - visibleCards) * cardStep
-  trackOffset.value = Math.max(maxOffset, Math.min(0, trackOffset.value - dir * cardStep))
-}
 
 function startCycle() {
   cycleTimer = setInterval(() => {
     activeCat.value = (activeCat.value + 1) % categories.length
   }, 2800)
-}
-
-function resetCycle() {
-  clearInterval(cycleTimer)
-  startCycle()
 }
 
 /* Typewriter engine */
@@ -1358,34 +1220,6 @@ function startScenarioCycle() {
   }, 7000)
 }
 
-// Provider logo registry — inline SVGs of each AI's actual brand
-// mark. Pure SVG so we don't need to ship any image asset.
-const providerLogos = {
-  anthropic: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M14.8 3h-3.1L7.2 21h3.2l.95-4h4.55l.95 4h3.2L15.6 3h-.8zm-2.9 11.3 1.5-6 1.5 6h-3z"/>
-  </svg>`,
-  openai: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M21.55 10.04a5.42 5.42 0 0 0-.47-4.46 5.5 5.5 0 0 0-5.92-2.63 5.42 5.42 0 0 0-4.07-1.82 5.5 5.5 0 0 0-5.25 3.81 5.42 5.42 0 0 0-3.63 2.63 5.5 5.5 0 0 0 .68 6.45 5.42 5.42 0 0 0 .47 4.46 5.5 5.5 0 0 0 5.92 2.63 5.42 5.42 0 0 0 4.08 1.82 5.5 5.5 0 0 0 5.25-3.82 5.42 5.42 0 0 0 3.62-2.63 5.5 5.5 0 0 0-.68-6.44zm-8.18 11.42a4.07 4.07 0 0 1-2.62-.95l.13-.07 4.4-2.55a.72.72 0 0 0 .37-.62v-6.23l1.86 1.08c.02 0 .03.03.03.05v5.16a4.08 4.08 0 0 1-4.17 4.13zm-8.78-3.74a4.07 4.07 0 0 1-.49-2.74l.13.08 4.4 2.55c.23.13.51.13.74 0l5.38-3.1v2.14a.07.07 0 0 1-.03.06l-4.45 2.57a4.08 4.08 0 0 1-5.58-1.49zM3.43 8.45a4.07 4.07 0 0 1 2.13-1.79V11.94a.71.71 0 0 0 .36.62l5.36 3.1-1.86 1.08a.07.07 0 0 1-.07 0L4.9 14.16a4.08 4.08 0 0 1-1.49-5.7zm15.27 3.55-5.38-3.13 1.86-1.07a.07.07 0 0 1 .07 0l4.45 2.57a4.08 4.08 0 0 1-.62 7.36V12.6a.72.72 0 0 0-.38-.62zM20.55 9c-.02-.02-.07-.05-.13-.08l-4.4-2.55a.71.71 0 0 0-.74 0l-5.38 3.1V7.32a.06.06 0 0 1 .03-.05l4.45-2.57a4.07 4.07 0 0 1 6.17 4.3zm-11.65 4.04L7.04 12c-.02-.01-.03-.04-.03-.06V6.78a4.07 4.07 0 0 1 6.68-3.13l-.13.08-4.4 2.55a.72.72 0 0 0-.37.62v6.14h.11zm1-2.18 2.4-1.39 2.4 1.39v2.76l-2.4 1.39-2.4-1.39v-2.76z"/>
-  </svg>`,
-  google: `<svg viewBox="0 0 24 24" aria-hidden="true">
-    <defs>
-      <linearGradient id="g-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%"  stop-color="#4285f4"/>
-        <stop offset="50%" stop-color="#9b72cb"/>
-        <stop offset="100%" stop-color="#d96570"/>
-      </linearGradient>
-    </defs>
-    <path fill="url(#g-grad)" d="M12 2 13.6 8.2 19.8 9.8 13.6 11.4 12 17.6 10.4 11.4 4.2 9.8 10.4 8.2zM18.2 13.6 19 16.6 22 17.4 19 18.2 18.2 21.2 17.4 18.2 14.4 17.4 17.4 16.6z"/>
-  </svg>`,
-  perplexity: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M12 2 4 7v10l8 5 8-5V7l-8-5zm0 2.34L17.55 8 12 11.66 6.45 8 12 4.34zM6 9.7l5 3.3v6.7l-5-3.13V9.7zm12 0v6.87l-5 3.13V13l5-3.3z"/>
-  </svg>`,
-}
-
-function providerLogo(key) {
-  return providerLogos[key] || ''
-}
-
 // Favicon URL via Google's public favicon CDN — same trick we use on
 // the Source Influence page. sz=64 keeps it sharp on retina.
 function faviconFor(domain) {
@@ -1472,43 +1306,6 @@ const steps = [
   { title: 'Pick Your Prompts', desc: 'We mine real buyer questions from Reddit, Quora, and search trends — you approve the set you want to rank for.' },
   { title: 'Watch LLM Visibility', desc: 'We run those prompts across every major LLM and stream back where you show up, where competitors win, and which sources shape the answers.' },
   { title: 'Export & Share', desc: 'Push clean .csv exports, refresh-on-demand Looker Studio dashboards, or pipe everything through the API into your stack.' },
-]
-
-const plans = [
-  {
-    name: 'Starter',
-    price: '$39',
-    per: 'mo',
-    desc: 'For small companies & individuals.',
-    features: [
-      '5 websites',
-      '100,000 pageviews/mo',
-      'Full analytics + AI',
-      'Heatmaps & funnels',
-      'Lead identification',
-      'Keyword tracking & SEO',
-      '5-day free trial',
-    ],
-    cta: 'Start Free Trial',
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    per: '',
-    desc: 'For teams & agencies.',
-    features: [
-      'Everything in Starter',
-      'Unlimited projects & pageviews',
-      'Unlimited AI credits',
-      'SSO / SAML',
-      'Full API access',
-      'White-label reports',
-      'Dedicated support & SLA',
-    ],
-    cta: 'Contact Sales',
-    featured: false,
-  },
 ]
 
 /* ── Showcase features (alternating rows) ── */

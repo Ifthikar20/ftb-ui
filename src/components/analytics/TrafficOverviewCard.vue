@@ -8,6 +8,7 @@ import {
 } from 'chart.js'
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
+import { cssVar } from '@/lib/theme'
 
 ChartJS.register(
   Title, Tooltip, Legend,
@@ -35,10 +36,6 @@ const showPageviews = computed(() => view.value === 'both' || view.value === 'pa
 const VISITORS_COLOR = '#FF385C'
 const PAGEVIEWS_COLOR = '#00A699'
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
 function withAlpha(hex, alpha) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex
   return hex + Math.round(alpha * 255).toString(16).padStart(2, '0')
@@ -242,8 +239,8 @@ const chartOptions = computed(() => {
             <span
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="visitorsDelta >= 0
-                ? 'bg-[#E8F5E9] text-[#008A05]'
-                : 'bg-[#FDECEA] text-[#C02926]'"
+                ? 'bg-[#E8F5E9] text-[#008A05] dark:bg-[#4ade80]/15 dark:text-[#4ade80]'
+                : 'bg-[#FDECEA] text-[#C02926] dark:bg-[#f87171]/15 dark:text-[#f87171]'"
             >
               <TrendingUp v-if="visitorsDelta >= 0" class="size-3.5" />
               <TrendingDown v-else class="size-3.5" />
@@ -259,8 +256,8 @@ const chartOptions = computed(() => {
             <span
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="pageviewsDelta >= 0
-                ? 'bg-[#E8F5E9] text-[#008A05]'
-                : 'bg-[#FDECEA] text-[#C02926]'"
+                ? 'bg-[#E8F5E9] text-[#008A05] dark:bg-[#4ade80]/15 dark:text-[#4ade80]'
+                : 'bg-[#FDECEA] text-[#C02926] dark:bg-[#f87171]/15 dark:text-[#f87171]'"
             >
               <TrendingUp v-if="pageviewsDelta >= 0" class="size-3.5" />
               <TrendingDown v-else class="size-3.5" />

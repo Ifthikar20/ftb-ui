@@ -1,41 +1,25 @@
 // Pricing tiers shown on the paywall.
 //
-// Three tiers: Individual ($45), Pro ($100), Business (contact). The
-// per-tier ``maxPromptsPerAudit`` mirrors core.utils.constants.PLAN_LIMITS
-// — keep in sync with the backend or the dashboard will lie about the
-// cap a user has when their plan changes.
+// Two tiers: Pro ($45/mo self-serve, 7-day trial) and Business
+// (contact sales). The per-tier ``maxPromptsPerAudit`` mirrors
+// core.utils.constants.PLAN_LIMITS — keep in sync with the backend or
+// the dashboard will lie about the cap a user has when their plan
+// changes. Checkout is handled by Polar (backend creates the session).
 
 export const TIERS = [
     {
-        id: 'individual',
-        name: 'Individual',
+        id: 'pro',
+        name: 'Pro',
         price: 45,
         priceLabel: '$45',
         period: '/month',
-        maxPromptsPerAudit: 5,
-        description: 'For solo founders watching one site.',
-        features: [
-            '1 website',
-            '5 prompts per audit',
-            '4 audits / month',
-            'Claude + GPT-4',
-            'Email support',
-        ],
-        cta: 'Start with Individual',
-        // Backend reads STRIPE_INDIVIDUAL_PRICE_ID from env.
-        stripePriceId: 'STRIPE_INDIVIDUAL_PRICE_ID',
-        planCode: 'individual',
-        highlight: false,
-    },
-    {
-        id: 'pro',
-        name: 'Pro',
-        price: 100,
-        priceLabel: '$100',
-        period: '/month',
+        annualPrice: 450,
+        annualPriceLabel: '$450',
+        trialDays: 7,
         maxPromptsPerAudit: 15,
         description: 'Full access — every LLM provider and competitor tracking.',
         features: [
+            '7-day free trial',
             'Up to 5 websites',
             '15 prompts per audit',
             'Daily audits',
@@ -44,13 +28,12 @@ export const TIERS = [
             'Trend intelligence + recommendations',
             'Priority support',
         ],
-        cta: 'Upgrade to Pro',
-        stripePriceId: 'STRIPE_PRO_PRICE_ID',
+        cta: 'Start 7-day free trial',
         planCode: 'pro',
         highlight: true,
     },
     {
-        id: 'enterprise',
+        id: 'business',
         name: 'Business',
         price: null,
         priceLabel: 'Custom',
@@ -58,6 +41,7 @@ export const TIERS = [
         maxPromptsPerAudit: 50,
         description: 'Dedicated support, custom integrations, and unlimited scale.',
         features: [
+            'Everything in Pro',
             'Unlimited websites',
             '50+ prompts per audit',
             'Unlimited audits',
@@ -67,8 +51,7 @@ export const TIERS = [
             'Dedicated account manager',
         ],
         cta: 'Contact sales',
-        stripePriceId: null,
-        planCode: 'enterprise',
+        planCode: 'business',
         contactTarget: 'mailto:sales@fetchbot.ai?subject=Business plan inquiry',
         highlight: false,
     },

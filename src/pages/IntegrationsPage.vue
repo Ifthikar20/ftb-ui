@@ -1,191 +1,51 @@
 <template>
   <div class="integrations-page mx-auto max-w-6xl px-6 py-8 sm:px-8">
-    <div class="mb-8">
-      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Integrations</h1>
-      <p class="mt-1 text-sm text-muted-foreground">Connect your favorite tools to get daily updates, alerts, and growth reports.</p>
-    </div>
+    <h1 class="mb-6 text-xl font-semibold tracking-tight text-foreground">Integrations</h1>
 
-    <!-- Daily Update Preview Card -->
-    <div class="daily-preview-card">
-      <div class="daily-preview-inner">
-        <div class="daily-preview-header">
-          <div class="daily-preview-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span>Daily Update Preview</span>
-          </div>
-          <div class="daily-schedule">
-            <span class="schedule-label">Sends every day at</span>
-            <select v-model="scheduleTime" class="schedule-select">
-              <option value="08:00">8:00 AM</option>
-              <option value="09:00">9:00 AM</option>
-              <option value="10:00">10:00 AM</option>
-              <option value="12:00">12:00 PM</option>
-              <option value="17:00">5:00 PM</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="update-preview-msg">
-          <div class="preview-app-bar">
-            <span class="preview-avatar">🤖</span>
-            <span class="preview-bot-name">FetchBot</span>
-            <span class="preview-time">Today at {{ formattedTime }}</span>
-          </div>
-          <div class="preview-body">
-            <div class="preview-greeting">📊 <strong>Daily Growth Report</strong> — {{ todayFormatted }}</div>
-            <div class="preview-stats">
-              <div class="preview-stat-row">
-                <span class="preview-stat-icon">👥</span>
-                <span><strong>142</strong> new visitors · <strong>+18%</strong> from yesterday</span>
-              </div>
-              <div class="preview-stat-row">
-                <span class="preview-stat-icon">🔥</span>
-                <span><strong>7</strong> hot leads identified · <strong>3</strong> ready for outreach</span>
-              </div>
-              <div class="preview-stat-row">
-                <span class="preview-stat-icon">📈</span>
-                <span>Top trending: <strong>"AI productivity tools"</strong> ↑340%</span>
-              </div>
-              <div class="preview-stat-row">
-                <span class="preview-stat-icon">🎯</span>
-                <span>SEO health: <strong>92/100</strong> · 2 new keywords ranking</span>
-              </div>
-            </div>
-            <div class="preview-cta">
-              <span class="preview-link">📎 View full dashboard →</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Integrations Grid -->
+    <!-- Integrations directory -->
     <div class="integrations-grid">
-      <div v-for="intg in integrations" :key="intg.id" class="integration-card" :class="{ connected: intg.connected }">
-        <!-- Status indicator -->
-        <div class="intg-status-dot" :class="intg.connected ? 'status-connected' : 'status-disconnected'">
-          <span class="status-pulse" v-if="intg.connected"></span>
-        </div>
-
-        <div class="intg-card-top">
+      <!-- Working integrations -->
+      <div v-for="intg in integrations" :key="intg.id" class="intg-tile" :class="{ connected: intg.connected }">
+        <div class="intg-tile-main">
           <div class="intg-icon-wrap" :style="{ background: intg.bgColor }">
             <span v-html="intg.icon"></span>
           </div>
-          <div class="intg-card-identity">
-            <span class="intg-card-name">{{ intg.name }}</span>
-            <span class="intg-card-status" :class="intg.connected ? 'text-success' : 'text-muted'">
+          <div class="intg-tile-identity">
+            <span class="intg-tile-name">{{ intg.name }}</span>
+            <span class="intg-tile-status" :class="intg.connected ? 'text-success' : 'text-muted'">
               {{ intg.connected ? 'Connected' : 'Not connected' }}
             </span>
           </div>
         </div>
 
-        <p class="intg-card-desc">{{ intg.description }}</p>
+        <p class="intg-tile-desc">{{ intg.description }}</p>
 
-        <!-- Features -->
-        <div class="intg-features">
-          <div v-for="feature in intg.features" :key="feature" class="intg-feature">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 5"/></svg>
-            <span>{{ feature }}</span>
-          </div>
-        </div>
-
-        <!-- Connect / Manage -->
-        <div class="flex gap-2">
+        <div class="intg-tile-actions">
           <template v-if="intg.connected">
-            <Button variant="secondary" size="sm" class="flex-1" @click="openSettings(intg)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-              Settings
-            </Button>
+            <Button variant="secondary" size="sm" class="flex-1" @click="openSettings(intg)">Settings</Button>
             <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-destructive" @click="disconnect(intg)">Disconnect</Button>
           </template>
-          <Button v-else size="sm" class="flex-1" @click="openConnect(intg)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.5-1.5"/></svg>
-            Connect {{ intg.name }}
-          </Button>
+          <Button v-else size="sm" class="flex-1" @click="openConnect(intg)">Connect</Button>
         </div>
       </div>
-    </div>
 
-    <!-- Data sources -->
-    <div v-if="activeWebsite" class="mt-10">
-      <h2 class="section-title">Data sources</h2>
-      <div class="integrations-grid mt-4">
-        <div class="integration-card" :class="{ connected: gscConnected }">
-          <div class="intg-status-dot" :class="gscConnected ? 'status-connected' : 'status-disconnected'">
-            <span class="status-pulse" v-if="gscConnected"></span>
-          </div>
-          <div class="intg-card-top">
-            <div class="intg-icon-wrap" style="background: #458CF515">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#458CF5" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            </div>
-            <div class="intg-card-identity">
-              <span class="intg-card-name">Google Search Console</span>
-              <span class="intg-card-status" :class="gscConnected ? 'text-success' : 'text-muted'">
-                {{ gscConnected ? `Connected for ${activeWebsite.name}` : 'Not connected' }}
-              </span>
-            </div>
-          </div>
-          <p class="intg-card-desc">
-            Real Google ranking data for your project: queries, clicks, impressions, and positions,
-            synced nightly and fed into your prompt library.
-          </p>
-          <div class="flex gap-2">
-            <template v-if="gscConnected">
-              <Button variant="secondary" size="sm" class="flex-1" @click="toggleGscSummary">
-                {{ showGscSummary ? 'Hide summary' : 'View summary' }}
-              </Button>
-              <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-destructive" @click="confirmGscDisconnect">
-                Disconnect
-              </Button>
-            </template>
-            <Button v-else size="sm" class="flex-1" :disabled="gscConnecting" @click="startGscConnect">
-              {{ gscConnecting ? 'Redirecting…' : 'Connect with Google' }}
-            </Button>
-          </div>
-        </div>
-      </div>
-      <div v-if="gscConnected && showGscSummary" class="mt-4">
-        <GscSummaryCards v-if="gscSummary" :summary="gscSummary" />
-        <p v-else class="text-sm text-muted-foreground">Loading summary…</p>
-      </div>
     </div>
-
-    <!-- GSC property picker (OAuth return with multiple properties) -->
-    <PropertyPickerModal
-      v-model="showGscPropertyPicker"
-      :properties="gscProperties"
-      :saving="gscSavingProperty"
-      @select="selectGscProperty"
-    />
 
     <!-- What Gets Sent Section -->
-    <div class="what-gets-sent">
+    <div ref="sentSection" class="what-gets-sent">
       <h2 class="section-title">What gets sent to your teams</h2>
-      <div class="sent-items-grid">
-        <div class="sent-item">
-          <div class="sent-item-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb)">📊</div>
-          <h4>Daily Growth Report</h4>
-          <p>Visitor count, lead score changes, and conversion trends delivered every morning.</p>
-        </div>
-        <div class="sent-item">
-          <div class="sent-item-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626)">🔥</div>
-          <h4>Hot Lead Alerts</h4>
-          <p>Instant notification when a lead reaches 80+ score or visits your pricing page.</p>
-        </div>
-        <div class="sent-item">
-          <div class="sent-item-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)">📈</div>
-          <h4>Trend Intelligence</h4>
-          <p>Weekly trending keywords and market shifts relevant to your business posture.</p>
-        </div>
-        <div class="sent-item">
-          <div class="sent-item-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a)">🏆</div>
-          <h4>Growth Milestones</h4>
-          <p>Celebrate when your team hits traffic goals, lead targets, or SEO improvements.</p>
-        </div>
-      </div>
+      <ul class="sent-list">
+        <li v-for="(item, idx) in sentItems" :key="item.title" class="sent-row" :class="sentRevealed ? 'sent-row-revealed' : 'sent-row-hidden'" :style="{ '--reveal-delay': (idx * 70) + 'ms' }">
+          <span class="sent-row-title">
+            {{ item.title }}
+            <span v-if="item.soon" class="soon-badge">Coming soon</span>
+          </span>
+          <span class="sent-row-desc">{{ item.desc }}</span>
+        </li>
+      </ul>
     </div>
 
-    <!-- ══════ Connect Modal ══════ -->
+    <!-- Connect Modal -->
     <BaseModal v-model="showConnectModal" max-width="480px">
       <template #header>
         <h3 class="bm-title">
@@ -194,94 +54,86 @@
         </h3>
       </template>
 
-          <div class="connect-steps">
-            <!-- Slack -->
-            <template v-if="activeIntegration?.id === 'slack'">
-              <div class="connect-step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                  <h4>Create an Incoming Webhook</h4>
-                  <p>Go to your <a href="https://api.slack.com/messaging/webhooks" target="_blank" class="step-link">Slack API dashboard</a> and create an Incoming Webhook for your workspace.</p>
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                  <h4>Paste the Webhook URL</h4>
-                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://hooks.slack.com/services/T.../B.../..." />
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                  <h4>Choose a channel</h4>
-                  <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#marketing-updates" />
-                </div>
-              </div>
-            </template>
-
-            <!-- Discord -->
-            <template v-else-if="activeIntegration?.id === 'discord'">
-              <div class="connect-step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                  <h4>Create a Discord Webhook</h4>
-                  <p>In your Discord server, go to <strong>Channel Settings → Integrations → Webhooks</strong> and click "New Webhook".</p>
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                  <h4>Paste the Webhook URL</h4>
-                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://discord.com/api/webhooks/..." />
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                  <h4>Bot display name</h4>
-                  <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="FetchBot Growth Bot" value="FetchBot" />
-                </div>
-              </div>
-            </template>
-
-            <!-- Telegram -->
-            <template v-else-if="activeIntegration?.id === 'telegram'">
-              <div class="connect-step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                  <h4>Get your Chat ID</h4>
-                  <p>Message <a href="https://t.me/userinfobot" target="_blank" class="step-link">@userinfobot</a> on Telegram to get your chat ID.</p>
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                  <h4>Enter your Chat ID</h4>
-                  <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="123456789" />
-                </div>
-              </div>
-              <div class="connect-step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                  <h4>Start the bot</h4>
-                  <p>Message <a href="https://t.me/FetchBotGrowthBot" target="_blank" class="step-link">@FetchBotGrowthBot</a> to activate notifications.</p>
-                </div>
-              </div>
-            </template>
+      <div class="connect-steps">
+        <!-- Slack -->
+        <template v-if="activeIntegration?.id === 'slack'">
+          <div class="connect-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Create an Incoming Webhook</h4>
+              <p>Create or open your app at <a href="https://api.slack.com/apps" target="_blank" rel="noopener" class="step-link">api.slack.com/apps</a>, enable Incoming Webhooks, and add a webhook for the channel that should receive updates.</p>
+            </div>
           </div>
-
-          <!-- Notification Preferences -->
-          <div class="notif-prefs">
-            <h4 class="prefs-title">Notifications to send</h4>
-            <label class="pref-check" v-for="pref in notifPrefs" :key="pref.key">
-              <input type="checkbox" v-model="pref.enabled" class="modern-check" />
-              <div>
-                <span class="pref-name">{{ pref.label }}</span>
-                <span class="pref-desc">{{ pref.desc }}</span>
-              </div>
-            </label>
+          <div class="connect-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Paste the webhook URL</h4>
+              <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://hooks.slack.com/services/T.../B.../..." />
+            </div>
           </div>
+          <div class="connect-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Channel name</h4>
+              <p>The channel the webhook posts to, so you can tell connections apart.</p>
+              <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#growth-updates" />
+            </div>
+          </div>
+        </template>
+
+        <!-- Discord -->
+        <template v-else-if="activeIntegration?.id === 'discord'">
+          <div class="connect-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Create a webhook</h4>
+              <p>In Discord, open <strong>Server Settings &gt; Integrations &gt; Webhooks</strong>, select <strong>New Webhook</strong>, pick the channel that should receive updates, and copy the webhook URL.</p>
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Paste the webhook URL</h4>
+              <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://discord.com/api/webhooks/..." />
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Channel name</h4>
+              <p>The channel the webhook posts to, so you can tell connections apart.</p>
+              <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#fetchbot-updates" />
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- In-channel bot -->
+      <div class="bot-link">
+        <h4 class="prefs-title">In-channel bot (optional)</h4>
+        <template v-if="activeIntegration?.id === 'slack'">
+          <p class="bot-link-desc">Add your Slack Team ID to link @FetchBot mentions and the /fetchbot command in your workspace to this FetchBot account.</p>
+          <input v-model="externalTeamId" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Team ID, e.g. T0123ABCD" />
+          <p class="bot-link-hint">Your Team ID starts with T. Find it in your workspace settings, or in the browser address bar when you open Slack on the web.</p>
+        </template>
+        <template v-else-if="activeIntegration?.id === 'discord'">
+          <p class="bot-link-desc">Add your Discord Server ID to link the /fetchbot command (report, security, ask, scan) in your server to this FetchBot account.</p>
+          <input v-model="externalTeamId" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Server ID, e.g. 123456789012345678" />
+          <p class="bot-link-hint">The Server ID is numeric. Enable Developer Mode under App Settings &gt; Advanced, then right-click your server name and choose Copy Server ID.</p>
+        </template>
+      </div>
+
+      <!-- Notification Preferences -->
+      <div class="notif-prefs">
+        <h4 class="prefs-title">Notifications to send</h4>
+        <label class="pref-check" v-for="pref in notifPrefs" :key="pref.key">
+          <input type="checkbox" v-model="pref.enabled" class="modern-check" />
+          <div>
+            <span class="pref-name">{{ pref.label }}</span>
+            <span class="pref-desc">{{ pref.desc }}</span>
+          </div>
+        </label>
+      </div>
 
       <template #footer>
         <Button variant="secondary" @click="showConnectModal = false">Cancel</Button>
@@ -292,10 +144,11 @@
       </template>
     </BaseModal>
 
-    <!-- Success Toast Overlay -->
+    <!-- Toast Overlay -->
     <Transition name="toast">
-      <div v-if="showSuccessToast" class="success-toast">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--chart-2)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      <div v-if="showSuccessToast" class="success-toast" :class="{ 'toast-error': toastKind === 'error' }">
+        <svg v-if="toastKind === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--destructive)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--chart-2)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
         <span>{{ successMessage }}</span>
       </div>
     </Transition>
@@ -303,181 +156,21 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Button } from '@/components/ui/button'
 import integrationsApi from '@/api/integrations'
-import searchConsoleApi from '@/api/searchConsole'
-import PropertyPickerModal from '@/components/search_console/PropertyPickerModal.vue'
-import GscSummaryCards from '@/components/search_console/GscSummaryCards.vue'
-import { useToast } from '@/composables/useToast'
-import { useAppStore } from '@/stores/app'
 
-const route = useRoute()
-const router = useRouter()
-const toast = useToast()
-const appStore = useAppStore()
-const activeWebsite = computed(() => appStore.activeWebsite)
-
-// ── Google Search Console (management moved here from the old
-//    Search Performance page; that route is now Search Insights) ──
-const gscConnected = ref(false)
-const gscConnecting = ref(false)
-const showGscSummary = ref(false)
-const gscSummary = ref(null)
-const showGscPropertyPicker = ref(false)
-const gscProperties = ref([])
-const gscSavingProperty = ref(false)
-let gscPollTimer = null
-
-// The OAuth callback may land here for a website that is not the
-// active one; prefer the id Google's redirect carries.
-const gscWebsiteId = computed(() => route.query.website_id || activeWebsite.value?.id)
-
-async function loadGscStatus() {
-  if (!gscWebsiteId.value) return null
-  try {
-    const { data } = await searchConsoleApi.status(gscWebsiteId.value)
-    gscConnected.value = Boolean(data.connected && data.is_active)
-    return data
-  } catch {
-    gscConnected.value = false
-    return null
-  }
-}
-
-async function startGscConnect() {
-  if (!gscWebsiteId.value) return
-  gscConnecting.value = true
-  try {
-    const { data } = await searchConsoleApi.connectStart(gscWebsiteId.value)
-    window.location.href = data.authorize_url
-  } catch {
-    gscConnecting.value = false
-  }
-}
-
-async function toggleGscSummary() {
-  showGscSummary.value = !showGscSummary.value
-  if (showGscSummary.value && !gscSummary.value) {
-    // GSC data lags 2-3 days; show the last 28 finalized days.
-    const end = new Date()
-    end.setDate(end.getDate() - 3)
-    const start = new Date(end)
-    start.setDate(start.getDate() - 27)
-    const iso = (d) => d.toISOString().slice(0, 10)
-    try {
-      const { data } = await searchConsoleApi.summary(gscWebsiteId.value, {
-        start: iso(start), end: iso(end),
-      })
-      gscSummary.value = data
-    } catch {
-      // toasted by interceptor
-    }
-  }
-}
-
-function confirmGscDisconnect() {
-  if (!window.confirm('Disconnect Google Search Console? Synced history is kept, but nightly updates stop.')) return
-  disconnectGsc()
-}
-
-async function disconnectGsc() {
-  try {
-    await searchConsoleApi.disconnect(gscWebsiteId.value)
-    toast.success('Google Search Console disconnected.')
-    gscConnected.value = false
-    gscSummary.value = null
-    showGscSummary.value = false
-  } catch {
-    // toasted by interceptor
-  }
-}
-
-async function openGscPropertyPicker() {
-  try {
-    const { data } = await searchConsoleApi.properties(gscWebsiteId.value)
-    gscProperties.value = data.properties || []
-    showGscPropertyPicker.value = true
-  } catch {
-    // toasted by interceptor
-  }
-}
-
-async function selectGscProperty(siteUrl) {
-  gscSavingProperty.value = true
-  try {
-    await searchConsoleApi.selectProperty(gscWebsiteId.value, siteUrl)
-    showGscPropertyPicker.value = false
-    toast.success('Property saved. First sync is running.')
-    startGscPolling()
-  } finally {
-    gscSavingProperty.value = false
-  }
-}
-
-// Poll status briefly after connect until the first sync lands.
-function startGscPolling() {
-  stopGscPolling()
-  let attempts = 0
-  gscPollTimer = setInterval(async () => {
-    attempts += 1
-    const s = await loadGscStatus()
-    if (s?.has_data || attempts >= 12) stopGscPolling()
-  }, 10000)
-}
-
-function stopGscPolling() {
-  if (gscPollTimer) {
-    clearInterval(gscPollTimer)
-    gscPollTimer = null
-  }
-}
-
-// Google's OAuth callback redirects to /app/integrations?gsc=...
-async function handleGscOAuthReturn() {
-  const outcome = route.query.gsc
-  if (!outcome) return
-  const reason = route.query.reason
-  router.replace({ query: {} })
-
-  if (outcome === 'connected') {
-    toast.success('Google Search Console connected. First sync is running; Google data has a 2-3 day delay.')
-    startGscPolling()
-  } else if (outcome === 'select_property') {
-    await openGscPropertyPicker()
-  } else if (outcome === 'error') {
-    const messages = {
-      denied: 'Google access was declined. Connect again when ready.',
-      invalid_state: 'The sign-in link expired. Please try connecting again.',
-      exchange_failed: 'Google did not accept the authorization. Please try again.',
-    }
-    toast.error(messages[reason] || 'Connecting Google Search Console failed. Please try again.')
-  }
-}
-
-onBeforeUnmount(stopGscPolling)
-
-const scheduleTime = ref('09:00')
 const showConnectModal = ref(false)
 const activeIntegration = ref(null)
 const webhookUrl = ref('')
 const channelName = ref('')
+const externalTeamId = ref('')
 const connecting = ref(false)
 const showSuccessToast = ref(false)
 const successMessage = ref('')
+const toastKind = ref('success')
 const loading = ref(true)
-
-const formattedTime = computed(() => {
-  const [h, m] = scheduleTime.value.split(':').map(Number)
-  const suffix = h >= 12 ? 'PM' : 'AM'
-  return `${h > 12 ? h - 12 : h}:${m.toString().padStart(2, '0')} ${suffix}`
-})
-
-const todayFormatted = computed(() => {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-})
 
 const notifPrefs = reactive([
   { key: 'daily', label: 'Daily Growth Report', desc: 'Morning summary of visitors, leads, and trends', enabled: true },
@@ -486,51 +179,92 @@ const notifPrefs = reactive([
   { key: 'milestones', label: 'Growth Milestones', desc: 'Team celebrations when targets are hit', enabled: false },
 ])
 
+const prefDefaults = { daily: true, hotlead: true, trends: true, milestones: false }
+
+// Apply a per-connection {key: boolean} map to the shared checkboxes;
+// pass null to reset them to the defaults for a fresh connection.
+function setPrefs(values) {
+  for (const p of notifPrefs) {
+    p.enabled = typeof values?.[p.key] === 'boolean' ? values[p.key] : prefDefaults[p.key]
+  }
+}
+
+function snapshotPrefs() {
+  const snap = {}
+  for (const p of notifPrefs) snap[p.key] = p.enabled
+  return snap
+}
+
 const integrations = reactive([
   {
     id: 'slack',
     name: 'Slack',
-    description: 'Get trend alerts and growth reports directly in your channels. Perfect for marketing and sales teams.',
+    description: 'Deliver the daily report and brand-security alerts to a Slack channel, and bring FetchBot into the conversation with @FetchBot mentions and the /fetchbot command.',
     bgColor: 'linear-gradient(135deg, #4A154B15, #E01E5A08)',
-    features: ['Daily growth summaries', 'Hot lead alerts in real-time', 'Trend intelligence weekly digest', 'Custom channel routing'],
     connected: false,
     connectionId: null,
+    webhookUrl: '',
+    channelName: '',
+    externalTeamId: '',
+    scheduleTime: '',
+    notifPrefs: null,
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14.5 2a2.5 2.5 0 0 0 0 5H17V4.5A2.5 2.5 0 0 0 14.5 2z" fill="#E01E5A"/><path d="M2 14.5a2.5 2.5 0 0 0 5 0V12H4.5A2.5 2.5 0 0 0 2 14.5z" fill="#36C5F0"/><path d="M9.5 22a2.5 2.5 0 0 0 0-5H7v2.5A2.5 2.5 0 0 0 9.5 22z" fill="#2EB67D"/><path d="M22 9.5a2.5 2.5 0 0 0-5 0V12h2.5A2.5 2.5 0 0 0 22 9.5z" fill="#ECB22E"/></svg>',
   },
   {
     id: 'discord',
     name: 'Discord',
-    description: 'Share weekly insights with your team in a dedicated bot channel. Great for dev and growth teams.',
+    description: 'Deliver the daily report and brand-security alerts to a Discord channel, and work with FetchBot from your server through the /fetchbot command.',
     bgColor: 'linear-gradient(135deg, #5865F215, #5865F208)',
-    features: ['Rich embed messages', 'Weekly performance summaries', 'Bot channel with interactive commands', 'Mention roles on key alerts'],
     connected: false,
     connectionId: null,
+    webhookUrl: '',
+    channelName: '',
+    externalTeamId: '',
+    scheduleTime: '',
+    notifPrefs: null,
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.3 4.1a19.4 19.4 0 0 0-4.8-1.5 14.5 14.5 0 0 0-.6 1.3 18 18 0 0 0-5.4 0c-.2-.5-.4-.9-.6-1.3A19.3 19.3 0 0 0 4 4.1 20 20 0 0 0 .5 17.7a19.5 19.5 0 0 0 6 3 14.6 14.6 0 0 0 1.3-2 12.6 12.6 0 0 1-2-.9l.5-.4c3.8 1.8 8 1.8 11.8 0 .2.1.3.3.5.4-.6.4-1.3.7-2 .9.4.7.8 1.4 1.3 2a19.5 19.5 0 0 0 6-3A20 20 0 0 0 20.3 4.1zM8 14.8c-1.2 0-2.2-1.1-2.2-2.4S6.8 10 8 10s2.2 1.1 2.2 2.4S9.2 14.8 8 14.8zm8 0c-1.2 0-2.2-1.1-2.2-2.4S14.8 10 16 10s2.2 1.1 2.2 2.4S17.2 14.8 16 14.8z"/></svg>',
   },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    description: 'Receive instant growth milestone notifications anywhere. Perfect for founders and solopreneurs.',
-    bgColor: 'linear-gradient(135deg, #229ED915, #229ED908)',
-    features: ['Instant push notifications', 'Mobile-first growth alerts', 'Reply to get quick analytics', 'Milestone celebrations'],
-    connected: false,
-    connectionId: null,
-    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="#229ED9"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.6 6.8l-1.7 7.9c-.1.5-.5.7-.9.4l-2.5-1.8-1.2 1.2c-.1.2-.3.3-.5.3l.2-2.5 4.5-4c.2-.2 0-.3-.3-.1L8.7 13.5l-2.4-.7c-.5-.2-.5-.5.1-.7l9.5-3.7c.4-.1.8.1.7.7z"/></svg>',
-  },
 ])
+
+// Directory entries for platforms on the roadmap. Rendered as neutral,
+// non-interactive monogram tiles; no click handlers, no brand artwork.
+
+// "What gets sent" list. The backend stores the trend and milestone
+// toggles but does not send those notifications yet, hence the chips.
+const sentItems = [
+  { title: 'Daily Growth Report', desc: 'Visitor count, lead score changes, and conversion trends delivered every morning.' },
+  { title: 'Brand-Security Alerts', desc: 'A heads-up when a new brand-security finding is opened, with the recommended fix.' },
+  { title: 'Hot Lead Alerts', desc: 'Instant notification when a lead reaches 80+ score or visits your pricing page.' },
+  { title: 'Trend Intelligence', desc: 'Weekly trending keywords and market shifts relevant to your business posture.', soon: true },
+  { title: 'Growth Milestones', desc: 'Celebrate when your team hits traffic goals, lead targets, or SEO improvements.', soon: true },
+]
 
 // ── Load saved connections from the API ──
 async function loadConnections() {
   try {
     const res = await integrationsApi.list()
-    const saved = res.data?.data || res.data || []
+    // Notifications endpoints double-wrap: the unwrapped payload is
+    // itself {data: [...]}, so res.data?.data is the connection list.
+    const saved = res.data?.data || []
     for (const conn of saved) {
       const intg = integrations.find(i => i.id === conn.platform)
-      if (intg) {
-        intg.connected = conn.is_active
-        intg.connectionId = conn.id
-        intg.webhookUrl = conn.webhook_url || ''
-        intg.channelName = conn.channel_name || ''
+      if (!intg) continue
+      intg.connected = conn.is_active
+      intg.connectionId = conn.id
+      // The webhook URL is write-only server-side (a secret we never read
+      // back). Track only whether one is configured; leave the input
+      // blank — submitting it blank keeps the stored webhook.
+      intg.webhookConfigured = !!conn.webhook_configured
+      intg.webhookUrl = ''
+      intg.channelName = conn.channel_name || ''
+      intg.externalTeamId = conn.external_team_id || ''
+      // TimeFields may serialize as HH:MM:SS; the API expects HH:MM back.
+      intg.scheduleTime = (conn.schedule_time || '').slice(0, 5)
+      intg.notifPrefs = {
+        daily: typeof conn.notify_daily_report === 'boolean' ? conn.notify_daily_report : prefDefaults.daily,
+        hotlead: typeof conn.notify_hot_leads === 'boolean' ? conn.notify_hot_leads : prefDefaults.hotlead,
+        trends: typeof conn.notify_trend_digest === 'boolean' ? conn.notify_trend_digest : prefDefaults.trends,
+        milestones: typeof conn.notify_milestones === 'boolean' ? conn.notify_milestones : prefDefaults.milestones,
       }
     }
   } catch (e) {
@@ -540,16 +274,48 @@ async function loadConnections() {
   }
 }
 
-onMounted(async () => {
+// ── Scroll-triggered reveal for the "What gets sent" list ──
+const sentSection = ref(null)
+const sentRevealed = ref(false)
+let sentObserver = null
+
+function setupSentReveal() {
+  // Reduced motion (or no IntersectionObserver): skip the animation and
+  // show every row immediately.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    || !('IntersectionObserver' in window)
+    || !sentSection.value) {
+    sentRevealed.value = true
+    return
+  }
+  sentObserver = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting)) {
+      sentRevealed.value = true
+      sentObserver.disconnect()
+      sentObserver = null
+    }
+  }, { threshold: 0.2 })
+  sentObserver.observe(sentSection.value)
+}
+
+onMounted(() => {
   loadConnections()
-  await loadGscStatus()
-  await handleGscOAuthReturn()
+  setupSentReveal()
+})
+
+onBeforeUnmount(() => {
+  if (sentObserver) {
+    sentObserver.disconnect()
+    sentObserver = null
+  }
 })
 
 function openConnect(intg) {
   activeIntegration.value = intg
   webhookUrl.value = ''
   channelName.value = ''
+  externalTeamId.value = ''
+  setPrefs(null)
   showConnectModal.value = true
 }
 
@@ -557,6 +323,8 @@ function openSettings(intg) {
   activeIntegration.value = intg
   webhookUrl.value = intg.webhookUrl || ''
   channelName.value = intg.channelName || ''
+  externalTeamId.value = intg.externalTeamId || ''
+  setPrefs(intg.notifPrefs)
   showConnectModal.value = true
 }
 
@@ -572,6 +340,9 @@ async function disconnect(intg) {
   intg.connectionId = null
   intg.webhookUrl = ''
   intg.channelName = ''
+  intg.externalTeamId = ''
+  intg.scheduleTime = ''
+  intg.notifPrefs = null
   showToast(`${intg.name} disconnected`)
 }
 
@@ -590,33 +361,49 @@ async function confirmConnect() {
       if (prefMap[p.key]) notifData[prefMap[p.key]] = p.enabled
     }
 
+    // The schedule selector is gone from the UI, but the payload shape is
+    // unchanged: send the saved time for an existing connection, or the
+    // 09:00 default for a new one.
+    const scheduleTime = intg.scheduleTime || '09:00'
+
     // Save to backend (upsert). Backend sends a test message server-side.
     const res = await integrationsApi.connect({
       platform: intg.id,
       webhook_url: webhookUrl.value.trim(),
       channel_name: channelName.value.trim(),
-      schedule_time: scheduleTime.value,
+      external_team_id: externalTeamId.value.trim(),
+      schedule_time: scheduleTime,
       ...notifData,
     })
 
-    const saved = res.data?.data || res.data
+    const saved = res.data?.data
     intg.connected = true
-    intg.connectionId = saved?.id || null
-    intg.webhookUrl = webhookUrl.value
-    intg.channelName = channelName.value
+    intg.connectionId = saved?.id || intg.connectionId || null
+    intg.webhookUrl = webhookUrl.value.trim()
+    intg.channelName = channelName.value.trim()
+    intg.externalTeamId = externalTeamId.value.trim()
+    intg.scheduleTime = scheduleTime
+    intg.notifPrefs = snapshotPrefs()
 
     connecting.value = false
     showConnectModal.value = false
-    showToast(`${intg.name} connected! A test message was sent — check your ${intg.name} channel.`)
+    showToast(`${intg.name} connected. A test message was sent to your channel.`)
   } catch (err) {
     console.error('Connect failed:', err)
     connecting.value = false
-    showToast(`Failed to connect ${intg.name}. Please check the webhook URL.`)
+    // The notifications endpoints return {"error": "..."} with the
+    // specific reason (invalid platform, malformed webhook URL, ...).
+    const backendError = err.response?.data?.error
+    const message = typeof backendError === 'string' && backendError
+      ? backendError
+      : `Failed to connect ${intg.name}. Please check the webhook URL.`
+    showToast(message, 'error')
   }
 }
 
-function showToast(msg) {
+function showToast(msg, kind = 'success') {
   successMessage.value = msg
+  toastKind.value = kind
   showSuccessToast.value = true
   setTimeout(() => { showSuccessToast.value = false }, 4000)
 }
@@ -624,217 +411,62 @@ function showToast(msg) {
 
 <style scoped>
 /* ═══════════════════════════════════════
-   Daily Update Preview
-   ═══════════════════════════════════════ */
-.daily-preview-card {
-  margin-bottom: 24px;
-  padding: 2px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #6366f1, #3b82f6);
-  background-size: 300% 300%;
-  animation: gradient-shift 6s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.daily-preview-inner {
-  background: var(--card);
-  border-radius: 14px;
-  padding: 24px;
-}
-
-.daily-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.daily-preview-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--foreground);
-}
-
-.daily-schedule {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.schedule-label {
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.schedule-select {
-  padding: 4px 10px;
-  border: 1px solid var(--input);
-  border-radius: 9999px;
-  font-size: 12px;
-  background: var(--muted);
-  color: var(--foreground);
-  cursor: pointer;
-}
-
-/* ── Message Preview ── */
-.update-preview-msg {
-  background: var(--muted);
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.preview-app-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.preview-avatar { font-size: 1.2rem; }
-
-.preview-bot-name {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--foreground);
-}
-
-.preview-time {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-left: auto;
-}
-
-.preview-body { padding: 14px; }
-
-.preview-greeting {
-  font-size: 14px;
-  color: var(--foreground);
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
-}
-
-.preview-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.preview-stat-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.preview-stat-icon { font-size: 0.9rem; }
-.preview-stat-row strong { color: var(--foreground); font-weight: 700; }
-
-.preview-cta {
-  padding-top: 10px;
-  border-top: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
-}
-
-.preview-link {
-  font-size: 12px;
-  color: var(--primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* ═══════════════════════════════════════
-   Integration Cards Grid
+   Integrations Directory
    ═══════════════════════════════════════ */
 .integrations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.integration-card {
-  position: relative;
+.intg-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 24px;
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  animation: card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  border-radius: 12px;
+  padding: 20px;
 }
 
-.integration-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-}
-
-.integration-card.connected {
+.intg-tile.connected {
   border-color: color-mix(in srgb, var(--chart-2) 30%, transparent);
 }
 
-/* Status dot */
-.intg-status-dot {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-}
-.status-connected { background: var(--chart-2); }
-.status-disconnected { background: var(--border); }
-.status-pulse {
-  position: absolute;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  background: var(--chart-2);
-  animation: pulse-out 2s ease-out infinite;
-}
-@keyframes pulse-out {
-  0% { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-
-.intg-card-top {
+.intg-tile-main {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
+  gap: 12px;
 }
 
 .intg-icon-wrap {
   width: 48px; height: 48px;
-  border-radius: 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.intg-card-identity { flex: 1; }
+/* The brand SVGs are injected via v-html with width/height 24 attributes;
+   scale them from CSS so the markup stays untouched. */
+.intg-icon-wrap :deep(svg) {
+  width: 28px;
+  height: 28px;
+}
 
-.intg-card-name {
+.intg-tile-identity { flex: 1; min-width: 0; }
+
+.intg-tile-name {
   display: block;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--foreground);
 }
 
-.intg-card-status {
+.intg-tile-status {
   display: block;
   font-size: 12px;
   font-weight: 500;
@@ -843,32 +475,33 @@ function showToast(msg) {
 .text-success { color: var(--chart-2); }
 .text-muted { color: var(--muted-foreground); }
 
-.intg-card-desc {
+.intg-tile-desc {
+  flex: 1;
   font-size: 12px;
   color: var(--muted-foreground);
   line-height: 1.5;
-  margin-bottom: 14px;
+  margin: 0;
 }
 
-/* Features */
-.intg-features {
+.intg-tile-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-}
-
-.intg-feature {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: var(--muted-foreground);
 }
 
-.intg-feature svg { color: var(--chart-2); flex-shrink: 0; }
+/* .soon-badge is still used by the "What gets sent" list below. */
+.soon-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.intg-tile-main .soon-badge { margin-left: auto; }
 
 /* ═══════════════════════════════════════
    What Gets Sent
@@ -877,46 +510,64 @@ function showToast(msg) {
   font-size: 16px;
   font-weight: 700;
   color: var(--foreground);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
-.sent-items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+.sent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.sent-item {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-  transition: all 0.2s;
+.sent-row {
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
-.sent-item:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.04); }
+.sent-row:last-child { border-bottom: none; }
 
-.sent-item-icon {
-  width: 36px; height: 36px;
-  border-radius: 8px;
+.sent-row:hover {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+/* Scroll-triggered staggered reveal. Rows start hidden and slide up into
+   place once the section enters the viewport; --reveal-delay is set
+   per-row inline (index * 70ms) for the stagger. */
+.sent-row-hidden {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.sent-row-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms ease-out, transform 400ms ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sent-row-hidden,
+  .sent-row-revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.sent-row-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-}
-
-.sent-item h4 {
-  font-size: 14px;
-  font-weight: 700;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--foreground);
-  margin: 0 0 4px;
 }
 
-.sent-item p {
+.sent-row-desc {
+  display: block;
   font-size: 12px;
   color: var(--muted-foreground);
   line-height: 1.5;
-  margin: 0;
+  margin-top: 2px;
 }
 
 /* ═══════════════════════════════════════
@@ -964,6 +615,26 @@ function showToast(msg) {
 
 .step-link { color: var(--primary); text-decoration: none; font-weight: 600; }
 .step-link:hover { text-decoration: underline; }
+
+.bot-link {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-bottom: 16px;
+}
+
+.bot-link-desc {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+
+.bot-link-hint {
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
 
 .notif-prefs {
   border-top: 1px solid var(--border);
@@ -1021,11 +692,6 @@ function showToast(msg) {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Modal Transition ── */
-.modal-fade-enter-active { transition: opacity 0.2s; }
-.modal-fade-leave-active { transition: opacity 0.15s; }
-.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
-
 /* ── Success Toast ── */
 .success-toast {
   position: fixed;
@@ -1046,6 +712,10 @@ function showToast(msg) {
   z-index: 200;
 }
 
+.success-toast.toast-error {
+  border-color: color-mix(in srgb, var(--destructive) 35%, transparent);
+}
+
 .toast-enter-active { transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .toast-leave-active { transition: all 0.2s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(20px); }
@@ -1053,7 +723,5 @@ function showToast(msg) {
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .integrations-grid { grid-template-columns: 1fr; }
-  .sent-items-grid { grid-template-columns: 1fr; }
-  .daily-preview-header { flex-direction: column; gap: 10px; align-items: flex-start; }
 }
 </style>

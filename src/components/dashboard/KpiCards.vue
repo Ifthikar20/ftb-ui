@@ -13,7 +13,7 @@ function showChange(tile) {
 </script>
 
 <template>
-  <div v-if="props.stats.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div v-if="props.stats.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <Card v-for="tile in props.stats" :key="tile.label">
       <CardHeader class="relative">
         <CardDescription>{{ tile.label }}</CardDescription>
@@ -38,7 +38,7 @@ function showChange(tile) {
     <CardContent class="py-10 text-center">
       <div class="text-sm font-medium text-card-foreground">Nothing to show yet</div>
       <div class="mt-1 text-xs text-muted-foreground">
-        Run your first audit to start tracking Visibility, Position, and Sentiment.
+        Run your first audit to start tracking Visibility, Position, Sentiment, and Alignment.
       </div>
     </CardContent>
   </Card>
