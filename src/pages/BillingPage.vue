@@ -1,30 +1,44 @@
 <template>
-  <div class="bp fade-in">
-    <header class="bp-header">
-      <h1 class="bp-title">Plans &amp; Billing</h1>
-      <p class="bp-sub">Manage your plan, billing cycle, and payment history.</p>
-    </header>
-
+  <SettingsShell active="subscription">
+  <div class="bp bp--embedded">
     <div v-if="loading" class="bp-loading">Loading…</div>
 
     <template v-else>
       <!-- ── Current plan banner ─────────────────────────────────── -->
+      <p class="set-label">Membership</p>
       <section v-if="currentPlanCode" class="bp-current">
         <div class="bp-current-info">
           <span class="bp-eyebrow">Current plan</span>
           <h2 class="bp-current-name">
-            {{ currentTier?.name || currentPlanCode }}
-            <span class="bp-current-price">
-              · {{ currentPriceLabel }}<span class="bp-current-period">{{ currentPeriodLabel }}</span>
-            </span>
+            <!-- During the trial the state IS the headline: lead with
+                 Free Trial and demote the price to "then $X/mo",
+                 treasury.sh-style. The paid-plan name takes over the
+                 moment the subscription is active. -->
+            <template v-if="isTrialing && !subscription?.cancel_at_period_end">
+              Free Trial
+              <span class="bp-current-price">
+                · then {{ currentPriceLabel }}<span class="bp-current-period">{{ currentPeriodLabel }}</span>
+              </span>
+            </template>
+            <template v-else>
+              {{ currentTier?.name || currentPlanCode }}
+              <span class="bp-current-price">
+                · {{ currentPriceLabel }}<span class="bp-current-period">{{ currentPeriodLabel }}</span>
+              </span>
+            </template>
           </h2>
           <div class="bp-current-meta">
-            <span class="bp-pill" :class="statusClass">{{ statusLabel }}</span>
+            <!-- The pill is redundant while the headline itself says
+                 Free Trial; it returns for every other state. -->
+            <span
+              v-if="!(isTrialing && !subscription?.cancel_at_period_end)"
+              class="bp-pill" :class="statusClass"
+            >{{ statusLabel }}</span>
             <span
               v-if="isTrialing && !subscription?.cancel_at_period_end"
               class="bp-current-note"
             >
-              {{ daysUntilRenewal }} {{ daysUntilRenewal === 1 ? 'day' : 'days' }} left in your free trial
+              Everything is unlocked — free for {{ daysUntilRenewal }} more {{ daysUntilRenewal === 1 ? 'day' : 'days' }}
             </span>
             <span
               v-else-if="subscription?.subscription_status === 'past_due'"
@@ -42,12 +56,17 @@
             </span>
           </div>
           <template v-if="isTrialing && !subscription?.cancel_at_period_end">
-            <div class="bp-usage-bar" style="margin-top: 10px; max-width: 360px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; max-width: 360px;">
+              <span class="bp-current-note">Billing period</span>
+              <span class="bp-current-note">Trial ends {{ formatDate(subscription.current_period_end) }}</span>
+            </div>
+            <div class="bp-usage-bar" style="margin-top: 4px; max-width: 360px;">
               <div class="bp-usage-fill" :style="{ width: trialPct + '%' }"></div>
             </div>
             <p class="bp-current-note" style="margin-top: 6px;">
-              First charge {{ currentPriceLabel }} on {{ formatDate(subscription.current_period_end) }}
-              — cancel before then and pay nothing.
+              Nothing changes on {{ formatDate(subscription.current_period_end) }} — your plan simply
+              continues and the first {{ currentPriceLabel }} charge happens. Cancel before
+              then and pay nothing.
             </p>
           </template>
           <p v-else-if="subscription?.cancel_at_period_end" class="bp-current-note" style="margin-top: 6px;">
@@ -123,6 +142,7 @@
         </button>
       </div>
 
+      <p v-if="!currentPlanCode" class="set-label">Plans</p>
       <section v-if="!currentPlanCode" class="bp-tiers">
         <article
           v-for="tier in mainTiers"
@@ -187,6 +207,7 @@
       <p v-if="error" class="bp-error">{{ error }}</p>
 
       <!-- ── Invoices ─────────────────────────────────────────────── -->
+      <p v-if="invoices.length" class="set-label" style="margin-top: 34px;">Billing history</p>
       <section v-if="invoices.length" class="bp-card">
         <header class="bp-card-head">
           <h3 class="bp-card-title">Invoices</h3>
@@ -211,12 +232,14 @@
 
     </template>
   </div>
+  </SettingsShell>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import billingApi from '@/api/billing'
+import SettingsShell from '@/components/settings/SettingsShell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { TIERS } from '@/constants/pricing'
@@ -303,7 +326,7 @@ const statusLabel = computed(() => {
   if (!s || s === 'none') return 'Inactive'
   const map = {
     active: 'Active',
-    trialing: 'Trialing',
+    trialing: 'Free trial',
     past_due: 'Past due',
     canceled: 'Canceled',
     incomplete: 'Incomplete',
@@ -494,6 +517,21 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Inside the settings shell the page no longer centers itself. */
+.bp--embedded {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.set-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0 0 10px;
+}
+
 .bp {
   --bp-fg: #0a0a0a;
   --bp-muted: #6b6b6b;

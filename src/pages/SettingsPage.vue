@@ -1,203 +1,232 @@
 <template>
-  <div class="settings-page mx-auto max-w-4xl px-6 py-8 sm:px-8">
-    <div class="mb-8">
-      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
-      <p class="mt-1 text-sm text-muted-foreground">Manage your account, preferences, and AI usage.</p>
-    </div>
-
-    <Tabs default-value="profile" class="w-full">
-      <TabsList class="mb-6">
-        <TabsTrigger value="profile">Profile</TabsTrigger>
-        <TabsTrigger value="usage">AI Usage</TabsTrigger>
-        <TabsTrigger value="notifications">Notifications</TabsTrigger>
-        <TabsTrigger value="appearance">Appearance</TabsTrigger>
-      </TabsList>
-
-      <!-- Profile -->
-      <TabsContent value="profile">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form @submit.prevent="saveProfile" class="flex max-w-md flex-col gap-4">
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
-                <input v-model="profile.full_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
-                <input v-model="profile.email" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60" disabled />
-              </div>
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-foreground">Company</label>
-                <input v-model="profile.company_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <Button type="submit" size="sm" class="w-fit" :disabled="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</Button>
-            </form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <!-- AI Usage & Token Tracking -->
-      <TabsContent value="usage">
-        <Card>
-          <CardHeader class="flex flex-row items-center justify-between gap-4 space-y-0">
-            <CardTitle class="flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-              AI Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div v-if="usageLoading" class="flex items-center gap-2.5 p-8 text-sm text-muted-foreground">
-              <div class="spinner"></div>
-              <span>Loading usage data...</span>
+  <SettingsShell :active="section">
+    <!-- ── Account ─────────────────────────────────────────────── -->
+    <template v-if="section === 'account'">
+      <p class="set-label">Profile</p>
+      <Card>
+        <CardContent class="pt-6">
+          <form @submit.prevent="saveProfile" class="flex flex-col gap-4">
+            <div class="max-w-md">
+              <label class="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
+              <input v-model="profile.full_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
+            <div class="max-w-md">
+              <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
+              <input v-model="profile.email" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60" disabled />
+            </div>
+            <div class="max-w-md">
+              <label class="mb-1.5 block text-sm font-medium text-foreground">Company</label>
+              <input v-model="profile.company_name" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+            <Button type="submit" size="sm" class="w-fit" :disabled="saving">{{ saving ? 'Saving...' : 'Save Changes' }}</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-            <div v-else-if="usage">
-              <!-- The allowance is a dollar spend cap — the same number
-                   enforcement uses. Tokens are shown as real counts, never
-                   converted into an invented "token capacity". -->
-              <div v-if="usage.allowance && usage.allowance.cap_usd > 0" class="mb-6 rounded-xl border border-border bg-muted px-4 py-3.5">
-                <div class="mb-1.5 flex items-baseline justify-between">
-                  <span class="text-sm font-semibold text-foreground">AI allowance · {{ planLabel(usage.allowance.plan) }} plan · this billing period</span>
-                  <span class="text-sm text-muted-foreground">
-                    ${{ usage.allowance.spent_usd.toFixed(2) }} of ${{ usage.allowance.cap_usd.toFixed(2) }}
-                    <span class="ml-1 font-semibold text-foreground">({{ usage.allowance.pct_used }}%)</span>
-                  </span>
-                </div>
-                <div class="h-2 overflow-hidden rounded bg-border">
-                  <div
-                    class="cap-bar-fill h-full"
-                    :class="{ 'cap-bar-warn': usage.allowance.warning, 'cap-bar-exceeded': usage.allowance.exceeded }"
-                    :style="{ width: Math.min(100, usage.allowance.pct_used || 0) + '%' }"
-                  ></div>
-                </div>
-                <p class="mt-1.5 text-[11px] text-muted-foreground">
-                  {{ formatTokens(usage.allowance.used_tokens) }} tokens used this period.
-                  Allowance renews {{ new Date(usage.allowance.resets_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) }}.
-                </p>
-                <p v-if="usage.allowance.exceeded" class="mt-2 text-xs font-semibold text-destructive">
-                  Allowance reached. AI features resume at the renewal date.
-                </p>
-                <p v-else-if="usage.allowance.warning" class="mt-2 text-xs font-semibold text-[#B25E09]">
-                  Over 80% of this period's allowance used.
-                </p>
+      <p class="set-label mt-10">Danger zone</p>
+      <Card class="border-destructive/40">
+        <CardContent class="pt-6">
+          <div class="flex flex-col gap-3">
+            <p class="text-sm font-medium text-foreground">Delete account</p>
+            <p class="max-w-xl text-sm text-muted-foreground">
+              Permanently erases your account and everything in it — websites,
+              analytics history, knowledge base, subscription and profile.
+              Nothing is kept, and there is no way back.
+            </p>
+            <Button
+              variant="destructive" size="sm" class="w-fit"
+              :disabled="deleting" @click="confirmDeleteAccount"
+            >{{ deleting ? 'Deleting…' : 'Delete account' }}</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+
+    <!-- ── AI Usage ────────────────────────────────────────────── -->
+    <template v-else-if="section === 'usage'">
+      <p class="set-label">Usage</p>
+      <Card>
+        <CardContent class="pt-6">
+          <div v-if="usageLoading" class="flex items-center gap-2.5 p-8 text-sm text-muted-foreground">
+            <div class="spinner"></div>
+            <span>Loading usage data...</span>
+          </div>
+
+          <div v-else-if="usage">
+            <!-- The allowance is a dollar spend cap — the same number
+                 enforcement uses. Tokens are shown as real counts, never
+                 converted into an invented "token capacity". -->
+            <div v-if="usage.allowance && usage.allowance.cap_usd > 0" class="mb-6 rounded-xl border border-border bg-muted px-4 py-3.5">
+              <div class="mb-1.5 flex items-baseline justify-between">
+                <span class="text-sm font-semibold text-foreground">AI allowance · {{ planLabel(usage.allowance.plan) }} plan · this billing period</span>
+                <span class="text-sm text-muted-foreground">
+                  ${{ usage.allowance.spent_usd.toFixed(2) }} of ${{ usage.allowance.cap_usd.toFixed(2) }}
+                  <span class="ml-1 font-semibold text-foreground">({{ usage.allowance.pct_used }}%)</span>
+                </span>
               </div>
-
-              <!-- Billing period + trailing week, one screen -->
-              <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.total_tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · billing period</div>
-                </div>
-                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(usage.totals.calls) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · billing period</div>
-                </div>
-                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(weekTotals.tokens) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · 7 days</div>
-                </div>
-                <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
-                  <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(weekTotals.calls) }}</div>
-                  <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · 7 days</div>
-                </div>
+              <div class="h-2 overflow-hidden rounded bg-border">
+                <div
+                  class="cap-bar-fill h-full"
+                  :class="{ 'cap-bar-warn': usage.allowance.warning, 'cap-bar-exceeded': usage.allowance.exceeded }"
+                  :style="{ width: Math.min(100, usage.allowance.pct_used || 0) + '%' }"
+                ></div>
               </div>
-
-              <!-- Daily usage across the current billing period -->
-              <div class="mb-6" v-if="dailySeries.length">
-                <h4 class="usage-section-title">Daily usage · {{ periodLabel }}</h4>
-                <div class="usage-chart">
-                  <div v-for="d in dailySeries" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} requests`">
-                    <div class="chart-bar" :style="{ height: pctOfMax(d.tokens, dailySeries) + '%' }"></div>
-                    <span class="chart-label">{{ formatDay(d.day) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Empty state -->
-              <div v-if="!usage.totals.calls" class="flex flex-col items-center gap-2.5 p-8 text-center">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
-                <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
-              </div>
-
-              <p class="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
-                Token counts are reported by the AI providers per request. Costs
-                are calculated against the current market rates of the underlying
-                providers (Anthropic, OpenAI, xAI, Perplexity, Google); the
-                allowance may be adjusted if provider pricing changes.
-                <template v-if="usage.source === 'polar'">
-                  Token totals are served live from Polar metering.
-                </template>
+              <p class="mt-1.5 text-[11px] text-muted-foreground">
+                {{ formatTokens(usage.allowance.used_tokens) }} tokens used this period.
+                Allowance renews {{ new Date(usage.allowance.resets_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) }}.
+              </p>
+              <p v-if="usage.allowance.exceeded" class="mt-2 text-xs font-semibold text-destructive">
+                Allowance reached. AI features resume at the renewal date.
+              </p>
+              <p v-else-if="usage.allowance.warning" class="mt-2 text-xs font-semibold text-[#B25E09]">
+                Over 80% of this period's allowance used.
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
 
-      <!-- Notification Preferences -->
-      <TabsContent value="notifications">
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div class="flex max-w-md flex-col">
-              <label class="toggle-row">
-                <span>Hot lead email alerts</span>
-                <input type="checkbox" v-model="notifPrefs.hot_lead_email" @change="saveNotifPrefs" />
-              </label>
-              <label class="toggle-row">
-                <span>Weekly report</span>
-                <input type="checkbox" v-model="notifPrefs.weekly_report" @change="saveNotifPrefs" />
-              </label>
-              <label class="toggle-row">
-                <span>Competitor change alerts</span>
-                <input type="checkbox" v-model="notifPrefs.competitor_changes" @change="saveNotifPrefs" />
-              </label>
-              <label class="toggle-row">
-                <span>Audit complete alerts</span>
-                <input type="checkbox" v-model="notifPrefs.audit_complete" @change="saveNotifPrefs" />
-              </label>
+            <!-- Billing period + trailing week, one screen -->
+            <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(usage.totals.total_tokens) }}</div>
+                <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · billing period</div>
+              </div>
+              <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(usage.totals.calls) }}</div>
+                <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · billing period</div>
+              </div>
+              <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                <div class="text-xl font-bold tracking-tight text-foreground">{{ formatTokens(weekTotals.tokens) }}</div>
+                <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Tokens · 7 days</div>
+              </div>
+              <div class="rounded-xl border border-border bg-muted p-3.5 text-center">
+                <div class="text-xl font-bold tracking-tight text-foreground">{{ formatNum(weekTotals.calls) }}</div>
+                <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Requests · 7 days</div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
 
-      <!-- Theme -->
-      <TabsContent value="appearance">
-        <Card>
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div class="flex max-w-md flex-col">
-              <label class="toggle-row">
-                <span>Dark Mode</span>
-                <input type="checkbox" :checked="appStore.theme === 'dark'" @change="appStore.toggleTheme()" />
-              </label>
+            <!-- Daily usage across the current billing period -->
+            <div class="mb-6" v-if="dailySeries.length">
+              <h4 class="usage-section-title">Daily usage · {{ periodLabel }}</h4>
+              <div class="usage-chart">
+                <div v-for="d in dailySeries" :key="d.day" class="chart-bar-wrap" :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} requests`">
+                  <div class="chart-bar" :style="{ height: pctOfMax(d.tokens, dailySeries) + '%' }"></div>
+                  <span class="chart-label">{{ formatDay(d.day) }}</span>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  </div>
+
+            <!-- Empty state -->
+            <div v-if="!usage.totals.calls" class="flex flex-col items-center gap-2.5 p-8 text-center">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+              <p class="max-w-md text-sm text-muted-foreground">No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
+            </div>
+
+            <p class="border-t border-border pt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Token counts are reported by the AI providers per request. Costs
+              are calculated against the current market rates of the underlying
+              providers (Anthropic, OpenAI, xAI, Perplexity, Google); the
+              allowance may be adjusted if provider pricing changes.
+              <template v-if="usage.source === 'polar'">
+                Token totals are served live from Polar metering.
+              </template>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+
+    <!-- ── Notifications ───────────────────────────────────────── -->
+    <template v-else-if="section === 'notifications'">
+      <p class="set-label">Notifications</p>
+      <Card>
+        <CardContent class="pt-6">
+          <div class="flex flex-col">
+            <label class="toggle-row">
+              <span>Hot lead email alerts</span>
+              <input type="checkbox" v-model="notifPrefs.hot_lead_email" @change="saveNotifPrefs" />
+            </label>
+            <label class="toggle-row">
+              <span>Weekly report</span>
+              <input type="checkbox" v-model="notifPrefs.weekly_report" @change="saveNotifPrefs" />
+            </label>
+            <label class="toggle-row">
+              <span>Competitor change alerts</span>
+              <input type="checkbox" v-model="notifPrefs.competitor_changes" @change="saveNotifPrefs" />
+            </label>
+            <label class="toggle-row">
+              <span>Audit complete alerts</span>
+              <input type="checkbox" v-model="notifPrefs.audit_complete" @change="saveNotifPrefs" />
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+
+    <!-- ── Appearance ──────────────────────────────────────────── -->
+    <template v-else-if="section === 'appearance'">
+      <p class="set-label">Appearance</p>
+      <Card>
+        <CardContent class="pt-6">
+          <div class="flex flex-col">
+            <label class="toggle-row">
+              <span>Dark Mode</span>
+              <input type="checkbox" :checked="appStore.theme === 'dark'" @change="appStore.toggleTheme()" />
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+  </SettingsShell>
 </template>
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import authApi from '@/api/auth'
 import notificationsApi from '@/api/notifications'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import SettingsShell from '@/components/settings/SettingsShell.vue'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const route = useRoute()
+const router = useRouter()
 const saving = ref(false)
+const deleting = ref(false)
+
+// The active section comes from the URL (?section=...), so the shell's
+// sub-nav links are ordinary router-links and every section deep-links.
+const SECTIONS = ['account', 'usage', 'notifications', 'appearance']
+const section = computed(() =>
+  SECTIONS.includes(route.query.section) ? route.query.section : 'account',
+)
+
+// Deletion is irreversible, so the confirmation is deliberately manual:
+// the user must type their email exactly. A misclick cannot pass it.
+async function confirmDeleteAccount() {
+  const email = authStore.user?.email || profile.value.email
+  const typed = window.prompt(
+    `This permanently deletes your account and all data. There is no undo.\n\n` +
+    `Type your email (${email}) to confirm:`,
+  )
+  if (typed === null) return
+  if (typed.trim().toLowerCase() !== String(email).toLowerCase()) {
+    window.alert('Email did not match — nothing was deleted.')
+    return
+  }
+  deleting.value = true
+  try {
+    await authApi.deleteMe()
+    authStore.clearAuth()
+    router.push('/')
+  } catch (e) {
+    window.alert(e?.response?.data?.error?.message || "Deletion failed — nothing was removed.")
+  } finally {
+    deleting.value = false
+  }
+}
 
 const profile = ref({
   full_name: '',
@@ -321,6 +350,16 @@ async function saveNotifPrefs() {
 </script>
 
 <style scoped>
+/* Uppercase group label above each card, treasury-style. */
+.set-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0 0 10px;
+}
+
 .cap-bar-fill {
   background: var(--chart-2);
   transition: width 0.2s;
@@ -361,14 +400,6 @@ async function saveNotifPrefs() {
   margin: 0 0 10px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
-
-.module-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  display: inline-block;
-}
-.module-dot.llm_ranking { background: var(--chart-1); }
-.module-dot.rag { background: var(--chart-2); }
-.module-dot.onboarding { background: var(--chart-3); }
 
 /* Daily chart */
 .usage-chart {
