@@ -25,6 +25,7 @@ import {
 
 import { useAppStore } from '@/stores/app'
 import citationsApi from '@/api/citations'
+import { cssVar } from '@/lib/theme'
 import {
   Card, CardHeader, CardTitle, CardContent,
 } from '@/components/ui/card'
@@ -40,10 +41,6 @@ const router = useRouter()
 const websiteId = computed(() => route.params.websiteId)
 const brandLabel = computed(() => appStore.activeWebsite?.name || 'this brand')
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
 
 /* ── Metric definitions (tooltips) ── */
 const HELP = {

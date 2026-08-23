@@ -123,7 +123,7 @@ function runNow() {
           <span class="font-semibold uppercase tracking-wide">Next run</span>
           <span class="ml-1.5 font-bold text-foreground">{{ nextRun }}</span>
         </span>
-        <span v-if="schedule.is_paused" class="text-[11px] font-semibold text-[#C02926]">
+        <span v-if="schedule.is_paused" class="text-[11px] font-semibold text-[#C02926] dark:text-[#f87171]">
           Auto-paused after repeated failures — save to resume.
         </span>
       </div>

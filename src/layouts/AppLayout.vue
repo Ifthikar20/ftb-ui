@@ -86,18 +86,20 @@
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <Avatar class="size-8 rounded-lg" :class="isPremium ? 'ring-1 ring-amber-400/70' : ''">
+                    <Avatar class="size-8 rounded-lg" :class="planState.badge?.tone === 'gold' ? 'ring-1 ring-amber-400/70' : ''">
                       <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
                     </Avatar>
                     <div class="grid flex-1 text-left text-sm leading-tight">
                       <span class="flex min-w-0 items-center gap-1.5 font-semibold">
                         <span class="truncate">{{ authStore.user?.full_name || 'User' }}</span>
-                        <!-- Quiet premium mark for paying accounts (Pro and
-                             Business get the same treatment). -->
+                        <!-- Plan mark: gold only once the card has actually
+                             been charged (Active); a free trial is a quiet
+                             neutral TRIAL; past-due is an amber warning. -->
                         <span
-                          v-if="isPremium"
-                          class="shrink-0 rounded-full bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-amber-900 shadow-sm"
-                        >{{ premiumLabel }}</span>
+                          v-if="planState.badge"
+                          class="shrink-0 rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wider"
+                          :class="badgeClass"
+                        >{{ planState.badge.text }}</span>
                       </span>
                       <span class="truncate text-xs text-muted-foreground">{{ authStore.user?.email || '' }}</span>
                     </div>
@@ -110,7 +112,7 @@
                       <span class="text-sm font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
                       <!-- Plan from the session's subscription — user.plan is
                            denormalized and defaults to a paid tier. -->
-                      <span class="text-xs text-muted-foreground">{{ planLabel }}</span>
+                      <span class="text-xs text-muted-foreground">{{ planState.planLabel }}</span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -121,6 +123,11 @@
                   <DropdownMenuItem @select="router.push('/billing')">
                     <CreditCard class="size-4" />
                     <span>Billing</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @select="appStore.toggleTheme()">
+                    <Sun v-if="appStore.isDark" class="size-4" />
+                    <Moon v-else class="size-4" />
+                    <span>{{ appStore.isDark ? 'Light mode' : 'Dark mode' }}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem @select="handleLogout">
@@ -214,8 +221,8 @@
       <div class="w-[440px] max-w-[90vw] rounded-xl border border-border bg-card p-7 shadow-xl">
         <h3 class="mb-4 text-lg font-bold text-card-foreground">Add New Project</h3>
         <div v-if="!appStore.canCreateProject" class="py-3 text-center text-sm text-muted-foreground">
-          <p>Your <strong>{{ appStore.userPlan }}</strong> plan allows {{ appStore.projectLimit }} project(s).</p>
-          <p class="mt-2">Upgrade to <strong>Growth</strong> for up to 5 projects.</p>
+          <p>Your <strong>{{ planState.tierLabel }}</strong> allows {{ appStore.projectLimit }} project(s).</p>
+          <p class="mt-2">Upgrade to <strong>Pro</strong> for up to 5 projects.</p>
           <Button as="router-link" to="/billing" class="mt-4" @click="showAddProject = false">View Plans</Button>
         </div>
         <template v-else>
@@ -326,6 +333,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown, Home,
   LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot, Sparkles,
+  Sun, Moon,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -464,19 +472,16 @@ const userInitials = computed(() => {
   return name.split(' ').map(n => n[0]).filter(Boolean).join('').toUpperCase().slice(0, 2)
 })
 
-// Premium mark on the sidebar footer. Resolved from the session's
-// subscription (is_paying), never from user.plan (denormalized, defaults
-// to a paid tier). Business tiers get the same treatment as Pro.
-const isPremium = computed(
-  () => authStore.session?.subscription?.is_paying === true,
-)
-const premiumLabel = computed(() => {
-  const plan = String(authStore.session?.subscription?.plan || '').toLowerCase()
-  return ['business', 'enterprise', 'scale', 'team'].includes(plan) ? 'Business' : 'Pro'
-})
-const planLabel = computed(
-  () => (isPremium.value ? `${premiumLabel.value} plan` : 'Free plan'),
-)
+// Plan words for the sidebar footer come from the shared describer
+// (src/lib/plan.js) over the session's subscription — a free trial is
+// labelled as a trial until Polar has actually charged the card.
+const planState = computed(() => authStore.planState)
+const BADGE_CLASS = {
+  gold: 'bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 text-amber-900 shadow-sm',
+  neutral: 'border border-border bg-muted text-muted-foreground',
+  warn: 'border border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-300',
+}
+const badgeClass = computed(() => BADGE_CLASS[planState.value.badge?.tone] || '')
 
 // Drives the visibility of the sidebar / topbar while the account
 // onboarding modal is in front of everything.

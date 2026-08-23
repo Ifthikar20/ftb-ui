@@ -93,7 +93,7 @@ function rank(v) {
               <p
                 v-if="b.trend != null"
                 class="mt-0.5 text-xs font-bold"
-                :class="b.up ? 'text-[#008A05]' : 'text-[#C13515]'"
+                :class="b.up ? 'text-[#008A05] dark:text-[#4ade80]' : 'text-[#C13515] dark:text-[#f87171]'"
               >
                 {{ b.up ? '+' : '-' }}{{ b.trend }}%
               </p>
@@ -124,7 +124,7 @@ function rank(v) {
                   <p class="min-w-0 flex-1 text-[12px] font-medium text-foreground">{{ p.text }}</p>
                   <span
                     v-if="p.beats_you"
-                    class="shrink-0 rounded bg-[#FDECEA] px-1.5 py-0.5 text-[10px] font-bold text-[#C02926]"
+                    class="shrink-0 rounded bg-[#FDECEA] dark:bg-[#f87171]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#C02926] dark:text-[#f87171]"
                   >ABOVE YOU</span>
                 </div>
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">

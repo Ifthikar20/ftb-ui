@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
+import { cssVar } from '@/lib/theme'
 import MetricInfo from '@/components/sources/MetricInfo.vue'
 import {
   Card, CardHeader, CardTitle, CardContent,
@@ -74,10 +75,6 @@ const HELP = {
   aiVisits: 'Visits that arrived on this page from an AI assistant, measured by your tracking pixel.',
 }
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
 
 const metrics = computed(() => detail.value?.metrics || {})
 const title = computed(() => metrics.value.title || 'URL')

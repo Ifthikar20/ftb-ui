@@ -9,6 +9,7 @@ import {
 import { TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cssVar } from '@/lib/theme'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
@@ -18,10 +19,6 @@ const props = defineProps({
 
 const resolution = ref('day')
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
 
 // Append an alpha channel to a #rrggbb hex string.
 function withAlpha(hex, alpha) {

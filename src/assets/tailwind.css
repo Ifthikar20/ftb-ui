@@ -3,6 +3,19 @@
 /* shadcn-vue dark mode is driven by the app's existing data-theme toggle */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Tailwind v4 gives a bare `border` class currentColor (black in light,
+   white in dark). shadcn's base rule points it at the hairline token
+   instead, so `class="rounded-lg border"` is always a quiet divider. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+}
+
 /* shadcn-vue design tokens, mapped to the FetchBot brand palette.
    Design language: warm off-white surfaces, near-black ink, a single
    purple accent used sparingly. Dark pill buttons, hairline borders,
@@ -49,41 +62,45 @@
 }
 
 [data-theme="dark"] {
-  --background: #191918;
-  --foreground: #ebebe8;
-  --card: #1f1f1e;
-  --card-foreground: #ebebe8;
-  --popover: #1f1f1e;
-  --popover-foreground: #ebebe8;
-  --primary: #ebebe8;
-  --primary-foreground: #161615;
-  --secondary: #292927;
-  --secondary-foreground: #ebebe8;
-  --muted: #242422;
-  --muted-foreground: #9c9c96;
-  --accent: #2b2438;
-  --accent-foreground: #cdb8f5;
-  --destructive: #d9776d;
-  --destructive-foreground: #161615;
-  --border: rgba(255, 255, 255, 0.09);
-  --input: rgba(255, 255, 255, 0.14);
-  --ring: #9d7bea;
-  --chart-1: #9d7bea;
-  --chart-2: #ebebe8;
-  --chart-3: #6b6b66;
-  --chart-4: #6fb98d;
-  --chart-5: #d0a656;
-  --sidebar: #161615;
-  --sidebar-foreground: #ebebe8;
-  --sidebar-primary: #9d7bea;
-  --sidebar-primary-foreground: #161615;
-  --sidebar-accent: #262624;
-  --sidebar-accent-foreground: #ebebe8;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #9d7bea;
-  --severity-high: #d9776d;
-  --severity-medium: #d0a656;
-  --severity-low: #9c9c96;
+  /* Dark mode = black and white, ChatGPT-style. Pure black surfaces, white
+     ink, hairline white borders doing the separating; the only tints are
+     the single brand accent and semantic status colours. Text hierarchy
+     is white vs. 70% white — never a mid grey. */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #0f0f0f;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #141414;
+  --muted-foreground: #b3b3b3;
+  --accent: #1f1f1f;
+  --accent-foreground: #ffffff;
+  --destructive: #ff5f5f;
+  --destructive-foreground: #000000;
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.24);
+  --ring: #ffffff;
+  --chart-1: #a78bfa;
+  --chart-2: #ffffff;
+  --chart-3: #8a8a8a;
+  --chart-4: #4ade80;
+  --chart-5: #fbbf24;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: #ffffff;
+  --severity-high: #ff6b6b;
+  --severity-medium: #fbbf24;
+  --severity-low: #b3b3b3;
 }
 
 @theme inline {

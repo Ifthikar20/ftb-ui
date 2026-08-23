@@ -1912,6 +1912,7 @@ watch(websiteId, loadVariables)
 .pl-source-chip.is-yelp             { background: rgba(217, 38, 41, 0.10); color: #ad1f22; }
 .pl-source-chip.is-yelp .pl-source-dot { background: #d92629; }
 .pl-source-chip.is-tiktok           { background: rgba(0, 0, 0, 0.06); color: #1a1a1a; }
+[data-theme="dark"] .pl-source-chip.is-tiktok { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
 .pl-source-chip.is-tiktok .pl-source-dot { background: linear-gradient(135deg, #25f4ee, #fe2c55); }
 .pl-source-chip.is-youtube_comments { background: rgba(255, 0, 0, 0.10); color: #b80000; }
 .pl-source-chip.is-youtube_comments .pl-source-dot { background: #ff0000; }

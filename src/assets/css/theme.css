@@ -102,54 +102,57 @@
 }
 
 /* ════════════════════════════════════════
-   Dark Mode — warm charcoal, not navy
+   Dark Mode — black and white
+   Pure black surfaces, white ink, hairline white borders. Mirrors the
+   shadcn tokens in tailwind.css so legacy components agree with new ones.
    ════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg-root: #141413;
-  --bg-sidebar: #161615;
-  --bg-surface: #1c1c1b;
-  --bg-card: #1f1f1e;
-  --bg-card-hover: #262624;
-  --bg-input: #1c1c1b;
+  --bg-root: #000000;
+  --bg-sidebar: #000000;
+  --bg-surface: #0f0f0f;
+  --bg-card: #000000;
+  --bg-card-hover: #141414;
+  --bg-input: #000000;
   --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-base: #000000;
 
-  --brand-primary: #ebebe8;
-  --brand-primary-hover: #f5f5f2;
-  --brand-primary-glow: rgba(235, 235, 232, 0.08);
-  --brand-accent: #9d7bea;
-  --brand-accent-hover: #b295f0;
-  --brand-accent-glow: rgba(157, 123, 234, 0.14);
-  --brand-accent-rgb: 157, 123, 234;
-  --brand-gradient: #ebebe8;
-  --brand-highlight: rgba(157, 123, 234, 0.16);
+  --brand-primary: #ffffff;
+  --brand-primary-hover: #e6e6e6;
+  --brand-primary-glow: rgba(255, 255, 255, 0.08);
+  --brand-accent: #a78bfa;
+  --brand-accent-hover: #b9a3fb;
+  --brand-accent-glow: rgba(167, 139, 250, 0.16);
+  --brand-accent-rgb: 167, 139, 250;
+  --brand-gradient: #ffffff;
+  --brand-highlight: rgba(167, 139, 250, 0.18);
 
-  --brand-rose: #9d7bea;
-  --brand-rose-hover: #b295f0;
-  --brand-rose-glow: rgba(157, 123, 234, 0.14);
+  --brand-rose: #a78bfa;
+  --brand-rose-hover: #b9a3fb;
+  --brand-rose-glow: rgba(167, 139, 250, 0.16);
 
-  --color-success: #6fb98d;
-  --color-success-bg: rgba(111, 185, 141, 0.12);
-  --color-warning: #d0a656;
-  --color-warning-bg: rgba(208, 166, 86, 0.12);
-  --color-danger: #d9776d;
-  --color-danger-bg: rgba(217, 119, 109, 0.12);
-  --color-info: #9d7bea;
-  --color-info-bg: rgba(157, 123, 234, 0.12);
+  --color-success: #4ade80;
+  --color-success-bg: rgba(74, 222, 128, 0.14);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.14);
+  --color-danger: #ff6b6b;
+  --color-danger-bg: rgba(255, 107, 107, 0.14);
+  --color-info: #a78bfa;
+  --color-info-bg: rgba(167, 139, 250, 0.14);
 
-  --text-primary: #ebebe8;
-  --text-secondary: #9c9c96;
-  --text-muted: #63635e;
-  --text-inverse: #161615;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #8a8a8a;
+  --text-inverse: #000000;
 
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-color: rgba(255, 255, 255, 0.14);
+  --border-hover: rgba(255, 255, 255, 0.28);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 6px 22px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 0 3px rgba(157, 123, 234, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 6px 22px rgba(0, 0, 0, 0.6);
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-glow: 0 0 0 3px rgba(255, 255, 255, 0.18);
 
   color-scheme: dark;
 }

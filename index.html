@@ -13,6 +13,21 @@
     rel="stylesheet" />
   <title>FetchBot — Marketing Intelligence</title>
 
+  <!-- Theme bootstrap: runs before any CSS paints so a reload in dark
+       mode never flashes white. Mirrors stores/app.js (same key/values). -->
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('fb-theme');
+        var dark = pref === 'dark' || (pref === 'system' &&
+          window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var mode = dark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', mode);
+        document.documentElement.style.colorScheme = mode;
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+
   <!-- NO third-party marketing/analytics scripts in this file.
        Removed 2026-08-21 (security review): pixels loaded here run on
        EVERY route and beacon location.href — on the Polar checkout

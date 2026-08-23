@@ -8,6 +8,7 @@ import {
 import { Info, TrendingUp, TrendingDown } from '@lucide/vue'
 import { Card } from '@/components/ui/card'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import { cssVar } from '@/lib/theme'
 import BrandLogo from '@/components/BrandLogo.vue'
 import llmRanking from '@/api/llm_ranking'
 
@@ -34,10 +35,6 @@ const LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const BRAND_COLOR = '#FF385C'
 const COMP_COLOR = '#00A699'
 
-function cssVar(name, fallback) {
-  if (typeof window === 'undefined') return fallback
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
 function withAlpha(hex, alpha) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex
   return hex + Math.round(alpha * 255).toString(16).padStart(2, '0')
@@ -293,8 +290,8 @@ const chartOptions = computed(() => {
               v-if="showDelta"
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="brandDelta >= 0
-                ? 'bg-[#E8F5E9] text-[#008A05]'
-                : 'bg-[#FDECEA] text-[#C02926]'"
+                ? 'bg-[#E8F5E9] text-[#008A05] dark:bg-[#4ade80]/15 dark:text-[#4ade80]'
+                : 'bg-[#FDECEA] text-[#C02926] dark:bg-[#f87171]/15 dark:text-[#f87171]'"
             >
               <TrendingUp v-if="brandDelta >= 0" class="size-3.5" />
               <TrendingDown v-else class="size-3.5" />
@@ -311,8 +308,8 @@ const chartOptions = computed(() => {
               v-if="showTrend && Number.isFinite(compDelta) && compDelta !== 0"
               class="inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[13px] font-bold"
               :class="compDelta >= 0
-                ? 'bg-[#E8F5E9] text-[#008A05]'
-                : 'bg-[#FDECEA] text-[#C02926]'"
+                ? 'bg-[#E8F5E9] text-[#008A05] dark:bg-[#4ade80]/15 dark:text-[#4ade80]'
+                : 'bg-[#FDECEA] text-[#C02926] dark:bg-[#f87171]/15 dark:text-[#f87171]'"
             >
               <TrendingUp v-if="compDelta >= 0" class="size-3.5" />
               <TrendingDown v-else class="size-3.5" />
@@ -353,7 +350,7 @@ const chartOptions = computed(() => {
               class="flex h-full items-center justify-end rounded-md pr-2 transition-all"
               :style="{
                 width: barWidth(b.visibility) + '%',
-                background: b.is_target ? '#FF385C' : '#C9CDD2',
+                background: b.is_target ? '#FF385C' : 'var(--vc-bar-muted, #C9CDD2)',
               }"
             >
               <span
@@ -364,7 +361,7 @@ const chartOptions = computed(() => {
           </div>
           <span
             v-if="b.is_target"
-            class="shrink-0 rounded border border-[#008A05]/30 bg-[#E8F5E9] px-1 text-[10px] font-bold text-[#008A05]"
+            class="shrink-0 rounded border border-[#008A05]/30 bg-[#E8F5E9] dark:border-[#4ade80]/40 dark:bg-[#4ade80]/15 px-1 text-[10px] font-bold text-[#008A05] dark:text-[#4ade80]"
           >YOU</span>
           <span v-else class="w-[30px] shrink-0" />
         </div>
@@ -401,3 +398,9 @@ const chartOptions = computed(() => {
     </div>
   </Card>
 </template>
+
+<style scoped>
+/* Competitor bars: light grey in light mode; in dark the label is white,
+   so the fill steps down to a dark grey that keeps the text readable. */
+:global([data-theme="dark"]) { --vc-bar-muted: #3a3a3a; }
+</style>

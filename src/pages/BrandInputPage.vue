@@ -412,7 +412,7 @@ watch(websiteId, async (v) => {
               @click="form.crawl = !form.crawl"
             >
               <span
-                class="inline-block size-4 transform rounded-full bg-white transition-transform"
+                class="inline-block size-4 transform rounded-full bg-background shadow-sm transition-transform"
                 :class="form.crawl ? 'translate-x-4' : 'translate-x-0.5'"
               />
             </button>

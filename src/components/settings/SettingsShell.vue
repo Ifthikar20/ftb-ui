@@ -1,89 +1,73 @@
 <template>
-  <div class="mx-auto max-w-6xl px-6 py-8 pb-24 sm:px-8 fade-in">
-    <!-- Breadcrumb: parent is a link back to settings, current section is plain -->
-    <nav class="mb-8 flex items-center gap-2.5 text-2xl font-semibold tracking-tight md:mb-10">
-      <router-link
-        to="/settings"
-        class="text-muted-foreground/60 transition-colors hover:text-foreground"
-      >Settings</router-link>
-      <span class="select-none text-muted-foreground/40">&rsaquo;</span>
-      <span class="text-foreground">{{ activeLabel }}</span>
+  <div class="ss fade-in" @keydown.esc="open = false">
+    <!-- Breadcrumb heading: parent is a link back to settings, current section is plain -->
+    <nav class="ss-crumb" aria-label="Breadcrumb">
+      <router-link to="/settings" class="ss-crumb-parent">Settings</router-link>
+      <span class="ss-crumb-sep" aria-hidden="true">&rsaquo;</span>
+      <span class="ss-crumb-current">{{ activeLabel }}</span>
     </nav>
 
-    <div class="flex flex-col gap-6 md:flex-row md:gap-14">
-      <!-- Desktop sub-navigation: grouped column, icon + label, active pill.
-           Holds its place beside the content as the window narrows; below
-           md it disappears in favour of the disclosure row. -->
-      <aside class="hidden shrink-0 md:block md:w-52">
-        <ul class="flex flex-col gap-1">
-          <template v-for="group in NAV" :key="group.label || 'top'">
-            <li
-              v-if="group.label"
-              class="select-none px-3 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 first:pt-0"
-            >{{ group.label }}</li>
-            <li v-for="item in group.items" :key="item.key">
-              <router-link
-                :to="item.to"
-                class="flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition-colors"
-                :class="active === item.key
-                  ? 'bg-muted font-medium text-foreground'
-                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
-              >
-                <NavIcon :paths="item.icon" />
-                {{ item.label }}
-              </router-link>
-            </li>
-          </template>
-        </ul>
+    <div class="ss-cols">
+      <!-- Desktop: grouped nav column on the left, content on the right.
+           The heading spans both; the column is aligned to its left edge. -->
+      <aside class="ss-nav" aria-label="Settings sections">
+        <template v-for="group in NAV" :key="group.label">
+          <p class="ss-nav-group">{{ group.label }}</p>
+          <router-link
+            v-for="item in group.items" :key="item.key"
+            :to="item.to"
+            class="ss-nav-item"
+            :class="{ 'is-active': active === item.key }"
+            :aria-current="active === item.key ? 'page' : null"
+          >
+            <NavIcon :paths="item.icon" :size="16" class="ss-nav-icon" />
+            <span>{{ item.label }}</span>
+          </router-link>
+        </template>
       </aside>
 
-      <!-- Content column: one width for every section, which is what keeps
-           panels consistent across pages. -->
-      <main class="min-w-0 max-w-3xl flex-1">
-        <!-- Small screens: the sub-nav condenses into a disclosure row
-             showing the current section; tapping unfolds the grouped
-             list in place. The content stays put - it never sits below
-             a full nav column. -->
-        <div class="mb-6 border-b border-border md:hidden">
+      <div class="ss-content">
+        <!-- Narrow screens: the column condenses into one bordered row
+             showing the current section; tapping it unfolds the grouped
+             list in place, and picking a section folds it back up. -->
+        <div class="ss-switch" :class="{ 'is-open': open }">
           <button
             type="button"
-            class="flex w-full items-center gap-2.5 py-3 text-left text-base font-semibold text-foreground"
+            class="ss-switch-row"
             :aria-expanded="open ? 'true' : 'false'"
+            aria-controls="settings-section-menu"
             @click="open = !open"
           >
-            <NavIcon :paths="activeItem.icon" />
-            {{ activeLabel }}
+            <NavIcon :paths="activeItem.icon" :size="18" class="ss-switch-icon" />
+            <span class="ss-switch-label">{{ activeLabel }}</span>
             <svg
               width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              class="ml-auto shrink-0 text-muted-foreground transition-transform duration-200"
-              :class="open ? 'rotate-180' : ''"
+              class="ss-switch-chevron" aria-hidden="true"
             ><path d="m6 9 6 6 6-6" /></svg>
           </button>
 
-          <div v-if="open" class="pb-3">
-            <template v-for="group in NAV" :key="group.label || 'top'">
-              <p
-                v-if="group.label"
-                class="select-none px-3 pb-1.5 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
-              >{{ group.label }}</p>
+          <div v-if="open" id="settings-section-menu" class="ss-switch-menu">
+            <template v-for="group in NAV" :key="group.label">
+              <p class="ss-nav-group">{{ group.label }}</p>
               <router-link
                 v-for="item in group.items" :key="item.key"
                 :to="item.to"
-                class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-                :class="active === item.key
-                  ? 'bg-muted font-medium text-foreground'
-                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+                class="ss-nav-item"
+                :class="{ 'is-active': active === item.key }"
+                :aria-current="active === item.key ? 'page' : null"
               >
-                <NavIcon :paths="item.icon" />
-                {{ item.label }}
+                <NavIcon :paths="item.icon" :size="16" class="ss-nav-icon" />
+                <span>{{ item.label }}</span>
               </router-link>
             </template>
           </div>
         </div>
 
-        <slot />
-      </main>
+        <div class="ss-body">
+          <slot />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -102,14 +86,14 @@ const NavIcon = (p) =>
   h(
     'svg',
     {
-      width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
+      width: p.size || 16, height: p.size || 16, viewBox: '0 0 24 24', fill: 'none',
       stroke: 'currentColor', 'stroke-width': 1.8,
       'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-      class: 'shrink-0 opacity-75',
+      'aria-hidden': 'true',
     },
     (p.paths || []).map((d) => h('path', { d })),
   )
-NavIcon.props = { paths: Array }
+NavIcon.props = { paths: Array, size: Number }
 
 const NAV = [
   {
@@ -165,8 +149,163 @@ const activeItem = computed(
 )
 const activeLabel = computed(() => activeItem.value.label)
 
-/* Mobile disclosure: navigating anywhere folds it back up. */
+/* The narrow-screen switcher folds back up on any navigation. */
 const open = ref(false)
 const route = useRoute()
 watch(() => route.fullPath, () => { open.value = false })
 </script>
+
+<style scoped>
+/* ── Page frame ── */
+.ss {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 20px 96px;
+}
+@media (min-width: 640px) {
+  .ss { padding: 32px 32px 96px; }
+}
+
+/* ── Breadcrumb heading ── */
+.ss-crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 24px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+@media (min-width: 768px) {
+  .ss-crumb { margin-bottom: 40px; }
+}
+.ss-crumb-parent {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  font-weight: 600;
+  transition: color 150ms ease, opacity 150ms ease;
+}
+.ss-crumb-parent:hover { color: var(--foreground); opacity: 1; }
+.ss-crumb-sep { color: var(--muted-foreground); opacity: 0.5; user-select: none; }
+.ss-crumb-current { color: var(--foreground); }
+
+/* ── Two columns on desktop, one below it ── */
+.ss-cols {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .ss-cols {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 56px;
+  }
+}
+
+.ss-nav { display: none; }
+@media (min-width: 768px) {
+  .ss-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: none;
+    width: 188px;
+  }
+}
+
+.ss-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .ss-content { max-width: 620px; }
+}
+
+/* ── Nav items (shared by the desktop column and the narrow menu) ── */
+.ss-nav-group {
+  margin: 0;
+  padding: 22px 10px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+.ss-nav-group:first-child { padding-top: 4px; }
+
+.ss-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--foreground);
+  opacity: 0.82;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+.ss-nav-item:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--muted) 65%, transparent);
+}
+.ss-nav-item.is-active {
+  opacity: 1;
+  background: var(--muted);
+}
+.ss-nav-icon { flex: none; color: var(--muted-foreground); }
+
+/* ── Narrow-screen switcher ── */
+.ss-switch {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin: 0 0 28px;
+}
+@media (min-width: 768px) {
+  .ss-switch { display: none; }
+}
+.ss-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 6px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.ss-switch-icon { flex: none; color: var(--muted-foreground); }
+.ss-switch-label { flex: 1; min-width: 0; }
+.ss-switch-chevron {
+  flex: none;
+  color: var(--muted-foreground);
+  transition: transform 200ms ease;
+}
+.is-open .ss-switch-chevron { transform: rotate(180deg); }
+.ss-switch-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 14px;
+}
+
+/* ── Content column ── */
+.ss-body {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+</style>

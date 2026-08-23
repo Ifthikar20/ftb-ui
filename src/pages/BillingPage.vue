@@ -3,6 +3,29 @@
   <div class="bp bp--embedded">
     <div v-if="loading" class="bp-loading">Loading…</div>
 
+    <!-- ── Overview failed: never guess "Free". The session already knows
+         the plan state, so the headline stays truthful, and the plan
+         picker is withheld — a trialing or paying customer must not be
+         invited to start another checkout. ── -->
+    <template v-else-if="overviewError">
+      <p class="set-label">Membership</p>
+      <section class="bp-current bp-current--empty">
+        <div class="bp-current-info">
+          <span class="bp-eyebrow">Current plan</span>
+          <h2 class="bp-current-name">
+            {{ authStore.planState.title }}
+            <span v-if="authStore.planState.detail" class="bp-current-price">· {{ authStore.planState.detail }}</span>
+          </h2>
+          <p class="bp-current-note is-warn">
+            We couldn't load your billing details just now.
+            <button type="button" class="bp-link" :disabled="retrying" @click="retryOverview">
+              {{ retrying ? 'Retrying…' : 'Try again' }}
+            </button>
+          </p>
+        </div>
+      </section>
+    </template>
+
     <template v-else>
       <!-- ── Current plan banner ─────────────────────────────────── -->
       <p class="set-label">Membership</p>
@@ -243,6 +266,7 @@ import SettingsShell from '@/components/settings/SettingsShell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { TIERS } from '@/constants/pricing'
+import { describeSubscription } from '@/lib/plan'
 import { isPolarUrl } from '@/utils/polarRedirect'
 
 const route = useRoute()
@@ -267,7 +291,8 @@ const currentPlanCode = computed(() => {
   const s = subscription.value
   const status = s?.subscription_status
   if (status === 'active' || status === 'trialing') {
-    return s?.plan || s?.plan_code || null
+    const code = s?.plan || s?.plan_code || null
+    return code && code !== 'free' ? code : null
   }
   if (status === 'past_due') {
     // A payment hiccup is not a downgrade: keep showing the paid plan
@@ -321,31 +346,14 @@ const currentPeriodLabel = computed(() => {
   return isAnnualSub.value ? '/year' : t.period || '/month'
 })
 
-const statusLabel = computed(() => {
-  const s = subscription.value?.subscription_status
-  if (!s || s === 'none') return 'Inactive'
-  const map = {
-    active: 'Active',
-    trialing: 'Free trial',
-    past_due: 'Past due',
-    canceled: 'Canceled',
-    incomplete: 'Incomplete',
-    incomplete_expired: 'Expired',
-    unpaid: 'Unpaid',
-  }
-  return map[s] || s.replace(/_/g, ' ')
-})
-
-const daysUntilRenewal = computed(() => {
-  const end = subscription.value?.current_period_end
-  if (!end) return 0
-  const diff = new Date(end) - new Date()
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-})
-
-const isTrialing = computed(
-  () => subscription.value?.subscription_status === 'trialing',
-)
+// Status words + trial arithmetic come from the shared describer
+// (src/lib/plan.js) so this page, the sidebar and Settings agree on
+// what a trial is. `is_trialing` from the API already excludes a
+// trial that ended without a confirmed conversion.
+const planState = computed(() => describeSubscription(subscription.value))
+const statusLabel = computed(() => planState.value.statusLabel)
+const isTrialing = computed(() => planState.value.isTrialing)
+const daysUntilRenewal = computed(() => planState.value.daysLeft ?? 0)
 
 // Trial progress: elapsed share of the 7-day trial window.
 const trialPct = computed(() => {
@@ -457,20 +465,31 @@ async function resume() {
   }
 }
 
+const overviewError = ref(false)
+const retrying = ref(false)
+
+async function retryOverview() {
+  retrying.value = true
+  try { await refresh() } finally { retrying.value = false }
+}
+
 async function refresh() {
   try {
     const [subRes, invRes, tokRes] = await Promise.all([
-      billingApi.getCurrent().catch(() => ({ data: null })),
+      // The overview is the one call that must not soft-fail into a
+      // "Free plan" render: remember that it failed.
+      billingApi.getCurrent().catch(() => ({ data: null, failed: true })),
       billingApi.invoices().catch(() => ({ data: [] })),
       billingApi.tokenUsage().catch(() => ({ data: null })),
     ])
+    overviewError.value = Boolean(subRes.failed) || !subRes.data
     subscription.value = subRes.data || null
     const inv = invRes.data || []
     invoices.value = Array.isArray(inv) ? inv : (inv.results || [])
     // Token usage soft-fails to null; the section is v-if'd on that.
     tokenUsage.value = tokRes.data || null
   } catch (_) {
-    // soft-fail; the UI degrades to "no active plan" state
+    overviewError.value = true
   }
 }
 
@@ -570,6 +589,19 @@ onMounted(async () => {
   color: var(--bp-muted);
   font-size: 14px;
 }
+
+.bp-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.bp-link:disabled { opacity: 0.6; cursor: default; }
 
 .bp-loading {
   padding: 80px 0;

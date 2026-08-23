@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import api from '@/api/client'
+import { describeSubscription } from '@/lib/plan'
 
 // localStorage key for the access token. We persist it here so a
 // page reload doesn't kick the user out when the refresh cookie is
@@ -25,6 +26,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     const isAuthenticated = computed(() => !!accessToken.value)
+    // Plan words for every surface (sidebar badge, dropdown, Settings).
+    // Derived from the session's subscription block — never from
+    // user.plan, which is denormalized and defaults to a paid tier.
+    const planState = computed(() => describeSubscription(session.value?.subscription))
     const userInitials = computed(() => {
         if (!user.value?.full_name) return '?'
         return user.value.full_name
@@ -147,6 +152,7 @@ export const useAuthStore = defineStore('auth', () => {
         loading,
         isAuthenticated,
         userInitials,
+        planState,
         login,
         googleLogin,
         register,

@@ -736,6 +736,7 @@ import {
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
+import { cssVar } from '@/lib/theme'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import PromptScheduleModal from '@/components/prompt_library/PromptScheduleModal.vue'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -1418,7 +1419,7 @@ const chartOptions = {
     tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}% visibility` } },
   },
   scales: {
-    y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
     x: { grid: { display: false } },
   },
 }
@@ -1443,7 +1444,7 @@ const TREND_METRICS = {
       `How likely AI is to mention ${brand}: the share of model answers in each `
       + 'run that name it. Higher is better.',
     emptyNote: () => 'No visibility data for these runs yet.',
-    yScale: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    yScale: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
   },
   position: {
     label: 'Position',
@@ -1460,7 +1461,7 @@ const TREND_METRICS = {
       `${brand} hasn't been ranked in these runs yet — position appears once `
       + 'models mention it in a ranked list.',
     // Reversed so #1 sits at the top: visually climbing = improving rank.
-    yScale: { reverse: true, min: 1, suggestedMax: 5, ticks: { stepSize: 1, callback: (v) => '#' + v }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    yScale: { reverse: true, min: 1, suggestedMax: 5, ticks: { stepSize: 1, callback: (v) => '#' + v }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
   },
   sentiment: {
     label: 'Sentiment',
@@ -1475,7 +1476,7 @@ const TREND_METRICS = {
       + 'scores positive 85, neutral 55 or negative 25, averaged per run. Higher is better.',
     emptyNote: (brand) =>
       `No sentiment yet — it's measured from runs where models mention ${brand}.`,
-    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
   },
   alignment: {
     label: 'Alignment',
@@ -1491,7 +1492,7 @@ const TREND_METRICS = {
     emptyNote: () =>
       'No alignment yet — it appears once answers are benchmarked against '
       + 'your Brand Input material.',
-    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+    yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
   },
 }
 const activeMetric = computed(() => TREND_METRICS[trendMetric.value])

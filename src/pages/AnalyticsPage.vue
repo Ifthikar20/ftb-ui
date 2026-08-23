@@ -6,7 +6,7 @@
         <h1 class="page-title">SEO Analytics</h1>
         <p class="page-subtitle">Search performance, retention, flows, and AI insights.</p>
       </div>
-      <div class="flex gap-8 items-center">
+      <div class="flex gap-2 items-center">
         <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 1v5h5"/><path d="M15 15v-5h-5"/>

@@ -321,7 +321,7 @@ onBeforeUnmount(stopETAPolling)
 
     <p
       v-if="runError"
-      class="w-full border-t border-border pt-3 text-[12px] text-[#C02926]"
+      class="w-full border-t border-border pt-3 text-[12px] text-[#C02926] dark:text-[#f87171]"
     >
       {{ runError.message }}
       <RouterLink
@@ -413,7 +413,7 @@ onBeforeUnmount(stopETAPolling)
 
           <p
             v-else-if="previewEmpty"
-            class="rounded-lg border border-dashed border-[#C02926]/40 bg-[#FDECEA]/40 px-3 py-2.5 text-[12px] text-[#C02926]"
+            class="rounded-lg border border-dashed border-[#C02926]/40 dark:border-[#f87171]/40 bg-[#FDECEA]/40 dark:bg-[#f87171]/10 px-3 py-2.5 text-[12px] text-[#C02926] dark:text-[#f87171]"
           >
             No saved prompts — audits cannot run until you add some.
             <RouterLink
