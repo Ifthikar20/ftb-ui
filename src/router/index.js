@@ -37,6 +37,14 @@ const routes = [
         component: () => import('@/pages/legal/PrivacyPage.vue'),
         meta: { public: true }
     },
+    /* ── Support / contact (public so the login + onboarding + paywall
+       funnel can always reach it) ── */
+    {
+        path: '/support',
+        name: 'support',
+        component: () => import('@/pages/SupportPage.vue'),
+        meta: { public: true }
+    },
     {
         path: '/dpa',
         name: 'dpa',
@@ -226,7 +234,7 @@ let sessionRestored = false
 // drop the checkout_id and strand the activation.
 const GATE_EXEMPT = new Set([
     'login', 'register', 'forgot-password', 'verify-email',
-    'landing', 'terms', 'privacy',
+    'landing', 'terms', 'privacy', 'support',
     'dashboard', 'paywall', 'billing', 'not-found',
 ])
 

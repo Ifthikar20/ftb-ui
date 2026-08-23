@@ -122,11 +122,11 @@ export default {
     updateVariables: (websiteId, variables) =>
         api.put(`/prompt-library/websites/${websiteId}/variables/`, { variables }),
 
-    enable: (promptId) =>
-        api.post(`/prompt-library/prompts/${promptId}/enable/`),
-
-    disable: (promptId) =>
-        api.post(`/prompt-library/prompts/${promptId}/disable/`),
+    // Per-website archive of a saved prompt (tenant-scoped on the
+    // BrandPrompt row). Replaces the old enable/disable, which flipped
+    // the shared catalog flag across every tenant.
+    setArchived: (brandPromptId, archived) =>
+        api.patch(`/prompt-library/brand-prompts/${brandPromptId}/`, { is_archived: archived }),
 
     // ── Test environments ─────────────────────────────────────────
     // Named buckets of BrandPrompts. Shared surface between the Saved

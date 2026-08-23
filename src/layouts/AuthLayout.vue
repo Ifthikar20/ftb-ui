@@ -67,7 +67,12 @@
         </div>
         <slot />
       </div>
-      <p class="auth-footer">© 2026 FetchBot · Privacy · Terms</p>
+      <p class="auth-footer">
+        © 2026 FetchBot ·
+        <router-link class="auth-footer-link" to="/support">Support</router-link> ·
+        <router-link class="auth-footer-link" to="/privacy">Privacy</router-link> ·
+        <router-link class="auth-footer-link" to="/terms">Terms</router-link>
+      </p>
       <!-- Internal-only backend build marker (deliberately near-invisible). -->
       <span v-if="apiBuild" class="auth-build" :title="apiCommit">{{ apiBuild }}</span>
     </div>
@@ -171,6 +176,15 @@ onUnmounted(() => {
   bottom: 24px;
   font-size: var(--font-xs);
   color: var(--muted-foreground);
+}
+.auth-footer-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.auth-footer-link:hover {
+  color: var(--foreground);
+  text-decoration: underline;
 }
 
 /* Internal backend build marker. Deliberately tiny and faint: it is

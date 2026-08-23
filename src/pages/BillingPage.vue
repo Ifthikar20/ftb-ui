@@ -27,6 +27,12 @@
               {{ daysUntilRenewal }} {{ daysUntilRenewal === 1 ? 'day' : 'days' }} left in your free trial
             </span>
             <span
+              v-else-if="subscription?.subscription_status === 'past_due'"
+              class="bp-current-note is-warn"
+            >
+              Payment issue — update your card in Manage billing to keep access.
+            </span>
+            <span
               v-else-if="subscription?.current_period_end"
               class="bp-current-note"
               :class="{ 'is-warn': subscription.cancel_at_period_end }"
@@ -73,11 +79,17 @@
         <div class="bp-current-info">
           <span class="bp-eyebrow">Current plan</span>
           <h2 class="bp-current-name">Free plan</h2>
+          <!-- Answer the questions people actually have: does it end,
+               and what happens at the limits. (Limits mirror
+               PLAN_LIMITS[FREE] — keep in sync with the backend.) -->
           <p class="bp-current-note">
-            Includes
-            <template v-if="tokenUsage?.allowance?.cap_usd">${{ tokenUsage.allowance.cap_usd.toFixed(2) }}</template>
-            <template v-else>a small amount</template>
-            of AI usage per month. Upgrade to Pro for the full allowance and every AI model.
+            The Free plan doesn't expire — your dashboard and data stay
+            yours for as long as you like. It's limited instead: 1 project,
+            5-prompt audits, 2 audits per month, and a small monthly AI
+            allowance. When you hit a limit, audits simply pause until your
+            monthly reset — there's no hard wall and you're never locked
+            out. Upgrade to Pro any time for daily audits, every AI model,
+            and the full allowance.
           </p>
         </div>
       </section>
@@ -208,6 +220,7 @@ import billingApi from '@/api/billing'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { TIERS } from '@/constants/pricing'
+import { isPolarUrl } from '@/utils/polarRedirect'
 
 const route = useRoute()
 const router = useRouter()
@@ -229,9 +242,21 @@ const enterpriseTier = computed(() => TIERS.find(t => t.price === null))
 
 const currentPlanCode = computed(() => {
   const s = subscription.value
-  const active = s?.subscription_status === 'active' || s?.subscription_status === 'trialing'
-  if (!active) return null
-  return s?.plan || s?.plan_code || null
+  const status = s?.subscription_status
+  if (status === 'active' || status === 'trialing') {
+    return s?.plan || s?.plan_code || null
+  }
+  if (status === 'past_due') {
+    // A payment hiccup is not a downgrade: keep showing the paid plan
+    // with a "Past due" pill instead of dumping a paying customer onto
+    // the Free card. The top-level `plan` reports free here, so read
+    // the raw subscription plan (legacy values normalize to pro).
+    const raw = String(s?.subscription_plan || '').toLowerCase()
+    return raw === 'business' || raw === 'enterprise' || raw === 'scale' || raw === 'team'
+      ? 'business'
+      : 'pro'
+  }
+  return null
 })
 
 const currentTier = computed(() =>
@@ -337,13 +362,21 @@ async function changePlan(tier) {
     })
     // CheckoutView's payload is {"success", "data": {"checkout_url"}}.
     const url = res.data?.data?.checkout_url
-    if (url) {
+    if (url && isPolarUrl(url)) {
       window.location.href = url
       return
     }
     error.value = "We couldn't start checkout. Please try again."
     toast.error(error.value)
   } catch (e) {
+    if (e?.response?.data?.error?.code === 'already_subscribed') {
+      // Backend self-healed from Polar's records (stale local state):
+      // refresh what we show instead of erroring.
+      toast.success('Your subscription is already active.')
+      try { await authStore.fetchSession() } catch (_) { /* refresh below */ }
+      await refresh()
+      return
+    }
     error.value = e?.response?.data?.error?.message || "We couldn't start checkout."
     // Loud failure: the inline text alone was easy to miss and made the
     // button feel dead.
@@ -363,7 +396,7 @@ async function openPortal() {
     const res = await billingApi.portal()
     // PortalView's payload is {"success", "data": {"portal_url"}}.
     const url = res.data?.data?.portal_url
-    if (url) window.location.href = url
+    if (url && isPolarUrl(url)) window.location.href = url
     else toast.error("We couldn't open the billing portal.")
   } catch {
     toast.error("We couldn't open the billing portal.")
@@ -422,29 +455,38 @@ async function refresh() {
 
 onMounted(async () => {
   const checkoutParam = route.query.checkout
-  const checkoutId = route.query.checkout_id
+  const checkoutId = route.query.checkout_id ? String(route.query.checkout_id) : ''
+  if (checkoutParam) {
+    // Scrub the URL BEFORE any awaited work: Polar's return redirect
+    // appends a customer_session_token (a live customer-portal
+    // credential) alongside our one-shot params. It must not sit in
+    // the address bar/history while we confirm — and stripping first
+    // also means a refresh can't re-run confirmation. Our code never
+    // reads or stores that token.
+    router.replace({ query: {} })
+  }
   if (checkoutParam === 'success' && checkoutId) {
     // Returning from Polar checkout: verify server-side and sync the
     // subscription (works without webhooks in local dev).
     try {
-      const res = await billingApi.confirm(String(checkoutId))
+      const res = await billingApi.confirm(checkoutId)
       if (res.data?.data?.active) {
         toast.success('Subscription activated. Welcome to Pro!')
         try { await authStore.fetchSession() } catch (_) {}
-      } else {
-        toast.info('Checkout received - finalizing. Refresh in a moment.')
+        // A fresh subscriber goes straight back to the product — the
+        // dashboard — not a billing statement. The toast survives the
+        // navigation (ToastContainer is global).
+        router.replace({ name: 'dashboard' })
+        return
       }
+      toast.info('Checkout received - finalizing. Refresh in a moment.')
     } catch (_) {
       toast.error("We couldn't verify the checkout yet. Refresh in a moment.")
     }
-    // Drop the one-shot params so a refresh doesn't re-run confirmation.
-    router.replace({ query: {} })
   } else if (checkoutParam === 'success') {
     toast.success('Subscription activated!')
-    router.replace({ query: {} })
   } else if (checkoutParam === 'canceled') {
     toast.info('Checkout canceled.')
-    router.replace({ query: {} })
   }
   await refresh()
   loading.value = false

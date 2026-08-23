@@ -420,7 +420,7 @@ function toggleTagFilter(tag) {
 function clearTagFilter() { selectedTags.value = new Set() }
 
 const filtered = computed(() => {
-  let list = rows.value.filter((r) => (status.value === 'archived' ? !r.is_active : r.is_active))
+  let list = rows.value.filter((r) => (status.value === 'archived' ? r.is_archived : !r.is_archived))
   if (activeTopic.value) list = list.filter((r) => r.topic === activeTopic.value)
   if (selectedTags.value.size) {
     // A prompt matches if it carries every selected tag (AND semantics).
@@ -481,7 +481,7 @@ const groups = computed(() => {
     if (groupBy.value === 'topic') {
       push(row.topic || '__none__', row.topic || 'Default prompts', row)
     } else if (groupBy.value === 'status') {
-      push(row.is_active ? 'active' : 'archived', row.is_active ? 'Active' : 'Archived', row)
+      push(row.is_archived ? 'archived' : 'active', row.is_archived ? 'Archived' : 'Active', row)
     } else if (groupBy.value === 'tag') {
       const first = (row.tags || [])[0]
       push(first || '__none__', first || 'Untagged', row)
@@ -510,15 +510,16 @@ function selectedRows() {
   return rows.value.filter((r) => selectedIds.value.has(r.brand_prompt_id))
 }
 
-// Archive == deactivate the prompt (is_active=false); Unarchive re-enables.
-// Reuses the existing per-prompt enable/disable endpoints (no bulk endpoint).
+// Archive / Unarchive toggles the per-website BrandPrompt.is_archived
+// flag (tenant-scoped) — not the shared catalog prompt.
 async function bulkSetActive(active) {
   const targets = selectedRows()
   if (!targets.length) return
   bulkPending.value = true
   try {
-    const call = active ? promptLibrary.enable : promptLibrary.disable
-    const results = await Promise.allSettled(targets.map((r) => call(r.id)))
+    const results = await Promise.allSettled(
+      targets.map((r) => promptLibrary.setArchived(r.brand_prompt_id, !active)),
+    )
     const ok = results.filter((x) => x.status === 'fulfilled').length
     toast.success(`${active ? 'Unarchived' : 'Archived'} ${ok} prompt${ok === 1 ? '' : 's'}.`)
     selectedIds.value = new Set()

@@ -29,14 +29,6 @@
         </div>
       </div>
 
-      <!-- Coming soon -->
-      <div v-for="tool in comingSoonTools" :key="tool" class="intg-tile intg-tile-soon">
-        <div class="intg-tile-main">
-          <div class="intg-monogram" aria-hidden="true">{{ tool.charAt(0) }}</div>
-          <span class="intg-tile-name">{{ tool }}</span>
-          <span class="soon-badge">Coming soon</span>
-        </div>
-      </div>
     </div>
 
     <!-- What Gets Sent Section -->
@@ -236,7 +228,6 @@ const integrations = reactive([
 
 // Directory entries for platforms on the roadmap. Rendered as neutral,
 // non-interactive monogram tiles; no click handlers, no brand artwork.
-const comingSoonTools = ['Microsoft Teams', 'HubSpot', 'Salesforce', 'Notion', 'Gmail', 'Google Sheets', 'Mailchimp', 'Zapier']
 
 // "What gets sent" list. The backend stores the trend and milestone
 // toggles but does not send those notifications yet, hence the chips.
@@ -260,7 +251,11 @@ async function loadConnections() {
       if (!intg) continue
       intg.connected = conn.is_active
       intg.connectionId = conn.id
-      intg.webhookUrl = conn.webhook_url || ''
+      // The webhook URL is write-only server-side (a secret we never read
+      // back). Track only whether one is configured; leave the input
+      // blank — submitting it blank keeps the stored webhook.
+      intg.webhookConfigured = !!conn.webhook_configured
+      intg.webhookUrl = ''
       intg.channelName = conn.channel_name || ''
       intg.externalTeamId = conn.external_team_id || ''
       // TimeFields may serialize as HH:MM:SS; the API expects HH:MM back.
@@ -493,26 +488,7 @@ function showToast(msg, kind = 'success') {
   gap: 8px;
 }
 
-/* Coming-soon tiles: neutral, non-interactive directory entries */
-.intg-tile-soon {
-  justify-content: center;
-  opacity: 0.65;
-}
-
-.intg-monogram {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  background: var(--muted);
-  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  color: var(--muted-foreground);
-  font-size: 18px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
+/* .soon-badge is still used by the "What gets sent" list below. */
 .soon-badge {
   font-size: 0.65rem;
   font-weight: 600;

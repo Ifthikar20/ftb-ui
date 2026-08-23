@@ -86,11 +86,19 @@
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <Avatar class="size-8 rounded-lg">
+                    <Avatar class="size-8 rounded-lg" :class="isPremium ? 'ring-1 ring-amber-400/70' : ''">
                       <AvatarFallback class="rounded-lg">{{ userInitials }}</AvatarFallback>
                     </Avatar>
                     <div class="grid flex-1 text-left text-sm leading-tight">
-                      <span class="truncate font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
+                      <span class="flex min-w-0 items-center gap-1.5 font-semibold">
+                        <span class="truncate">{{ authStore.user?.full_name || 'User' }}</span>
+                        <!-- Quiet premium mark for paying accounts (Pro and
+                             Business get the same treatment). -->
+                        <span
+                          v-if="isPremium"
+                          class="shrink-0 rounded-full bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-amber-900 shadow-sm"
+                        >{{ premiumLabel }}</span>
+                      </span>
                       <span class="truncate text-xs text-muted-foreground">{{ authStore.user?.email || '' }}</span>
                     </div>
                     <ChevronsUpDown class="ml-auto size-4" />
@@ -100,7 +108,9 @@
                   <DropdownMenuLabel class="font-normal">
                     <div class="flex flex-col">
                       <span class="text-sm font-semibold">{{ authStore.user?.full_name || 'User' }}</span>
-                      <span class="text-xs capitalize text-muted-foreground">{{ authStore.user?.plan || 'Free' }} plan</span>
+                      <!-- Plan from the session's subscription — user.plan is
+                           denormalized and defaults to a paid tier. -->
+                      <span class="text-xs text-muted-foreground">{{ planLabel }}</span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -159,6 +169,17 @@
                 {{ isMac ? '⌘' : 'Ctrl' }}+K
               </span>
             </button>
+            <button
+              v-if="assistantStore.enabled"
+              class="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring hover:bg-background"
+              title="Ask FetchBot"
+              @click="assistantStore.toggle()"
+            >
+              <span class="grid size-5 place-items-center rounded-md text-white" style="background: linear-gradient(135deg, #6d5efc, #9b6bff);">
+                <Sparkles :size="12" :stroke-width="2.2" />
+              </span>
+              <span class="hidden sm:inline">Ask</span>
+            </button>
             <HelpButton />
           </div>
         </header>
@@ -180,6 +201,8 @@
     <router-view />
   </div>
 
+    <!-- Ask FetchBot assistant (global slide-out panel) -->
+    <AskFetchBotPanel />
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
@@ -281,6 +304,8 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import AskFetchBotPanel from '@/components/assistant/AskFetchBotPanel.vue'
+import { useAssistantStore } from '@/stores/assistant'
 import { Button } from '@/components/ui/button'
 import {
   SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarRail,
@@ -300,7 +325,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown, Home,
-  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot, Sparkles,
 } from '@lucide/vue'
 
 const toast = useToast()
@@ -309,6 +334,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const assistantStore = useAssistantStore()
 
 // Add project modal state
 const showAddProject = ref(false)
@@ -437,6 +463,20 @@ const userInitials = computed(() => {
   const name = authStore.user?.full_name || ''
   return name.split(' ').map(n => n[0]).filter(Boolean).join('').toUpperCase().slice(0, 2)
 })
+
+// Premium mark on the sidebar footer. Resolved from the session's
+// subscription (is_paying), never from user.plan (denormalized, defaults
+// to a paid tier). Business tiers get the same treatment as Pro.
+const isPremium = computed(
+  () => authStore.session?.subscription?.is_paying === true,
+)
+const premiumLabel = computed(() => {
+  const plan = String(authStore.session?.subscription?.plan || '').toLowerCase()
+  return ['business', 'enterprise', 'scale', 'team'].includes(plan) ? 'Business' : 'Pro'
+})
+const planLabel = computed(
+  () => (isPremium.value ? `${premiumLabel.value} plan` : 'Free plan'),
+)
 
 // Drives the visibility of the sidebar / topbar while the account
 // onboarding modal is in front of everything.
@@ -583,15 +623,18 @@ onMounted(async () => {
   if (!authStore.user) {
     try { await authStore.fetchMe() } catch {}
   }
+  // Assistant entitlement / maintenance switch — decides whether the
+  // header trigger renders at all. Fire and forget.
+  assistantStore.loadStatus()
   try {
     const { data } = await websitesApi.list({ _silentError: true })
     appStore.setWebsites(data || [])
   } catch {}
-  // Fetch plan info for project limits
+  // Fetch plan info for project limits (plans: free / pro / business)
   try {
     const { data } = await billingApi.getCurrent({ _silentError: true })
-    const plan = data?.plan || 'starter'
-    const limits = { starter: 1, growth: 5, scale: -1 }
+    const plan = data?.plan || 'free'
+    const limits = { free: 1, pro: 5, business: -1 }
     appStore.setPlanInfo(plan, limits[plan] ?? 1)
   } catch {}
   // Search keyboard shortcut

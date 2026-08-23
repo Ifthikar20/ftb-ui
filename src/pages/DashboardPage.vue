@@ -1,9 +1,9 @@
 <template>
   <div class="fade-in">
     <!-- While first-run onboarding is pending the dashboard is gated:
-         render only the modal on a clean surface so the user can't
+         render only the flow on a clean surface so the user can't
          interact with (or even peek at) data they haven't earned yet. -->
-    <OnboardingModal
+    <OnboardingFlow
       v-if="showOnboarding"
       @complete="onOnboardingComplete"
     />
@@ -110,7 +110,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
@@ -127,13 +126,12 @@ import QuickActions from '@/components/dashboard/QuickActions.vue'
 import WeeklyTasks from '@/components/dashboard/WeeklyTasks.vue'
 import RecentActivity from '@/components/dashboard/RecentActivity.vue'
 import TrendInsights from '@/components/dashboard/TrendInsights.vue'
-import OnboardingModal from '@/components/onboarding/OnboardingModal.vue'
+import OnboardingFlow from '@/components/onboarding/OnboardingFlow.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const activeName = computed(() => appStore.activeWebsite?.name || '')
@@ -141,19 +139,21 @@ const activeWebsiteId = computed(() => appStore.activeWebsite?.id || '')
 const activeIndustry = computed(() => appStore.activeWebsite?.industry || '')
 const firstName = computed(() => (authStore.user?.full_name || 'there').split(' ')[0])
 
-// First-run onboarding shows as an overlay over the dashboard rather
-// than its own page. The session view drives this via
-// onboarding.needs_onboarding; the modal refreshes the session and
-// emits 'complete' once the user finishes the flow.
+// First-run onboarding shows as a full-page takeover over the dashboard
+// rather than its own route. The session view drives this via
+// onboarding.needs_onboarding; the flow refreshes the session and
+// emits 'complete' once the user finishes.
 const showOnboarding = computed(
   () => authStore.session?.onboarding?.needs_onboarding === true,
 )
 
 function onOnboardingComplete() {
-  // The next_route on the refreshed session decides where we land
-  // next — paywall for unpaid users, otherwise stay on the dashboard.
-  const next = authStore.session?.next_route
-  if (next === 'paywall') router.push('/paywall')
+  // Routing to the paywall (when the refreshed session requires it) is
+  // owned by the flow itself (useOnboardingFlow.finish) — the session
+  // refresh unmounts the flow mid-save, so an emit-driven redirect here
+  // is unreliable. By the time this fires there is nothing left to do:
+  // either the flow already navigated, or we simply stay on the
+  // dashboard that is now rendering underneath.
 }
 
 const hour = new Date().getHours()
