@@ -77,7 +77,7 @@ import { computed, h, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = defineProps({
-  /** Key of the active nav item: account | subscription | notifications | usage | appearance */
+  /** Key of the active nav item: account | subscription | notifications | usage | appearance | contact */
   active: { type: String, required: true },
 })
 
@@ -137,6 +137,19 @@ const NAV = [
         key: 'appearance', label: 'Appearance',
         to: { path: '/settings', query: { section: 'appearance' } },
         icon: ['M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'],
+      },
+    ],
+  },
+  {
+    label: 'Support',
+    items: [
+      {
+        key: 'contact', label: 'Contact us',
+        to: { path: '/settings', query: { section: 'contact' } },
+        icon: [
+          'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+          'm22 6-10 7L2 6',
+        ],
       },
     ],
   },

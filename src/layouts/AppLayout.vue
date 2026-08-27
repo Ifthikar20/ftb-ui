@@ -332,7 +332,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown, Home,
-  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot, Sparkles,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Sparkles,
   Sun, Moon,
 } from '@lucide/vue'
 
@@ -533,7 +533,6 @@ const navMain = computed(() => [
           { title: 'Brand Input', to: brandInputRoute.value, match: '/brand-input' },
         ],
       },
-      { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
       { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
     ],
   },

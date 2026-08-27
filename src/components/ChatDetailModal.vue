@@ -65,27 +65,73 @@ const rankedBrands = computed(() => {
   })
 })
 
-/* Highlight the tracked brand (green) and competitors (amber) in any text.
-   Escapes HTML first, then wraps whole-word brand matches in <mark>. */
+/* Highlight brand mentions in any text — the tracked brand in green and
+   every competitor in its OWN color, so a mention in the answer and the
+   same brand's row in the Details panel read as one thing. Colors are
+   assigned by the model's ranking order (rankedBrands), so the mapping
+   is stable across the prompt bubble, the response, and the panel.
+   Escapes HTML first, then renders markdown bold (**text**) as <strong>
+   instead of leaking literal asterisks, then wraps whole-word brand
+   matches in classed <mark>s (styles live in the <style> block below,
+   with dark-theme variants). */
+const COMPETITOR_CLASS_COUNT = 8
+
+const brandClassMap = computed(() => {
+  const map = new Map()
+  const own = (detail.value?.brand || '').trim().toLowerCase()
+  // "YNAB (You Need A Budget)"-style names also answer to either half,
+  // so bare mentions later in the answer light up in the same color.
+  const register = (name, cls) => {
+    const key = (name || '').trim().toLowerCase()
+    if (!key || map.has(key)) return
+    map.set(key, cls)
+    const short = key.replace(/\s*\(.*\)\s*$/, '')
+    const inner = (key.match(/\(([^)]{3,})\)\s*$/) || [])[1]
+    for (const alias of [short, inner]) {
+      const a = (alias || '').trim()
+      if (a && a.length > 2 && !map.has(a)) map.set(a, cls)
+    }
+  }
+  let i = 0
+  for (const b of rankedBrands.value) {
+    const key = (b.name || '').trim().toLowerCase()
+    if (!key || map.has(key)) continue
+    register(key, key === own ? 'cdm-mark--own' : `cdm-mark--c${i++ % COMPETITOR_CLASS_COUNT}`)
+  }
+  // The tracked brand is highlightable even when the detector did not
+  // list it among this answer's brands (e.g. it only appears in the
+  // prompt bubble).
+  if (own && !map.has(own)) register(own, 'cdm-mark--own')
+  return map
+})
+
+function brandMarkClass(name) {
+  return brandClassMap.value.get((name || '').trim().toLowerCase()) || ''
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ))
 }
 function highlight(text) {
-  const safe = escapeHtml(text || '')
-  const brands = detail.value?.brands || []
-  const own = (detail.value?.brand || '').trim().toLowerCase()
-  const names = [...new Set(brands.map(b => (b.name || '').trim()).filter(Boolean))]
+  let safe = escapeHtml(text || '')
+  // Model responses arrive as raw markdown: show **bold** as bold, not
+  // as star-star noise around brand names. (Kept per-line: the lazy
+  // dot never crosses a newline, so an unmatched ** can't swallow a
+  // paragraph.)
+  safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  const names = [...brandClassMap.value.keys()]
   if (!names.length) return safe
   names.sort((a, b) => b.length - a.length)
   const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const re = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi')
+  // Lookarounds instead of \b: a word boundary can never match next to
+  // a name that starts/ends in a non-word character ("YNAB (You Need A
+  // Budget)" ends in ")"), which silently dropped those highlights.
+  const re = new RegExp(`(?<!\\w)(${escaped.join('|')})(?!\\w)`, 'gi')
   return safe.replace(re, (m) => {
-    const style = m.toLowerCase() === own
-      ? 'background:rgba(34,197,94,0.20);color:#15803d'
-      : 'background:rgba(245,158,11,0.20);color:#b45309'
-    return `<mark style="${style};padding:0 2px;border-radius:3px;font-weight:600">${m}</mark>`
+    const cls = brandClassMap.value.get(m.toLowerCase())
+    return cls ? `<mark class="cdm-mark ${cls}">${m}</mark>` : m
   })
 }
 
@@ -117,6 +163,9 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
             <span class="flex size-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
               :style="{ background: modelStyle(detail?.model).color }">{{ modelStyle(detail?.model).abbr }}</span>
             {{ modelLabel }}
+            <!-- The exact submodel that answered, when the row carries it
+                 (per-prompt model selection). -->
+            <span v-if="detail?.model_id" class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground">{{ detail.model_id }}</span>
             <span v-if="detail?.country" class="ml-1 text-base leading-none">{{ flag(detail.country) }}</span>
             <span v-if="detail?.country" class="text-xs text-muted-foreground">{{ detail.country }}</span>
           </div>
@@ -133,10 +182,19 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
             <div class="mb-5 flex justify-end">
               <div class="max-w-[80%] rounded-2xl bg-secondary px-4 py-2.5 text-sm text-foreground" v-html="highlight(detail.prompt)"></div>
             </div>
-            <!-- legend -->
+            <!-- legend: the tracked brand's swatch, then a mini-stack of
+                 the first competitor colors — the full per-brand key is
+                 the color-matched Brands list in the Details panel. -->
             <div class="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm" style="background:rgba(34,197,94,0.45)"></span>{{ detail.brand }}</span>
-              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm" style="background:rgba(245,158,11,0.45)"></span>Competitors</span>
+              <span class="inline-flex items-center gap-1.5"><span class="cdm-swatch cdm-mark--own size-2.5 rounded-sm"></span>{{ detail.brand }}</span>
+              <span class="inline-flex items-center gap-1.5">
+                <span class="flex">
+                  <span class="cdm-swatch cdm-mark--c0 size-2.5 rounded-sm"></span>
+                  <span class="cdm-swatch cdm-mark--c1 -ml-0.5 size-2.5 rounded-sm"></span>
+                  <span class="cdm-swatch cdm-mark--c2 -ml-0.5 size-2.5 rounded-sm"></span>
+                </span>
+                Competitors — one color per brand
+              </span>
             </div>
             <!-- response -->
             <div class="whitespace-pre-wrap text-sm leading-relaxed text-foreground" v-html="detail.response_text ? highlight(detail.response_text) : 'No response text captured.'"></div>
@@ -166,7 +224,9 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
               <span class="flex min-w-0 items-center gap-2">
                 <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
-                <span class="truncate text-foreground">{{ b.name }}</span>
+                <!-- Same mark styling as the mentions in the answer, so
+                     color alone says which highlight is which brand. -->
+                <span class="cdm-mark truncate" :class="brandMarkClass(b.name)">{{ b.name }}</span>
                 <span v-if="b.name === detail.brand"
                   class="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">you</span>
               </span>
@@ -177,9 +237,9 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
             <div v-if="!detail.brands.length" class="text-xs text-muted-foreground">No brands detected.</div>
           </div>
 
-          <!-- Fanout queries -->
+          <!-- Similar queries (backend name: fanout) -->
           <div v-if="detail.fanout_queries?.length" class="mb-5">
-            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fanout queries</div>
+            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Similar queries</div>
             <p class="text-sm leading-relaxed text-foreground">{{ detail.fanout_queries.join('  ·  ') }}</p>
           </div>
 
@@ -245,3 +305,46 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
     </div>
   </div>
 </template>
+
+<!-- Unscoped on purpose: the marks are injected via v-html, which scoped
+     CSS cannot reach. Everything is prefixed cdm- to stay collision-free.
+     Each color class carries --cdm-a, the opaque variant used by the
+     legend swatches; the mark itself uses the translucent background.
+     Dark values are tuned for the pure-black theme. -->
+<style>
+.cdm-mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.cdm-mark--own { --cdm-a: rgba(34, 197, 94, 0.55);  background: rgba(34, 197, 94, 0.18);  color: #15803d; }
+.cdm-mark--c0  { --cdm-a: rgba(245, 158, 11, 0.60); background: rgba(245, 158, 11, 0.18); color: #b45309; }
+.cdm-mark--c1  { --cdm-a: rgba(139, 92, 246, 0.55); background: rgba(139, 92, 246, 0.16); color: #6d28d9; }
+.cdm-mark--c2  { --cdm-a: rgba(14, 165, 233, 0.55); background: rgba(14, 165, 233, 0.16); color: #0369a1; }
+.cdm-mark--c3  { --cdm-a: rgba(244, 63, 94, 0.50);  background: rgba(244, 63, 94, 0.14);  color: #be123c; }
+.cdm-mark--c4  { --cdm-a: rgba(20, 184, 166, 0.55); background: rgba(20, 184, 166, 0.16); color: #0f766e; }
+.cdm-mark--c5  { --cdm-a: rgba(99, 102, 241, 0.55); background: rgba(99, 102, 241, 0.16); color: #4338ca; }
+.cdm-mark--c6  { --cdm-a: rgba(249, 115, 22, 0.55); background: rgba(249, 115, 22, 0.16); color: #c2410c; }
+.cdm-mark--c7  { --cdm-a: rgba(217, 70, 239, 0.50); background: rgba(217, 70, 239, 0.14); color: #a21caf; }
+
+[data-theme='dark'] .cdm-mark--own { background: rgba(34, 197, 94, 0.24);  color: #86efac; }
+[data-theme='dark'] .cdm-mark--c0  { background: rgba(245, 158, 11, 0.24); color: #fcd34d; }
+[data-theme='dark'] .cdm-mark--c1  { background: rgba(139, 92, 246, 0.26); color: #c4b5fd; }
+[data-theme='dark'] .cdm-mark--c2  { background: rgba(14, 165, 233, 0.24); color: #7dd3fc; }
+[data-theme='dark'] .cdm-mark--c3  { background: rgba(244, 63, 94, 0.24);  color: #fda4af; }
+[data-theme='dark'] .cdm-mark--c4  { background: rgba(20, 184, 166, 0.24); color: #5eead4; }
+[data-theme='dark'] .cdm-mark--c5  { background: rgba(99, 102, 241, 0.26); color: #a5b4fc; }
+[data-theme='dark'] .cdm-mark--c6  { background: rgba(249, 115, 22, 0.24); color: #fdba74; }
+[data-theme='dark'] .cdm-mark--c7  { background: rgba(217, 70, 239, 0.24); color: #f0abfc; }
+
+/* Legend swatches: solid version of the same palette. Declared last so
+   its background wins over the color classes at equal specificity; the
+   dark-scoped rule matches the dark overrides' higher specificity. */
+.cdm-swatch {
+  display: inline-block;
+  background: var(--cdm-a);
+}
+[data-theme='dark'] .cdm-swatch {
+  background: var(--cdm-a);
+}
+</style>

@@ -7,8 +7,9 @@ import {
   Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 } from 'chart.js'
 import {
-  ChevronRight, Search, Loader2, ExternalLink,
+  ChevronRight, Search, Loader2, ExternalLink, CircleX,
 } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import citationsApi from '@/api/citations'
 import ChatDetailModal from '@/components/ChatDetailModal.vue'
 import { cssVar } from '@/lib/theme'
@@ -209,7 +210,11 @@ function fmtTime(iso) {
       <span class="max-w-[420px] truncate font-semibold text-foreground" :title="title">{{ title }}</span>
     </div>
 
-    <div v-if="error" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{{ error }}</div>
+    <Alert v-if="error" variant="destructive">
+      <CircleX />
+      <AlertTitle>Could not load this URL</AlertTitle>
+      <AlertDescription>{{ error }}</AlertDescription>
+    </Alert>
     <div v-if="loading" class="flex items-center gap-2 text-sm text-muted-foreground">
       <Loader2 class="size-4 animate-spin" /> Loading URL details…
     </div>

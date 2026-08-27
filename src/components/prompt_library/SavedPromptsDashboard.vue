@@ -234,6 +234,15 @@
             :class="addTab === 'bulk' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
             @click="addTab = 'bulk'"
           >Bulk Upload</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'models' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'models'"
+          >
+            Models
+            <span class="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">{{ addModels.length }}</span>
+          </button>
         </div>
 
         <!-- ADD PROMPT -->
@@ -297,6 +306,56 @@
           </div>
         </template>
 
+        <!-- MODELS -->
+        <template v-else-if="addTab === 'models'">
+          <h3 class="text-base font-semibold text-foreground">Models to test</h3>
+          <p class="mb-4 text-sm text-muted-foreground">
+            Pick the exact models these prompts are measured against — several
+            versions of the same provider is fine. Applies to every prompt
+            added in this dialog.
+          </p>
+
+          <div class="max-h-[46vh] space-y-4 overflow-y-auto pr-1">
+            <div v-for="group in variantGroups" :key="group.provider">
+              <div class="mb-1.5 flex items-baseline justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ group.label }}</span>
+                <span v-if="!group.configured" class="text-[10px] text-muted-foreground">API key not configured</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="v in group.variants"
+                  :key="v.id"
+                  type="button"
+                  :disabled="!v.configured"
+                  :title="v.model_id + (v.configured ? '' : ' — API key not configured')"
+                  class="rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  :class="addModels.includes(v.id)
+                    ? 'border-ring bg-secondary text-foreground'
+                    : 'border-border text-muted-foreground hover:border-ring'"
+                  @click="toggleModel(v.id)"
+                >
+                  {{ v.label }}<span v-if="v.is_default" class="ml-1 text-[10px] text-muted-foreground">default</span>
+                </button>
+              </div>
+            </div>
+            <p v-if="!variantGroups.length" class="text-sm text-muted-foreground">Loading model catalog…</p>
+          </div>
+
+          <p class="mt-3 text-xs text-muted-foreground">
+            {{ addModels.length }} selected · each model answers every prompt on each scan.
+          </p>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="addTab = 'add'">Back</button>
+            <button
+              type="button"
+              class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              :disabled="addPending"
+              @click="submitAdd"
+            >{{ addPending ? 'Adding…' : 'Add Prompt' }}</button>
+          </div>
+        </template>
+
         <!-- BULK UPLOAD -->
         <template v-else>
           <p class="mb-3 text-center text-sm text-muted-foreground">
@@ -347,6 +406,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import llmRankingApi from '@/api/llm_ranking'
 import promptLibrary from '@/api/promptLibrary'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import {
@@ -391,7 +451,7 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(() => { load(); loadRegions() })
+onMounted(() => { load(); loadRegions(); loadModelVariants() })
 defineExpose({ load, get count() { return rows.value.length } })
 
 /* ── Filters / sort / group state ── */
@@ -618,6 +678,59 @@ async function loadRegions() {
     if (list.length) LOCATIONS.value = list
   } catch (_) { /* keep the default */ }
 }
+
+/* ── Model selection (Models tab) ── */
+const PROVIDER_LABELS = {
+  claude: 'Claude', gpt4: 'ChatGPT (OpenAI)', gemini: 'Gemini',
+  perplexity: 'Perplexity', grok: 'Grok', deepseek: 'DeepSeek',
+}
+const variantsCatalog = ref([])
+const addModels = ref([])
+
+async function loadModelVariants() {
+  try {
+    const { data } = await llmRankingApi.modelVariants(websiteId)
+    variantsCatalog.value = (data || {}).variants || []
+    // First open before the user touches anything: defaults pre-checked.
+    if (!addModels.value.length) addModels.value = defaultModelIds()
+  } catch (_) { /* tab shows a loading line; selection stays optional */ }
+}
+function defaultModelIds() {
+  return variantsCatalog.value
+    .filter((v) => v.configured && v.is_default)
+    .map((v) => v.id)
+}
+const variantGroups = computed(() => {
+  const order = []
+  const byProvider = new Map()
+  for (const v of variantsCatalog.value) {
+    if (!byProvider.has(v.provider)) {
+      byProvider.set(v.provider, {
+        provider: v.provider,
+        label: PROVIDER_LABELS[v.provider] || v.provider,
+        configured: false,
+        variants: [],
+      })
+      order.push(v.provider)
+    }
+    const g = byProvider.get(v.provider)
+    g.variants.push(v)
+    g.configured = g.configured || !!v.configured
+  }
+  return order.map((p) => byProvider.get(p))
+})
+function toggleModel(id) {
+  const i = addModels.value.indexOf(id)
+  if (i >= 0) {
+    if (addModels.value.length === 1) {
+      toast.error('Keep at least one model selected.')
+      return
+    }
+    addModels.value.splice(i, 1)
+  } else {
+    addModels.value.push(id)
+  }
+}
 const promptCount = computed(() =>
   addText.value.split('\n').map((l) => l.trim()).filter(Boolean).length)
 
@@ -626,6 +739,7 @@ function resetAddForm() {
   addTags.value = []
   addLocation.value = 'US'
   addTab.value = 'add'
+  addModels.value = defaultModelIds()
 }
 function openAddPrompt() {
   resetAddForm()
@@ -642,6 +756,13 @@ async function submitAdd() {
   if (!text) { toast.error('Enter at least one prompt.'); return }
   addPending.value = true
   try {
+    // Send the model selection only when it differs from the default set:
+    // an untouched selection keeps the classic "every provider's default
+    // model" scan path.
+    const defaults = new Set(defaultModelIds())
+    const isDefaultSet =
+      addModels.value.length === defaults.size &&
+      addModels.value.every((id) => defaults.has(id))
     const res = await promptLibrary.createWebsitePrompt(websiteId, {
       text,
       topic: addTopic.value.trim(),
@@ -649,6 +770,7 @@ async function submitAdd() {
       tags: addTags.value,
       intent_bucket: 'category',
       style: 'question',
+      models: isDefaultSet ? [] : addModels.value,
     })
     const body = res?.data || {}
     const n = body.created_count || promptCount.value

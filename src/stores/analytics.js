@@ -22,7 +22,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         if (!cache.value[k]) {
             cache.value[k] = {
                 stats: [], chartData: [], topPages: [], sources: [], devices: [], browserData: [], operatingSystems: [],
-                countries: [], realtimeVisitors: 0, noData: false,
+                countries: [], realtimeVisitors: 0, noData: false, dataSource: 'pixel', security: null,
                 retentionData: {}, engagementData: {}, flowData: {}, entryExitData: {},
                 journeys: [], liveEvents: [],
                 insightsData: {}, visitorList: [], timelineEvents: [],
@@ -108,6 +108,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             c.operatingSystems = devData.operating_systems || []
             c.countries = unwrapArr(countriesRes)
             c.realtimeVisitors = o.realtime || 0
+            // Which pipeline produced this payload: 'pixel' (default) or
+            // an external source ('ga4' | 'cloudflare') the backend
+            // substituted because no pixel data exists yet.
+            c.dataSource = o.data_source || 'pixel'
+            // Edge security signals (Cloudflare-sourced dashboards only).
+            c.security = o.security || null
             c.noData = !c.chartData.length && !c.topPages.length && !c.sources.length
 
             c._ts.overview = Date.now()
@@ -275,7 +281,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             const saved = JSON.parse(raw)
             if (saved.cache) cache.value = saved.cache
             if (saved.activeWebsiteId) activeWebsiteId.value = saved.activeWebsiteId
-            if (saved.activePeriod) activePeriod.value = saved.activePeriod
+            // Periods the UI no longer offers (e.g. the retired '5m'
+            // button) fall back to the default instead of leaving the
+            // selector with no active button.
+            const OFFERED = ['10m', '15m', '30m', '1h', '6h', '24h', '7d', '30d', '90d', '6mo']
+            if (saved.activePeriod) {
+                activePeriod.value = OFFERED.includes(saved.activePeriod) ? saved.activePeriod : '30d'
+            }
             if (saved.activeTab) activeTab.value = saved.activeTab
             // If we restored data, skip the initial loading spinner
             if (hasData(activeWebsiteId.value)) initialLoading.value = false

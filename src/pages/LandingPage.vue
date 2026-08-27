@@ -1327,9 +1327,9 @@ const showcaseFeatures = [
     video: 'feature-2.mp4',
     eyebrow: 'MULTI-LLM PROBING',
     headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one audit.',
-    desc: "We fan out asynchronously, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
+    desc: "We query every model in parallel, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
     bullets: [
-      'Async fan-out across all four target LLMs',
+      'Parallel runs across all four target LLMs',
       'Extract brand mentions, citations, and claims',
       'One unified visibility score, four perspectives',
     ],

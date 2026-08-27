@@ -150,6 +150,53 @@
       sub-processor that processes the same categories) are noted in the changelog.
     </p>
 
+    <h2>9. Cookies and storage on fetchbot.ai</h2>
+    <p>
+      This is every cookie and browser-storage key the FetchBot application itself sets. There are
+      no third-party advertising or analytics trackers on fetchbot.ai.
+    </p>
+
+    <div class="wt-table-wrap">
+      <table class="wt-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="c in cookieInventory" :key="c.name">
+            <td><code>{{ c.name }}</code></td>
+            <td>{{ c.type }}</td>
+            <td>
+              <span class="wt-tag" :class="'wt-tag-' + c.tag">{{ c.category }}</span>
+            </td>
+            <td>{{ c.purpose }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <template v-if="cookiebotConfigured">
+      <p>
+        Consent on fetchbot.ai is managed by Cookiebot (Usercentrics). The live, automatically
+        scanned declaration below always reflects the current state; you can change your choice at
+        any time.
+      </p>
+      <p>
+        <button type="button" class="wt-consent-btn" @click="renewConsent">
+          Manage consent preferences
+        </button>
+      </p>
+      <div ref="cookieDeclaration" class="wt-declaration"></div>
+    </template>
+    <p v-else class="wt-muted">
+      The interactive consent manager appears here once Cookiebot is configured for this
+      environment.
+    </p>
+
     <p class="wt-footer">
       Questions about anything on this page? Email
       <a href="mailto:privacy@fetchbot.ai">privacy@fetchbot.ai</a>.
@@ -158,7 +205,44 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue'
 import InfoPage from './InfoPage.vue'
+
+// Cookiebot domain group ID — same variable index.html uses to load the
+// consent banner. Empty in environments without a Cookiebot account.
+const COOKIEBOT_CBID = import.meta.env.VITE_COOKIEBOT_CBID || ''
+const cookiebotConfigured = Boolean(COOKIEBOT_CBID)
+const cookieDeclaration = ref(null)
+
+onMounted(() => {
+  if (!cookiebotConfigured || !cookieDeclaration.value) return
+  // Cookiebot's declaration renderer must be injected where the table
+  // should appear; it fills the surrounding element.
+  const script = document.createElement('script')
+  script.id = 'CookieDeclaration'
+  script.src = `https://consent.cookiebot.com/${COOKIEBOT_CBID}/cd.js`
+  script.async = true
+  cookieDeclaration.value.appendChild(script)
+})
+
+function renewConsent() {
+  if (window.Cookiebot && typeof window.Cookiebot.renew === 'function') {
+    window.Cookiebot.renew()
+  }
+}
+
+// Everything the app itself puts in the browser. tag scheme mirrors the
+// tables above: none = not personal data, weak = could contribute.
+const cookieInventory = [
+  { name: 'sessionid',        type: 'Cookie (HttpOnly, Secure)', tag: 'none', category: 'Necessary',  purpose: 'Keeps you signed in to the FetchBot dashboard for up to 30 days.' },
+  { name: 'csrftoken',        type: 'Cookie (Secure)',           tag: 'none', category: 'Necessary',  purpose: 'Protects forms and API calls against cross-site request forgery.' },
+  { name: 'CookieConsent',    type: 'Cookie',                    tag: 'none', category: 'Necessary',  purpose: 'Stores your cookie-consent choice (set by Cookiebot once configured).' },
+  { name: 'fb-access',        type: 'localStorage',              tag: 'none', category: 'Necessary',  purpose: 'Your login token for API requests from the browser.' },
+  { name: 'fb-theme',         type: 'localStorage',              tag: 'none', category: 'Preferences', purpose: 'Remembers light/dark mode.' },
+  { name: 'ftb_ov_cards_*',   type: 'localStorage',              tag: 'none', category: 'Preferences', purpose: 'Remembers which dashboard cards you chose to show.' },
+  { name: 'fb-analytics',     type: 'sessionStorage',            tag: 'none', category: 'Necessary',  purpose: 'Caches dashboard data for the current tab so navigation feels instant. Cleared when the tab closes.' },
+  { name: 'gp_consent',       type: 'localStorage (customer sites only)', tag: 'none', category: 'Necessary', purpose: 'On sites running the GrowthPilot pixel: records whether the visitor consented to analytics. The pixel does not run without it.' },
+]
 
 // Tag scheme:
 //   none = aggregate / non-identifying
@@ -191,6 +275,21 @@ const serverFields = [
 </script>
 
 <style scoped>
+.wt-consent-btn {
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wt-consent-btn:hover { background: var(--accent); }
+.wt-declaration { margin: 16px 0 8px; }
+.wt-muted { color: var(--muted-foreground); font-size: 14px; }
+
 .wt-callout {
   margin: 0 0 32px;
   padding: 16px 20px;

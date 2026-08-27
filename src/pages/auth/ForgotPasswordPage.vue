@@ -1,8 +1,16 @@
 <template>
   <AuthLayout title="Forgot password?" subtitle="Enter your email and we'll send you a reset link.">
     <form @submit.prevent="handleReset" class="flex flex-col gap-[18px]">
-      <div v-if="success" class="rounded-lg border border-[color:var(--chart-2)]/20 bg-[color:var(--chart-2)]/10 px-4 py-3 text-sm font-medium text-[color:var(--chart-2)]">{{ success }}</div>
-      <div v-if="error" class="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{{ error }}</div>
+      <Alert v-if="success">
+        <CircleCheck />
+        <AlertTitle>Check your inbox</AlertTitle>
+        <AlertDescription>{{ success }}</AlertDescription>
+      </Alert>
+      <Alert v-if="error" variant="destructive">
+        <CircleX />
+        <AlertTitle>Something went wrong</AlertTitle>
+        <AlertDescription>{{ error }}</AlertDescription>
+      </Alert>
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-foreground">Email</label>
@@ -25,6 +33,8 @@ import { ref } from 'vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import authApi from '@/api/auth'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { CircleCheck, CircleX } from '@lucide/vue'
 
 const email = ref('')
 const loading = ref(false)

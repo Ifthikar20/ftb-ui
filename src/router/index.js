@@ -200,8 +200,6 @@ const routes = [
         component: () => import('@/pages/PaywallPage.vue'),
         meta: { requiresAuth: true, layout: 'auth' }
     },
-    protect('/agents', 'agents', () => import('@/pages/AgentsPage.vue')),
-    protect('/agents/:hiredId', 'agent-detail', () => import('@/pages/AgentDetailPage.vue'), true),
     protect('/app/integrations', 'integrations', () => import('@/pages/IntegrationsPage.vue')),
     protect('/billing', 'billing', () => import('@/pages/BillingPage.vue')),
     protect('/settings', 'settings', () => import('@/pages/SettingsPage.vue')),

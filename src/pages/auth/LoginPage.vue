@@ -1,7 +1,11 @@
 <template>
   <AuthLayout title="Welcome back" subtitle="Sign in to your FetchBot account.">
     <form @submit.prevent="handleLogin" class="auth-form flex flex-col gap-6">
-      <div v-if="error" class="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3.5 text-base font-medium text-destructive">{{ error }}</div>
+      <Alert v-if="error" variant="destructive">
+        <CircleX />
+        <AlertTitle>Sign in failed</AlertTitle>
+        <AlertDescription>{{ error }}</AlertDescription>
+      </Alert>
 
       <div>
         <label class="mb-2.5 block text-base font-semibold text-foreground">Email</label>
@@ -65,7 +69,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import { Button } from '@/components/ui/button'
-import { Eye, EyeOff } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { CircleX, Eye, EyeOff } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()

@@ -36,7 +36,27 @@
        If analytics come back, they must (1) load behind a consent
        gate, (2) be excluded from /billing, /paywall, and the
        onboarding funnel, and (3) never on a page whose URL can carry
-       tokens. -->
+       tokens.
+
+       ONE exception below: Cookiebot (Usercentrics), which IS the
+       consent gate condition (1) requires. It sets only its own
+       consent-state cookie, auto-blocks any future tracking scripts
+       until the visitor consents, and is still skipped on the
+       token-carrying routes per condition (3). -->
+  <script>
+    (function () {
+      var cbid = '%VITE_COOKIEBOT_CBID%';
+      if (!cbid || cbid.indexOf('%') !== -1) return; // no domain ID configured
+      var path = window.location.pathname;
+      if (path.indexOf('/billing') === 0 || path.indexOf('/paywall') === 0) return;
+      var s = document.createElement('script');
+      s.id = 'Cookiebot';
+      s.src = 'https://consent.cookiebot.com/uc.js';
+      s.setAttribute('data-cbid', cbid);
+      s.setAttribute('data-blockingmode', 'auto');
+      document.head.appendChild(s);
+    })();
+  </script>
 
 </head>
 

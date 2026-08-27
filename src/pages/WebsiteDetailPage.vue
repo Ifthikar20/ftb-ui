@@ -92,6 +92,9 @@
       </CardContent>
     </Card>
 
+    <!-- External traffic sources: GA4 connect, hosted Google tag, Cloudflare -->
+    <TrafficSourcesSection :website-id="id" :host-label="websiteHost" class="mb-6" />
+
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <!-- Quick Navigation -->
       <Card>
@@ -149,6 +152,7 @@ import { useResource } from '@/composables/useResource'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import TrafficSourcesSection from '@/components/webAnalytics/TrafficSourcesSection.vue'
 
 const props = defineProps({ id: String })
 const { data: website } = useResource(() => websitesApi.get(props.id))

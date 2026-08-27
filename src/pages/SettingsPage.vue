@@ -47,7 +47,7 @@
       <SettingsSection
         label="Usage"
         title="AI usage"
-        description="Tokens and requests used by audits, agents and the prompt library in the current billing period."
+        description="Tokens and requests used by audits and the prompt library in the current billing period."
       >
         <div v-if="usageLoading" class="sp-loading">
           <span class="spinner"></span>
@@ -108,15 +108,8 @@
           <!-- Daily usage across the current billing period -->
           <div v-if="dailySeries.length" class="sp-chart">
             <h4 class="sp-subhead">Daily usage · {{ periodLabel }}</h4>
-            <div class="usage-chart">
-              <div
-                v-for="d in dailySeries" :key="d.day"
-                class="chart-bar-wrap"
-                :title="`${d.day}: ${formatTokens(d.tokens)} tokens, ${d.calls} requests`"
-              >
-                <div class="chart-bar" :style="{ height: pctOfMax(d.tokens, dailySeries) + '%' }"></div>
-                <span class="chart-label">{{ formatDay(d.day) }}</span>
-              </div>
+            <div class="h-52">
+              <Bar :data="dailyChartData" :options="usageChartOptions" />
             </div>
           </div>
 
@@ -125,7 +118,7 @@
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 6v6l4 2" />
             </svg>
-            <p>No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits, agents, or the prompt library.</p>
+            <p>No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits or the prompt library.</p>
           </div>
 
           <p class="sp-footnote">
@@ -169,6 +162,35 @@
       </SettingsSection>
     </template>
 
+    <!-- ── Contact us ──────────────────────────────────────────── -->
+    <template v-else-if="section === 'contact'">
+      <SettingsSection
+        label="Support"
+        title="Contact us"
+        description="Questions, billing issues, refund requests, or something that looks wrong — one channel for all of it."
+      >
+        <div class="sp-contact">
+          <span class="sp-contact-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+              <path d="m22 6-10 7L2 6" />
+            </svg>
+          </span>
+          <span class="sp-row-text">
+            <span class="sp-row-title">Email support</span>
+            <span class="sp-row-desc">We reply to every message, usually within one business day.</span>
+          </span>
+          <a class="sp-contact-btn" :href="supportHref">{{ SUPPORT_EMAIL }}</a>
+        </div>
+        <p class="sp-contact-hint">
+          Write from the email address on your account ({{ authStore.user?.email || 'the one you signed up with' }})
+          so we can find your workspace and billing history right away. For refunds, mention the
+          approximate charge date. In-app ticket submission is coming soon — until then, email is
+          the fastest route.
+        </p>
+      </SettingsSection>
+    </template>
+
     <!-- ── Appearance ──────────────────────────────────────────── -->
     <template v-else-if="section === 'appearance'">
       <SettingsSection
@@ -208,6 +230,13 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip as ChartTooltip,
+} from 'chart.js'
+import { CHART_COLORS, barDataset, baseOptions } from '@/lib/chartTheme'
+
+ChartJS.register(BarElement, CategoryScale, LinearScale, ChartTooltip)
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
@@ -215,6 +244,7 @@ import authApi from '@/api/auth'
 import notificationsApi from '@/api/notifications'
 import SettingsShell from '@/components/settings/SettingsShell.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { SUPPORT_EMAIL, SUPPORT_SUBJECT } from '@/constants/support'
 import { Button } from '@/components/ui/button'
 
 const authStore = useAuthStore()
@@ -227,10 +257,20 @@ const deleting = ref(false)
 
 // The active section comes from the URL (?section=...), so the shell's
 // nav links are ordinary router-links and every section deep-links.
-const SECTIONS = ['account', 'usage', 'notifications', 'appearance']
+const SECTIONS = ['account', 'usage', 'notifications', 'appearance', 'contact']
 const section = computed(() =>
   SECTIONS.includes(route.query.section) ? route.query.section : 'account',
 )
+
+// mailto with a prefilled subject; the body seeds the account email so
+// support can match the sender to a workspace even when people write
+// from a personal address.
+const supportHref = computed(() => {
+  const params = new URLSearchParams({ subject: SUPPORT_SUBJECT })
+  const acct = authStore.user?.email
+  if (acct) params.set('body', `Account email: ${acct}\n\n`)
+  return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, '%20')}`
+})
 
 const THEME_OPTIONS = [
   { key: 'system', label: 'System', note: "Follows your device's appearance setting and switches automatically." },
@@ -321,10 +361,21 @@ const periodLabel = computed(() => {
   return `${start} – ${end}`
 })
 
-function pctOfMax(value, series) {
-  const max = Math.max(...series.map(x => x.tokens || 0))
-  return max > 0 ? Math.max(4, (value / max) * 100) : 4
-}
+const dailyChartData = computed(() => ({
+  labels: dailySeries.value.map(d => formatDay(d.day)),
+  datasets: [barDataset('Tokens', dailySeries.value.map(d => d.tokens || 0), CHART_COLORS.blue)],
+}))
+
+const usageChartOptions = (() => {
+  const base = baseOptions()
+  base.plugins.legend.display = false
+  base.plugins.tooltip.callbacks = {
+    label: (ctx) => ` ${formatTokens(ctx.parsed.y)} tokens`,
+  }
+  base.scales.y.ticks.callback = (v) => formatTokens(v)
+  base.scales.x.ticks.maxTicksLimit = 10
+  return base
+})()
 
 function formatNum(n) { return (n || 0).toLocaleString() }
 function formatTokens(n) {
@@ -591,6 +642,54 @@ async function saveNotifPrefs() {
 }
 .sp-note-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--accent-foreground); }
 .sp-note-text { margin: 3px 0 0; font-size: 13px; line-height: 1.55; color: var(--foreground); opacity: 0.78; }
+
+/* ── Contact us ── */
+.sp-contact {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.sp-contact .sp-row-text { flex: 1; }
+.sp-contact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.sp-contact-btn {
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.sp-contact-btn:hover {
+  border-color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 65%, transparent);
+}
+.sp-contact-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+@media (max-width: 560px) {
+  .sp-contact { flex-wrap: wrap; }
+  .sp-contact-btn { width: 100%; text-align: center; }
+}
 
 /* ── AI usage ── */
 .sp-loading {

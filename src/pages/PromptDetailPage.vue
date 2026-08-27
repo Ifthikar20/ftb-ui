@@ -278,13 +278,10 @@
                   <span class="pd-th-help" :title="HELP.visibility">Visibility<sup>?</sup></span>
                 </TableHead>
                 <TableHead class="num">
-                  <span class="pd-th-help" :title="HELP.sov">SOV<sup>?</sup></span>
+                  <span class="pd-th-help" :title="HELP.mentions">Mentions<sup>?</sup></span>
                 </TableHead>
                 <TableHead>
                   <span class="pd-th-help" :title="HELP.models">Models<sup>?</sup></span>
-                </TableHead>
-                <TableHead class="num">
-                  <span class="pd-th-help" :title="HELP.sentiment">Sentiment<sup>?</sup></span>
                 </TableHead>
                 <TableHead class="num">
                   <span class="pd-th-help" :title="HELP.position">Position<sup>?</sup></span>
@@ -297,28 +294,15 @@
                 <TableCell>
                   <span class="pd-brand-cell">
                     <BrandLogo :name="b.name" :domain="b.domain" :size="20" />
-                    <a
-                      v-if="b.domain"
-                      :href="`https://${b.domain}`"
-                      target="_blank"
-                      rel="noopener"
-                      class="pd-brand-name pd-brand-link"
-                      @click.stop
-                    >{{ b.name }}</a>
-                    <span v-else class="pd-brand-name">{{ b.name }}</span>
-                    <a
-                      v-if="b.domain"
-                      :href="`https://${b.domain}`"
-                      target="_blank"
-                      rel="noopener"
-                      class="pd-brand-domain"
-                      @click.stop
-                    >{{ b.domain }}</a>
+                    <!-- Name only — the LLM-guessed domain is kept for the
+                         logo crawl but often wrong, so it is not displayed
+                         or linked. -->
+                    <span class="pd-brand-name">{{ b.name }}</span>
                     <span v-if="b.is_self" class="pd-self-pill">you</span>
                   </span>
                 </TableCell>
                 <TableCell class="num">{{ b.visibility_pct }}%</TableCell>
-                <TableCell class="num">{{ b.sov_pct }}%</TableCell>
+                <TableCell class="num">{{ b.mentions ?? '—' }}</TableCell>
                 <TableCell>
                   <span class="pd-models-cell" :title="modelsTip(b.models)">
                     <span
@@ -331,13 +315,6 @@
                     <span v-if="(b.model_count || 0) > 1" class="pd-models-count">×{{ b.model_count }}</span>
                     <span v-if="!(b.models || []).length" class="text-muted">—</span>
                   </span>
-                </TableCell>
-                <TableCell class="num">
-                  <span v-if="b.sentiment_score != null" class="pd-sent" :title="sentimentTip(b.sentiment_score)">
-                    <span class="pd-sent-dot" :class="sentimentClass(b.sentiment_score)"></span>
-                    {{ b.sentiment_score }}
-                  </span>
-                  <span v-else class="text-muted">—</span>
                 </TableCell>
                 <TableCell class="num">
                   <span v-if="b.avg_position != null">#{{ b.avg_position }}</span>
@@ -660,24 +637,25 @@
       </p>
     </div>
 
-    <!-- Fanout queries -->
+    <!-- Similar queries (PromptFanout rows — "fanout" survives only as the
+         internal/backend name; the UI never says it) -->
     <section v-if="fanouts.length || lastFanoutRun" class="pd-overview-head" style="margin-top: 28px">
       <h2 class="pd-section-title">
-        <Repeat :size="16" :stroke-width="2"/>
-        Fanout queries
+        <Layers :size="16" :stroke-width="2"/>
+        Similar queries
       </h2>
-      <p class="pd-section-sub">Related sub-queries a search-augmented model would run to research this prompt.</p>
+      <p class="pd-section-sub">Related queries you can measure — what a search-augmented model also looks up when researching this prompt.</p>
     </section>
 
     <div v-if="fanouts.length || lastFanoutRun" class="pd-card pd-fanout-card">
       <div v-if="lastFanoutRun" class="pd-fanout-meta">
-        <span class="pd-mute">Last fan-out:</span>
+        <span class="pd-mute">Last generated:</span>
         <span class="pd-status" :class="`is-${['complete', 'completed'].includes(lastFanoutRun.status) ? 'active' : 'inactive'}`">
           <span class="pd-status-dot"></span>
           {{ lastFanoutRun.status }}
         </span>
         <span class="pd-mute">
-          · {{ lastFanoutRun.fanout_count || 0 }} sub-queries
+          · {{ lastFanoutRun.fanout_count || 0 }} similar queries
           · {{ lastFanoutRun.source_count || 0 }} sources
         </span>
       </div>
@@ -697,7 +675,7 @@
       </div>
       <div v-if="!fanouts.length" class="pd-empty-inline" style="padding: 20px 0">
         <Inbox :size="28" :stroke-width="1.5"/>
-        <p>No fan-out queries captured yet.</p>
+        <p>No similar queries captured yet.</p>
       </div>
     </div>
 
@@ -732,7 +710,7 @@ import {
 } from 'chart.js'
 import {
   BarChart3, CalendarClock, ChartLine, ChevronLeft, CircleDot, Clock, Cpu,
-  Folder, Globe, Inbox, Link2, MessageSquare, Repeat, Target, Trophy,
+  Folder, Globe, Inbox, Layers, Link2, MessageSquare, Repeat, Target, Trophy,
 } from '@lucide/vue'
 import promptLibrary from '@/api/promptLibrary'
 import { useAppStore } from '@/stores/app'
@@ -1357,6 +1335,9 @@ const HELP = {
   sov:
     'Share of Voice: this brand’s mentions as a percentage of all brand mentions across every '
     + 'model answer for this prompt. Shows how much of the conversation the brand owns vs. competitors.',
+  mentions:
+    'Mentions: how many model answers named this brand for this prompt — the raw count '
+    + 'behind the visibility percentage.',
   models:
     'Models: which AI models named this brand for this prompt, and how many. A brand named by '
     + 'more models has broader AI visibility and is harder to displace.',
@@ -1394,9 +1375,7 @@ const HELP = {
     + 'negative material. Scored by "Scan cited sources".',
 }
 
-const BRAND_COLORS = [
-  '#10b981', '#374151', '#f59e0b', '#ec4899', '#a3e635', '#06b6d4', '#6366f1', '#94a3b8',
-]
+import { SERIES as BRAND_COLORS } from '@/lib/chartTheme'
 const chartData = computed(() => {
   const b = topBrands.value
   if (!b.length) return null
@@ -1435,9 +1414,9 @@ const TREND_METRICS = {
   visibility: {
     label: 'Visibility',
     title: 'Visibility over time',
-    color: '#6366f1',
-    colorActive: '#4338ca',
-    fillColor: 'rgba(99,102,241,0.12)',
+    color: '#1d4ed8',
+    colorActive: '#1e3a8a',
+    fillColor: 'rgba(29,78,216,0.12)',
     accessor: (r) => r.visibility_pct,
     format: (v) => `${v}% of AI answers mentioned`,
     explainer: (brand) =>
@@ -1449,9 +1428,9 @@ const TREND_METRICS = {
   position: {
     label: 'Position',
     title: 'Ranking position over time',
-    color: '#f59e0b',
-    colorActive: '#b45309',
-    fillColor: 'rgba(245,158,11,0.10)',
+    color: '#f97316',
+    colorActive: '#c2410c',
+    fillColor: 'rgba(249,115,22,0.10)',
     accessor: (r) => r.avg_position,
     format: (v) => `average position #${v} when mentioned`,
     explainer: (brand) =>
@@ -1466,9 +1445,9 @@ const TREND_METRICS = {
   sentiment: {
     label: 'Sentiment',
     title: 'Sentiment over time',
-    color: '#10b981',
-    colorActive: '#047857',
-    fillColor: 'rgba(16,185,129,0.10)',
+    color: '#0ea5e9',
+    colorActive: '#0369a1',
+    fillColor: 'rgba(14,165,233,0.10)',
     accessor: (r) => r.sentiment_score,
     format: (v) => `sentiment ${v}/100 (${v >= 70 ? 'positive' : v >= 50 ? 'neutral' : 'negative'})`,
     explainer: (brand) =>

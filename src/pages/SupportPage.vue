@@ -26,12 +26,12 @@
             usually within one business day.
           </p>
 
-          <a class="sp-cta" href="mailto:support@fetchbot.ai">
+          <a class="sp-cta" :href="`mailto:${SUPPORT_EMAIL}`">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
               <rect x="1.5" y="3" width="13" height="10" rx="1.8"/>
               <path d="M2 4l6 5 6-5"/>
             </svg>
-            <span>support@fetchbot.ai</span>
+            <span>{{ SUPPORT_EMAIL }}</span>
           </a>
 
           <dl class="sp-faq">
@@ -75,6 +75,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+import { SUPPORT_EMAIL } from '@/constants/support'
 
 import WatercolorBackdrop from '@/components/onboarding/WatercolorBackdrop.vue'
 

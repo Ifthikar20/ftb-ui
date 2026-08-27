@@ -10,7 +10,8 @@
  *    stay scoped to the chunks under this row.
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { X, Loader2, RefreshCw, Trash2, ExternalLink, FileText, Zap } from '@lucide/vue'
+import { X, Loader2, RefreshCw, Trash2, ExternalLink, FileText, Zap, CircleX } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import ragApi from '@/api/rag'
 import { useToast } from '@/composables/useToast'
 import { safeHref } from '@/utils/safeHref'
@@ -192,9 +193,11 @@ const lastIngestedLabel = computed(
         </div>
       </dl>
 
-      <div v-if="source.error_message" class="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-        {{ source.error_message }}
-      </div>
+      <Alert v-if="source.error_message" variant="destructive" class="mt-4">
+        <CircleX />
+        <AlertTitle>Ingestion error</AlertTitle>
+        <AlertDescription>{{ source.error_message }}</AlertDescription>
+      </Alert>
 
       <!-- Test-query panel -->
       <section class="mt-6">

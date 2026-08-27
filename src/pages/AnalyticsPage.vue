@@ -20,12 +20,17 @@
     </div>
 
     <div class="analytics-trust">
-      <span class="trust-badge" title="Search, SEO, AI, and monitoring crawlers are detected by user-agent and dropped before they reach your data, so these numbers are humans only.">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <span class="trust-badge" :title="trafficQuality.title">
+        <svg v-if="trafficQuality.excluded" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
           <path d="M9 12l2 2 4-4"/>
         </svg>
-        Bot traffic excluded
+        <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        {{ trafficQuality.label }}
       </span>
       <span class="retention-note" role="note">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -35,11 +40,22 @@
         </svg>
         <span>Retained for the last <strong>{{ RETENTION_LIMIT_LABEL }}</strong>, then auto-purged.</span>
       </span>
+      <span
+        v-if="dataSourceLabel"
+        class="trust-badge"
+        :title="`No pixel data yet, so this dashboard reads directly from ${dataSourceLabel}. Install the pixel for full detail (sessions, AI attribution, retention, flows).`"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>
+        Data source: {{ dataSourceLabel }}
+      </span>
     </div>
 
     <!-- Tabs -->
     <div class="analytics-tabs">
-      <button v-for="tab in tabs" :key="tab.id" class="atab" :class="{ active: activeTab === tab.id }" @click="switchTab(tab.id)">
+      <button v-for="tab in visibleTabs" :key="tab.id" class="atab" :class="{ active: activeTab === tab.id }" @click="switchTab(tab.id)">
         <svg class="atab-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" v-html="tab.svg"></svg>
         <span class="atab-label">{{ tab.label }}</span>
       </button>
@@ -79,7 +95,7 @@
 
         <!-- KPI Cards -->
         <div class="kpi-grid">
-          <div class="kpi-card" v-for="stat in stats" :key="stat.label">
+          <div class="kpi-card" v-for="stat in visibleStats" :key="stat.label">
             <div class="kpi-header">
               <span class="kpi-label">
                 {{ stat.label }}
@@ -99,7 +115,7 @@
 
         <!-- Dynamic Card Grid -->
         <div class="ret-card-grid">
-          <template v-for="cid in overviewCards" :key="cid">
+          <template v-for="cid in visibleOverviewCards" :key="cid">
 
             <!-- Traffic Overview -->
             <div v-if="cid === 'traffic'" class="ret-dyn-card ret-full">
@@ -272,6 +288,42 @@
               </Card>
             </div>
 
+            <!-- Flagged Paths (security signals from the edge) -->
+            <div v-if="cid === 'security'" class="ret-dyn-card ret-half">
+              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
+              <Card>
+                <CardHeader class="flex-row items-center justify-between space-y-0">
+                  <CardTitle>Flagged Paths</CardTitle>
+                  <Badge v-if="security?.threats" variant="warning">{{ security.threats.toLocaleString() }} threats blocked</Badge>
+                </CardHeader>
+                <CardContent>
+                  <template v-if="security?.flagged?.length">
+                    <p class="mb-3 text-xs text-muted-foreground">
+                      Requests to paths a real visitor never opens — scanners probing the site.
+                      Cloudflare served or blocked these at the edge; nothing to fix unless a path
+                      actually exists on your site.
+                    </p>
+                    <div class="space-y-2">
+                      <div v-for="row in security.flagged" :key="row.url" class="flex items-center justify-between gap-2 text-sm">
+                        <span class="min-w-0 truncate font-mono text-xs text-foreground">{{ row.url }}</span>
+                        <span class="flex shrink-0 items-center gap-2">
+                          <span class="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{{ row.category }}</span>
+                          <span class="font-semibold">{{ row.requests }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </template>
+                  <div v-else class="empty-inline">No suspicious paths detected</div>
+                  <div v-if="security?.threat_categories?.length" class="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                    Blocked by Cloudflare:
+                    <span v-for="(t, i) in security.threat_categories" :key="t.name">
+                      {{ t.name }} ({{ t.requests }})<span v-if="i < security.threat_categories.length - 1"> · </span>
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
           </template>
 
           <!-- Add Widget Button -->
@@ -281,7 +333,7 @@
             </button>
             <div v-if="showOverviewPicker" class="card-picker-dropdown" @click.stop>
               <div class="card-picker-header">Add Widget</div>
-              <div v-for="c in overviewAvailableCards" :key="c.id" class="card-picker-item" :class="{ disabled: overviewCards.includes(c.id) }" @click="addOverviewCard(c.id)">
+              <div v-for="c in pickerCards" :key="c.id" class="card-picker-item" :class="{ disabled: overviewCards.includes(c.id) }" @click="addOverviewCard(c.id)">
                 <div class="card-picker-icon" v-html="c.icon"></div>
                 <div class="card-picker-info">
                   <div class="card-picker-name">{{ c.title }}</div>
@@ -296,7 +348,6 @@
 
       <!-- ═══════════ TAB 2: Retention ═══════════ -->
       <div v-show="activeTab === 'retention'" @click.self="showCardPicker = false">
-
         <!-- Empty State -->
         <div v-if="!retentionCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
@@ -485,7 +536,6 @@
 
       <!-- ═══════════ TAB 4: Flows ═══════════ -->
       <div v-show="activeTab === 'flows'" @click.self="showFlowPicker = false">
-
         <!-- Empty State -->
         <div v-if="!flowCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
@@ -688,7 +738,6 @@
 
       <!-- ═══════════ TAB 5: AI Insights ═══════════ -->
       <div v-show="activeTab === 'insights'" @click.self="showInsightPicker = false">
-
         <!-- Empty State -->
         <div v-if="!insightCards.length" class="ret-empty-state">
           <div class="ret-empty-icon">
@@ -835,7 +884,6 @@
 
       <!-- ═══════════ TAB 6: Events ═══════════ -->
       <div v-show="activeTab === 'events'">
-
         <!-- Search & Filter Bar -->
         <div class="filter-bar">
           <div class="filter-input-wrap">
@@ -962,6 +1010,12 @@
           </CardContent>
         </Card>
       </div>
+
+      <!-- Footer disclaimer (non-pixel sources only) -->
+      <p v-if="dataSourceLabel" class="mt-10 mb-2 text-center text-[11.5px] leading-relaxed text-muted-foreground">
+        Data on this page is read from {{ dataSourceLabel }} and may be sampled or estimated.
+        Installing the GrowthPilot pixel unlocks the full view — sessions, retention, flows, and AI-assistant attribution.
+      </p>
     </template>
   </div>
 </template>
@@ -974,6 +1028,7 @@ import { useCardPicker } from '@/composables/useCardPicker'
 import analyticsApi from '@/api/analytics'
 import dashboardApi from '@/api/dashboard'
 import { Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
+import { CHART_COLORS, SERIES, withAlpha } from '@/lib/chartTheme'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import TrafficOverviewCard from '@/components/analytics/TrafficOverviewCard.vue'
 import { Button } from '@/components/ui/button'
@@ -1011,7 +1066,7 @@ const tabs = [
 ]
 
 const periods = [
-  { label: '5m', value: '5m' },
+  { label: '10m', value: '10m' },
   { label: '15m', value: '15m' },
   { label: '30m', value: '30m' },
   { label: '1h', value: '1h' },
@@ -1037,11 +1092,43 @@ const sources = computed(() => cached.value.sources || [])
 const devices = computed(() => cached.value.devices || [])
 const countries = computed(() => cached.value.countries || [])
 const noData = computed(() => cached.value.noData)
+// Security signals (flagged attack-probe paths + blocked threats) —
+// currently only Cloudflare-sourced dashboards carry this.
+const security = computed(() => cached.value.security)
+
+// Non-pixel dashboards get a source badge; pixel is the default and unlabeled.
+const DATA_SOURCE_LABELS = { ga4: 'Google Analytics', cloudflare: 'Cloudflare edge' }
+const dataSourceLabel = computed(() => DATA_SOURCE_LABELS[cached.value.dataSource] || '')
+
+// Traffic-quality pill — must stay honest per source. The pixel really
+// does drop crawlers (is_bot() in apps/analytics event ingestion) and
+// GA4 filters known bots automatically; raw Cloudflare edge traffic
+// includes every scanner and crawler.
+const TRAFFIC_QUALITY = {
+  pixel: {
+    excluded: true,
+    label: 'Bot traffic excluded',
+    title: 'Search, SEO, AI, and monitoring crawlers are detected by user-agent and dropped before they reach your data, so these numbers are humans only.',
+  },
+  ga4: {
+    excluded: true,
+    label: 'Known bots excluded',
+    title: 'Google Analytics automatically filters known bots and spiders (IAB list) out of these numbers.',
+  },
+  cloudflare: {
+    excluded: false,
+    label: 'Includes bot traffic',
+    title: 'Edge analytics counts every request that reaches Cloudflare, including crawlers and scanners — see the Flagged Paths card. Install the GrowthPilot pixel for humans-only numbers.',
+  },
+}
+const trafficQuality = computed(
+  () => TRAFFIC_QUALITY[cached.value.dataSource] || TRAFFIC_QUALITY.pixel
+)
 
 // ── Integration status ──
 const integrationStatus = ref({ pixel: false, ga: false, gsc: false, facebook: false })
 
-const PERIOD_LABELS = { '5m': '5 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days', '6mo': '6 months' }
+const PERIOD_LABELS = { '10m': '10 min', '15m': '15 min', '30m': '30 min', '1h': '1 hour', '6h': '6 hours', '24h': '24 hours', '7d': '7 days', '30d': '30 days', '90d': '90 days', '6mo': '6 months' }
 // Retention cap. Anything older than this is purged on the backend, so the
 // time-range picker tops out at 6 months and the UI states it plainly.
 const RETENTION_LIMIT_LABEL = '6 months'
@@ -1078,6 +1165,7 @@ const overviewAvailableCards = [
   { id: 'browsers', title: 'Browsers', desc: 'Bar list of browser distribution', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c-2 2-2 10 0 12"/></svg>', size: 'half' },
   { id: 'os', title: 'Operating Systems', desc: 'Bar list of OS distribution', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 13v1M11 13v1"/></svg>', size: 'half' },
   { id: 'countries', title: 'Top Countries', desc: 'Visitor breakdown by country', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c-2 2-2 10 0 12M8 2c2 2 2 10 0 12"/></svg>', size: 'half' },
+  { id: 'security', title: 'Flagged Paths', desc: 'Suspicious request paths and blocked threats', icon: '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14s5-2.5 5-6.5V4L8 2 3 4v3.5C3 11.5 8 14 8 14Z"/><path d="M8 6v3M8 10.5v.5"/></svg>', size: 'half' },
 ]
 
 const {
@@ -1089,8 +1177,59 @@ const {
   storageKey: computed(() => `ftb_ov_cards_${store.activeWebsiteId}`),
   versionKey: computed(() => `ftb_ov_ver_${store.activeWebsiteId}`),
   availableCards: overviewAvailableCards,
-  defaults: ['traffic', 'sources', 'pages', 'countries'],
-  version: 2,  // bump to reset all users to defaults
+  defaults: ['traffic', 'sources', 'pages', 'countries', 'security'],
+  version: 3,  // bump to reset all users to defaults
+})
+
+// ── Vendor capability map ──
+// The single place that decides what this page renders per data source:
+// the dashboard shows exactly what the active integration can measure.
+// - tabs: whole views vanish when the source can't compute them at all
+//   (retention/flows/insights/events are pixel-session calculations).
+// - hiddenCards: Overview cards the source can't populate. cloudflare:
+//   no live event stream, no session metrics (engagement radar), and
+//   clientRefererHost isn't queryable on free zones (source cards).
+//   ga4: no live event stream.
+// - hiddenKpis: KPI tiles the source can't measure (labels come from
+//   stores/analytics.js — keep the two sites in sync).
+// All filters are render-time only: never filter the persisted
+// overviewCards ref (useCardPicker's save() would erase user picks) or
+// the stats computed (its labels feed the radar lookups below).
+const SOURCE_CAPABILITIES = {
+  pixel: {
+    tabs: ['overview', 'retention', 'flows', 'insights', 'events'],
+    // Flagged Paths is edge data — only Cloudflare supplies it today.
+    hiddenCards: ['security'],
+    hiddenKpis: [],
+  },
+  ga4: {
+    tabs: ['overview'],
+    hiddenCards: ['live', 'security'],
+    hiddenKpis: [],
+  },
+  cloudflare: {
+    tabs: ['overview'],
+    hiddenCards: ['live', 'engagement', 'sources', 'source_polar'],
+    hiddenKpis: ['Avg. Session', 'Bounce Rate'],
+  },
+}
+const capabilities = computed(
+  () => SOURCE_CAPABILITIES[cached.value.dataSource] || SOURCE_CAPABILITIES.pixel
+)
+const hiddenCards = computed(() => capabilities.value.hiddenCards)
+const visibleOverviewCards = computed(
+  () => overviewCards.value.filter(id => !hiddenCards.value.includes(id))
+)
+const pickerCards = computed(
+  () => overviewAvailableCards.filter(c => !hiddenCards.value.includes(c.id))
+)
+const visibleStats = computed(
+  () => stats.value.filter(s => !capabilities.value.hiddenKpis.includes(s.label))
+)
+const visibleTabs = computed(() => tabs.filter(t => capabilities.value.tabs.includes(t.id)))
+// A restored/active tab the source can't serve snaps back to Overview.
+watch(visibleTabs, (v) => {
+  if (!v.some(t => t.id === activeTab.value)) store.switchTab('overview')
 })
 
 // ── Customizable Retention Cards ──
@@ -1172,7 +1311,7 @@ const browserData = computed(() => cached.value.browserData || [])
 const operatingSystems = computed(() => cached.value.operatingSystems || [])
 const liveEvents = computed(() => cached.value.liveEvents || [])
 const journeys = computed(() => cached.value.journeys || [])
-const browserColors = ['#5B8DEF', '#34D399', '#A78BFA', '#F59E0B', '#6B7280', '#EC4899']
+const browserColors = SERIES
 
 // Engagement metrics (derived from stats)
 const newVisitorPct = computed(() => {
@@ -1464,7 +1603,7 @@ const sourcesChartData = computed(() => ({
   datasets: [{
     label: 'Sessions',
     data: sources.value.map(s => s.sessions || 0),
-    backgroundColor: ['#5B8DEF', '#34D399', '#A78BFA', '#F59E0B', '#6B7280', '#EC4899'],
+    backgroundColor: SERIES,
     borderRadius: 4,
     barThickness: 22,
   }],
@@ -1480,7 +1619,7 @@ const sourcesChartOptions = {
       backgroundColor: 'rgba(26, 26, 46, 0.95)',
       titleColor: '#fff',
       bodyColor: '#ccc',
-      borderColor: 'rgba(91, 141, 239, 0.15)',
+      borderColor: withAlpha(CHART_COLORS.blue, 0.2),
       borderWidth: 1,
       padding: 12,
       cornerRadius: 8,
@@ -1502,7 +1641,7 @@ const sourcesChartOptions = {
 }
 
 // Devices — Doughnut chart
-const deviceColors = ['#5B8DEF', '#34D399', '#A78BFA', '#F59E0B', '#6B7280']
+const deviceColors = SERIES
 const devicesChartData = computed(() => ({
   labels: devices.value.map(d => d.name),
   datasets: [{
@@ -1523,7 +1662,7 @@ const devicesChartOptions = {
       backgroundColor: 'rgba(26, 26, 46, 0.95)',
       titleColor: '#fff',
       bodyColor: '#ccc',
-      borderColor: 'rgba(91, 141, 239, 0.15)',
+      borderColor: withAlpha(CHART_COLORS.blue, 0.2),
       borderWidth: 1,
       padding: 12,
       cornerRadius: 8,
@@ -1544,10 +1683,10 @@ const radarChartData = computed(() => ({
       100 - newVisitorPct.value,
       65,
     ],
-    backgroundColor: 'rgba(91, 141, 239, 0.15)',
-    borderColor: '#5B8DEF',
+    backgroundColor: withAlpha(CHART_COLORS.blue, 0.15),
+    borderColor: CHART_COLORS.blue,
     borderWidth: 2,
-    pointBackgroundColor: '#5B8DEF',
+    pointBackgroundColor: CHART_COLORS.blue,
     pointBorderColor: '#fff',
     pointRadius: 4,
     pointHoverRadius: 6,
@@ -1562,7 +1701,7 @@ const radarChartOptions = {
     tooltip: {
       backgroundColor: 'rgba(26, 26, 46, 0.95)',
       titleColor: '#fff', bodyColor: '#ccc',
-      borderColor: 'rgba(91, 141, 239, 0.15)', borderWidth: 1,
+      borderColor: withAlpha(CHART_COLORS.blue, 0.2), borderWidth: 1,
       padding: 12, cornerRadius: 8,
       callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed.r}/100` },
     },
@@ -1582,14 +1721,7 @@ const polarChartData = computed(() => ({
   labels: sources.value.map(sourceLabelWithChannel),
   datasets: [{
     data: sources.value.map(s => s.sessions || 0),
-    backgroundColor: [
-      'rgba(91, 141, 239, 0.7)',
-      'rgba(52, 211, 153, 0.7)',
-      'rgba(167, 139, 250, 0.7)',
-      'rgba(245, 158, 11, 0.7)',
-      'rgba(107, 114, 128, 0.7)',
-      'rgba(236, 72, 153, 0.7)',
-    ],
+    backgroundColor: SERIES.map(c => withAlpha(c, 0.72)),
     borderWidth: 0,
   }],
 }))
@@ -1602,7 +1734,7 @@ const polarChartOptions = {
     tooltip: {
       backgroundColor: 'rgba(26, 26, 46, 0.95)',
       titleColor: '#fff', bodyColor: '#ccc',
-      borderColor: 'rgba(91, 141, 239, 0.15)', borderWidth: 1,
+      borderColor: withAlpha(CHART_COLORS.blue, 0.2), borderWidth: 1,
       padding: 12, cornerRadius: 8,
     },
   },
@@ -1766,7 +1898,7 @@ onBeforeUnmount(() => {
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .kpi-card { background: var(--card); border: none; border-radius: var(--radius-md); padding: 16px; transition: all var(--transition-base); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
 .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); transform: translateY(-1px); }
-.kpi-highlight { border-color: var(--primary); background: linear-gradient(135deg, var(--card) 0%, rgba(91, 141, 239, 0.04) 100%); }
+.kpi-highlight { border-color: var(--primary); background: linear-gradient(135deg, var(--card) 0%, rgba(29, 78, 216, 0.04) 100%); }
 .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .kpi-label { font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.06em; }
 .kpi-trend { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); }
@@ -1841,30 +1973,38 @@ onBeforeUnmount(() => {
 .period-tab:hover { color: var(--foreground); }
 .period-tab.active { background: var(--primary); color: #1a1a2e; }
 
+/* Provenance footnotes. Deliberately plain text — the previous pill
+   treatment (999px radius + tinted washes) read as buttons people tried
+   to click. These are disclaimers, styled like one asterisked line. */
 .analytics-trust {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
   margin: 10px 0 18px;
 }
+.analytics-trust::before {
+  content: '*';
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1;
+}
+.analytics-trust > * + *::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--muted-foreground);
+  opacity: 0.55;
+}
 .trust-badge, .retention-note {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 12px;
-  font-size: 12.5px;
-  border-radius: 999px;
+  display: inline;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  background: none;
+  border-radius: 0;
   white-space: nowrap;
 }
-.trust-badge {
-  color: var(--chart-2, #16a34a);
-  background: color-mix(in srgb, var(--chart-2, #16a34a) 12%, transparent);
-  font-weight: 600;
-  cursor: help;
-}
-.trust-badge svg { flex-shrink: 0; }
-.retention-note {
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
-}
+.trust-badge { cursor: help; }
+.trust-badge svg, .retention-note svg { display: none; }
 .retention-note strong { color: var(--foreground); font-weight: 600; }
-.retention-note svg { opacity: 0.7; flex-shrink: 0; }
 
 .text-danger { color: var(--destructive); }
 
@@ -1956,7 +2096,7 @@ onBeforeUnmount(() => {
 .flow-insight-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot-danger { background: var(--color-danger, #ef4444); }
 .dot-warning { background: #f59e0b; }
-.dot-info { background: #5B8DEF; }
+.dot-info { background: #1d4ed8; }
 .dot-success { background: var(--color-success, #22c55e); }
 .dot-muted { background: var(--muted-foreground); }
 .dot-neutral { background: var(--muted-foreground); }
