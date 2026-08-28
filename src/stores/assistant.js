@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import assistantApi from '@/api/assistant'
 
-// Global state for the Ask FetchBot side panel. Conversation lives here
+// Global state for the Ask Cansee side panel. Conversation lives here
 // so it survives route changes while the app is open (the panel unmounts
 // visually but the thread persists until the user resets or reloads).
 export const useAssistantStore = defineStore('assistant', () => {

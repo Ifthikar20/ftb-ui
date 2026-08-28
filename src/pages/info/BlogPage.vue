@@ -17,7 +17,7 @@
     </div>
     <p>
       Full posts are migrating from our newsletter archive. Want them by email instead?
-      <a href="mailto:hello@fetchbot.ai?subject=Subscribe%20to%20FetchBot%20blog">Ask to be added</a>.
+      <a href="mailto:hello@cansee.ai?subject=Subscribe%20to%20Cansee%20blog">Ask to be added</a>.
     </p>
   </InfoPage>
 </template>

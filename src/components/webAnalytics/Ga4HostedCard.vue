@@ -2,7 +2,7 @@
   <Card>
     <CardHeader class="flex flex-row items-center justify-between gap-4 space-y-0">
       <div>
-        <CardTitle>FetchBot Google tag</CardTitle>
+        <CardTitle>Cansee Google tag</CardTitle>
         <CardDescription>
           No Google account? Paste our Google tag — traffic lands in a GA4 property we host and shows up live here.
         </CardDescription>
@@ -12,7 +12,7 @@
     <CardContent>
       <template v-if="!status?.enabled">
         <p class="mb-3 text-sm text-muted-foreground">
-          We create a dedicated data stream for {{ hostLabel }} in a FetchBot-managed Google
+          We create a dedicated data stream for {{ hostLabel }} in a Cansee-managed Google
           Analytics property and give you a snippet to paste into your site's
           <code class="rounded bg-muted px-1 py-0.5 text-xs">&lt;head&gt;</code>.
           Realtime covers the last 30 minutes.

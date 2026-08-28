@@ -34,7 +34,7 @@ export const useAppStore = defineStore('app', () => {
     // reads the same key before the app mounts so there is no flash of
     // the wrong theme on reload. Dark mode is pure black + white (see
     // [data-theme="dark"] in assets/tailwind.css and css/theme.css).
-    const THEME_KEY = 'fb-theme'
+    const THEME_KEY = 'cs-theme'
     const THEMES = ['light', 'dark', 'system']
     const systemDark = typeof window !== 'undefined' && window.matchMedia
         ? window.matchMedia('(prefers-color-scheme: dark)')

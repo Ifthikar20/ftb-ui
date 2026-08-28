@@ -1,5 +1,5 @@
 <template>
-  <InfoPage title="Cookie Policy" eyebrow="Legal" intro="This Cookie Policy explains how FetchBot uses cookies and similar technologies on fetchbot.ai and inside the authenticated app." updated="May 19, 2026">
+  <InfoPage title="Cookie Policy" eyebrow="Legal" intro="This Cookie Policy explains how Cansee uses cookies and similar technologies on cansee.ai and inside the authenticated app." updated="May 19, 2026">
     <h2>What is a cookie?</h2>
     <p>
       A cookie is a small text file stored on your device by your browser. It lets a website
@@ -28,20 +28,20 @@
 
     <h2>Third parties</h2>
     <p>
-      FetchBot does not embed third-party advertising or tracking cookies. Sub-processors that
+      Cansee does not embed third-party advertising or tracking cookies. Sub-processors that
       receive event data (e.g. error monitoring) do so server-side and never set cookies on
-      your browser via fetchbot.ai.
+      your browser via cansee.ai.
     </p>
 
     <h2>Managing cookies</h2>
     <p>
       You can clear cookies any time from your browser settings. Doing so will sign you out
-      of the FetchBot app and reset your preferences.
+      of the Cansee app and reset your preferences.
     </p>
 
     <h2>Contact</h2>
     <p>
-      Questions about this policy: <a href="mailto:privacy@fetchbot.ai">privacy@fetchbot.ai</a>.
+      Questions about this policy: <a href="mailto:privacy@cansee.ai">privacy@cansee.ai</a>.
     </p>
   </InfoPage>
 </template>

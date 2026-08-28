@@ -1,12 +1,12 @@
 <template>
-  <InfoPage title="System status" eyebrow="Live" intro="Real-time health of the FetchBot platform. Detailed incident history available on request.">
+  <InfoPage title="System status" eyebrow="Live" intro="Real-time health of the Cansee platform. Detailed incident history available on request.">
     <h2>Components</h2>
     <div class="status-row">
-      <span><strong>API</strong> &middot; api.fetchbot.ai</span>
+      <span><strong>API</strong> &middot; api.cansee.ai</span>
       <span class="status-pill">Operational</span>
     </div>
     <div class="status-row">
-      <span><strong>Web app</strong> &middot; fetchbot.ai</span>
+      <span><strong>Web app</strong> &middot; cansee.ai</span>
       <span class="status-pill">Operational</span>
     </div>
     <div class="status-row">
@@ -28,7 +28,7 @@
     <h2>Subscribe</h2>
     <p>
       For proactive notifications, email
-      <a href="mailto:status@fetchbot.ai?subject=Subscribe%20to%20status%20updates">status@fetchbot.ai</a>
+      <a href="mailto:status@cansee.ai?subject=Subscribe%20to%20status%20updates">status@cansee.ai</a>
       and we'll add you to the alert list.
     </p>
   </InfoPage>

@@ -1,4 +1,4 @@
-// Central Chart.js theme for FetchBot.
+// Central Chart.js theme for Cansee.
 //
 // One palette, one tooltip style, one grid treatment — every chart in the
 // app imports from here so the product reads as a single system. The

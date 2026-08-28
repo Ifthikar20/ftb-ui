@@ -4,17 +4,19 @@
       <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
           <SidebarMenu>
-            <!-- FetchBot brand mark. Placed in the sidebar header (not the page)
+            <!-- Cansee brand mark. Placed in the sidebar header (not the page)
                  so it collapses to the logo icon when the sidebar is collapsed
                  and shows the wordmark when expanded. Links home. -->
             <SidebarMenuItem>
-              <SidebarMenuButton as-child size="lg" tooltip="FetchBot">
+              <SidebarMenuButton as-child size="lg" tooltip="Cansee">
                 <router-link to="/dashboard">
                   <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                    <!-- Square "C" mark, not the wordmark: this slot is what
+                         remains visible when the sidebar collapses. -->
+                    <img src="/images/cansee-mark.png" alt="Cansee" class="size-5 object-contain cansee-mark" />
                   </div>
                   <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">FetchBot</span>
+                    <span class="truncate font-semibold">Cansee</span>
                     <span class="truncate text-xs text-muted-foreground">AI visibility</span>
                   </div>
                 </router-link>
@@ -179,7 +181,7 @@
             <button
               v-if="assistantStore.enabled"
               class="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring hover:bg-background"
-              title="Ask FetchBot"
+              title="Ask Cansee"
               @click="assistantStore.toggle()"
             >
               <span class="grid size-5 place-items-center rounded-md text-white" style="background: linear-gradient(135deg, #6d5efc, #9b6bff);">
@@ -208,8 +210,8 @@
     <router-view />
   </div>
 
-    <!-- Ask FetchBot assistant (global slide-out panel) -->
-    <AskFetchBotPanel />
+    <!-- Ask Cansee assistant (global slide-out panel) -->
+    <AskCanseePanel />
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
@@ -311,7 +313,7 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
-import AskFetchBotPanel from '@/components/assistant/AskFetchBotPanel.vue'
+import AskCanseePanel from '@/components/assistant/AskCanseePanel.vue'
 import { useAssistantStore } from '@/stores/assistant'
 import { Button } from '@/components/ui/button'
 import {
@@ -670,6 +672,12 @@ onUnmounted(() => {
 
 <!-- Command palette styles (unscoped for Teleport) -->
 <style>
+/* The brand mark sits on bg-sidebar-primary, which inverts between
+   themes (#1e1e1e light / #ffffff dark). The artwork is a single navy,
+   so flip it with a filter instead of shipping two files. */
+.cansee-mark { filter: brightness(0) invert(1); }
+[data-theme='dark'] .cansee-mark { filter: brightness(0); }
+
 .cmd-backdrop {
   position: fixed;
   inset: 0;

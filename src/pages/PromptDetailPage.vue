@@ -1194,7 +1194,7 @@ const promptTextShort = computed(() => {
 })
 
 // Surface the prompt under inspection in the header breadcrumb, so the
-// trail reads FetchBot / AI Visibility / Prompts / <prompt text> instead
+// trail reads Cansee / AI Visibility / Prompts / <prompt text> instead
 // of stopping at the section name. AppLayout wraps pages in <keep-alive>,
 // so navigation deactivates rather than unmounts this component — the
 // tail must be cleared on deactivate and restored on activate.

@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout title="Welcome back" subtitle="Sign in to your FetchBot account.">
+  <AuthLayout title="Welcome back" subtitle="Sign in to your Cansee account.">
     <form @submit.prevent="handleLogin" class="auth-form flex flex-col gap-6">
       <Alert v-if="error" variant="destructive">
         <CircleX />

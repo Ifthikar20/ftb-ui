@@ -1,10 +1,10 @@
 <template>
-  <InfoPage title="Documentation" eyebrow="Guides" intro="Everything you need to set up FetchBot, connect your stack, and start measuring AI visibility within minutes.">
+  <InfoPage title="Documentation" eyebrow="Guides" intro="Everything you need to set up Cansee, connect your stack, and start measuring AI visibility within minutes.">
     <h2>Getting started</h2>
     <ol>
       <li><strong>Create an account.</strong> An admin provisions your user; check the welcome email for credentials.</li>
       <li><strong>Add your first website.</strong> Paste the URL — onboarding scans the homepage and seeds a starter prompt library.</li>
-      <li><strong>Run your first audit.</strong> FetchBot probes Claude, GPT-4, Gemini, and Perplexity for each prompt and stores the citations.</li>
+      <li><strong>Run your first audit.</strong> Cansee probes Claude, GPT-4, Gemini, and Perplexity for each prompt and stores the citations.</li>
       <li><strong>Review the dashboard.</strong> Visibility score, source mix, and competitor share are ready inside 10 minutes.</li>
     </ol>
 
@@ -30,7 +30,7 @@
 
     <h2>Need a deeper dive?</h2>
     <p>
-      The full handbook lives at <a href="https://docs.fetchbot.ai" target="_blank" rel="noopener">docs.fetchbot.ai</a>.
+      The full handbook lives at <a href="https://docs.cansee.ai" target="_blank" rel="noopener">docs.cansee.ai</a>.
     </p>
   </InfoPage>
 </template>

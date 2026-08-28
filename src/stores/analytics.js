@@ -270,13 +270,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     function saveToSession() {
         try {
             const payload = { cache: cache.value, activeWebsiteId: activeWebsiteId.value, activePeriod: activePeriod.value, activeTab: activeTab.value }
-            sessionStorage.setItem('fb-analytics', JSON.stringify(payload))
+            sessionStorage.setItem('cs-analytics', JSON.stringify(payload))
         } catch { /* quota exceeded, ignore */ }
     }
 
     function restoreFromSession() {
         try {
-            const raw = sessionStorage.getItem('fb-analytics')
+            const raw = sessionStorage.getItem('cs-analytics')
             if (!raw) return
             const saved = JSON.parse(raw)
             if (saved.cache) cache.value = saved.cache

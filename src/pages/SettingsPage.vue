@@ -5,7 +5,7 @@
       <SettingsSection
         label="Profile"
         title="Profile"
-        description="Your name and company, as they appear across FetchBot."
+        description="Your name and company, as they appear across Cansee."
       >
         <form id="sp-profile-form" class="sp-form" @submit.prevent="saveProfile">
           <div class="sp-field">
@@ -141,7 +141,7 @@
       <SettingsSection
         label="Email"
         title="Email notifications"
-        description="Choose which updates FetchBot sends to your inbox."
+        description="Choose which updates Cansee sends to your inbox."
       >
         <div class="sp-rows">
           <label v-for="opt in NOTIF_OPTIONS" :key="opt.key" class="sp-row">
@@ -196,7 +196,7 @@
       <SettingsSection
         label="Theme"
         title="Theme"
-        description="How FetchBot looks on every screen."
+        description="How Cansee looks on every screen."
       >
         <div class="sp-options" role="radiogroup" aria-label="Theme">
           <button

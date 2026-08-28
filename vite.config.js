@@ -28,7 +28,7 @@ export default defineConfig({
         secure: false,
       },
       '/ws': {
-        target: process.env.VITE_WS_URL || 'wss://fetchbot.ai',
+        target: process.env.VITE_WS_URL || 'wss://cansee.ai',
         ws: true,
         secure: false,
       }

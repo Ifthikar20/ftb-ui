@@ -1,36 +1,67 @@
 <template>
   <div class="lp">
-    <!-- ═══ Nav ═══ -->
-    <nav class="nav" :class="{ scrolled }">
-      <div class="wrap nav-row">
-        <router-link to="/" class="brand">
-          <img src="/images/fb-logo.png" alt="FetchBot" class="brand-logo" />
-          <span class="brand-name">FetchBot</span>
-          <span class="brand-beta">BETA</span>
+    <!-- ═══ Nav — floating ink pill ═══ -->
+    <header class="nav" :class="{ scrolled }">
+      <div class="nav-pill">
+        <router-link to="/" class="brand" @click="closeNav">
+          <img src="/images/cansee-logo.png" alt="Cansee" class="brand-logo" />
+          <span class="brand-beta">Beta</span>
         </router-link>
-        <div class="nav-links">
+
+        <nav class="nav-links" aria-label="Primary">
           <a href="#features">Features</a>
           <a href="#how">How It Works</a>
-        </div>
+        </nav>
+
         <div class="nav-right">
           <router-link to="/login" class="nav-link-text">Log In</router-link>
-          <router-link to="/login" class="nav-cta">Get Started</router-link>
+          <router-link to="/login" class="nav-cta">
+            Get Started
+            <span class="nav-cta-arrow" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
+            </span>
+          </router-link>
         </div>
+
+        <button
+          class="nav-burger"
+          type="button"
+          :aria-expanded="navOpen ? 'true' : 'false'"
+          aria-controls="nav-sheet"
+          :aria-label="navOpen ? 'Close menu' : 'Open menu'"
+          @click="toggleNav"
+        >
+          <span class="nav-burger-bar"></span>
+          <span class="nav-burger-bar"></span>
+        </button>
       </div>
-    </nav>
+
+      <div
+        id="nav-sheet"
+        class="nav-sheet"
+        :class="{ 'is-open': navOpen }"
+        :inert="!navOpen"
+        ref="navSheet"
+      >
+        <a href="#features" @click="closeNav">Features</a>
+        <a href="#how" @click="closeNav">How It Works</a>
+        <router-link to="/login" class="nav-sheet-login" @click="closeNav">Log In</router-link>
+        <router-link to="/login" class="nav-sheet-cta" @click="closeNav">Get Started</router-link>
+      </div>
+    </header>
 
     <!-- ═══ Hero ═══ -->
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-left">
           <h1 class="hero-h anim" data-anim="hero">
-            <span class="tw-line" ref="twLine1"></span><br/>
-            <span class="tw-line" ref="twLine2"></span><br/>
-            <em><span class="tw-line" ref="twLine3"></span></em>
+            BRAND VISIBILITY,<br/>
+            MEASURED.<br/>
+            <em>OPTIMIZED.</em>
           </h1>
           <p class="hero-p anim" data-anim="fade-up" data-delay="60">
             See how often
-            <span class="hero-word-cycler">
+            <span class="hero-word-cycler" aria-live="off">
               <TransitionGroup name="word-cycle">
                 <span class="hero-word" :key="categories[activeCat]">{{ categories[activeCat] }}</span>
               </TransitionGroup>
@@ -40,66 +71,21 @@
           </p>
         </div>
 
-        <!-- Framer-style animated visualisation -->
+        <!-- Hero media. This is the page's LCP element, so it is eager and
+             high priority — never lazy-loaded. -->
         <div class="hero-right anim" data-anim="fade-up" data-delay="220">
-          <div class="probe">
-            <!-- Prompt bar -->
-            <div class="probe-prompt">
-              <span class="probe-prompt-text">
-                <span class="probe-typer" :key="scenarioIdx">{{ probePrompt }}</span>
-                <span class="probe-caret"></span>
-              </span>
-            </div>
-
-            <!-- Four streaming AI replies -->
-            <div class="probe-grid">
-              <div
-                v-for="(p, idx) in probeReplies"
-                :key="scenarioIdx + ':' + p.key"
-                class="probe-card"
-                :class="'is-' + p.key"
-                :style="{ '--d': (idx * 0.45) + 's' }"
-                @pointermove="onCardTilt"
-                @pointerleave="onCardLeave"
-              >
-                <div class="probe-card-head">
-                  <span class="probe-name">{{ p.name }}</span>
-                </div>
-                <div class="probe-stream">
-                  <span class="probe-stream-text">{{ p.before }}</span>
-                  <mark class="probe-mark">{{ p.brand }}</mark>
-                  <span class="probe-stream-text">{{ p.after }}</span>
-                </div>
-                <div class="probe-tags">
-                  <span
-                    v-for="src in p.sources"
-                    :key="src.domain"
-                    class="probe-tag"
-                    :title="src.label"
-                  >
-                    <img
-                      class="probe-tag-fav"
-                      :src="faviconFor(src.domain)"
-                      :alt="src.label"
-                      width="18" height="18"
-                      loading="lazy"
-                      referrerpolicy="no-referrer"
-                      @error="(e) => e.target.style.display = 'none'"
-                    />
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </div>
+          <img
+            class="hero-media"
+            src="/images/retro.jpg"
+            alt=""
+            width="3116"
+            height="2080"
+            fetchpriority="high"
+            decoding="async"
+          />
         </div>
       </div>
     </section>
-
-    <!-- ═══ Background blur orbs ═══ -->
-    <div class="orb orb-1" aria-hidden="true"></div>
-    <div class="orb orb-2" aria-hidden="true"></div>
-    <div class="orb orb-3" aria-hidden="true"></div>
 
     <!-- ═══ Trust strip ═══ -->
     <section class="trust anim" data-anim="fade-up">
@@ -118,7 +104,7 @@
         <div class="why-split">
           <div class="why-left">
             <h2 class="why-h">
-              AI is the new homepage.<br/>
+              LLMs are where people ask.<br/>
               <span class="why-h-quiet">Your buyers ask before they Google.</span>
             </h2>
             <p class="why-sub">
@@ -129,38 +115,26 @@
             </p>
 
             <ul class="why-list">
-              <li
-                class="why-item"
-                :class="{ 'is-active': activeWhy === 0 }"
-                @click="activeWhy = 0"
-              >
-                <span class="why-item-bar"></span>
-                <span class="why-item-num">01</span>
-                <span class="why-item-label">Google ranks pages. AI ranks brands.</span>
-              </li>
-              <li
-                class="why-item"
-                :class="{ 'is-active': activeWhy === 1 }"
-                @click="activeWhy = 1"
-              >
-                <span class="why-item-bar"></span>
-                <span class="why-item-num">02</span>
-                <span class="why-item-label">If you're not in the answer, you're not in the deal.</span>
-              </li>
-              <li
-                class="why-item"
-                :class="{ 'is-active': activeWhy === 2 }"
-                @click="activeWhy = 2"
-              >
-                <span class="why-item-bar"></span>
-                <span class="why-item-num">03</span>
-                <span class="why-item-label">Most teams have no idea what the models say.</span>
+              <li v-for="(w, i) in whyItems" :key="i" class="why-row">
+                <button
+                  type="button"
+                  class="why-item"
+                  :class="{ 'is-active': activeWhy === i }"
+                  :aria-pressed="activeWhy === i ? 'true' : 'false'"
+                  @click="activeWhy = i"
+                >
+                  <span class="why-item-num">{{ w.num }}</span>
+                  <span class="why-item-label">{{ w.label }}</span>
+                  <span class="why-item-arrow" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg>
+                  </span>
+                </button>
               </li>
             </ul>
           </div>
 
           <div class="why-right">
-            <div class="why-gradient">
+            <div class="why-panel">
               <div class="why-demo">
                 <Transition name="why-demo-fade" mode="out-in">
                   <div v-if="activeWhy === 0" key="demo-0" class="why-demo-panel">
@@ -271,8 +245,9 @@
             muted
             loop
             playsinline
-            preload="auto"
+            preload="metadata"
             disablepictureinpicture
+            aria-hidden="true"
           >
             <source :src="assetUrl('/videos/watercolor-second.mp4')" type="video/mp4" />
           </video>
@@ -361,11 +336,25 @@
               aria-hidden="true"
             >
               <source :src="assetUrl('/videos/' + f.video)" type="video/mp4" />
+              <!-- feature-1..4.mp4 live only on the CDN. Without this the
+                   wells render as flat ink anywhere the CDN isn't reachable
+                   (local dev included), and the watercolor frame is the
+                   whole point of the treatment. -->
+              <source :src="assetUrl('/videos/' + f.fallbackVideo)" type="video/mp4" />
             </video>
             <div class="feature-visual-tint" aria-hidden="true"></div>
 
-            <!-- PROMPT LIBRARY — typewriter cycling through demand-side prompts -->
+            <!-- PROMPT LIBRARY — the tracked-prompt table, as the real page
+                 shows it: filter bar, then a row per prompt carrying the
+                 measured columns (visibility, position, model coverage). -->
             <div v-if="f.key === 'prompt'" class="mock-card">
+              <div class="mock-lib-head">
+                <div class="mock-lib-title">Prompts <span class="mock-lib-count">42 tracked</span></div>
+                <div class="mock-lib-tools">
+                  <span class="mock-chip">Bulk upload</span>
+                  <span class="mock-chip">Add prompt</span>
+                </div>
+              </div>
               <div class="mock-search">
                 <span class="mock-search-icon"></span>
                 <span class="mock-search-text">{{ typedPrompt }}</span>
@@ -383,33 +372,13 @@
                   >
                     <div class="mock-prompt-main">
                       <span class="mock-q">{{ p.q }}</span>
-                      <span class="mock-chip" :class="'is-' + p.style">{{ p.style }}</span>
+                      <span class="mock-chip">{{ p.tag }}</span>
                     </div>
 
                     <div class="mock-prompt-meta">
-                      <svg
-                        class="mock-spark"
-                        viewBox="0 0 64 18"
-                        :title="'8-week search trend'"
-                        aria-hidden="true"
-                      >
-                        <path
-                          :d="sparkPath(p.spark)"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span class="mock-volume" :title="p.volume + ' searches/mo'">
-                        {{ formatVolume(p.volume) }}/mo
-                      </span>
-                      <span
-                        class="mock-delta"
-                        :class="p.delta >= 0 ? 'is-up' : 'is-down'"
-                        :title="'Week-over-week change'"
-                      >{{ p.delta >= 0 ? '+' : '' }}{{ p.delta }}%</span>
+                      <span class="mock-metric"><b>{{ p.visibility }}%</b> visibility</span>
+                      <span class="mock-metric">avg #{{ p.position }}</span>
+                      <span class="mock-metric">{{ p.country }}</span>
                       <span class="mock-models" :title="coverageLabel(p)">
                         <span
                           v-for="k in MODEL_KEYS"
@@ -423,15 +392,19 @@
 
                     <div v-if="pinnedPromptId === p.id" class="mock-prompt-detail">
                       <div class="mock-detail-row">
-                        <span class="mock-detail-label">Search volume</span>
-                        <span class="mock-detail-value">{{ p.volume.toLocaleString() }} per month</span>
+                        <span class="mock-detail-label">Group</span>
+                        <span class="mock-detail-value">{{ p.group }}</span>
                       </div>
                       <div class="mock-detail-row">
-                        <span class="mock-detail-label">Trend (8 weeks)</span>
-                        <span class="mock-detail-value">{{ p.delta >= 0 ? 'up' : 'down' }} {{ Math.abs(p.delta) }}% week over week</span>
+                        <span class="mock-detail-label">Mentions</span>
+                        <span class="mock-detail-value">{{ p.mentions }}</span>
                       </div>
                       <div class="mock-detail-row">
-                        <span class="mock-detail-label">Your coverage</span>
+                        <span class="mock-detail-label">Next run</span>
+                        <span class="mock-detail-value">{{ p.nextRun }}</span>
+                      </div>
+                      <div class="mock-detail-row">
+                        <span class="mock-detail-label">Coverage</span>
                         <span class="mock-detail-value">{{ coverageLabel(p) }}</span>
                       </div>
                       <ul class="mock-detail-models">
@@ -537,189 +510,82 @@
             <!-- SOURCE INFLUENCE -->
             <div v-else-if="f.key === 'source'" class="mock-card">
               <div class="mock-source-head">
-                <div class="mock-source-title">Source mix per model</div>
-                <div class="mock-source-sub">Click a model to see its top three sources and your rank</div>
+                <div class="mock-source-title">Top cited domains <span class="mock-lib-count">last 30 days</span></div>
+                <div class="mock-source-sub">Click a domain to see which models cite it and where you sit</div>
               </div>
 
               <div
-                v-for="(s, idx) in sourceShares"
-                :key="s.key"
+                v-for="(d, idx) in topDomains"
+                :key="d.domain"
                 class="mock-source-row"
-                :class="{ 'is-pinned': pinnedSourceKey === s.key }"
+                :class="{ 'is-pinned': pinnedSourceKey === d.domain }"
                 :style="{ animationDelay: (0.15 + idx * 0.12) + 's' }"
-                @click="toggleSourcePin(s)"
+                @click="toggleSourcePin(d)"
               >
                 <div class="mock-source-line">
                   <span class="mock-source-label">
-                    <span class="mock-source-dot" :class="'is-' + s.key"></span>
-                    {{ s.provider }}
+                    <span class="mock-rank-num">{{ idx + 1 }}</span>
+                    {{ d.domain }}
+                    <span class="mock-chip">{{ d.type }}</span>
                   </span>
                   <span
                     class="mock-source-rank"
-                    :class="s.yourRank == null ? 'is-miss' : 'is-hit'"
-                    :title="sourceRankLabel(s)"
-                  >
-                    {{ s.yourRank == null ? 'Not in top 25' : '#' + s.yourRank }}
-                  </span>
+                    :class="d.yourRank == null ? 'is-miss' : 'is-hit'"
+                    :title="domainRankLabel(d)"
+                  >{{ d.yourRank == null ? 'you: not cited' : 'you: #' + d.yourRank }}</span>
                 </div>
 
-                <div
-                  class="mock-stack"
-                  :title="s.takeaway"
-                  role="img"
-                  :aria-label="s.takeaway"
-                >
+                <div class="mock-stack" role="img" :aria-label="d.share + '% of all citations'">
                   <span
-                    v-for="seg in s.segments"
-                    :key="seg.cls"
                     class="mock-seg"
-                    :class="'seg-' + seg.cls"
-                    :style="{ '--target-w': seg.pct + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"
-                    :title="seg.pct + '% ' + (SOURCE_CLASSES.find(c => c.cls === seg.cls)?.label || seg.cls)"
+                    :style="{ '--target-w': d.share * 3 + '%', animationDelay: (0.3 + idx * 0.12) + 's' }"
                   ></span>
+                  <span class="mock-share-pct">{{ d.share }}%</span>
                 </div>
 
-                <div v-if="pinnedSourceKey === s.key" class="mock-source-detail">
+                <div v-if="pinnedSourceKey === d.domain" class="mock-source-detail">
                   <div class="mock-detail-row">
-                    <span class="mock-detail-label">Top three sources</span>
+                    <span class="mock-detail-label">Cited by</span>
+                    <span class="mock-detail-value">{{ d.citedBy.join(', ') }}</span>
                   </div>
-                  <ul class="mock-source-top">
-                    <li v-for="t in s.topSources" :key="t.domain">
-                      <img
-                        class="mock-source-fav"
-                        :src="faviconFor(t.domain)"
-                        :alt="''"
-                        width="14" height="14"
-                        loading="lazy"
-                        referrerpolicy="no-referrer"
-                        @error="(e) => e.target.style.display = 'none'"
-                      />
-                      <span class="mock-source-domain">{{ t.domain }}</span>
-                      <span class="mock-source-share">{{ t.share }}% of citations</span>
-                    </li>
-                  </ul>
-                  <div class="mock-source-takeaway">{{ s.takeaway }}</div>
+                  <div class="mock-detail-row">
+                    <span class="mock-detail-label">Your position here</span>
+                    <span class="mock-detail-value">{{ domainRankLabel(d) }}</span>
+                  </div>
+                  <div class="mock-source-takeaway">{{ d.takeaway }}</div>
                 </div>
               </div>
 
-              <div class="mock-source-legend">
-                <span><i class="seg-reddit"></i>Reddit</span>
-                <span><i class="seg-news"></i>News</span>
-                <span><i class="seg-wiki"></i>Wikipedia</span>
-                <span><i class="seg-blog"></i>Blogs</span>
-                <span><i class="seg-own"></i>Your domain</span>
+              <div class="mock-next">
+                <div class="mock-next-title">What to do next</div>
+                <div v-for="o in sourceOpportunities" :key="o.title" class="mock-next-row">
+                  <span class="mock-next-label">{{ o.title }}</span>
+                  <span class="mock-next-count">{{ o.count }}</span>
+                </div>
               </div>
             </div>
 
             <!-- BRAND SECURITY — live alerts feed -->
             <div v-else-if="f.key === 'security'" class="mock-card">
               <div class="mock-sec-head">
-                <div class="mock-sec-title">Brand Security · Live alerts</div>
-                <div class="mock-sec-health">
-                  <span class="mock-sec-health-dot"></span>
-                  Health 82
-                </div>
+                <div class="mock-sec-title">Brand Security</div>
+                <div class="mock-sec-count">3 open findings</div>
               </div>
 
               <div class="mock-sec-alerts">
-
-                <div class="mock-sec-alert is-sentiment">
+                <div v-for="fi in securityFindings" :key="fi.code" class="mock-sec-alert">
                   <div class="mock-sec-alert-head">
-                    <span class="mock-sec-agent">Sentiment Pulse</span>
-                    <span class="mock-sec-src">Reddit r/SaaS</span>
-                    <span class="mock-sec-time">8m ago</span>
-                    <span class="mock-sec-sev is-high">High</span>
+                    <span class="mock-sec-agent">{{ fi.category }}</span>
+                    <span class="mock-sec-sev" :class="'is-' + fi.severity">{{ fi.severityLabel }}</span>
                   </div>
-                  <div class="mock-sec-alert-body">
-                    Thread <em>"Why we canceled Meterlane"</em> at 340 upvotes and <em>78% negative</em> sentiment.
-                    Peaked in the last hour.
-                  </div>
+                  <div class="mock-sec-meta">{{ fi.model }} · {{ fi.code }}</div>
+                  <!-- The flagged span is the point: the product stores
+                       character offsets per finding, so it can quote the
+                       exact sentence rather than summarising it. -->
+                  <blockquote class="mock-sec-quote">
+                    {{ fi.before }}<mark class="mock-sec-flag">{{ fi.flagged }}</mark>{{ fi.after }}
+                  </blockquote>
                 </div>
-
-                <div class="mock-sec-alert is-reputation">
-                  <div class="mock-sec-alert-head">
-                    <span class="mock-sec-agent">SERP Reputation</span>
-                    <span class="mock-sec-src">Google</span>
-                    <span class="mock-sec-time">22m ago</span>
-                    <span class="mock-sec-sev is-critical">Critical</span>
-                  </div>
-                  <div class="mock-sec-alert-body">
-                    <em>"Meterlane review — do NOT use"</em> now ranking <em>#2</em> for your brand query,
-                    above your homepage.
-                  </div>
-                </div>
-
-                <div class="mock-sec-alert is-narrative">
-                  <div class="mock-sec-alert-head">
-                    <span class="mock-sec-agent">Narrative Watch</span>
-                    <span class="mock-sec-src">Reddit + X</span>
-                    <span class="mock-sec-time">47m ago</span>
-                    <span class="mock-sec-sev is-medium">Medium</span>
-                  </div>
-                  <div class="mock-sec-alert-body">
-                    New narrative forming: <em>"pricing changes"</em>. 8 posts in the last hour across
-                    Reddit and X. Tone trending negative.
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- CONTENT STUDIO — brief → draft → approved flow -->
-            <div v-else-if="f.key === 'studio'" class="mock-card">
-              <div class="mock-studio-flow">
-
-                <div class="mock-studio-step is-brief">
-                  <div class="mock-studio-step-head">
-                    <span class="mock-studio-step-label">Brief</span>
-                    <span class="mock-studio-step-meta">2m ago</span>
-                  </div>
-                  <div class="mock-studio-step-title">
-                    Fix visibility gap: <em>"best CRM for indie founders"</em>
-                  </div>
-                  <div class="mock-studio-tags">
-                    <span class="mock-studio-tag">Missing in 3 of 4 models</span>
-                    <span class="mock-studio-tag is-priority">High</span>
-                  </div>
-                </div>
-
-                <div class="mock-studio-connector" aria-hidden="true"></div>
-
-                <div class="mock-studio-step is-draft">
-                  <div class="mock-studio-step-head">
-                    <span class="mock-studio-step-label">Draft</span>
-                    <span class="mock-studio-step-meta">640 words · 3 min read</span>
-                  </div>
-                  <div class="mock-studio-preview">
-                    For solo founders building their first CRM stack, the calculus is different —
-                    you're optimizing for time-to-first-customer, not enterprise workflow depth…
-                  </div>
-                  <div class="mock-studio-tags">
-                    <span class="mock-studio-tag">Voice match: 94%</span>
-                    <span class="mock-studio-tag">Accuracy: 92%</span>
-                  </div>
-                </div>
-
-                <div class="mock-studio-connector" aria-hidden="true"></div>
-
-                <div class="mock-studio-step is-approved">
-                  <div class="mock-studio-step-head">
-                    <span class="mock-studio-step-label">
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-                        <path d="M3 8.5l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      Approved
-                    </span>
-                    <span class="mock-studio-step-meta">Ready to publish</span>
-                  </div>
-                  <div class="mock-studio-formats">
-                    <span class="mock-studio-format">HTML blog</span>
-                    <span class="mock-studio-format">JSON-LD</span>
-                    <span class="mock-studio-format">Reddit reply</span>
-                    <span class="mock-studio-format">FAQ</span>
-                  </div>
-                </div>
-
               </div>
             </div>
           </div>
@@ -742,16 +608,20 @@
     </section>
 
     <!-- ═══ FAQ ═══ -->
-    <section class="faq anim" data-anim="fade-up">
+    <section class="faq" id="faq">
       <div class="wrap faq-wrap">
-        <h2 class="sec-h sec-h-grad anim" data-anim="hero">Questions,<br/><em>answered plainly.</em></h2>
+        <aside class="faq-aside anim" data-anim="fade-up">
+          <span class="faq-eyebrow">FAQ</span>
+          <h2 class="faq-h">Questions,<br/><em>answered plainly.</em></h2>
+          <router-link to="/contact" class="faq-aside-btn">Contact us</router-link>
+        </aside>
         <div class="faq-list">
           <details v-for="(item, i) in faqItems" :key="i" class="faq-item anim" data-anim="fade-up" :data-delay="i * 60">
             <summary>
               <span>{{ item.q }}</span>
               <span class="faq-plus" aria-hidden="true"></span>
             </summary>
-            <div class="faq-a">{{ item.a }}</div>
+            <div class="faq-a"><p>{{ item.a }}</p></div>
           </details>
         </div>
       </div>
@@ -790,21 +660,20 @@
         <div class="footer-grid">
           <div class="footer-brand-col">
             <div class="footer-brand">
-              <img src="/images/fb-logo.png" alt="FetchBot" class="footer-logo" />
-              <span>FetchBot</span>
+              <img src="/images/cansee-logo.png" alt="Cansee" class="footer-logo" />
             </div>
             <p class="footer-tagline">
               Generative Engine Optimization for brands that want to be found
               by AI assistants. Measure, verify, and close the gap.
             </p>
             <div class="footer-socials">
-              <a href="https://twitter.com/fetchbot" target="_blank" rel="noopener" aria-label="Twitter / X" class="footer-social">
+              <a href="https://twitter.com/cansee" target="_blank" rel="noopener" aria-label="Twitter / X" class="footer-social">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
-              <a href="https://linkedin.com/company/fetchbot" target="_blank" rel="noopener" aria-label="LinkedIn" class="footer-social">
+              <a href="https://linkedin.com/company/cansee" target="_blank" rel="noopener" aria-label="LinkedIn" class="footer-social">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.37V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.26 2.37 4.26 5.45zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45C23.21 24 24 23.23 24 22.28V1.72C24 .77 23.21 0 22.22 0z"/></svg>
               </a>
-              <a href="https://github.com/fetchbot" target="_blank" rel="noopener" aria-label="GitHub" class="footer-social">
+              <a href="https://github.com/cansee" target="_blank" rel="noopener" aria-label="GitHub" class="footer-social">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58v-2.04c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.21.09 1.85 1.24 1.85 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
               </a>
             </div>
@@ -829,7 +698,7 @@
             <div class="footer-col-title">Company</div>
             <router-link to="/about">About</router-link>
             <router-link to="/contact">Contact us</router-link>
-            <a href="mailto:hello@fetchbot.ai">hello@fetchbot.ai</a>
+            <a href="mailto:hello@cansee.ai">hello@cansee.ai</a>
           </div>
 
           <div class="footer-col">
@@ -844,7 +713,7 @@
 
         <!-- Bottom row: copy + meta links -->
         <div class="footer-bottom">
-          <span class="footer-copy">© 2026 FetchBot, Inc. All rights reserved.</span>
+          <span class="footer-copy">© 2026 Cansee, Inc. All rights reserved.</span>
           <div class="footer-meta">
             <span class="footer-meta-item">
               <span class="footer-status-dot"></span>
@@ -860,50 +729,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { assetUrl } from '@/utils/assetUrl'
 
 const scrolled = ref(false)
-const activeCard = ref(0)
 const activeCat = ref(0)
 const activeWhy = ref(0)
 
-// Magnetic-tilt for the four AI reply cards. CSS-only transform —
-// JS just sets two custom props off pointer position so the
-// transform stays on the compositor and never invalidates layout.
-function onCardTilt(ev) {
-  const el = ev.currentTarget
-  const r = el.getBoundingClientRect()
-  const x = (ev.clientX - r.left) / r.width  - 0.5
-  const y = (ev.clientY - r.top)  / r.height - 0.5
-  el.style.setProperty('--tx', `${x * 6}deg`)
-  el.style.setProperty('--ty', `${-y * 6}deg`)
+/* ── Mobile nav sheet ──
+   The desktop pill collapses below 1024px, so everything inside it
+   needs a home. The sheet owns focus while open and hands it back
+   to the trigger on close. */
+const navOpen = ref(false)
+const navSheet = ref(null)
+let navReturnFocus = null
+
+function openNav() {
+  navReturnFocus = document.activeElement
+  navOpen.value = true
 }
-function onCardLeave(ev) {
-  const el = ev.currentTarget
-  el.style.setProperty('--tx', '0deg')
-  el.style.setProperty('--ty', '0deg')
+function closeNav() {
+  navOpen.value = false
+}
+function toggleNav() {
+  navOpen.value ? closeNav() : openNav()
 }
 
-/* Typewriter refs */
-const twLine1 = ref(null)
-const twLine2 = ref(null)
-const twLine3 = ref(null)
-const twDone = ref(false)
+function onNavKeydown(ev) {
+  if (!navOpen.value) return
+  if (ev.key === 'Escape') { closeNav(); return }
+  if (ev.key !== 'Tab') return
+  const sheet = navSheet.value
+  if (!sheet) return
+  const focusables = sheet.querySelectorAll('a[href], button:not([disabled])')
+  if (!focusables.length) return
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (ev.shiftKey && document.activeElement === first) {
+    ev.preventDefault(); last.focus()
+  } else if (!ev.shiftKey && document.activeElement === last) {
+    ev.preventDefault(); first.focus()
+  }
+}
 
 let cycleTimer = null
-let featureTimer = null
-const featureDwellMs = 4200
-
-function startFeatureAutoAdvance() {
-  stopFeatureAutoAdvance()
-  featureTimer = setInterval(() => {
-    activeCard.value = (activeCard.value + 1) % features.length
-  }, featureDwellMs)
-}
-function stopFeatureAutoAdvance() {
-  if (featureTimer) { clearInterval(featureTimer); featureTimer = null }
-}
 
 function startCycle() {
   cycleTimer = setInterval(() => {
@@ -911,61 +780,7 @@ function startCycle() {
   }, 2800)
 }
 
-/* Typewriter engine */
-function typeWriter(el, text, speed = 65) {
-  return new Promise(resolve => {
-    let idx = 0
-    function tick() {
-      if (!el) { resolve(); return }
-      if (idx <= text.length) {
-        el.textContent = text.slice(0, idx)
-        idx++
-        setTimeout(tick, speed)
-      } else {
-        resolve()
-      }
-    }
-    tick()
-  })
-}
-
-async function runTypewriter() {
-  await new Promise(r => setTimeout(r, 400)) // initial pause
-  await typeWriter(twLine1.value, 'AI VISIBILITY,', 80)
-  await new Promise(r => setTimeout(r, 200))
-  await typeWriter(twLine2.value, 'MEASURED.', 70)
-  await new Promise(r => setTimeout(r, 200))
-  await typeWriter(twLine3.value, 'OPTIMIZED.', 70)
-  await new Promise(r => setTimeout(r, 400))
-  twDone.value = true
-}
-
-// Apple-style section-by-section scroll. Applied to <html> so the
-// document is the snap container (leaving window.scroll events and
-// IntersectionObserver — both rooted on the window — untouched).
-// Only on desktop; only when the user hasn't opted out of motion.
-// Restored on unmount so other pages aren't affected.
-const _prevSnapType = { value: null, behavior: null, applied: false }
-function enableScrollSnap() {
-  if (window.innerWidth < 900) return
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const html = document.documentElement
-  _prevSnapType.value = html.style.scrollSnapType || ''
-  _prevSnapType.behavior = html.style.scrollBehavior || ''
-  html.style.scrollSnapType = 'y proximity'
-  html.style.scrollBehavior = 'smooth'
-  _prevSnapType.applied = true
-}
-function disableScrollSnap() {
-  if (!_prevSnapType.applied) return
-  document.documentElement.style.scrollSnapType = _prevSnapType.value
-  document.documentElement.style.scrollBehavior = _prevSnapType.behavior
-  _prevSnapType.applied = false
-}
-
 onMounted(() => {
-  enableScrollSnap()
-
   const onScroll = () => { scrolled.value = window.scrollY > 40 }
   window.addEventListener('scroll', onScroll, { passive: true })
 
@@ -981,9 +796,27 @@ onMounted(() => {
 
   document.querySelectorAll('.anim').forEach(el => obs.observe(el))
   startCycle()
-  runTypewriter()
-  startFeatureAutoAdvance()
-  startScenarioCycle()
+
+  // Seven <video> elements now decorate this page, several of them the
+  // same multi-megabyte watercolor clip at different sizes. Decoding all
+  // of them at once is wasted work, so only the ones near the viewport
+  // are allowed to run.
+  const videoObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const v = e.target
+      // Unconditional pause: guarding on v.paused misses the ones that
+      // haven't started yet, and autoplay then picks them up anyway.
+      if (e.isIntersecting) v.play().catch(() => {})
+      else v.pause()
+    })
+  }, { rootMargin: '200px 0px' })
+  document.querySelectorAll('.lp video').forEach(v => videoObs.observe(v))
+
+  // Close the mobile sheet if the viewport grows back to desktop.
+  const desktopMq = window.matchMedia('(min-width: 1024px)')
+  const onDesktop = (e) => { if (e.matches) closeNav() }
+  desktopMq.addEventListener('change', onDesktop)
+  document.addEventListener('keydown', onNavKeydown)
 
   // Count-up stats observer
   let statsObs = null
@@ -1012,15 +845,16 @@ onMounted(() => {
   }
 
   onUnmounted(() => {
-    disableScrollSnap()
     window.removeEventListener('scroll', onScroll)
+    desktopMq.removeEventListener('change', onDesktop)
+    document.removeEventListener('keydown', onNavKeydown)
+    document.body.style.overflow = ''
     obs.disconnect()
+    videoObs.disconnect()
     statsObs && statsObs.disconnect()
     heroObs && heroObs.disconnect()
     finalObs && finalObs.disconnect()
     clearInterval(cycleTimer)
-    stopFeatureAutoAdvance()
-    if (scenarioTimer) clearInterval(scenarioTimer)
     if (_promptCycleStop) _promptCycleStop()
   })
 
@@ -1029,7 +863,27 @@ onMounted(() => {
   setTimeout(startPromptCycle, 400)
 })
 
+/* Lock the page behind the mobile sheet, and move focus into it. */
+watch(navOpen, async (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+  updateStickyCta()
+  if (open) {
+    await nextTick()
+    const first = navSheet.value?.querySelector('a[href], button:not([disabled])')
+    first && first.focus()
+  } else if (navReturnFocus && document.contains(navReturnFocus)) {
+    navReturnFocus.focus()
+    navReturnFocus = null
+  }
+})
+
 const categories = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity']
+
+const whyItems = [
+  { num: '01', label: 'Google ranks pages. AI ranks brands.' },
+  { num: '02', label: "If you're not in the answer, you're not in the deal." },
+  { num: '03', label: 'Most teams have no idea what the models say.' },
+]
 // Multi-LLM Probing demo data — every field is what the in-product report
 // surfaces per model after a scan: visibility rate, week-over-week delta,
 // avg rank when mentioned, sentiment split, number of citations carried
@@ -1069,238 +923,6 @@ function toggleProbePin(p) {
   pinnedProbeKey.value = pinnedProbeKey.value === p.key ? null : p.key
 }
 
-// Hero "probe" animation — cycles through a handful of category prompts,
-// each with its own set of model answers. Sources are `{label, domain}`
-// so we render the real favicon via Google's favicon CDN.
-const probeScenarios = [
-  {
-    prompt: 'Best sustainable clothing brands for everyday basics?',
-    replies: [
-      {
-        key: 'anthropic', name: 'Claude',
-        before: 'For organic-cotton basics that hold up after fifty washes, ',
-        brand: 'Loomvale',
-        after: ' comes up most often in long-wear reviews.',
-        sources: [
-          { label: 'Wirecutter',  domain: 'nytimes.com' },
-          { label: 'Good On You', domain: 'goodonyou.eco' },
-        ],
-      },
-      {
-        key: 'openai', name: 'GPT-4',
-        before: 'A name to know in this category is ',
-        brand: 'Loomvale',
-        after: '. Most reviewers flag the supply-chain transparency and Bluesign certification.',
-        sources: [
-          { label: 'Vogue Business', domain: 'voguebusiness.com' },
-          { label: 'BoF',            domain: 'businessoffashion.com' },
-        ],
-      },
-      {
-        key: 'google', name: 'Gemini',
-        before: 'Coverage from the past year highlights ',
-        brand: 'Loomvale',
-        after: ' for low-impact dyes and a take-back program.',
-        sources: [
-          { label: 'NYT Style', domain: 'nytimes.com' },
-          { label: 'Guardian',  domain: 'theguardian.com' },
-        ],
-      },
-      {
-        key: 'perplexity', name: 'Perplexity',
-        before: 'Community threads point to ',
-        brand: 'Loomvale',
-        after: ' for fit consistency and a fair return window.',
-        sources: [
-          { label: 'r/ffa',        domain: 'reddit.com' },
-          { label: 'Substack',     domain: 'substack.com' },
-        ],
-      },
-    ],
-  },
-  {
-    prompt: 'Best meditation apps for beginners?',
-    replies: [
-      {
-        key: 'anthropic', name: 'Claude',
-        before: 'For people just starting a practice, ',
-        brand: 'Stillpath',
-        after: ' is a common recommendation — short guided sessions and no streak pressure.',
-        sources: [
-          { label: 'Verywell Mind', domain: 'verywellmind.com' },
-          { label: 'Healthline',    domain: 'healthline.com' },
-        ],
-      },
-      {
-        key: 'openai', name: 'GPT-4',
-        before: 'A frequently cited option for beginners is ',
-        brand: 'Stillpath',
-        after: '. The onboarding is structured around 10-minute foundational lessons.',
-        sources: [
-          { label: 'NYT Well',   domain: 'nytimes.com' },
-          { label: 'App Store',  domain: 'apple.com' },
-        ],
-      },
-      {
-        key: 'google', name: 'Gemini',
-        before: 'Most 2026 round-ups list ',
-        brand: 'Stillpath',
-        after: ' among the top picks for first-time users.',
-        sources: [
-          { label: 'CNET',     domain: 'cnet.com' },
-          { label: 'PCMag',    domain: 'pcmag.com' },
-        ],
-      },
-      {
-        key: 'perplexity', name: 'Perplexity',
-        before: 'User feedback on ',
-        brand: 'Stillpath',
-        after: ' notes a calm interface and a free tier that is genuinely usable.',
-        sources: [
-          { label: 'r/meditation', domain: 'reddit.com' },
-          { label: 'Product Hunt', domain: 'producthunt.com' },
-        ],
-      },
-    ],
-  },
-  {
-    prompt: 'Best project management apps for remote teams?',
-    replies: [
-      {
-        key: 'anthropic', name: 'Claude',
-        before: 'For async-first teams, ',
-        brand: 'Acrelane',
-        after: ' covers the basics — timelines, docs, and lightweight tickets — without ceremony.',
-        sources: [
-          { label: 'GitHub', domain: 'github.com' },
-          { label: 'HN',     domain: 'news.ycombinator.com' },
-        ],
-      },
-      {
-        key: 'openai', name: 'GPT-4',
-        before: 'A frequently mentioned option is ',
-        brand: 'Acrelane',
-        after: ', especially for teams already standardised on Slack and GitHub.',
-        sources: [
-          { label: 'TechCrunch', domain: 'techcrunch.com' },
-          { label: 'The Verge',  domain: 'theverge.com' },
-        ],
-      },
-      {
-        key: 'google', name: 'Gemini',
-        before: 'Comparison reviews place ',
-        brand: 'Acrelane',
-        after: ' near the top for distributed engineering teams.',
-        sources: [
-          { label: 'Forbes', domain: 'forbes.com' },
-          { label: 'Wired',  domain: 'wired.com' },
-        ],
-      },
-      {
-        key: 'perplexity', name: 'Perplexity',
-        before: 'Practitioner threads cite ',
-        brand: 'Acrelane',
-        after: ' for a clean API and a Gantt view that does not get in the way.',
-        sources: [
-          { label: 'r/productivity', domain: 'reddit.com' },
-          { label: 'Indie Hackers',  domain: 'indiehackers.com' },
-        ],
-      },
-    ],
-  },
-]
-
-const scenarioIdx = ref(0)
-const probePrompt = computed(() => probeScenarios[scenarioIdx.value].prompt)
-const probeReplies = computed(() => probeScenarios[scenarioIdx.value].replies)
-let scenarioTimer = null
-function startScenarioCycle() {
-  scenarioTimer = setInterval(() => {
-    scenarioIdx.value = (scenarioIdx.value + 1) % probeScenarios.length
-  }, 7000)
-}
-
-// Favicon URL via Google's public favicon CDN — same trick we use on
-// the Source Influence page. sz=64 keeps it sharp on retina.
-function faviconFor(domain) {
-  if (!domain) return ''
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
-}
-
-const features = [
-  {
-    title: 'Analytics',
-    desc: 'Real-time visitors, pageviews, conversions, and user flow — with AI anomaly detection.',
-    replaces: 'Replaces Mixpanel',
-    tint: 'tint-peach',
-    visual: 'chart',
-    metric: { value: '2,847', label: 'Visitors today', delta: '+18%' },
-    chart: [12, 28, 22, 40, 34, 56, 48, 70, 64, 82, 74, 96],
-    icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 20V10l4-4 4 4 4-4 4 4v10" stroke-linejoin="round"/></svg>'
-  },
-  {
-    title: 'Heatmaps',
-    desc: 'See exactly where visitors click, scroll, and engage on every page of your website.',
-    replaces: 'Replaces Hotjar',
-    tint: 'tint-blue',
-    visual: 'heatmap',
-    metric: { value: '4,132', label: 'Clicks tracked', delta: '12 hotspots' },
-    hotspots: [
-      { x: 22, y: 30, size: 42, delay: 0,    intensity: 0.9 },
-      { x: 62, y: 22, size: 28, delay: 0.35, intensity: 0.7 },
-      { x: 78, y: 58, size: 50, delay: 0.7,  intensity: 1.0 },
-      { x: 35, y: 70, size: 32, delay: 1.05, intensity: 0.55 },
-      { x: 50, y: 48, size: 22, delay: 1.4,  intensity: 0.6 },
-    ],
-    icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="9" r="2"/><circle cx="16" cy="9" r="1.5" opacity=".5"/><circle cx="12" cy="15" r="2.5"/></svg>'
-  },
-  {
-    title: 'Keywords',
-    desc: 'AI keyword scoring, rank tracking, and Google Trends integration for every page.',
-    replaces: 'Replaces Semrush',
-    tint: 'tint-yellow',
-    visual: 'keywords',
-    metric: { value: '87', label: 'Tracked keywords', delta: '+4 new #1s' },
-    keywords: [
-      { term: 'ai analytics', rank: 3, prev: 7,  score: 92 },
-      { term: 'visitor tracking', rank: 1, prev: 2, score: 88 },
-      { term: 'heatmap tool', rank: 5, prev: 11, score: 74 },
-      { term: 'lead scoring saas', rank: 2, prev: 4, score: 81 },
-    ],
-    icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>'
-  },
-  {
-    title: 'Lead ID',
-    desc: 'Identify companies visiting your site with behavioral scoring and company intel.',
-    replaces: 'Replaces Clearbit',
-    tint: 'tint-peach',
-    visual: 'leads',
-    metric: { value: '23', label: 'Companies today', delta: '4 hot leads' },
-    leads: [
-      { name: 'Acme Corp',      domain: 'acme.com',    score: 94, hot: true },
-      { name: 'Vector Labs',    domain: 'vectorlabs.io', score: 81, hot: true },
-      { name: 'Northwind Ltd',  domain: 'northwind.co',  score: 67, hot: false },
-    ],
-    icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/></svg>'
-  },
-  {
-    title: 'LLM Dashboard',
-    desc: 'Audit your AI visibility across ChatGPT, Claude, Gemini & more — see if LLMs recommend your brand.',
-    replaces: 'Nothing like it exists',
-    tint: 'tint-violet',
-    visual: 'llm',
-    scene: 'aurora',
-    metric: { value: '72', label: 'AI Visibility Score', delta: '+12 pts' },
-    providers: [
-      { name: 'ChatGPT',    icon: '🟢', score: 85, tier: 'tier-high' },
-      { name: 'Claude',     icon: '🟣', score: 72, tier: 'tier-high' },
-      { name: 'Gemini',     icon: '🔵', score: 58, tier: 'tier-mid' },
-      { name: 'Perplexity', icon: '🟠', score: 41, tier: 'tier-low' },
-    ],
-    icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>'
-  },
-]
-
 const steps = [
   { title: 'Add Your Brand', desc: 'Drop in your domain and the competitors you want to track. We map your category instantly.' },
   { title: 'Pick Your Prompts', desc: 'We mine real buyer questions from Reddit, Quora, and search trends — you approve the set you want to rank for.' },
@@ -1313,18 +935,20 @@ const showcaseFeatures = [
   {
     key: 'prompt',
     video: 'feature-1.mp4',
+    fallbackVideo: 'watercolor-second.mp4',
     eyebrow: 'PROMPT LIBRARY',
-    headline: 'Rank where your buyers actually ask.',
-    desc: "GEO is the new SEO. Large language models don't rank pages — they rank mentions. Prompt Library gives you the exact prompts your customers type into AI, weighted by real demand, so you optimize for what's actually being asked.",
+    headline: 'Decide which questions you get measured on.',
+    desc: "Large language models don't rank pages — they rank mentions. The Prompt Library is where you curate the questions that matter to your category, tag and group them, and set how often each one gets asked. Every prompt then carries its own result.",
     bullets: [
-      'Demand-weighted prompts pulled from real buyer signal',
-      'Full variant coverage — comparisons, how-tos, vs, local intent',
-      'Live visibility scoring across every major LLM',
+      'Add prompts one by one or import them in bulk, then group and tag',
+      'Per prompt: which models answer it, which market, how often it reruns',
+      'Visibility, average position, mentions and sentiment tracked per prompt',
     ],
   },
   {
     key: 'probe',
     video: 'feature-2.mp4',
+    fallbackVideo: 'watercolor-main.mp4',
     eyebrow: 'MULTI-LLM PROBING',
     headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one audit.',
     desc: "We query every model in parallel, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
@@ -1337,40 +961,27 @@ const showcaseFeatures = [
   {
     key: 'source',
     video: 'feature-3.mp4',
+    fallbackVideo: 'watercolor-second.mp4',
     eyebrow: 'SOURCE INFLUENCE',
-    headline: 'See exactly where each LLM gets its answers in your category.',
-    desc: "Every model has a personality — Perplexity leans on Reddit, Gemini reaches for news, Claude trusts Wikipedia. Source Influence maps the citation footprint behind every answer in your space, so you know where to show up and where you're invisible.",
+    headline: 'The domains ranked, and where your visibility can grow.',
+    desc: "Every citation behind every answer, aggregated by domain and ranked by how much of your category it decides. Each one shows which models lean on it and where your brand sits — so the places worth earning are the ones you are ranked lowest on, or missing from entirely.",
     bullets: [
-      'Per-provider source mix breakdown',
-      'Citation confidence scoring',
-      'Dominant Reddit threads and articles surfaced',
+      'Top cited domains ranked by share, each classified by type',
+      'Per domain: which models cite it, and your position on it',
+      'A shortlist of what to fix — pages AI cites that Google buries, and answers that skip you',
     ],
   },
   {
     key: 'security',
     video: 'feature-4.mp4',
+    fallbackVideo: 'watercolor-main.mp4',
     eyebrow: 'BRAND SECURITY',
-    headline: "Catch the bad conversation before it becomes the loud one.",
-    desc: "Independent agents watch Reddit, X, Google, and every major LLM for negative sentiment, damaging reviews, and emerging reputation threats about your brand — flagged the moment they start climbing, not after they've already won the search page.",
+    headline: 'Catch the negative things AI says about your brand.',
+    desc: "Every answer we collect is read for problems about you — negative sentiment, lukewarm endorsements, derogatory wording, unfavourable comparisons, claims that simply are not true, and private details surfacing where they should not. Each finding quotes the exact sentence that triggered it, so you can see what was said rather than a summary of it.",
     bullets: [
-      'Sentiment monitoring across Reddit and X per brand term',
-      'SERP reputation watch — flags negative pages outranking your own',
-      'Emerging-narrative alerts from post velocity and Google Trends breakouts',
-    ],
-  },
-  {
-    key: 'studio',
-    // Placeholder: reuses a video that's already cached in the browser
-    // from the stats card. Upload feature-5.mp4 and swap this to
-    // 'feature-5.mp4' when the real file lands in cdn.fetchbot.ai.
-    video: 'watercolor-second.mp4',
-    eyebrow: 'CONTENT STUDIO',
-    headline: 'Write the things AI assistants miss.',
-    desc: "AI-drafted blogs, FAQs, JSON-LD, and Reddit replies to close every visibility, accuracy, and citation gap we find. Ship a fix in a few clicks — no starting from a blank page.",
-    bullets: [
-      'One-click briefs from your visibility gaps',
-      'AI drafts you can edit and approve inline',
-      'Publish-ready JSON-LD and Reddit reply formats',
+      'Nine checks run over every answer, each with a stable code you can track',
+      'The flagged phrase is highlighted in place, in the answer it came from',
+      'A queue you can filter by category and severity, and share by link',
     ],
   },
 ]
@@ -1380,54 +991,47 @@ const showcaseFeatures = [
 // Prompt Library actually surfaces in-product: monthly search volume,
 // week-over-week delta, a tiny 8-week sparkline, and per-LLM coverage
 // dots showing whether your brand appears in each model's answer today.
+// Mirrors the columns the real Prompt Library table carries: tag, group,
+// measured visibility / average position / mentions, the per-prompt model
+// set, its market, and its cadence. Deliberately NO "monthly search volume"
+// — the product has no such number, and claiming one on a marketing page
+// would be inventing a metric.
 const PROMPT_EXAMPLES = [
   {
     q: 'best ai analytics tool for small saas',
-    style: 'comparison',
-    volume: 4400,
-    delta: 18,
-    spark: [22, 26, 28, 33, 38, 41, 44, 52],
+    tag: 'comparison', group: 'Category', country: 'US',
+    visibility: 48, position: '3.2', mentions: '12 of 25 runs', nextRun: 'in 2 days',
     // true = your brand currently surfaces in this model's answer.
     models: { anthropic: true, openai: true, google: false, perplexity: true },
   },
   {
     q: 'how to track llm visibility in 2026',
-    style: 'how-to',
-    volume: 2100,
-    delta: 34,
-    spark: [8, 10, 11, 14, 16, 19, 22, 28],
+    tag: 'how-to', group: 'Education', country: 'US',
+    visibility: 31, position: '5.1', mentions: '8 of 25 runs', nextRun: 'in 5 days',
     models: { anthropic: true, openai: false, google: false, perplexity: true },
   },
   {
-    q: 'fetchbot vs bluefish alternatives',
-    style: 'vs',
-    volume: 880,
-    delta: 9,
-    spark: [12, 13, 15, 14, 16, 18, 17, 19],
+    q: 'cansee vs bluefish alternatives',
+    tag: 'vs', group: 'Competitor', country: 'US',
+    visibility: 72, position: '1.8', mentions: '18 of 25 runs', nextRun: 'tomorrow',
     models: { anthropic: true, openai: true, google: true, perplexity: true },
   },
   {
     q: 'why does perplexity keep mentioning notion',
-    style: 'question',
-    volume: 1600,
-    delta: -6,
-    spark: [24, 22, 21, 20, 18, 17, 17, 16],
+    tag: 'question', group: 'Competitor', country: 'UK',
+    visibility: 12, position: '8.4', mentions: '3 of 25 runs', nextRun: 'in 4 days',
     models: { anthropic: false, openai: false, google: false, perplexity: true },
   },
   {
     q: 'cheapest geo platform for an indie founder',
-    style: 'local',
-    volume: 720,
-    delta: 12,
-    spark: [9, 10, 10, 12, 13, 14, 15, 16],
+    tag: 'pricing', group: 'Category', country: 'DE',
+    visibility: 22, position: '6.0', mentions: '5 of 25 runs', nextRun: 'in 6 days',
     models: { anthropic: true, openai: false, google: false, perplexity: false },
   },
   {
     q: 'is there a free chatgpt visibility tracker',
-    style: 'question',
-    volume: 3200,
-    delta: 41,
-    spark: [14, 16, 18, 22, 28, 34, 40, 48],
+    tag: 'question', group: 'Category', country: 'US',
+    visibility: 64, position: '2.4', mentions: '16 of 25 runs', nextRun: 'in 3 days',
     models: { anthropic: true, openai: true, google: true, perplexity: true },
   },
 ]
@@ -1438,26 +1042,6 @@ const MODEL_LABEL = {
   openai: 'GPT-4',
   google: 'Gemini',
   perplexity: 'Perplexity',
-}
-
-function formatVolume(n) {
-  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
-  return String(n)
-}
-
-function sparkPath(values, w = 64, h = 18) {
-  if (!values || values.length < 2) return ''
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = Math.max(1, max - min)
-  const stepX = w / (values.length - 1)
-  return values
-    .map((v, i) => {
-      const x = +(i * stepX).toFixed(1)
-      const y = +(h - ((v - min) / span) * h).toFixed(1)
-      return `${i === 0 ? 'M' : 'L'}${x},${y}`
-    })
-    .join(' ')
 }
 
 const pinnedPromptId = ref(null)
@@ -1526,67 +1110,75 @@ function startPromptCycle() {
 // three sites most cited by each model, whether you appear in their top
 // 25, and a one-line takeaway ("Perplexity leans on Reddit. You are not
 // in their Reddit footprint.").
-const SOURCE_CLASSES = [
-  { cls: 'reddit', label: 'Reddit / forums' },
-  { cls: 'news',   label: 'News' },
-  { cls: 'wiki',   label: 'Wikipedia' },
-  { cls: 'blog',   label: 'Blogs / editorial' },
-  { cls: 'own',    label: 'Your domain' },
+// Mirrors the real Sources/URLs page: citations aggregated per apex domain,
+// each classified by domain type, with your own position on that domain and
+// which models cite it. "What to do next" uses the three opportunity kinds
+// the backend actually builds (apps/citations/services/url_opportunities.py).
+const topDomains = [
+  {
+    domain: 'reddit.com', type: 'Community', share: 28, yourRank: null,
+    citedBy: ['Perplexity', 'Claude', 'GPT-4'],
+    takeaway: 'Most-cited source in your category, and you are absent from it.',
+  },
+  {
+    domain: 'wikipedia.org', type: 'Reference', share: 22, yourRank: null,
+    citedBy: ['Claude', 'GPT-4', 'Gemini'],
+    takeaway: 'Claude leans on Wikipedia. No entry cites your brand.',
+  },
+  {
+    domain: 'g2.com', type: 'Review', share: 14, yourRank: 4,
+    citedBy: ['GPT-4', 'Perplexity'],
+    takeaway: 'You place 4th here — the cheapest position to improve.',
+  },
+  {
+    domain: 'nytimes.com', type: 'News', share: 11, yourRank: null,
+    citedBy: ['Gemini', 'GPT-4'],
+    takeaway: 'Gemini is news-first. Nothing here mentions you.',
+  },
 ]
 
-const sourceShares = [
+// Three of the nine real detectors, with the exact-phrase highlighting the
+// product does via character-level evidence spans. Severities are only
+// high / medium / low — there is no "critical" tier, and no health score.
+const securityFindings = [
   {
-    key: 'anthropic', provider: 'Claude',
-    segments: [{cls:'reddit',pct:18},{cls:'news',pct:14},{cls:'wiki',pct:38},{cls:'blog',pct:20},{cls:'own',pct:10}],
-    yourRank: 12,
-    topSources: [
-      { domain: 'wikipedia.org', share: 22 },
-      { domain: 'theverge.com',  share: 9 },
-      { domain: 'reddit.com',    share: 7 },
-    ],
-    takeaway: 'Claude leans on Wikipedia. You rank #12.',
+    code: 'BS-SENT-001', category: 'Negative sentiment', model: 'Claude',
+    severity: 'high', severityLabel: 'High',
+    before: 'For most teams I would ',
+    flagged: 'steer clear of Meterlane — support is slow and the pricing is opaque',
+    after: '.',
   },
   {
-    key: 'openai', provider: 'GPT-4',
-    segments: [{cls:'reddit',pct:12},{cls:'news',pct:24},{cls:'wiki',pct:30},{cls:'blog',pct:24},{cls:'own',pct:10}],
-    yourRank: 7,
-    topSources: [
-      { domain: 'nytimes.com',    share: 16 },
-      { domain: 'wikipedia.org',  share: 14 },
-      { domain: 'medium.com',     share: 8 },
-    ],
-    takeaway: 'GPT-4 cites a balanced news + reference mix. You rank #7.',
+    code: 'BS-FACT-001', category: 'Factual misrepresentation', model: 'GPT-4',
+    severity: 'high', severityLabel: 'High',
+    before: 'Worth noting that ',
+    flagged: 'Meterlane was acquired in 2024 and is no longer actively maintained',
+    after: ', so migration may be a concern.',
   },
   {
-    key: 'google', provider: 'Gemini',
-    segments: [{cls:'reddit',pct:10},{cls:'news',pct:42},{cls:'wiki',pct:18},{cls:'blog',pct:22},{cls:'own',pct:8}],
-    yourRank: null,
-    topSources: [
-      { domain: 'bloomberg.com',  share: 18 },
-      { domain: 'bbc.com',        share: 11 },
-      { domain: 'forbes.com',     share: 9 },
-    ],
-    takeaway: 'Gemini is news-first. You are not in the top 25.',
-  },
-  {
-    key: 'perplexity', provider: 'Perplexity',
-    segments: [{cls:'reddit',pct:38},{cls:'news',pct:16},{cls:'wiki',pct:12},{cls:'blog',pct:22},{cls:'own',pct:12}],
-    yourRank: 4,
-    topSources: [
-      { domain: 'reddit.com',       share: 28 },
-      { domain: 'news.ycombinator.com', share: 9 },
-      { domain: 'stackoverflow.com',share: 6 },
-    ],
-    takeaway: 'Perplexity is Reddit-heavy. You rank #4.',
+    code: 'BS-COMP-001', category: 'Unfavourable comparison', model: 'Perplexity',
+    severity: 'medium', severityLabel: 'Medium',
+    before: 'Both are capable, though ',
+    flagged: 'most teams end up choosing Linear over Meterlane',
+    after: ' for anything beyond basic tracking.',
   },
 ]
+
+const sourceOpportunities = [
+  { title: 'AI cites you, Google buries you', count: '3 pages' },
+  { title: 'AI answers skip your brand', count: '5 gaps' },
+  { title: 'Working well', count: '2 pages' },
+]
+
+const domainRankLabel = (d) =>
+  d.yourRank == null
+    ? 'Your brand is not cited on this domain'
+    : `Your brand ranks #${d.yourRank} among sources on this domain`
 
 const pinnedSourceKey = ref(null)
 function toggleSourcePin(s) {
-  pinnedSourceKey.value = pinnedSourceKey.value === s.key ? null : s.key
+  pinnedSourceKey.value = pinnedSourceKey.value === s.domain ? null : s.domain
 }
-const sourceRankLabel = (s) =>
-  s.yourRank == null ? 'Not in top 25' : `Your site ranks #${s.yourRank}`
 
 /* ── FAQ items ── */
 const faqItems = [
@@ -1640,3398 +1232,987 @@ let pastHero = false
 let onFinalCta = false
 
 function updateStickyCta() {
-  showStickyCta.value = pastHero && !onFinalCta
+  showStickyCta.value = pastHero && !onFinalCta && !navOpen.value
 }
 </script>
 
 <style scoped>
-/* ═══════════════════════════════════
-   FetchBot — clean, flat aesthetic
-   White bg · sans-serif headlines
-   Single restrained accent (--brand-accent)
-   Flat surfaces · static trust strip
-   ═══════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   Cansee landing — editorial cream-and-black system
 
-/* ── Animations — Apple-style scroll entrance ──
-   Displacement + subtle blur that clears as elements enter view.
-   Uses Apple's "power4 out" easing (cubic-bezier 0.16, 1, 0.3, 1):
-   nearly linear at the start, then eases hard into a soft landing.
-   Long enough (900ms) to feel deliberate, short enough to not stall
-   the reading flow. */
-.anim {
-  opacity: 0;
-  transform: translate3d(0, 40px, 0) scale(0.985);
-  filter: blur(4px);
-  transition:
-    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
-}
-.anim.in {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
-}
-/* Hero variant — larger displacement + longer duration for the big
-   moments (section headlines, hero copy). */
-.anim[data-anim="hero"] {
-  transform: translate3d(0, 60px, 0) scale(0.97);
-  transition:
-    opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.anim[data-anim="hero"].in {
-  transform: translate3d(0, 0, 0) scale(1);
-}
-/* Scroll-driven breath on the feature-showcase video cards: each
-   card lifts slightly toward center as it scrolls through view and
-   settles back — the "content moves at a different rate than the
-   frame" trick from Apple's product pages. Applied only to
-   .feature-visual (the stats card has its own framer entrance and
-   would double-transform). Uses view() timeline (Chrome/Edge 115+,
-   Safari 26+); older browsers get the hover-lift only. */
-@supports (animation-timeline: view()) {
-  @keyframes card-scroll-breath {
-    from { transform: translate3d(0, 24px, 0) scale(0.985); }
-    50%  { transform: translate3d(0, 0, 0)    scale(1);     }
-    to   { transform: translate3d(0, -24px, 0) scale(0.985); }
-  }
-  .feature-visual {
-    animation-name: card-scroll-breath;
-    animation-duration: 1ms;
-    animation-timing-function: linear;
-    animation-timeline: view();
-    animation-range: cover 0% cover 100%;
-  }
-}
-/* Apple-style section entrance + exit tied directly to scroll
-   position. Each major section eases up + fades in as it enters
-   the viewport, holds crisp while it's fully visible (the "cover"
-   phase), then softly recedes on the way out. Two named animations
-   run on the same element with different animation-range values:
-   `entry` covers 0% -> 100% of the entry into the viewport, `exit`
-   covers 0% -> 100% of the exit. Because animation-fill-mode is
-   `both`, the final state of the entry animation is held during
-   the cover phase in between. Same view() timeline support as
-   above; older browsers fall back to the .anim in-viewport
-   observer with no downside. */
-@supports (animation-timeline: view()) {
-  @keyframes apple-section-in {
-    from {
-      opacity: 0;
-      transform: translate3d(0, 80px, 0) scale(0.94);
-      filter: blur(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1);
-      filter: blur(0);
-    }
-  }
-  @keyframes apple-section-out {
-    from {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1);
-      filter: blur(0);
-    }
-    to {
-      opacity: 0.35;
-      transform: translate3d(0, -60px, 0) scale(0.96);
-      filter: blur(4px);
-    }
-  }
-  .why,
-  .feature-showcase,
-  .how,
-  .faq,
-  .final-cta {
-    animation-name: apple-section-in, apple-section-out;
-    animation-fill-mode: both, both;
-    animation-timing-function:
-      cubic-bezier(0.16, 1, 0.3, 1),
-      cubic-bezier(0.7, 0, 0.84, 0);
-    animation-timeline: view(), view();
-    animation-range:
-      entry 0% cover 15%,
-      cover 85% exit 100%;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .anim {
-    transition: none;
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
-  @supports (animation-timeline: view()) {
-    .feature-visual,
-    .why,
-    .feature-showcase,
-    .how,
-    .faq,
-    .final-cta { animation-name: none; }
-  }
-}
+   Two faces, and only two:
+     · Instrument Serif 400 for display. Never bold. Line-height 1.1.
+     · Inter 500 at 16/22.4 for absolutely everything else.
 
-/* ── Base ── */
+   Hierarchy comes from serif-vs-sans and from size jumps in the
+   serif — never from bolding or shrinking the sans. There is no
+   accent colour anywhere on this page by design.
+   ═══════════════════════════════════════════════════════════ */
+
 .lp {
-  /* Single restrained accent + neutral palette (Extend-style calm). */
-  --brand-accent: #2f6bed;
-  --brand-accent-rgb: 47, 107, 237;
-  --font-display: 'Plus Jakarta Sans';
-  --surface-soft: #f5f6f8;
-  --line: #e6e8ec;
-  background: #ffffff;
-  color: #131718;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ground */
+  --cream:        #fff9f0;
+  --cream-alt:    #f5f3ee;
+  --ink:          #000000;
+
+  /* text */
+  --on-ink:       #ffffff;
+  --muted:        #474747;
+  --muted-2:      #5c5c5c;
+  --on-ink-mut:   #b0b0b0;
+  --on-ink-dim:   #999999;
+
+  /* lines */
+  --hair:         rgba(0, 0, 0, .10);
+  --hair-soft:    rgba(0, 0, 0, .06);
+  --hair-ink:     rgba(255, 255, 255, .12);
+  --hair-ink-2:   rgba(255, 255, 255, .22);
+
+  /* a monochrome ramp so the four models stay tellable apart
+     without reintroducing colour. Always paired with a text label. */
+  --v-anthropic:  #ffffff;
+  --v-openai:     #b0b0b0;
+  --v-google:     #7a7a7a;
+  --v-perplexity: #4a4a4a;
+
+  /* type */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* geometry */
+  --r-media: 8px;
+  --r-card: 16px;
+  --r-pill: 32px;
+  --sec-pad: 80px;
+
+  /* motion */
+  --ease: cubic-bezier(.22, 1, .36, 1);
+
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
   min-height: 100vh;
   width: 100%;
   max-width: 100vw;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
-/* Apple-style section-by-section scroll: each major section carries
-   scroll-snap-align, and JS toggles scroll-snap-type on <html> on
-   mount / unmount (see script setup). Uses `proximity` (not
-   `mandatory`) so it only pulls the section into view when the
-   scroll naturally lands near it — never traps a user mid-content.
-   scroll-margin-top clears the fixed nav so sections don't hide
-   behind it. */
-@media (min-width: 900px) {
-  .hero,
-  .stats,
-  .why,
-  .feature-showcase .feature-row,
-  .how,
-  .faq,
-  .final-cta {
-    scroll-snap-align: start;
-    scroll-snap-stop: normal;
-    scroll-margin-top: 88px;
-  }
-  /* Stats + feature rows command the viewport so each snap lands
-     with the whole section visible. */
-  .stats { min-height: calc(100vh - 88px); display: flex; align-items: center; }
-  .feature-row { min-height: calc(100vh - 88px); }
-}
-.wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-em { color: var(--brand-accent); font-style: normal; font-weight: 600; }
-.hide-m {}
 
-/* ── Nav ── */
+/* ── Type scale ───────────────────────────────────────────── */
+
+.lp h1, .lp h2, .lp h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+  margin: 0;
+}
+.lp h1 { font-size: 56px; }
+.lp h2 { font-size: 44px; }
+.lp h3 { font-size: 32px; }
+
+/* Instrument Serif ships weight 400 and nothing else. Anything that
+   borrows the display face must say 400 explicitly, or it inherits
+   500 from .lp and the browser draws a synthetic bold. */
+.step-num,
+.stats-card-num, .stats-card-prefix, .stats-card-suffix,
+.why-item-num, .why-demo-metric-value, .why-demo-metric-value small,
+.mock-probe-score-num, .mock-probe-pct,
+.nav-sheet a { font-weight: 400; }
+
+.lp { font-synthesis-weight: none; }
+
+/* Everything else inherits Inter 500 16/22.4 from .lp. Deliberately
+   NOT a catch-all element list — `.lp div` would out-specify every
+   single-class rule that sets a display size, which is the same
+   cascade mistake utilities.css makes app-wide. Only the elements
+   that don't inherit by default are reset. */
+.lp button, .lp input, .lp select, .lp textarea { font: inherit; color: inherit; }
+.lp small { font-size: inherit; }
+.lp p { margin: 0; }
+.lp ul, .lp ol { margin: 0; padding: 0; list-style: none; }
+
+/* The two-tone device: the emphasised half of a heading steps back
+   to the muted tone instead of taking an accent colour. */
+em {
+  font-style: normal;
+  font-weight: inherit;
+  color: var(--muted);
+}
+.lp .stats-card em,
+.lp .final-cta em,
+.lp .faq-aside em { color: var(--on-ink-mut); }
+
+/* Inline emphasis inside body copy steps *forward* to full contrast
+   rather than sideways into a hue. These need two classes to clear the
+   surface rules above. */
+.lp .why-demo-body em { color: var(--card-fg); font-weight: 600; }
+.lp .mock-sec-alert-body em { color: var(--card-fg); font-weight: 600; }
+
+strong { font-weight: 600; }
+
+::selection { background: var(--ink); color: var(--cream); }
+.lp .stats-card ::selection,
+.lp .footer ::selection { background: var(--on-ink); color: var(--ink); }
+
+/* Focus rings. Ink surfaces need the inverse or the ring is
+   black-on-black and effectively invisible. */
+.lp a:focus-visible,
+.lp button:focus-visible,
+.lp summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.footer a:focus-visible, .footer button:focus-visible,
+.stats-card a:focus-visible,
+.faq-aside a:focus-visible,
+.final-cta a:focus-visible {
+  outline-color: var(--on-ink);
+}
+/* The Get Started pill is the one ink surface inside the light nav. */
+.nav .nav-cta:focus-visible { outline-color: var(--ink); outline-offset: 4px; }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+.lp [id] { scroll-margin-top: 128px; }
+
+/* ── Scroll reveal ────────────────────────────────────────────
+   Fade and rise. Ends at transform:none so it never becomes the
+   containing block for a position:sticky descendant. */
+.anim {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease);
+}
+.anim.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp *,
+  .lp *::before,
+  .lp *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .anim { opacity: 1; transform: none; }
+}
+
+/* ═══ Nav ═══════════════════════════════════════════════════
+   At rest it is invisible chrome: no ground, sitting on the cream and
+   aligned to the same container as the hero, so the wordmark lines up
+   with the H1. On scroll it contracts into a white pill and lifts off
+   the page. Everything in it stays ink in both states except the
+   Get Started button, which inverts to solid black once the ground
+   turns white — it is the one thing that has to keep popping. */
+
 .nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 16px 0;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.3s ease;
+  position: fixed;
+  top: 24px;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+  pointer-events: none;
 }
-.nav.scrolled { background: rgba(255,255,255,0.96); box-shadow: 0 1px 0 rgba(0,0,0,0.06); }
-.nav-row { display: flex; align-items: center; justify-content: space-between; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand-logo { width: 36px; height: 36px; object-fit: contain; }
-.brand-name { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 20px; color: #131718; letter-spacing: -0.02em; }
-.brand-beta {
-  display: inline-block;
-  background: #131718;
-  color: #fcd34d;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  padding: 2px 5px;
-  border-radius: 999px;
-  vertical-align: middle;
+.nav > * { pointer-events: auto; }
+
+.nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 1200px;
+  height: 64px;
+  padding: 0 24px;
+  background: transparent;
+  border-radius: 40px;
+  transition: max-width .45s var(--ease), background .3s ease,
+              box-shadow .35s var(--ease), padding .45s var(--ease);
 }
-.hero-beta-note {
+.nav.scrolled .nav-pill {
+  max-width: 880px;
+  padding: 0 12px 0 24px;
+  background: #ffffff;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, .10);
+}
+
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; flex: 0 0 auto; }
+.brand-logo { height: 22px; width: auto; object-fit: contain; }
+.brand-beta { font-size: 16px; color: var(--muted-2); }
+
+.nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
+.nav-links a { color: var(--ink); text-decoration: none; transition: opacity .2s ease; }
+.nav-links a:hover { opacity: .55; }
+
+.nav-right { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+.nav-link-text { color: var(--ink); text-decoration: none; transition: opacity .2s ease; }
+.nav-link-text:hover { opacity: .55; }
+
+/* Resting: a quiet light pill with an outlined arrow, as in the
+   reference. Scrolled: solid ink so it still reads against white. */
+.nav-cta {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
-  color: #475569;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  padding: 8px 14px;
-  border-radius: 999px;
-  margin: 18px 0 8px;
+  height: 44px;
+  padding: 0 6px 0 18px;
+  background: var(--cream-alt);
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  transition: background .3s ease, color .3s ease;
 }
-.nav-links { display: flex; gap: 32px; }
-.nav-links a { font-size: 13px; font-weight: 500; color: #6e6a65; text-decoration: none; transition: color 0.2s; }
-.nav-links a:hover { color: #131718; }
-.nav-right { display: flex; align-items: center; gap: 8px; }
-.nav-link-text { font-size: 13px; font-weight: 600; color: #6e6a65; padding: 8px 16px; text-decoration: none; transition: color 0.2s; }
-.nav-link-text:hover { color: #131718; }
-.nav-cta {
-  font-size: 13px; font-weight: 700; color: #fff;
-  background: #131718; padding: 9px 24px;
-  border-radius: 999px; text-decoration: none;
-  transition: all 0.25s;
+.nav-cta-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  color: inherit;
+  transition: transform .35s var(--ease), background .3s ease,
+              border-color .3s ease, color .3s ease;
 }
-.nav-cta:hover { background: #2a2d2e; transform: translateY(-1px); }
+.nav-cta:hover .nav-cta-arrow { transform: translate(2px, -2px); }
 
-/* ── Hero ── */
-.hero { padding: 140px 0 80px; }
+.nav.scrolled .nav-cta { background: var(--ink); color: var(--on-ink); }
+.nav.scrolled .nav-cta-arrow {
+  background: var(--on-ink);
+  border-color: var(--on-ink);
+  color: var(--ink);
+}
+
+/* burger */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  padding: 0 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.nav-burger-bar {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: var(--ink);
+  transition: transform .35s var(--ease), opacity .2s ease;
+}
+.nav-burger[aria-expanded="true"] .nav-burger-bar:first-child { transform: translateY(3.25px) rotate(45deg); }
+.nav-burger[aria-expanded="true"] .nav-burger-bar:last-child { transform: translateY(-3.25px) rotate(-45deg); }
+
+/* sheet — `inert` (bound in the template) owns tab order and focus;
+   CSS only animates. Deliberately no visibility transition: it leaves
+   the element unfocusable for a frame, so focus() on open silently
+   fails. */
+.nav-sheet {
+  position: absolute;
+  top: 76px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .12);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .35s var(--ease);
+}
+.nav-sheet.is-open { opacity: 1; transform: none; pointer-events: auto; }
+.nav-sheet a {
+  padding: 12px 4px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.1;
+  color: var(--ink);
+  text-decoration: none;
+}
+/* These two must out-specify `.nav-sheet a` above, which would
+   otherwise force both to display-face white. */
+.nav-sheet .nav-sheet-login,
+.nav-sheet .nav-sheet-cta {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.nav-sheet .nav-sheet-login {
+  color: var(--muted);
+  border-top: 1px solid var(--hair);
+  margin-top: 12px;
+  padding-top: 16px;
+}
+.nav-sheet .nav-sheet-cta {
+  margin-top: 8px;
+  text-align: center;
+  background: var(--ink);
+  color: var(--on-ink);
+  border-radius: var(--r-pill);
+  padding: 12px 18px;
+}
+
+/* ═══ Hero ══════════════════════════════════════════════════ */
+
+.hero { padding: 168px 0 40px; }
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 64px;
-  align-items: center;
-}
-@media (max-width: 980px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
-}
-.hero-eyebrow {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--brand-accent);
-  background: rgba(var(--brand-accent-rgb), 0.12);
-  padding: 6px 12px;
-  border-radius: 9999px;
-  margin-bottom: 18px;
-}
-.hero-word-cycler {
-  display: inline-block;
-  position: relative;
-  /* Reserve the widest word ("Perplexity") so the following text never
-     reflows when the word cycles — kills the horizontal jitter. */
-  min-width: 6em;
-  text-align: left;
-  vertical-align: baseline;
-}
-.hero-word {
-  display: inline-block;
-  color: var(--brand-accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.hero-bullets {
-  list-style: none;
-  margin: 28px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 14px;
-  color: #6e6a65;
-}
-.hero-bullets li { display: flex; align-items: center; gap: 10px; }
-.hero-bullet-dot {
-  width: 6px; height: 6px; border-radius: 9999px;
-  background: var(--brand-accent);
-  flex-shrink: 0;
-}
-
-/* Framer-style hero visualisation */
-/* Shared dot + bar utilities (reused in feature mockups) */
-.hero-viz-dot {
-  width: 8px; height: 8px; border-radius: 9999px;
-  flex-shrink: 0;
-  background: #cbd5e1;
-  display: inline-block;
-}
-.hero-viz-dot.is-anthropic  { background: #d97706; }
-.hero-viz-dot.is-openai     { background: #10b981; }
-.hero-viz-dot.is-google     { background: #4285f4; }
-.hero-viz-dot.is-perplexity { background: #5b6cff; }
-.hero-viz-bar {
-  position: relative;
-  height: 8px;
-  background: rgba(15, 23, 42, 0.06);
-  border-radius: 9999px;
-  overflow: hidden;
-}
-.hero-viz-bar-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 0;
-  border-radius: 9999px;
-  animation: hero-bar-fill 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.hero-viz-bar-fill.is-anthropic  { background: linear-gradient(90deg, #fbbf24, #d97706); }
-.hero-viz-bar-fill.is-openai     { background: linear-gradient(90deg, #34d399, #059669); }
-.hero-viz-bar-fill.is-google     { background: linear-gradient(90deg, #60a5fa, #2563eb); }
-.hero-viz-bar-fill.is-perplexity { background: linear-gradient(90deg, #818cf8, #4338ca); }
-@keyframes hero-bar-fill {
-  to { width: var(--target-w); }
-}
-
-/* ─── Hero "probe" animation — Framer-style narrative ─── */
-.probe {
-  position: relative;
-  background: #ffffff;
-  border: none;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-
-/* Prompt typing bar */
-.probe-prompt {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 16px;
-  background: #f7f7f7;
-  margin-bottom: 18px;
-}
-.probe-prompt-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #ff385c;
-  padding: 4px 8px; border-radius: 6px;
-  background: rgba(255, 56, 92, 0.10);
-  flex-shrink: 0;
-}
-.probe-prompt-text {
-  font-size: 15px; color: #222222; font-weight: 500;
-  display: inline-flex; align-items: center; min-width: 0;
-}
-.probe-typer {
-  display: inline-block;
-  white-space: nowrap; overflow: hidden;
-  border-right: none;
-  max-width: 100%;
-  animation: probe-type 6.4s steps(60) 1 both;
-}
-.probe-caret {
-  display: inline-block;
-  width: 2px; height: 17px;
-  background: #ff385c;
-  margin-left: 2px;
-  animation: probe-blink 1s step-end infinite;
-}
-@keyframes probe-type {
-  0%   { width: 0; }
-  60%  { width: 100%; }
-  100% { width: 100%; }
-}
-@keyframes probe-blink {
-  50% { opacity: 0; }
-}
-
-/* 2x2 reply grid */
-.probe-grid {
-  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 24px;
+  align-items: stretch;
 }
-.probe-card {
-  position: relative;
-  padding: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  opacity: 0;
-  transform: translateY(8px);
-  animation: probe-card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards;
-  overflow: hidden;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
-  /* Fixed height so the card never grows or shrinks as scenarios
-     cycle through prompts of different length. Longer replies
-     truncate in .probe-stream below. */
-  height: 172px;
+.hero-left {
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
-  contain: layout;
+  justify-content: space-between;
+  min-height: 460px;
+  gap: 40px;
 }
-@keyframes probe-card-in {
-  to { opacity: 1; transform: translateY(0); }
-}
-.probe-card:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-.probe-card-head {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 10px;
-}
-.probe-logo {
-  width: 28px; height: 28px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  /* Brand mark uses currentColor; container provides the tinted bg. */
-  color: #fff;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.probe-logo svg {
-  width: 16px; height: 16px;
-  display: block;
-}
-.probe-card:hover .probe-logo { transform: scale(1.08); }
-.probe-logo.is-anthropic  { background: #d97706; color: #fff; }
-.probe-logo.is-openai     { background: #0f1212; color: #fff; }
-/* Gemini logo is a gradient — keep container white so the gradient shows. */
-.probe-logo.is-google     { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); }
-.probe-logo.is-perplexity { background: #1fb8a8; color: #fff; }
-.probe-name {
-  font-size: 14px; font-weight: 600; color: #222222;
-  flex: 1;
-}
-.probe-status {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10.5px; font-weight: 600; color: #059669;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.probe-status-dot {
-  width: 6px; height: 6px; border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
-  animation: probe-pulse 1.8s ease-out infinite;
-}
-@keyframes probe-pulse {
-  70%  { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
+/* 16ch clears the longest line ("BRAND VISIBILITY," needs ~14ch) so the
+   three explicit <br/> breaks are the only breaks. In ch, so it holds
+   as the display size steps down at the breakpoints. */
+.hero-h { max-width: 16ch; }
+.hero-p { max-width: 500px; color: var(--muted); }
 
-.probe-stream {
-  font-size: 13px; line-height: 1.55; color: #484848;
-  margin-bottom: 12px;
-  /* Flex fills the vertical space between the header and the tags.
-     Overflow clamps at 3 lines so a long reply gets an ellipsis
-     instead of pushing the tags out of the card. */
-  flex: 1;
+.hero-word-cycler {
+  display: inline-grid;
+  vertical-align: bottom;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
+  height: 1.4em;
 }
-.probe-mark {
-  background: rgba(255, 56, 92, 0.12);
-  color: #222222;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 5px;
-}
+.hero-word { grid-area: 1 / 1; color: var(--ink); }
+.word-cycle-enter-active, .word-cycle-leave-active { transition: opacity .4s ease, transform .4s var(--ease); }
+.word-cycle-enter-from { opacity: 0; transform: translateY(100%); }
+.word-cycle-leave-to { opacity: 0; transform: translateY(-100%); }
 
-.probe-tags {
-  display: flex; flex-wrap: wrap; gap: 6px;
-}
-.probe-tag {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.probe-tag:hover {
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-.probe-tag-fav {
-  width: 18px; height: 18px; border-radius: 4px;
-  background: #fff;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-/* Footer score ring */
-.probe-foot {
-  display: flex; align-items: center; gap: 14px;
-  padding: 12px 14px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
-}
-.probe-ring {
-  position: relative;
-  width: 56px; height: 56px;
-  flex-shrink: 0;
-}
-.probe-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.probe-ring-bg {
-  fill: none; stroke: rgba(15, 23, 42, 0.08); stroke-width: 3;
-}
-.probe-ring-fg {
-  fill: none;
-  stroke: url(#probe-ring-grad);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 6px rgba(var(--brand-accent-rgb), 0.35));
-  animation: probe-ring-fill 2s cubic-bezier(0.16, 1, 0.3, 1) 1.4s forwards;
-}
-@keyframes probe-ring-fill {
-  /* End offset = 100 − target % (visibility). Keep in sync with
-     probeMetrics.visibility.value in the script section. */
-  to { stroke-dashoffset: 62; }  /* 100 − 38 = 62 */
-}
-.probe-ring-num {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; font-weight: 700; color: #1f2937;
-  font-variant-numeric: tabular-nums;
-}
-.probe-ring-num i { font-style: normal; font-size: 10px; color: #6e6a65; margin-left: 1px; }
-.probe-foot-copy { min-width: 0; }
-.probe-foot-h { font-size: 13px; font-weight: 700; color: #1f2937; }
-.probe-foot-sub { font-size: 11.5px; color: #6e6a65; margin-top: 2px; line-height: 1.4; }
-.probe-delta {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 1px 7px;
-  border-radius: 9999px;
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
-  font-weight: 600; font-size: 10.5px;
-}
-
-/* ── Framer-style magnetic tilt on the four reply cards ─────────── */
-.probe-card {
-  transform-style: preserve-3d;
-  transform: perspective(900px) rotateY(var(--tx, 0deg)) rotateX(var(--ty, 0deg));
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s ease;
-  will-change: transform;
-}
-.probe-card:hover {
-  box-shadow: 0 12px 32px -16px rgba(15, 23, 42, 0.25),
-              0 0 0 1px rgba(var(--brand-accent-rgb), 0.18);
-}
-
-/* ── New: live stats strip under the footer ─────────────────────── */
-.probe-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 10px;
-}
-.probe-stat {
-  position: relative;
-  padding: 10px 12px;
-  border: 1px solid rgba(15, 23, 42, 0.07);
-  border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
-  opacity: 0;
-  transform: translateY(6px);
-  animation: probe-stat-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards;
-  overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.probe-stat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25);
-}
-@keyframes probe-stat-in {
-  to { opacity: 1; transform: translateY(0); }
-}
-/* Subtle sheen sweep on entrance — same vocabulary as .probe-card. */
-.probe-stat::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(110deg,
-    transparent 0%,
-    rgba(var(--brand-accent-rgb), 0.10) 45%,
-    transparent 70%);
-  transform: translateX(-100%);
-  animation: probe-stat-sweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + 0.2s) forwards;
-  pointer-events: none;
-}
-@keyframes probe-stat-sweep {
-  to { transform: translateX(110%); }
-}
-.probe-stat-h {
-  font-size: 10px; font-weight: 600;
-  color: #6e6a65;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.probe-stat-h sub {
-  font-size: 7.5px;
-  vertical-align: baseline;
-  position: relative; bottom: -1px;
-  margin-left: 1px;
-  letter-spacing: 0;
-}
-.probe-stat-v {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  margin: 2px 0 0;
-  line-height: 1.1;
-}
-.probe-stat-d {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 1px 6px;
-  border-radius: 9999px;
-  font-size: 9.5px; font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.probe-stat-d.is-up {
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
-}
-
-@media (max-width: 720px) {
-  .probe-grid { grid-template-columns: 1fr; }
-  .probe-stats { grid-template-columns: repeat(2, 1fr); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .probe-typer { animation: none; width: auto; }
-  .probe-caret { animation: none; opacity: 0.6; }
-  .probe-card { opacity: 1; transform: none; animation: none; }
-  .probe-ring-fg { animation: none; stroke-dashoffset: 62; }
-  .probe-status-dot { animation: none; }
-  .probe-stat { opacity: 1; transform: none; animation: none; }
-  .probe-stat::after { display: none; }
-  .probe-card { transform: none; }
-}
-
-/* word-cycle transition (reused from the deleted features section).
-   The leaving word is pulled out of flow the instant the transition
-   starts (not only at leave-to) so the entering word can immediately
-   take its inline slot. Without this, both words occupy the flow
-   during the 0.3s transition, which can wrap the paragraph to an
-   extra line and shove everything below down. */
-.word-cycle-enter-active,
-.word-cycle-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  display: inline-block;
-}
-.word-cycle-leave-active {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-.word-cycle-enter-from { opacity: 0; transform: translateY(8px); }
-.word-cycle-leave-to   { opacity: 0; transform: translateY(-8px); }
-.hero-h {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400; font-size: clamp(2.8rem, 6vw, 5.5rem);
-  line-height: 1.05; letter-spacing: -0.03em;
-  text-transform: uppercase;
-  margin-bottom: 24px;
-  min-height: 3.3em; /* prevent layout shift during typewriter */
-}
-
-/* Typewriter cursor */
-.tw-line {
-  display: inline;
-}
-.tw-cursor {
-  display: inline-block;
-  font-weight: 300;
-  color: var(--brand-accent);
-  animation: tw-blink 0.6s step-end infinite;
-  margin-left: 2px;
-}
-.tw-cursor--done {
-  animation: tw-blink 1.2s step-end infinite;
-  opacity: 0.5;
-}
-@keyframes tw-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.hero-p { font-size: 16px; color: #6e6a65; line-height: 1.7; max-width: 480px; margin-bottom: 32px; }
-
-.hero-manifest {
-  position: relative;
-  max-width: 480px;
-  margin: 0 0 32px;
-  padding: 20px 22px 18px;
-  border-left: 3px solid var(--brand-accent);
-  background: linear-gradient(180deg, rgba(var(--brand-accent-rgb), 0.06), rgba(var(--brand-accent-rgb), 0));
-  border-radius: 4px 10px 10px 4px;
-}
-.hero-manifest-mark {
-  position: absolute;
-  top: -6px; left: 14px;
-  font-family: Georgia, serif;
-  font-size: 42px;
-  line-height: 1;
-  color: var(--brand-accent);
-  opacity: 0.5;
-  pointer-events: none;
-}
-.hero-manifest-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: #1f2937;
-  font-weight: 500;
-  font-style: normal;
-}
-.hero-manifest-attr {
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #6e6a65;
-}
-.hero-ctas { display: flex; gap: 12px; }
-.btn-primary {
-  padding: 14px 32px; background: #131718; color: #fff;
-  border-radius: 999px; font-weight: 700; font-size: 14px;
-  text-decoration: none; border: none; cursor: pointer;
-  transition: all 0.25s;
-}
-.btn-primary:hover { background: #2a2d2e; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-.btn-ghost {
-  padding: 14px 32px; background: transparent; color: #131718;
-  border: 1.5px solid rgba(0,0,0,0.12); border-radius: 999px;
-  font-weight: 700; font-size: 14px; text-decoration: none;
-  transition: all 0.25s;
-}
-.btn-ghost:hover { border-color: #131718; }
-
-/* ═══ Features Carousel — Travel Lab Style ═══ */
-.features-section { padding: 64px 0 80px; }
-.feat-full { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 24px; margin: 0 32px; padding: 48px 0 40px; overflow: hidden; }
-
-.feat-header { display: flex; align-items: baseline; gap: 40px; margin-bottom: 36px; flex-wrap: wrap; }
-.feat-headline {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: clamp(1.8rem, 3.5vw, 3rem);
-  font-weight: 400; text-transform: uppercase;
-  letter-spacing: -0.02em;
-  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
-  line-height: 1.2;
-}
-
-/* ── Framer-style word cycler ── */
-.feat-word-cycler {
-  display: inline-flex;
-  position: relative;
-  min-width: 240px;
-  height: 1.25em;
-  vertical-align: baseline;
-  overflow: hidden;
-  align-items: flex-end;
-}
-.feat-word {
-  display: inline-block;
-  position: absolute;
-  left: 0; bottom: 0;
-  color: var(--brand-accent);
-  font-style: normal;
-  white-space: nowrap;
-  line-height: 1.2;
-}
-.feat-word-glow {
-  position: absolute; bottom: -4px; left: 0; right: 0;
-  height: 3px; background: var(--brand-accent);
-  border-radius: 2px;
-  box-shadow: 0 0 12px rgba(var(--brand-accent-rgb), 0.5), 0 0 24px rgba(var(--brand-accent-rgb), 0.2);
-  animation: glow-pulse 2.8s ease-in-out infinite;
-}
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-/* Word cycle transition — slide up with blur */
-.word-cycle-enter-active {
-  transition: all 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.word-cycle-leave-active {
-  transition: all 0.35s cubic-bezier(0.55, 0, 1, 0.45);
-  position: absolute;
-}
-.word-cycle-enter-from {
-  opacity: 0; transform: translateY(100%) scale(0.9);
-  filter: blur(6px);
-}
-.word-cycle-enter-to {
-  opacity: 1; transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-.word-cycle-leave-from {
-  opacity: 1; transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-.word-cycle-leave-to {
-  opacity: 0; transform: translateY(-80%) scale(0.9);
-  filter: blur(6px);
-}
-
-.feat-tabs { display: flex; gap: 24px; }
-.feat-tab {
-  background: none; border: none; cursor: pointer;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: clamp(1rem, 1.8vw, 1.3rem);
-  font-style: normal; color: #94a3b8;
-  padding: 0; transition: all 0.3s;
-  position: relative;
-}
-.feat-tab.active {
-  color: var(--brand-accent);
-  text-decoration: none;
-}
-.feat-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -4px; left: 0; right: 0;
-  height: 2px;
-  background: var(--brand-accent);
-  border-radius: 1px;
-  animation: tab-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes tab-slide-in {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-.feat-tab:hover { color: #131718; }
-
-/* Carousel track */
-.carousel-wrap { overflow: hidden; padding: 0 32px; }
-.carousel-track {
-  display: flex; gap: 12px;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Individual card */
-.carousel-card {
-  flex: 0 0 260px; min-height: 320px;
-  border-radius: 16px; padding: 24px 20px;
-  cursor: pointer; position: relative;
-  display: flex; flex-direction: column;
-  transition: flex 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.3s ease;
-  overflow: hidden;
-  animation: card-entrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes card-entrance {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-.carousel-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-.carousel-card.expanded {
-  flex: 0 0 420px;
-  min-height: 360px;
-  box-shadow: 0 18px 48px rgba(0,0,0,0.14);
-  transform: translateY(-4px);
-}
-
-/* ── Per-tool animated visuals ── */
-.viz {
-  position: relative;
-  margin-bottom: auto;
+/* Hero media.
+   The photograph is 3:2 and the reference's hero column is nearly
+   square, so a full-height cover crop would slice the car's nose off.
+   460px keeps both columns balanced while leaving the whole subject
+   inside the frame. */
+.hero-right { display: flex; }
+.hero-media {
   width: 100%;
-}
-.viz-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 10px;
-}
-.viz-stat-value {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400;
-  font-size: 30px;
-  color: #131718;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.viz-stat-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.viz-stat-label { color: #131718; opacity: 0.6; font-weight: 600; }
-.viz-stat-delta {
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(19,23,24,0.08);
-  color: #131718;
-  font-weight: 700;
-}
-.viz-stat-delta.up { background: rgba(24,110,58,0.14); color: #186E3A; }
-
-/* Chart (Analytics) */
-.viz-chart { padding-right: 4px; }
-.chart-svg {
-  width: 100%;
-  height: 70px;
-  overflow: visible;
-  display: block;
-}
-.chart-line {
-  stroke-dasharray: 600;
-  stroke-dashoffset: 600;
-  transition: stroke-dashoffset 0s;
-}
-.chart-area { opacity: 0; }
-.chart-pulse { opacity: 0; }
-.is-playing .chart-line {
-  animation: chart-draw 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-}
-.is-playing .chart-area {
-  animation: fade-in 0.9s ease 0.9s forwards;
-}
-.is-playing .chart-pulse {
-  animation: pulse-dot 1.4s ease-in-out 1.6s infinite;
-}
-@keyframes chart-draw {
-  to { stroke-dashoffset: 0; }
-}
-@keyframes fade-in {
-  to { opacity: 1; }
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); transform-origin: center; }
-  50% { opacity: 0.25; transform: scale(1.8); }
-}
-
-/* Heatmap */
-.viz-heatmap { }
-.heatmap-canvas {
-  position: relative;
-  width: 100%;
-  height: 110px;
-  border-radius: 10px;
-  background:
-    repeating-linear-gradient(90deg, rgba(19,23,24,0.05) 0 1px, transparent 1px 36px),
-    repeating-linear-gradient(0deg,  rgba(19,23,24,0.05) 0 1px, transparent 1px 24px),
-    rgba(255,255,255,0.35);
-  overflow: hidden;
-}
-.heat-blob {
-  position: absolute;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0.4);
-  background: radial-gradient(circle, rgba(220,82,48,0.9) 0%, rgba(245,166,35,0.5) 45%, rgba(245,166,35,0) 75%);
-  filter: blur(2px);
-  opacity: 0;
-  pointer-events: none;
-}
-.is-playing .heat-blob {
-  animation: heat-pulse 2.1s ease-in-out infinite;
-}
-@keyframes heat-pulse {
-  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
-  30%  { opacity: 0.9; }
-  60%  { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-}
-.heatmap-cursor {
-  position: absolute;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid #131718;
-  top: 25%; left: 15%;
-  opacity: 0;
-}
-.is-playing .heatmap-cursor {
-  animation: cursor-move 6s ease-in-out infinite;
-}
-@keyframes cursor-move {
-  0%   { top: 25%;  left: 15%; opacity: 0; }
-  10%  { opacity: 1; }
-  25%  { top: 22%;  left: 62%; }
-  50%  { top: 58%;  left: 78%; }
-  75%  { top: 70%;  left: 35%; }
-  95%  { top: 48%;  left: 50%; opacity: 1; }
-  100% { top: 48%;  left: 50%; opacity: 0; }
-}
-
-/* Keywords */
-.kw-list { display: flex; flex-direction: column; gap: 6px; }
-.kw-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: #131718;
-  opacity: 0;
-  transform: translateX(-8px);
-}
-.is-playing .kw-row {
-  animation: kw-slide-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-@keyframes kw-slide-in {
-  to { opacity: 1; transform: translateX(0); }
-}
-.kw-rank {
-  width: 24px;
-  font-weight: 700;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
-  letter-spacing: -0.02em;
-}
-.kw-term {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-.kw-bar {
-  position: relative;
-  flex: 0 0 70px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(19,23,24,0.12);
-  overflow: hidden;
-}
-.kw-bar-fill {
-  display: block;
   height: 100%;
-  background: #131718;
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: left center;
-}
-.is-playing .kw-bar-fill {
-  animation: kw-bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-@keyframes kw-bar-grow {
-  to { transform: scaleX(1); }
-}
-.kw-delta {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #186E3A;
-  background: rgba(24,110,58,0.12);
-  padding: 2px 5px;
-  border-radius: 4px;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: var(--r-media);
+  display: block;
 }
 
-/* Lead ID */
-.lead-list { display: flex; flex-direction: column; gap: 6px; }
-.lead-row {
+/* ═══ Trust strip ═══════════════════════════════════════════ */
+
+.trust { background: var(--cream-alt); }
+.trust-row {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(19,23,24,0.06);
-  opacity: 0;
-  transform: translateY(8px);
+  gap: 8px 28px;
 }
-.is-playing .lead-row {
-  animation: lead-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.trust-label { color: var(--muted); }
+.trust-item { color: var(--ink); }
+
+/* ═══ Why this exists ═══════════════════════════════════════ */
+
+.why { padding: var(--sec-pad) 0; }
+.why-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.why-h { margin-bottom: 20px; }
+.why-h-quiet { color: var(--muted); }
+.why-sub { max-width: 500px; color: var(--muted); margin-bottom: 32px; }
+
+.why-list { border-top: 1px solid var(--hair); }
+.why-row { border-bottom: 1px solid var(--hair); }
+.why-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color .2s ease;
 }
-@keyframes lead-slide-in {
-  to { opacity: 1; transform: translateY(0); }
-}
-.lead-avatar {
-  width: 26px; height: 26px;
+.why-item:hover, .why-item.is-active { color: var(--ink); }
+.why-item-num { font-family: var(--font-display); font-size: 20px; color: inherit; }
+.why-item-label { color: inherit; }
+.why-item-arrow {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--hair);
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 11px;
-  flex-shrink: 0;
+  color: inherit;
+  transition: transform .35s var(--ease), background .2s ease, border-color .2s ease;
 }
-.lead-meta { flex: 1; min-width: 0; }
-.lead-name { font-size: 12px; font-weight: 700; color: #131718; line-height: 1.2; }
-.lead-domain { font-size: 10px; color: #131718; opacity: 0.55; }
-.lead-score {
-  font-size: 11px;
-  font-weight: 800;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: rgba(19,23,24,0.08);
-  color: #131718;
-}
-.lead-score.hot {
-  background: #DC5230;
-  color: #fff;
-  box-shadow: 0 0 0 0 rgba(220,82,48,0.7);
-}
-.is-playing .lead-score.hot {
-  animation: lead-hot-pulse 1.8s ease-in-out 0.8s infinite;
-}
-@keyframes lead-hot-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220,82,48,0.6); }
-  50%      { box-shadow: 0 0 0 6px rgba(220,82,48,0); }
+.why-item:hover .why-item-arrow,
+.why-item.is-active .why-item-arrow {
+  transform: translate(2px, -2px);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
 }
 
-/* Card tints — Travel Lab branding */
-.carousel-card.tint-peach   { background: #FEC29F; }
-.carousel-card.tint-blue    { background: #D1E6F6; }
-.carousel-card.tint-yellow  { background: #FFF6C6; border: 1px solid rgba(0,0,0,0.06); }
-.carousel-card.tint-pink    { background: #FFDAE4; }
+/* Same light card as the feature mocks, but there is no video well
+   behind this one — so it carries a visible hairline and a softer
+   shadow to separate itself from the cream. */
+.why-panel {
+  padding: 24px;
+  background: #fffcf7;
+  border: 1px solid var(--card-hair);
+  border-radius: var(--r-card);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .07);
+  min-height: 420px;
+  display: flex;
+  color: var(--card-fg);
+}
+.why-demo { width: 100%; }
+.why-demo-panel { display: flex; flex-direction: column; gap: 16px; height: 100%; }
+.why-demo-fade-enter-active, .why-demo-fade-leave-active { transition: opacity .3s ease, transform .3s var(--ease); }
+.why-demo-fade-enter-from { opacity: 0; transform: translateY(8px); }
+.why-demo-fade-leave-to { opacity: 0; transform: translateY(-8px); }
 
-/* Card inner elements */
-.card-num {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 2.2rem; font-weight: 400;
-  color: #131718; line-height: 1;
-  margin-bottom: 16px;
+.why-demo-head { display: flex; align-items: center; gap: 10px; color: var(--card-fg); }
+.why-demo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--card-fg) !important; /* overrides the inline hue */
 }
-.card-visual { margin-bottom: auto; }
-.card-icon {
-  color: #131718; opacity: 0.7;
-  transition: transform 0.3s ease;
-}
-.carousel-card:hover .card-icon {
-  transform: scale(1.1);
-}
-.card-title {
-  font-size: 18px; font-weight: 800;
-  color: #131718; letter-spacing: -0.01em;
-  margin-top: auto;
-}
-
-/* Expanded card details — smooth reveal */
-.card-expand {
-  margin-top: 0;
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.35s ease,
-              margin-top 0.35s ease;
-}
-.card-expand--open {
-  max-height: 200px;
-  opacity: 1;
-  margin-top: 10px;
-}
-.card-arrow { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-.card-desc { font-size: 12px; color: #131718; opacity: 0.75; line-height: 1.5; margin-bottom: 10px; }
-.card-replaces { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #131718; opacity: 0.4; }
-
-/* Carousel nav */
-.carousel-nav { display: flex; align-items: center; gap: 16px; margin-top: 28px; }
-.cn-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 1.5px solid #131718; background: transparent;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #131718;
-  transition: all 0.2s;
-}
-.cn-btn:hover { background: #131718; color: #fff; }
-.cn-btn:disabled { opacity: 0.25; cursor: default; }
-.cn-btn:disabled:hover { background: transparent; color: #131718; }
-.cn-counter { font-size: 13px; font-weight: 600; color: #6e6a65; }
-
-/* ── Section Headings ── */
-.sec-h {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400; font-size: clamp(1.6rem, 3.5vw, 2.6rem);
-  line-height: 1.1; margin-bottom: 48px;
-}
-
-/* ── How It Works ── */
-.how { padding: 96px 0; background: #ffffff; }
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-@media (max-width: 960px)  { .steps { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px)  { .steps { grid-template-columns: 1fr; } }
-.step {
-  background: #fff; border: 1px solid rgba(0,0,0,0.06);
-  border-radius: 20px; padding: 32px 24px;
-  transition: all 0.3s;
-}
-.step:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.05); }
-.step-num {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: #131718; color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 14px; margin-bottom: 16px;
-}
-.step h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
-.step p { font-size: 13px; color: #6e6a65; line-height: 1.6; }
-
-/* ── Pricing ── */
-.pricing { padding: 96px 0; }
-.price-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 0 auto; }
-.price-card {
-  display: flex; flex-direction: column;
-  background: #fff; border: 1px solid rgba(0,0,0,0.06);
-  border-radius: 20px; padding: 32px 24px;
-  position: relative; transition: all 0.3s;
-}
-.price-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.05); }
-.price-card.featured { border-color: var(--brand-accent); box-shadow: 0 4px 20px rgba(var(--brand-accent-rgb),0.1); }
-.pop {
-  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-  padding: 3px 14px; background: var(--brand-accent); color: #fff;
-  border-radius: 999px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.price-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
-.price-big { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2.6rem; line-height: 1; }
-.price-per { font-size: 13px; color: #a09a93; }
-.price-desc { font-size: 12px; color: #6e6a65; margin: 6px 0 20px; }
-.price-card ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; flex-grow: 1; }
-.price-card li { font-size: 12px; color: #6e6a65; }
-.price-btn {
-  display: block; text-align: center; padding: 12px;
-  border-radius: 999px; font-size: 13px; font-weight: 700;
-  text-decoration: none; border: 1.5px solid rgba(0,0,0,0.1);
-  color: #131718; transition: all 0.25s;
-}
-.price-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
-.price-btn.dark { background: #131718; border-color: #131718; color: #fff; }
-.price-btn.dark:hover { background: #2a2d2e; transform: translateY(-1px); }
-
-/* ── Final CTA ── */
-.final-cta { padding: 48px 0 80px; }
-.cta-inner {
-  text-align: center; background: #D1E6F6;
-  border: none; border-radius: 24px;
-  padding: 72px 40px;
-}
-.cta-inner h2 {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400; font-size: clamp(1.6rem, 3vw, 2.2rem);
-  margin-bottom: 10px;
-}
-.cta-inner p { font-size: 15px; color: #6e6a65; margin-bottom: 28px; }
-
-/* ── Footer ── */
-/* ── Footer ─────────────────────────────────────────────── */
-.footer {
-  padding: 80px 0 32px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  background: #faf6ef;
-  color: #4a4540;
-}
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1.4fr repeat(4, 1fr);
-  gap: 48px 32px;
-  padding-bottom: 56px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-@media (max-width: 980px) {
-  .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px 24px; }
-  .footer-brand-col { grid-column: 1 / -1; }
-}
-@media (max-width: 600px) {
-  .footer-grid { grid-template-columns: 1fr; }
-}
-
-.footer-brand-col { max-width: 320px; }
-.footer-brand {
+.why-demo-body { color: var(--card-mut); }
+.why-demo-list { counter-reset: d; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.why-demo-list li {
+  counter-increment: d;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 20px;
-  color: #1f2937;
-  margin-bottom: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-hair);
+  color: var(--card-mut);
 }
-.footer-logo { width: 32px; height: 32px; object-fit: contain; }
-.footer-tagline {
-  font-size: 13.5px;
-  line-height: 1.65;
-  color: #6e6a65;
-  margin: 0 0 18px;
+.why-demo-list li::before { content: counter(d) '.'; color: var(--card-dim); min-width: 18px; }
+.why-demo-list li.hi { color: var(--card-fg); }
+.why-demo-you { color: var(--card-fg) !important; }
+.why-demo-you-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-left: auto; padding: 3px 10px;
+  border: 1px solid var(--card-hair-2); border-radius: var(--r-pill);
+  color: var(--card-fg); white-space: nowrap;
 }
+.why-demo-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--card-hair); color: var(--card-dim); }
+.why-demo-foot strong { color: var(--card-fg); }
 
-.footer-socials {
-  display: flex;
-  gap: 8px;
-}
-.footer-social {
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #ffffff;
-  color: #4a4540;
-  transition: transform 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
-}
-.footer-social:hover {
-  color: var(--brand-accent);
-  border-color: var(--brand-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(var(--brand-accent-rgb), 0.18);
-}
+.why-demo-metric { display: flex; flex-direction: column; gap: 4px; }
+.why-demo-metric-value { font-family: var(--font-display); font-size: 44px; line-height: 1.1; color: var(--card-fg); }
+.why-demo-metric-value small { font-family: var(--font-display); font-size: 24px; color: var(--card-dim); }
+.why-demo-metric-label { color: var(--card-mut); }
+.why-demo-bars { display: flex; flex-direction: column; gap: 10px; }
+.why-demo-bar-row { display: grid; grid-template-columns: 84px 1fr auto; align-items: center; gap: 12px; }
+.why-demo-bar-row .lbl { color: var(--card-mut); }
+.why-demo-bar-row .bar { height: 8px; border-radius: 20px; background: var(--card-track); overflow: hidden; }
+.why-demo-bar-row .bar > span { display: block; height: 100%; background: var(--card-fg); border-radius: 20px; }
+.why-demo-bar-row .val { color: var(--card-dim); }
 
-.footer-col { display: flex; flex-direction: column; gap: 10px; }
-.footer-col-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #1f2937;
-  margin-bottom: 8px;
+.why-cta {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+  margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--hair);
 }
-.footer-col a {
-  font-size: 13.5px;
-  color: #6e6a65;
-  text-decoration: none;
-  transition: color 0.12s ease;
+.why-cta-line { color: var(--muted); }
+.why-cta-line strong { color: var(--ink); }
+.why-cta-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 42px; padding: 0 18px;
+  background: var(--ink); color: var(--on-ink);
+  border-radius: var(--r-pill); text-decoration: none;
+  transition: opacity .2s ease;
 }
-.footer-col a:hover {
-  color: var(--brand-accent);
-}
+.why-cta-btn:hover { opacity: .85; }
+.why-cta-btn svg { transition: transform .35s var(--ease); }
+.why-cta-btn:hover svg { transform: translateX(3px); }
 
-.footer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 28px;
-}
-.footer-copy {
-  font-size: 12.5px;
-  color: #a09a93;
-}
-.footer-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #a09a93;
-}
-.footer-meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.footer-meta-divider { color: #cbc5bd; }
-.footer-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
-  animation: footer-status-pulse 1.8s ease-out infinite;
-}
-@keyframes footer-status-pulse {
-  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
+/* ═══ Stats card ════════════════════════════════════════════ */
 
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .nav-links { display: none; }
-  .steps, .price-grid { grid-template-columns: 1fr; }
-  .feat-header { flex-direction: column; gap: 16px; }
-  .feat-full { margin: 0 16px; }
-  .carousel-card { flex: 0 0 220px; min-height: 260px; }
-  .carousel-card.expanded { flex: 0 0 280px; }
-  .hide-m { display: none; }
-  .feat-word-cycler { min-width: 160px; }
-}
-@media (max-width: 640px) {
-  .hero-h { font-size: 2.4rem; min-height: auto; }
-  .hero-ctas { flex-direction: column; align-items: flex-start; }
-}
-
-/* ──────────────────────────────────────────────────
-   "Our Tools For" section — Airbnb-style cards
-   Warm neutrals + per-card accent borders (rausch, coral,
-   teal/babu, sky). Fonts: Geist + Inter.
-   ────────────────────────────────────────────────── */
-.tools-for {
-  --ab-fg: #222222;
-  --ab-fg-muted: #6a6a6a;
-  --ab-fg-subtle: #b0b0b0;
-  --ab-bg: #f7f7f7;
-  --ab-card: #ffffff;
-  --ab-hairline: #ebebeb;
-  --ab-hairline-strong: #dddddd;
-  --ab-rausch: #ff385c;
-  --ab-coral: #e07856;
-  --ab-babu: #00a699;
-  --ab-sky: #428bca;
-  --ab-arches: #fc642d;
-  padding: 120px 0 100px;
-  background: var(--ab-bg);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: var(--ab-fg);
-}
-.tools-for .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-
-.tools-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 56px;
-  flex-wrap: wrap;
-}
-
-.tools-eyebrow {
-  font-family: 'Geist', 'Inter', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  color: var(--ab-fg-muted);
-  text-transform: uppercase;
-}
-
-.tools-tabs {
-  display: inline-flex;
-  gap: 2px;
-  padding: 4px;
-  background: #ffffff;
-  border: 1px solid var(--ab-hairline);
-  border-radius: 999px;
-}
-
-.tools-tab {
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 9px 18px;
-  border-radius: 999px;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--ab-fg-muted);
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-.tools-tab:hover { color: var(--ab-fg); background: #f7f7f7; }
-.tools-tab-active {
-  background: var(--ab-fg);
-  color: #ffffff;
-}
-.tools-tab-active:hover { background: var(--ab-fg); color: #ffffff; }
-
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-bottom: 48px;
-}
-
-/* Base tool card */
-.tool-card {
-  --accent: var(--ab-fg);
-  --accent-soft: #f7f7f7;
-  --accent-strong: #222222;
+.stats { padding: var(--sec-pad) 0; }
+.stats-card {
   position: relative;
-  background: var(--ab-card);
-  border: 1px solid var(--ab-hairline);
-  border-radius: 16px;
-  padding: 22px 22px 26px;
-  cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  min-height: 340px;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: var(--ink);
+  padding: 48px;
+  isolation: isolate;
+}
+.stats-card-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.stats-card-tint { position: absolute; inset: 0; background: rgba(0, 0, 0, .72); z-index: -1; }
+.stats-card-content { display: flex; flex-direction: column; gap: 56px; }
+.stats-card-top { display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start; }
+.stats-card-h { color: var(--on-ink); }
+.stats-card-sub { color: var(--on-ink-mut); }
+.stats-card-bottom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.stats-card-metric { display: flex; flex-direction: column; gap: 6px; padding-top: 20px; border-top: 1px solid var(--hair-ink); }
+.stats-card-num { font-family: var(--font-display); font-size: 44px; line-height: 1.1; color: var(--on-ink); }
+.stats-card-prefix, .stats-card-suffix { font-family: var(--font-display); }
+.stats-card-label { color: var(--on-ink); }
+.stats-card-note { color: var(--on-ink-mut); }
+.stats-card-cite { margin-top: 6px; color: var(--on-ink-dim); text-decoration: underline; text-underline-offset: 3px; transition: color .2s ease; }
+.stats-card-cite:hover { color: var(--on-ink); }
+
+/* ═══ Feature showcase ══════════════════════════════════════ */
+
+.feature-showcase { padding: var(--sec-pad) 0; display: flex; flex-direction: column; }
+.feature-showcase .wrap { display: flex; flex-direction: column; gap: 96px; }
+.feature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+.feature-row.is-reverse .feature-copy { order: 2; }
+
+.feature-copy { display: flex; flex-direction: column; gap: 20px; }
+.feature-eyebrow { color: var(--muted); }
+.feature-h { font-family: var(--font-display); font-size: 44px; line-height: 1.1; font-weight: 400; }
+.feature-desc { color: var(--muted); max-width: 500px; }
+.feature-bullets { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--hair); padding-top: 20px; }
+.feature-bullets li { display: flex; align-items: baseline; gap: 12px; color: var(--muted); }
+.feature-bullet-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); flex: 0 0 auto; transform: translateY(-3px); }
+
+/* The video is the media well; the mock floats on it so the
+   watercolor frames the card rather than hiding behind it. */
+.feature-visual {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: var(--ink);
+  padding: 24px;
+  min-height: 420px;
+  display: flex;
+  isolation: isolate;
+}
+.feature-visual-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+/* Light enough that the watercolor still reads as colour in the band
+   around the card — the video is meant to be seen, not just implied. */
+.feature-visual-tint { position: absolute; inset: 0; background: rgba(0, 0, 0, .28); z-index: -1; }
+
+/* Light-card token set. Every product panel on the page — the four
+   feature mocks and the "why this exists" demo — reads its tones off
+   these rather than the page's on-ink set, so the whole family flips
+   light or dark from one place. */
+.mock-card,
+.why-panel {
+  --card-fg: var(--ink);
+  --card-mut: var(--muted);
+  --card-dim: var(--muted-2);
+  --card-hair: rgba(0, 0, 0, .10);
+  --card-hair-2: rgba(0, 0, 0, .20);
+  --card-wash: rgba(0, 0, 0, .035);
+  --card-wash-2: rgba(0, 0, 0, .06);
+  --card-track: rgba(0, 0, 0, .10);
+
+  /* Provider ramp, re-cut for a light ground. Still monochrome, still
+     always paired with a text label. */
+  --v-anthropic: #000000;
+  --v-openai: #4a4a4a;
+  --v-google: #7a7a7a;
+  --v-perplexity: #adadad;
+}
+
+/* The mock is a near-opaque light card floating on the video well. */
+.mock-card {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-.tool-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--accent);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  opacity: 0.9;
-}
-.tool-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  border-color: var(--accent);
-}
-.tool-card-active {
-  border-color: var(--accent);
-  box-shadow: 0 12px 32px -10px color-mix(in srgb, var(--accent) 28%, transparent), 0 2px 6px rgba(0, 0, 0, 0.06);
-}
-.tool-card-active::before { height: 6px; opacity: 1; }
-
-/* Per-tool accents */
-.tool-card-rausch { --accent: var(--ab-rausch); --accent-soft: #fff1f3; --accent-strong: #c01e3c; }
-.tool-card-coral  { --accent: var(--ab-coral);  --accent-soft: #fdf2ec; --accent-strong: #a55436; }
-.tool-card-green  { --accent: var(--ab-babu);   --accent-soft: #e6f6f4; --accent-strong: #007a72; }
-.tool-card-blue   { --accent: var(--ab-sky);    --accent-soft: #eef4fb; --accent-strong: #2e63a1; }
-
-.tool-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.tool-num {
-  font-family: 'Geist', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--accent-strong);
-  background: var(--accent-soft);
-  padding: 3px 9px;
-  border-radius: 6px;
-}
-.tool-label {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--ab-fg-muted);
-  text-transform: uppercase;
+  gap: 14px;
+  padding: 20px;
+  background: rgba(255, 252, 247, .95);
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .18);
+  color: var(--card-fg);
 }
 
-.tool-metric { margin-bottom: 18px; }
-.tool-metric-num {
-  font-family: 'Geist', 'Inter', sans-serif;
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: var(--ab-fg);
-  margin-bottom: 4px;
-}
-.tool-metric-sub {
-  font-size: 13.5px;
-  color: var(--ab-fg-muted);
-  margin-bottom: 10px;
-}
-.tool-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-family: 'Inter', sans-serif;
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-.tool-badge.tone-pos {
-  background: #e6f6f4;
-  color: #007a72;
-}
-.tool-badge.tone-neutral {
-  background: #f2f2f2;
-  color: #555555;
-}
-.tool-badge.tone-accent {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
+/* — shared mock atoms — */
+.mock-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--card-hair); }
+.mock-detail-label { color: var(--card-dim); }
+.mock-detail-value { color: var(--card-fg); text-align: right; }
+.mock-detail-status { color: var(--card-dim); margin-left: auto; }
 
-/* ── Keyword list ── */
-.tool-viz-list { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
-.kw-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  background: #fafafa;
-  border: 1px solid var(--ab-hairline);
-  border-radius: 8px;
-  font-size: 12.5px;
-}
-.kw-pos {
-  font-family: 'Geist', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  min-width: 26px;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-.kw-pos.pos-1 { background: #e6f6f4; color: #007a72; }
-.kw-pos.pos-3 { background: #eef4fb; color: #2e63a1; }
-.kw-pos.pos-5 { background: #f2f2f2; color: #555555; }
-.kw-term { color: #333333; font-size: 12.5px; }
-.kw-delta {
-  font-family: 'Geist', sans-serif;
-  font-size: 11px;
-  color: var(--ab-fg-subtle);
-}
-
-/* ── Lead rows ── */
-.lead-row {
-  display: grid;
-  grid-template-columns: 28px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  background: #fafafa;
-  border: 1px solid var(--ab-hairline);
-  border-radius: 8px;
-}
-.lead-avatar {
-  display: inline-flex;
-  width: 26px;
-  height: 26px;
-  align-items: center;
-  justify-content: center;
-  background: var(--ab-rausch);
-  color: #ffffff;
-  font-family: 'Geist', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-  border-radius: 6px;
-}
-.lead-meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.lead-name { font-size: 12.5px; font-weight: 600; color: var(--ab-fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lead-domain { font-size: 11px; color: var(--ab-fg-subtle); }
-.lead-score {
-  font-family: 'Geist', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 4px;
-  min-width: 30px;
-  text-align: center;
-}
-.lead-score.score-hot  { background: #fff1f3; color: var(--ab-rausch); }
-.lead-score.score-warm { background: #fdf2ec; color: var(--ab-arches); }
-.lead-score.score-cool { background: #f2f2f2; color: #555555; }
-
-/* ── Sparkline (Analytics) ── */
-.tool-viz-spark { margin-top: auto; color: var(--accent); }
-.spark-svg { width: 100%; height: 52px; display: block; }
-
-/* ── Heatmap dots (Heatmaps) ── */
-.tool-viz-dots {
-  position: relative;
-  margin-top: auto;
-  height: 80px;
-  background: #fafafa;
-  border: 1px solid var(--ab-hairline);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.viz-dot {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  margin-top: -5px;
-  background: var(--accent);
+.mock-model-dot,
+.mock-source-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
   border-radius: 50%;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
-  opacity: 0.85;
+  background: transparent;
+  border: 1px solid var(--card-dim);
+  flex: 0 0 auto;
 }
+.mock-model-dot.is-hit { background: var(--card-fg); border-color: var(--card-fg); }
+.mock-source-dot.is-anthropic  { background: var(--v-anthropic);  border-color: var(--v-anthropic); }
+.mock-source-dot.is-openai     { background: var(--v-openai);     border-color: var(--v-openai); }
+.mock-source-dot.is-google     { background: var(--v-google);     border-color: var(--v-google); }
+.mock-source-dot.is-perplexity { background: var(--v-perplexity); border-color: var(--card-dim); }
 
-/* ── Bottom caption + pager ── */
-.tools-bottom {
+/* — Prompt Library — */
+.mock-search { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card-wash); border: 1px solid var(--card-hair); border-radius: 10px; }
+.mock-search-icon { width: 12px; height: 12px; border: 1.5px solid var(--card-dim); border-radius: 50%; position: relative; flex: 0 0 auto; }
+.mock-search-icon::after { content: ''; position: absolute; right: -4px; bottom: -3px; width: 5px; height: 1.5px; background: var(--card-dim); transform: rotate(45deg); }
+.mock-search-text { color: var(--card-fg); }
+.mock-search-caret { color: var(--card-fg); animation: caret-blink 1.1s step-end infinite; }
+@keyframes caret-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+
+.mock-rows { display: flex; flex-direction: column; }
+.mock-prompt-row { padding: 12px 0; border-bottom: 1px solid var(--card-hair); cursor: pointer; animation: mock-row-in .45s var(--ease) both; }
+.mock-prompt-row:hover { background: var(--card-wash); }
+.mock-prompt-row.is-pinned { background: var(--card-wash-2); }
+@keyframes mock-row-in { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.mock-row-stagger-enter-active, .mock-row-stagger-leave-active { transition: opacity .3s ease, transform .3s var(--ease); }
+.mock-row-stagger-enter-from, .mock-row-stagger-leave-to { opacity: 0; transform: translateY(6px); }
+
+.mock-prompt-main { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.mock-q { color: var(--card-fg); }
+.mock-chip { padding: 2px 10px; border: 1px solid var(--card-hair-2); border-radius: var(--r-pill); color: var(--card-dim); white-space: nowrap; }
+.mock-prompt-meta { display: flex; align-items: center; gap: 14px; margin-top: 8px; color: var(--card-dim); }
+.mock-metric { color: var(--card-dim); white-space: nowrap; }
+.mock-metric b { color: var(--card-fg); font-weight: 600; }
+.mock-lib-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mock-lib-title { color: var(--card-fg); }
+.mock-lib-count { color: var(--card-dim); margin-left: 6px; }
+.mock-lib-tools { display: flex; gap: 6px; }
+.mock-models { display: inline-flex; gap: 5px; margin-left: auto; }
+.mock-prompt-detail { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--card-hair); }
+.mock-detail-models { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.mock-detail-models li { display: flex; align-items: center; gap: 10px; color: var(--card-mut); }
+.mock-detail-models li.is-hit { color: var(--card-fg); }
+
+/* — Multi-LLM Probing — */
+.mock-probe-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--card-hair); }
+.mock-probe-title { color: var(--card-fg); }
+.mock-probe-sub { color: var(--card-dim); }
+.mock-probe-score { text-align: right; flex: 0 0 auto; }
+.mock-probe-score-num { display: block; font-family: var(--font-display); font-size: 32px; line-height: 1.1; color: var(--card-fg); }
+.mock-probe-score-label { color: var(--card-dim); }
+.mock-probe-grid { display: flex; flex-direction: column; }
+.mock-probe-card { padding: 12px 0; border-bottom: 1px solid var(--card-hair); cursor: pointer; animation: mock-row-in .45s var(--ease) both; }
+.mock-probe-card:hover { background: var(--card-wash); }
+.mock-probe-card.is-pinned { background: var(--card-wash-2); }
+.mock-probe-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mock-probe-name { display: inline-flex; align-items: center; gap: 8px; color: var(--card-fg); }
+.mock-probe-pct { font-family: var(--font-display); font-size: 20px; color: var(--card-fg); }
+.mock-probe-bar { height: 8px; margin: 8px 0; border-radius: 20px; background: var(--card-track); overflow: hidden; }
+.mock-probe-bar-fill { height: 100%; width: var(--target-w, 0%); border-radius: 20px; background: var(--card-fg); animation: bar-grow .8s var(--ease) both; }
+.mock-probe-bar-fill.is-anthropic  { background: var(--v-anthropic); }
+.mock-probe-bar-fill.is-openai     { background: var(--v-openai); }
+.mock-probe-bar-fill.is-google     { background: var(--v-google); }
+.mock-probe-bar-fill.is-perplexity { background: var(--v-perplexity); }
+@keyframes bar-grow { from { width: 0 } }
+.mock-probe-stats { display: flex; align-items: center; gap: 14px; color: var(--card-dim); }
+.mock-probe-delta { color: var(--card-mut); }
+.mock-probe-stat { color: var(--card-dim); }
+.mock-probe-detail { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--card-hair); }
+.mock-probe-sent { display: inline-flex; width: 120px; height: 8px; border-radius: 20px; overflow: hidden; }
+.mock-probe-sent-seg { width: var(--w); height: 100%; }
+.mock-probe-sent-seg.pos { background: var(--card-fg); }
+.mock-probe-sent-seg.neu { background: var(--card-dim); }
+.mock-probe-sent-seg.neg { background: var(--card-track); }
+.mock-probe-comp { color: var(--card-dim); }
+.mock-probe-safety { color: var(--card-fg); }
+.mock-probe-safety.is-warn { color: var(--card-mut); }
+
+/* — Source Influence — */
+.mock-source-head { padding-bottom: 12px; border-bottom: 1px solid var(--card-hair); }
+.mock-source-title { color: var(--card-fg); }
+.mock-source-sub { color: var(--card-dim); }
+.mock-source-row { padding: 12px 0; border-bottom: 1px solid var(--card-hair); cursor: pointer; animation: mock-row-in .45s var(--ease) both; }
+.mock-source-row:hover { background: var(--card-wash); }
+.mock-source-row.is-pinned { background: var(--card-wash-2); }
+.mock-source-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.mock-source-label { display: inline-flex; align-items: center; gap: 8px; color: var(--card-fg); }
+.mock-source-rank { color: var(--card-fg); }
+.mock-source-rank.is-miss { color: var(--card-dim); }
+.mock-rank-num { display: inline-block; min-width: 14px; color: var(--card-dim); }
+.mock-stack { display: flex; align-items: center; gap: 10px; }
+.mock-stack > .mock-seg { height: 8px; border-radius: 20px; background: var(--card-fg); width: var(--target-w, 0%); max-width: 100%; animation: bar-grow .8s var(--ease) both; }
+.mock-share-pct { color: var(--card-dim); flex: 0 0 auto; }
+.mock-next { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--card-hair); }
+.mock-next-title { color: var(--card-fg); margin-bottom: 8px; }
+.mock-next-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.mock-next-label { color: var(--card-mut); }
+.mock-next-count { color: var(--card-dim); white-space: nowrap; }
+.mock-source-detail { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--card-hair); }
+.mock-source-domain { color: var(--card-fg); }
+.mock-source-takeaway { color: var(--card-mut); }
+
+/* — Brand Security — */
+.mock-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--card-hair); }
+.mock-sec-title { color: var(--card-fg); }
+.mock-sec-count { color: var(--card-dim); white-space: nowrap; }
+.mock-sec-quote { margin: 0; color: var(--card-mut); }
+/* The flagged span, highlighted in place — this is the whole point of the
+   finding, so it gets the ink treatment rather than a colour wash. */
+.mock-sec-flag { background: var(--card-wash-2); color: var(--card-fg); box-shadow: inset 0 -1px 0 var(--card-fg); padding: 0 1px; }
+.mock-sec-alerts { display: flex; flex-direction: column; }
+.mock-sec-alert { padding: 12px 0; border-bottom: 1px solid var(--card-hair); animation: mock-row-in .45s var(--ease) both; }
+.mock-sec-alert-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mock-sec-meta { color: var(--card-dim); margin: 2px 0 6px; }
+.mock-sec-agent { color: var(--card-fg); }
+.mock-sec-src, .mock-sec-time { color: var(--card-dim); }
+.mock-sec-sev { flex: 0 0 auto; padding: 2px 10px; border-radius: var(--r-pill); border: 1px solid var(--card-hair-2); color: var(--card-mut); white-space: nowrap; }
+.mock-sec-sev.is-high { background: var(--card-fg); border-color: var(--card-fg); color: var(--cream); }
+.mock-sec-sev.is-medium { border-color: var(--card-hair-2); color: var(--card-mut); }
+.mock-sec-alert-body { color: var(--card-mut); }
+
+
+/* ═══ How it works ══════════════════════════════════════════ */
+
+.how { padding: var(--sec-pad) 0; }
+.sec-h { margin-bottom: 40px; }
+.steps { border-top: 1px solid var(--hair); }
+.step {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 1fr;
+  gap: 24px;
+  align-items: baseline;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.step-num { font-family: var(--font-display); font-size: 32px; line-height: 1.1; color: var(--muted); }
+.step h3 { font-size: 32px; }
+.step p { color: var(--muted); }
+
+/* ═══ FAQ ═══════════════════════════════════════════════════ */
+
+.faq { padding: var(--sec-pad) 0; }
+.faq-wrap { display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 48px; align-items: start; }
+.faq-aside {
+  position: sticky;
+  top: 120px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding-top: 28px;
-  border-top: 1px solid var(--ab-hairline);
+  flex-direction: column;
+  gap: 20px;
+  padding: 32px;
+  background: var(--ink);
+  border-radius: var(--r-card);
 }
-.tool-caption { max-width: 680px; }
-.tool-desc {
-  font-family: 'Inter', sans-serif;
-  font-size: 17px;
-  line-height: 1.5;
-  font-weight: 500;
-  color: var(--ab-fg);
-  margin: 0 0 8px;
-  letter-spacing: -0.01em;
+.faq-eyebrow { color: var(--on-ink-dim); }
+.faq-h { color: var(--on-ink); }
+.faq-aside-btn {
+  align-self: flex-start;
+  display: inline-flex; align-items: center;
+  height: 42px; padding: 0 22px;
+  margin-top: 8px;
+  background: var(--cream); color: var(--ink);
+  border-radius: var(--r-pill); text-decoration: none;
+  transition: opacity .2s ease;
 }
-.tool-replace {
-  font-size: 12.5px;
-  color: var(--ab-fg-muted);
-  letter-spacing: 0.01em;
-}
-.tool-replace strong {
-  color: var(--ab-fg);
-  font-family: 'Geist', sans-serif;
-  font-weight: 500;
-}
+.faq-aside-btn:hover { opacity: .88; }
 
-.tool-pager {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.tool-count {
-  font-family: 'Geist', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ab-fg);
-  min-width: 40px;
-  text-align: center;
-  letter-spacing: 0.01em;
-}
-.tool-arrow {
-  appearance: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid var(--ab-hairline-strong);
-  color: var(--ab-fg);
+.faq-list { border-top: 1px solid var(--hair); }
+.faq-item { border-bottom: 1px solid var(--hair); }
+.faq-item summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 22px 0;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.18s ease;
+  list-style: none;
+  color: var(--ink);
 }
-.tool-arrow:hover {
-  background: var(--ab-fg);
-  color: #ffffff;
-  border-color: var(--ab-fg);
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-plus {
+  position: relative;
+  width: 12px; height: 12px;
+  flex: 0 0 auto;
+  transition: transform .35s var(--ease);
+}
+.faq-plus::before, .faq-plus::after {
+  content: ''; position: absolute; left: 0; top: 5px;
+  width: 8px; height: 1.5px; background: var(--ink);
+}
+.faq-plus::before { transform: rotate(45deg); transform-origin: left center; }
+.faq-plus::after { left: auto; right: 0; transform: rotate(-45deg); transform-origin: right center; }
+.faq-item[open] .faq-plus { transform: rotate(180deg); }
+.faq-a { padding-bottom: 22px; max-width: 60ch; }
+.faq-a p { color: var(--muted); }
+.faq-item[open] .faq-a { animation: faq-open .35s var(--ease) both; }
+@keyframes faq-open { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+
+/* ═══ Final CTA — the crown on the footer ═══════════════════ */
+
+.final-cta {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  padding: 120px 0 100px;
+  isolation: isolate;
+  text-align: center;
+}
+.final-cta-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.final-cta-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, .74); z-index: -1; }
+.final-cta-glow { display: none; }
+.cta-inner { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.final-cta h2 { color: var(--on-ink); max-width: 18ch; }
+.final-cta p { color: var(--on-ink-mut); }
+.btn-primary {
+  display: inline-flex; align-items: center;
+  height: 42px; padding: 0 26px; margin-top: 8px;
+  background: var(--cream); color: var(--ink);
+  border-radius: var(--r-pill); text-decoration: none;
+  transition: opacity .2s ease, transform .35s var(--ease);
+}
+.btn-primary:hover { opacity: .9; transform: translateY(-2px); }
+
+/* ═══ Sticky CTA pill ═══════════════════════════════════════ */
+
+.sticky-cta {
+  position: fixed;
+  right: 24px; bottom: 24px;
+  z-index: 80;
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 46px; padding: 0 20px;
+  background: var(--ink); color: var(--on-ink);
+  border-radius: var(--r-pill); text-decoration: none;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+  transition: transform .35s var(--ease);
+}
+.sticky-cta:hover { transform: translateY(-2px); }
+.sticky-cta-enter-active, .sticky-cta-leave-active { transition: opacity .3s ease, transform .35s var(--ease); }
+.sticky-cta-enter-from, .sticky-cta-leave-to { opacity: 0; transform: translateY(12px); }
+
+/* ═══ Footer ════════════════════════════════════════════════ */
+
+.footer { background: var(--ink); padding: 80px 0 24px; color: var(--on-ink-mut); }
+.footer-grid { display: grid; grid-template-columns: 1.6fr repeat(4, 1fr); gap: 40px 24px; padding-bottom: 48px; border-bottom: 1px solid var(--hair-ink); }
+.footer-brand { margin-bottom: 16px; }
+.footer-logo { height: 22px; width: auto; filter: invert(1) grayscale(1) brightness(2); }
+.footer-tagline { color: var(--on-ink-mut); max-width: 34ch; margin-bottom: 20px; }
+.footer-socials { display: flex; gap: 10px; }
+.footer-social {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border: 1px solid var(--hair-ink); border-radius: 50%;
+  color: var(--on-ink-mut);
+  transition: color .2s ease, border-color .2s ease;
+}
+.footer-social:hover { color: var(--on-ink); border-color: var(--on-ink); }
+.footer-col { display: flex; flex-direction: column; gap: 12px; }
+.footer-col-title { font-size: 24px; line-height: 1.2; color: var(--on-ink); margin-bottom: 4px; }
+.footer-col a { color: var(--on-ink-mut); text-decoration: none; transition: color .2s ease; }
+.footer-col a:hover { color: var(--on-ink); }
+.footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; }
+.footer-copy { color: var(--on-ink-dim); }
+.footer-meta { display: flex; align-items: center; gap: 10px; color: var(--on-ink-dim); }
+.footer-meta-item { display: inline-flex; align-items: center; gap: 8px; }
+.footer-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--on-ink); }
+.footer-meta-divider { color: var(--on-ink-dim); }
+
+/* ═══ Responsive — two breakpoints only ═════════════════════ */
+
+@media (max-width: 1023px) {
+  .lp h1 { font-size: 48px; }
+  .lp h2, .feature-h, .step h3 { font-size: 32px; }
+  .lp { --sec-pad: 56px; }
+
+  .nav { top: 16px; }
+  .nav-pill { height: 60px; padding: 0 8px 0 20px; }
+  .nav-links, .nav-right { display: none; }
+  .nav-burger { display: flex; }
+
+  .hero { padding: 128px 0 40px; }
+  .hero-grid, .why-split, .feature-row, .stats-card-top, .faq-wrap { grid-template-columns: 1fr; }
+  .hero-left { min-height: 0; gap: 28px; }
+  .feature-row.is-reverse .feature-copy { order: 0; }
+  .feature-showcase .wrap { gap: 64px; }
+  .stats-card { padding: 32px; }
+  .stats-card-content { gap: 40px; }
+  .stats-card-bottom { grid-template-columns: 1fr; gap: 20px; }
+  .faq-wrap { gap: 32px; }
+  .faq-aside { position: static; }
+  .step { grid-template-columns: 40px minmax(0, 1fr); gap: 8px 16px; }
+  .step p { grid-column: 2; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .final-cta { padding: 88px 0 72px; }
 }
 
-@media (max-width: 1024px) {
-  .tools-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  .tools-for { padding: 80px 0 72px; }
-  .tools-grid { grid-template-columns: 1fr; gap: 14px; }
-  .tool-card { min-height: auto; }
-  .tools-head { flex-direction: column; align-items: flex-start; gap: 20px; }
-  .tools-bottom { flex-direction: column; align-items: flex-start; gap: 18px; }
-}
+@media (max-width: 767px) {
+  .lp h1 { font-size: 40px; }
+  .lp { --sec-pad: 48px; }
+  .wrap, .trust-row { padding-left: 16px; padding-right: 16px; }
+  .nav { padding: 0 16px; }
+  .nav-sheet { left: 16px; right: 16px; }
+  .nav-sheet a { font-size: 28px; }
 
-/* ═════════════════════════════════════════
-   Framer-style enhancements
-   Trust strip · Stats · Feature showcase
-   Loop diagram · Quote · FAQ · Sticky CTA
-   ═════════════════════════════════════════ */
+  .hero { padding: 112px 0 32px; }
+  .probe-grid { grid-template-columns: 1fr; }
+  .probe-card { transform: none; }
 
-/* ── Smooth scroll (global, unscoped) ── */
+  .why-item { grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 16px 0; }
+  .why-item-arrow { display: none; }
+  .why-panel { padding: 20px; min-height: 0; }
+  .why-cta { flex-direction: column; align-items: flex-start; }
+
+  .stats-card { padding: 24px; }
+  .stats-card-num, .why-demo-metric-value { font-size: 36px; }
+
+  .feature-visual { padding: 16px; min-height: 340px; }
+  .mock-card { padding: 16px; gap: 12px; }
+  .mock-prompt-meta { flex-wrap: wrap; gap: 10px; }
+  .mock-models { margin-left: 0; }
+
+  .faq-aside { padding: 24px; }
+  .final-cta { padding: 72px 0 56px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+  .sticky-cta { right: 16px; bottom: 16px; }
+}
 </style>
+
 <style>
-:root { scroll-behavior: smooth; }
-/* Landing page must never produce horizontal scroll. The .lp wrapper
-   below uses overflow-x: clip, but a few browsers (and some descendant
-   stacking contexts) still let intrinsic overflow leak up to the
-   document. Lock it at the root while this page is in the DOM. */
+/* Unscoped, but every selector is gated on the landing page being
+   mounted so nothing here leaks to the rest of the app. */
+html:has(.lp) {
+  /* The pre-paint theme bootstrap writes color-scheme onto <html> as an
+     inline style, which a plain rule cannot beat. This page is
+     deliberately light-only, so the scrollbar has to follow it even
+     when the rest of the app is in dark mode. */
+  color-scheme: light !important;
+}
 html:has(.lp),
 html:has(.lp) body,
 html:has(.lp) #app {
   overflow-x: clip;
   max-width: 100vw;
-}
-</style>
-<style scoped>
-
-/* ── Section heading shared ── */
-.sec-sub {
-  max-width: 640px;
-  margin: 14px auto 48px;
-  text-align: center;
-  font-size: 17px;
-  line-height: 1.55;
-  color: #5e6b73;
-}
-.sec-h-grad {
-  background: linear-gradient(110deg, #131718 0%, #131718 55%, var(--brand-accent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.02em;
-  font-weight: 600;
-}
-
-/* ── Background blur orbs ── */
-.orb {
-  /* Flattened look: drop the drifting blur orbs for clean, calm surfaces. */
-  display: none;
-}
-.orb-1 { width: 520px; height: 520px; top: 600px; left: -180px; animation: orbDrift 22s ease-in-out infinite; }
-.orb-2 { width: 420px; height: 420px; top: 1900px; right: -160px; opacity: 0.24; animation: orbDrift 28s ease-in-out -8s infinite reverse; }
-.orb-3 { width: 460px; height: 460px; top: 3400px; left: 40%; opacity: 0.18; animation: orbDrift 32s ease-in-out -14s infinite; }
-@keyframes orbDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(40px, -30px) scale(1.08); }
-}
-
-/* ── Trust strip (static, flat) ── */
-.trust {
-  position: relative;
-  padding: 28px 0 12px;
-  z-index: 1;
-}
-.trust-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 16px 32px;
-}
-.trust-label {
-  color: var(--brand-accent);
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  font-size: 12px;
-}
-.trust-item {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #5e6b73;
-  font-family: 'Geist', 'Plus Jakarta Sans', sans-serif;
-}
-
-/* ── Why this exists (editorial / light) ── */
-.why {
-  position: relative;
-  padding: 120px 0 96px;
-  background: #ffffff;
-  color: #0f172a;
-  overflow: hidden;
-}
-.why::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(900px circle at 12% 0%, rgba(var(--brand-accent-rgb), 0.05), transparent 55%),
-    radial-gradient(700px circle at 88% 100%, rgba(var(--brand-accent-rgb), 0.04), transparent 60%);
-  pointer-events: none;
-}
-.why-wrap { max-width: 1180px; position: relative; z-index: 1; }
-.why-head { max-width: 760px; margin-bottom: 72px; }
-.why-split {
-  display: grid;
-  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
-  gap: 72px;
-  align-items: center;
-  margin-bottom: 56px;
-}
-.why-left { min-width: 0; }
-.why-right { min-width: 0; }
-.why-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px; font-weight: 500; letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--brand-accent);
-  margin-bottom: 28px;
-}
-.why-eyebrow-dot {
-  width: 6px; height: 6px;
-  background: var(--brand-accent);
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(var(--brand-accent-rgb), 0.45);
-}
-.why-h {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
-  font-size: clamp(2rem, 3.6vw, 3.1rem);
-  line-height: 1.08;
-  letter-spacing: -0.025em;
-  color: #0f172a;
-  margin: 0 0 20px;
-}
-.why-h-quiet {
-  display: block;
-  color: #94a3b8;
-  font-weight: 400;
-}
-.why-sub {
-  font-size: 16.5px;
-  line-height: 1.65;
-  color: #475569;
-  margin: 0 0 36px;
-}
-
-.why-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.why-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: 3px auto 1fr;
-  align-items: baseline;
-  column-gap: 16px;
-  padding: 14px 6px 14px 18px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.18s ease;
-}
-.why-item:hover { background: rgba(15, 23, 42, 0.03); }
-.why-item-bar {
-  grid-column: 1;
-  align-self: stretch;
-  width: 3px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  transition: background 0.2s ease;
-}
-.why-item.is-active .why-item-bar { background: #0f172a; }
-.why-item-num {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
-  transition: color 0.2s ease;
-}
-.why-item.is-active .why-item-num { color: #ff385c; }
-.why-item-label {
-  font-size: 17px;
-  line-height: 1.35;
-  font-weight: 600;
-  color: #94a3b8;
-  transition: color 0.2s ease;
-  letter-spacing: -0.01em;
-}
-.why-item.is-active .why-item-label { color: #0f172a; }
-
-.why-gradient {
-  position: relative;
-  border-radius: 24px;
-  padding: 56px 48px;
-  background:
-    radial-gradient(120% 90% at 100% 100%, #4b7bff 0%, transparent 55%),
-    radial-gradient(90% 80% at 0% 20%, #ff5aa8 0%, transparent 55%),
-    linear-gradient(135deg, #ffb28b 0%, #ff5aa8 45%, #4b7bff 100%);
-  min-height: 440px;
-  display: flex;
-  align-items: center;
-  box-shadow:
-    0 30px 60px -20px rgba(75, 123, 255, 0.35),
-    0 20px 40px -20px rgba(255, 90, 168, 0.30);
-  overflow: hidden;
-}
-.why-demo {
-  position: relative;
-  width: 100%;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 26px 28px 22px;
-  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.25);
-  min-height: 300px;
-  display: flex;
-  align-items: stretch;
-}
-.why-demo-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-}
-.why-demo-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: 0.02em;
-}
-.why-demo-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(255,255,255,1), 0 0 0 4px rgba(0,0,0,0.05);
-}
-.why-demo-body {
-  font-size: 15.5px;
-  line-height: 1.55;
-  color: #0f172a;
-}
-.why-demo-body em { color: #ff385c; font-style: normal; font-weight: 600; }
-.why-demo-list {
-  margin: 10px 0 0;
-  padding-left: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-weight: 600;
-}
-.why-demo-list li.hi {
-  background: linear-gradient(90deg, rgba(255,90,168,0.14), transparent 60%);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-/* The "this is you" row — highlights an invented brand as the
-   4th vendor with a soft accent bar and a labeled arrow badge to
-   its right. Positioned inline so the arrow always sits beside
-   the brand name, no matter how the list wraps. */
-.why-demo-list li.why-demo-you {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, rgba(47, 107, 237, 0.14), transparent 60%);
-  color: #131718;
-  font-weight: 700;
-  position: relative;
-  animation: why-demo-you-pulse 2.4s ease-in-out infinite;
-}
-.why-demo-you-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 8px;
-  border-radius: 999px;
-  background: var(--brand-accent);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 12px -2px rgba(var(--brand-accent-rgb), 0.42);
-  white-space: nowrap;
-}
-.why-demo-you-tag svg {
-  color: #ffffff;
-  flex-shrink: 0;
-}
-@keyframes why-demo-you-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-accent-rgb), 0.00); }
-  50%      { box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.10); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .why-demo-list li.why-demo-you { animation: none; }
-}
-.why-demo-foot {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px dashed rgba(15,23,42,0.10);
-  font-size: 13px;
-  line-height: 1.5;
-  color: #64748b;
-}
-.why-demo-foot strong { color: #0f172a; font-weight: 600; }
-.why-demo-panel--metrics { gap: 12px; }
-.why-demo-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.why-demo-metric-value {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
-  font-size: 40px;
-  font-weight: 700;
-  line-height: 1;
-  color: #0f172a;
-  letter-spacing: -0.02em;
-}
-.why-demo-metric-value small { font-size: 24px; font-weight: 500; color: #94a3b8; }
-.why-demo-metric-label {
-  font-size: 13px;
-  color: #64748b;
-}
-.why-demo-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-.why-demo-bar-row {
-  display: grid;
-  grid-template-columns: 68px 1fr 42px;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  color: #475569;
-}
-.why-demo-bar-row .bar {
-  height: 6px;
-  background: #f1f5f9;
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-}
-.why-demo-bar-row .bar span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #ff5aa8 0%, #4b7bff 100%);
-  border-radius: 3px;
-}
-.why-demo-bar-row .val {
-  text-align: right;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.why-demo-fade-enter-active,
-.why-demo-fade-leave-active {
-  transition: opacity 0.22s ease, transform 0.22s ease;
-}
-.why-demo-fade-enter-from { opacity: 0; transform: translateY(6px); }
-.why-demo-fade-leave-to   { opacity: 0; transform: translateY(-6px); }
-
-.why-cta {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 22px;
-  padding: 28px 32px;
-  border-radius: 20px;
-  background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
-  position: relative;
-  overflow: hidden;
-}
-.why-cta::after {
-  content: '';
-  position: absolute;
-  inset: -50% auto auto -10%;
-  width: 60%; height: 200%;
-  background: radial-gradient(circle, rgba(var(--brand-accent-rgb), 0.22) 0%, transparent 60%);
-  pointer-events: none;
-}
-.why-cta-line {
-  position: relative; z-index: 1;
-  font-size: 17px;
-  color: #cbd5e1;
-  max-width: 580px;
-  line-height: 1.45;
-}
-.why-cta-line strong {
-  color: #ffffff;
-  font-weight: 600;
-}
-.why-cta-btn {
-  position: relative; z-index: 1;
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 13px 22px;
-  border-radius: 10px;
-  background: var(--brand-accent);
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 14.5px;
-  text-decoration: none;
-  transition: background 0.18s ease, transform 0.18s ease;
-}
-.why-cta-btn:hover {
-  background: #ff5722;
-  transform: translateX(2px);
-}
-
-@media (max-width: 960px) {
-  .why-split {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  .why-gradient { padding: 40px 28px; min-height: 380px; }
-}
-@media (max-width: 880px) {
-  .why { padding: 80px 0 64px; }
-  .why-head { margin-bottom: 48px; }
-  .why-sub { margin-bottom: 28px; }
-  .why-item { padding: 12px 6px 12px 14px; }
-  .why-item-label { font-size: 15.5px; }
-  .why-gradient { padding: 32px 20px; min-height: 340px; }
-  .why-demo { padding: 22px 20px 18px; }
-  .why-cta { flex-direction: column; align-items: flex-start; padding: 24px; }
-}
-
-/* ── Stats / count-up ── */
-.stats {
-  position: relative;
-  padding: 96px 0 80px;
-  z-index: 1;
-}
-/* Single rounded card: video fills the background, copy and metrics
-   are overlaid — same treatment as the login page's video-card, tuned
-   for a landing hero. */
-.stats-card {
-  position: relative;
-  width: 100%;
-  border-radius: 28px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  min-height: 720px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-              0 40px 100px -20px rgba(15, 23, 42, 0.28);
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.stats-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-              0 50px 120px -20px rgba(15, 23, 42, 0.36);
-}
-/* Fade + scale the video in from the poster color so there's no
-   "black flash" during load, and the entrance itself is animated. */
-@keyframes stats-card-fadein {
-  from { opacity: 0; transform: scale(1.08); }
-  to   { opacity: 1; transform: scale(1.04); }
-}
-/* Ken Burns: noticeable slow drift + scale so the card breathes even
-   during quiet moments in the loop. */
-@keyframes stats-card-kenburns {
-  0%   { transform: scale(1.04) translate3d(0, 0, 0); }
-  25%  { transform: scale(1.10) translate3d(-1.5%, -1%, 0); }
-  50%  { transform: scale(1.14) translate3d(-2.5%, -1.5%, 0); }
-  75%  { transform: scale(1.10) translate3d(-1.5%, -0.5%, 0); }
-  100% { transform: scale(1.04) translate3d(0, 0, 0); }
-}
-.stats-card-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  transform-origin: 50% 55%;
-  animation:
-    stats-card-fadein 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both,
-    stats-card-kenburns 18s ease-in-out 1.3s infinite;
-  will-change: transform, opacity;
-}
-/* Framer-style scroll entrance: the card springs in with a subtle
-   overshoot (translateY + scale + bezier with back-out), then the
-   observer cascades .in onto the headline, subtitle, and each metric
-   using their existing data-delay staggering. */
-.stats-card.anim {
-  opacity: 0;
-  transform: translateY(60px) scale(0.94);
-  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.stats-card.anim.in {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .stats-card,
-  .stats-card.anim { transition: none; }
-  .stats-card.anim { opacity: 1; transform: none; }
-  .stats-card:hover { transform: none; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 40px 100px -20px rgba(15, 23, 42, 0.28); }
-  .stats-card-bg { animation: none; opacity: 1; transform: none; }
-}
-.stats-card-tint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  /* Legibility darkening only where text sits (top headline, bottom
-     metrics); middle of the card stays as clear as possible so the
-     video is fully visible. */
-  background:
-    linear-gradient(180deg,
-      rgba(0, 0, 0, 0.28) 0%,
-      rgba(0, 0, 0, 0.10) 40%,
-      rgba(0, 0, 0, 0.10) 60%,
-      rgba(0, 0, 0, 0.38) 100%),
-    radial-gradient(ellipse at center,
-      rgba(0, 0, 0, 0.00) 60%,
-      rgba(0, 0, 0, 0.22) 100%);
-}
-.stats-card-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  text-align: left;
-  height: 100%;
-  min-height: inherit;
-  padding: 80px 80px 72px;
-  color: #ffffff;
-}
-.stats-card-top {
-  max-width: 900px;
-}
-.stats-card-h {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  font-size: clamp(2.6rem, 4.4vw, 4.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  color: #ffffff;
-  margin: 0 0 24px;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
-}
-.stats-card-h em {
-  font-style: normal;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-}
-.stats-card-sub {
-  font-size: 18px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.88);
-  max-width: 720px;
-  margin: 0;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
-}
-.stats-card-bottom {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 56px;
-  margin-top: 120px;
-  width: 100%;
-}
-.stats-card-metric {
-  color: #ffffff;
-  text-align: left;
-}
-.stats-card-num {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  font-size: 84px;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: #ffffff;
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-start;
-  gap: 2px;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
-}
-.stats-card-prefix, .stats-card-suffix {
-  font-size: 48px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
-}
-.stats-card-label {
-  margin-top: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  letter-spacing: -0.01em;
-}
-.stats-card-note {
-  margin-top: 6px;
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.72);
-  line-height: 1.5;
-}
-.stats-card-cite {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.stats-card-cite:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-/* Legacy grid kept for other sections that may still reference it. */
-.count-up-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 12px;
-}
-.count-up-card {
-  background: #ffffff;
-  border: 1px solid #ece6da;
-  border-radius: 18px;
-  padding: 36px 28px;
-  text-align: left;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-}
-.count-up-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 40px -24px rgba(20, 23, 24, 0.18);
-  border-color: #d9cfbb;
-}
-.count-up-num {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  font-size: 64px;
-  line-height: 1;
-  color: #131718;
-  letter-spacing: -0.03em;
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-.count-up-prefix, .count-up-suffix {
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--brand-accent);
-}
-.count-up-label {
-  margin-top: 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #131718;
-  letter-spacing: -0.01em;
-}
-.count-up-note {
-  margin-top: 6px;
-  font-size: 13.5px;
-  color: #6b7680;
-  line-height: 1.5;
-}
-.count-up-cite {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #94a3b8;
-  text-decoration: none;
-  border-bottom: 1px dotted #cbd5e1;
-}
-.count-up-cite:hover {
-  color: #475569;
-  border-bottom-color: #94a3b8;
-}
-
-/* ── Feature showcase ── */
-.feature-showcase {
-  position: relative;
-  padding: 80px 0 40px;
-  z-index: 1;
-}
-.feature-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  align-items: center;
-  padding: 70px 0;
-  min-height: 60vh;
-}
-.feature-row.is-reverse .feature-copy { order: 2; }
-.feature-row.is-reverse .feature-visual { order: 1; }
-.feature-eyebrow {
-  font-family: 'Geist', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--brand-accent);
-  text-transform: uppercase;
-}
-.feature-h {
-  margin: 16px 0 18px;
-  font-size: 38px;
-  line-height: 1.12;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  color: #131718;
-}
-.feature-desc {
-  max-width: 36rem;
-  font-size: 16.5px;
-  line-height: 1.6;
-  color: #4a5560;
-}
-.feature-bullets {
-  list-style: none;
-  padding: 0;
-  margin: 22px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.feature-bullets li {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 14.5px;
-  color: #2d3640;
-}
-.feature-bullet-dot {
-  width: 8px; height: 8px;
-  margin-top: 7px;
-  border-radius: 50%;
-  background: var(--brand-accent);
-  flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(var(--brand-accent-rgb), 0.12);
-}
-
-/* Mock visuals shared */
-.feature-visual {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 48px;
-  min-height: 480px;
-  border-radius: 28px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-              0 40px 100px -20px rgba(15, 23, 42, 0.28);
-  isolation: isolate;
-}
-/* Video that fills the visual card. preload="metadata" keeps the
-   initial network hit tiny; streaming starts on autoplay when the
-   element enters the viewport. */
-.feature-visual-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  transform-origin: 50% 55%;
-  animation: stats-card-kenburns 22s ease-in-out infinite;
-  will-change: transform;
-}
-.feature-visual-tint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    radial-gradient(ellipse at center,
-      rgba(0, 0, 0, 0.00) 55%,
-      rgba(0, 0, 0, 0.35) 100%),
-    linear-gradient(180deg,
-      rgba(0, 0, 0, 0.18) 0%,
-      rgba(0, 0, 0, 0.10) 50%,
-      rgba(0, 0, 0, 0.25) 100%);
-}
-.feature-visual .mock-card {
-  position: relative;
-  z-index: 2;
-}
-@media (prefers-reduced-motion: reduce) {
-  .feature-visual-bg { animation: none; transform: none; }
-}
-.mock-card {
-  width: 100%;
-  max-width: 460px;
-  background: #ffffff;
-  border: none;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.08);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  /* Isolate internal layout so the typewriter/stagger transitions never
-     cause a reflow that shifts the sections above or below on the page.
-     Belt-and-braces: with fixed heights below AND contain:layout, this
-     card never changes size regardless of what the animation does. */
-  contain: layout;
-  box-sizing: border-box;
-}
-.mock-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.06),
-    0 22px 60px rgba(0, 0, 0, 0.10);
-}
-.mock-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-radius: 16px;
-  background: #f7f7f7;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: 15px;
-  font-weight: 500;
-  color: #222222;
-  /* Lock the search bar to a single line so long typed prompts can't
-     wrap and grow the mock's height. */
-  height: 48px;
-  flex-shrink: 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.mock-search-icon {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  border: 1.6px solid #717171;
-  position: relative;
-  flex-shrink: 0;
-}
-.mock-search-icon::after {
-  content: ''; position: absolute;
-  width: 6px; height: 1.6px;
-  background: #717171;
-  bottom: -3px; right: -3px;
-  transform: rotate(45deg);
-}
-.mock-search-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.mock-search-caret {
-  color: #ff385c;
-  font-weight: 400;
-  animation: caretBlink 1s steps(1) infinite;
-}
-@keyframes caretBlink { 50% { opacity: 0; } }
-
-.mock-rows {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  /* Fixed height (not min-height) so the container is completely
-     immune to reflow as rows stream in and out. Older rows overflow
-     invisibly; only the newest 3 are ever rendered by the loop. */
-  height: 300px;
-  overflow: hidden;
-}
-.mock-prompt-row {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  opacity: 0;
-  cursor: pointer;
-  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-  animation: fadeSlide 0.55s ease forwards;
-}
-.mock-prompt-row:hover {
-  border-color: rgba(255, 56, 92, 0.22);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
-}
-.mock-prompt-row.is-pinned {
-  border-color: rgba(255, 56, 92, 0.55);
-  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
-}
-@keyframes fadeSlide { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
-
-.mock-prompt-main {
-  display: flex; align-items: center; gap: 10px;
-  min-width: 0;
-}
-.mock-q {
-  font-size: 14px; color: #222222;
-  font-weight: 500;
-  flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.mock-prompt-meta {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 12px; color: #717171;
-}
-.mock-spark { width: 64px; height: 18px; color: #ff385c; flex-shrink: 0; }
-.mock-volume { font-weight: 600; color: #222222; }
-.mock-delta {
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 11px;
-}
-.mock-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-
-.mock-models {
-  display: inline-flex; align-items: center; gap: 5px;
-  margin-left: auto;
-}
-.mock-model-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-  transition: transform .15s ease;
-}
-/* "Hit" colours mirror the probe-panel avatars so the two demos read as
-   the same product. */
-.mock-model-dot.is-hit.is-anthropic  { background: #d97706; }
-.mock-model-dot.is-hit.is-openai     { background: #0f1212; }
-.mock-model-dot.is-hit.is-google     { background: #4285f4; }
-.mock-model-dot.is-hit.is-perplexity { background: #1fb8a8; }
-.mock-prompt-row:hover .mock-model-dot.is-hit { transform: scale(1.15); }
-
-.mock-prompt-detail {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  display: flex; flex-direction: column; gap: 8px;
-  animation: fadeSlide 0.25s ease;
-}
-.mock-detail-row {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12.5px;
-}
-.mock-detail-label { color: #717171; }
-.mock-detail-value { color: #222222; font-weight: 600; }
-.mock-detail-models {
-  list-style: none; margin: 6px 0 0; padding: 0;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.mock-detail-models li {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12.5px; color: #484848;
-}
-.mock-detail-models li.is-miss { color: #8a8a8a; }
-.mock-detail-models li .mock-model-dot { margin: 0; }
-.mock-detail-status {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
-}
-.mock-detail-models li.is-hit  .mock-detail-status { color: #008489; }
-.mock-detail-models li.is-miss .mock-detail-status { color: #c61b48; }
-.mock-chip {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.05);
-  color: #484848;
-}
-.mock-chip.is-comparison { background: rgba(var(--brand-accent-rgb), 0.14);  color: #2f5cb1; }
-.mock-chip.is-how-to     { background: rgba(0, 166, 153, 0.14);   color: #007e7a; }
-.mock-chip.is-vs         { background: rgba(255, 56, 92, 0.12);   color: #c61b48; }
-.mock-chip.is-question   { background: rgba(217, 119, 6, 0.14);   color: #a25208; }
-.mock-chip.is-local      { background: rgba(31, 184, 168, 0.14);  color: #0f7a72; }
-.mock-chip.is-story      { background: rgba(15, 118, 110, 0.14);  color: #115e59; }
-
-/* Cycler: rows fade in from the top, push older rows down. The
-   transition-group + per-row absolute positioning would be over-
-   engineered for 3 rows, so we use a simple opacity+translate. */
-.mock-row-stagger-enter-active { transition: opacity .35s ease, transform .35s cubic-bezier(.16,1,.3,1); }
-.mock-row-stagger-enter-from   { opacity: 0; transform: translateY(-6px); }
-.mock-row-stagger-leave-active { transition: opacity .25s ease; }
-.mock-row-stagger-leave-to     { opacity: 0; }
-/* Multi-LLM Probing demo */
-.mock-probe-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.mock-probe-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #222222;
-  margin-bottom: 2px;
-}
-.mock-probe-sub { font-size: 12px; color: #717171; }
-.mock-probe-score { text-align: right; flex-shrink: 0; }
-.mock-probe-score-num {
-  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
-  display: block;
-  font-size: 28px; font-weight: 700;
-  line-height: 1;
-  color: #ff385c;
-  letter-spacing: -0.02em;
-}
-.mock-probe-score-label {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: #717171;
-  font-weight: 600;
-}
-
-.mock-probe-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.mock-probe-card {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  opacity: 0;
-  cursor: pointer;
-  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-  animation: fadeSlide 0.55s ease forwards;
-}
-.mock-probe-card:hover {
-  border-color: rgba(255, 56, 92, 0.22);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
-}
-.mock-probe-card.is-pinned {
-  grid-column: 1 / -1;
-  border-color: rgba(255, 56, 92, 0.55);
-  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
-}
-
-.mock-probe-row {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-.mock-probe-name {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 600; color: #222222;
-}
-.mock-probe-pct {
-  font-size: 13px; font-weight: 700; color: #222222;
-}
-
-.mock-probe-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-.mock-probe-bar-fill {
-  width: 0; height: 100%;
-  border-radius: 999px;
-  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
-}
-.mock-probe-bar-fill.is-anthropic  { background: #d97706; }
-.mock-probe-bar-fill.is-openai     { background: #0f1212; }
-.mock-probe-bar-fill.is-google     { background: #4285f4; }
-.mock-probe-bar-fill.is-perplexity { background: #1fb8a8; }
-
-.mock-probe-stats {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  font-size: 11px; color: #717171;
-}
-.mock-probe-stat { color: #484848; font-weight: 600; }
-.mock-probe-delta {
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 10.5px;
-}
-.mock-probe-delta.is-up   { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-probe-delta.is-down { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-
-.mock-probe-detail {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  display: flex; flex-direction: column; gap: 8px;
-  animation: fadeSlide 0.25s ease;
-}
-.mock-probe-sent {
-  display: inline-flex;
-  width: 140px; height: 8px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.05);
-}
-.mock-probe-sent-seg {
-  height: 100%; width: var(--w, 0%);
-  display: block;
-  transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
-}
-.mock-probe-sent-seg.pos { background: #008489; }
-.mock-probe-sent-seg.neu { background: #aab2bb; }
-.mock-probe-sent-seg.neg { background: #c61b48; }
-.mock-probe-comp { color: #717171; font-weight: 500; margin-left: 4px; }
-.mock-probe-safety {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-.mock-probe-safety.is-ok   { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-probe-safety.is-warn { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-
-/* Source bars */
-.mock-source-head { margin-bottom: 14px; }
-.mock-source-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #222222;
-  margin-bottom: 2px;
-}
-.mock-source-sub {
-  font-size: 12px;
-  color: #717171;
-}
-
-.mock-source-row {
-  display: flex; flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 10px;
-  opacity: 0;
-  cursor: pointer;
-  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-  animation: fadeSlide 0.55s ease forwards;
-}
-.mock-source-row:hover {
-  border-color: rgba(255, 56, 92, 0.22);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
-}
-.mock-source-row.is-pinned {
-  border-color: rgba(255, 56, 92, 0.55);
-  box-shadow: 0 10px 32px rgba(255, 56, 92, 0.14);
-}
-
-.mock-source-line {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.mock-source-label {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 600; color: #222222;
-}
-.mock-source-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  flex-shrink: 0;
-}
-/* Mirror the probe-panel avatar colours so the demos read as one product. */
-.mock-source-dot.is-anthropic  { background: #d97706; }
-.mock-source-dot.is-openai     { background: #0f1212; }
-.mock-source-dot.is-google     { background: #4285f4; }
-.mock-source-dot.is-perplexity { background: #1fb8a8; }
-
-.mock-source-rank {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-.mock-source-rank.is-hit  { background: rgba(0, 166, 153, 0.14); color: #008489; }
-.mock-source-rank.is-miss { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-
-.mock-stack {
-  display: flex;
-  height: 10px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.05);
-}
-.mock-seg {
-  width: 0;
-  height: 100%;
-  display: block;
-  animation: barFill 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
-}
-@keyframes barFill { to { width: var(--target-w, 0%); } }
-/* Soft Airbnb-leaning palette — distinct, but in the same family as the
-   probe panel's brand-mention highlight rather than the marketing-bright
-   tones we had before. */
-.seg-reddit { background: #ff5a5f; }
-.seg-news   { background: #4285f4; }
-.seg-wiki   { background: #717171; }
-.seg-blog   { background: #d97706; }
-.seg-own    { background: #ff385c; }
-
-.mock-source-detail {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  display: flex; flex-direction: column; gap: 6px;
-  animation: fadeSlide 0.25s ease;
-}
-.mock-source-top {
-  list-style: none; margin: 4px 0 0; padding: 0;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.mock-source-top li {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12.5px; color: #484848;
-}
-.mock-source-fav {
-  border-radius: 4px;
-  background: #fff;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-.mock-source-domain { color: #222222; font-weight: 500; flex: 1; min-width: 0; }
-.mock-source-share { color: #717171; font-weight: 600; }
-.mock-source-takeaway {
-  margin-top: 4px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 56, 92, 0.06);
-  color: #222222;
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
-.mock-source-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 14px;
-  font-size: 11.5px;
-  color: #717171;
-}
-.mock-source-legend i {
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: -1px;
-}
-
-/* Brand Security — live alerts feed */
-.mock-sec-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.mock-sec-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #222222;
-  letter-spacing: -0.01em;
-}
-.mock-sec-health {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 166, 153, 0.12);
-  color: #007a80;
-}
-.mock-sec-health-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #008489;
-  box-shadow: 0 0 0 3px rgba(0, 166, 153, 0.20);
-}
-.mock-sec-alerts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.mock-sec-alert {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border-left-width: 3px;
-  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-}
-.mock-sec-alert:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-.mock-sec-alert.is-sentiment  { border-left-color: rgba(255, 145, 0, 0.65); }
-.mock-sec-alert.is-reputation { border-left-color: rgba(198, 27, 72, 0.75); }
-.mock-sec-alert.is-narrative  { border-left-color: rgba(66, 133, 244, 0.65); }
-
-.mock-sec-alert-head {
-  display: flex; align-items: center; flex-wrap: wrap;
-  gap: 6px 8px;
-  margin-bottom: 6px;
-}
-.mock-sec-agent {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.06);
-  color: #333;
-}
-.mock-sec-src {
-  font-size: 11px;
-  font-weight: 600;
-  color: #484848;
-}
-.mock-sec-time {
-  font-size: 11px;
-  color: #717171;
-  margin-left: auto;
-}
-.mock-sec-sev {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-.mock-sec-sev.is-medium   { background: rgba(255, 145, 0, 0.14); color: #b56000; }
-.mock-sec-sev.is-high     { background: rgba(255, 56, 92, 0.12); color: #c61b48; }
-.mock-sec-sev.is-critical { background: #c61b48; color: #ffffff; }
-.mock-sec-alert-body {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #222222;
-}
-.mock-sec-alert-body em {
-  font-style: normal;
-  font-weight: 700;
-  color: #131718;
-}
-
-/* Content Studio — brief → draft → approved flow */
-.mock-studio-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.mock-studio-step {
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-}
-.mock-studio-step:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 56, 92, 0.20);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-.mock-studio-step-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.mock-studio-step-label {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-}
-.mock-studio-step.is-brief    .mock-studio-step-label { background: rgba(66, 133, 244, 0.14); color: #2f5cb1; }
-.mock-studio-step.is-draft    .mock-studio-step-label { background: rgba(255, 145, 0, 0.14);  color: #b56000; }
-.mock-studio-step.is-approved .mock-studio-step-label { background: rgba(0, 166, 153, 0.14);  color: #008489; }
-.mock-studio-step-meta { font-size: 11px; color: #717171; font-weight: 500; }
-
-.mock-studio-step-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #222222;
-  line-height: 1.35;
-}
-.mock-studio-step-title em {
-  font-style: italic;
-  color: #484848;
-  font-weight: 500;
-}
-.mock-studio-preview {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: #484848;
-  padding: 8px 10px;
-  background: #fafafa;
-  border-radius: 10px;
-  border-left: 3px solid rgba(255, 145, 0, 0.55);
-  margin: 2px 0;
-}
-.mock-studio-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-.mock-studio-tag {
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.05);
-  color: #484848;
-}
-.mock-studio-tag.is-priority {
-  background: rgba(255, 56, 92, 0.12);
-  color: #c61b48;
-}
-.mock-studio-formats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-.mock-studio-format {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 8px;
-  background: rgba(0, 166, 153, 0.10);
-  color: #007a80;
-  border: 1px solid rgba(0, 166, 153, 0.20);
-}
-.mock-studio-connector {
-  align-self: center;
-  width: 2px;
-  height: 24px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.10), rgba(0,0,0,0));
-  position: relative;
-}
-.mock-studio-connector::after {
-  content: '';
-  position: absolute;
-  left: 50%; bottom: -2px;
-  transform: translate(-50%, 0) rotate(45deg);
-  width: 6px; height: 6px;
-  border-right: 2px solid rgba(0, 0, 0, 0.18);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
-}
-
-/* ── Pull quote ── */
-.pull-quote {
-  position: relative;
-  padding: 80px 0;
-  z-index: 1;
-}
-.pq-text {
-  max-width: 880px;
-  margin: 0 auto;
-  font-family: var(--font-display, 'Plus Jakarta Sans'), sans-serif;
-  font-size: 32px;
-  line-height: 1.35;
-  color: #131718;
-  letter-spacing: -0.015em;
-  text-align: center;
-  position: relative;
-}
-.pq-mark {
-  display: block;
-  font-size: 80px;
-  line-height: 0.4;
-  color: var(--brand-accent);
-  margin-bottom: 18px;
-}
-.pq-attr {
-  margin-top: 24px;
-  text-align: center;
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #8a8275;
-  font-weight: 600;
-}
-
-/* ── FAQ ── */
-.faq {
-  position: relative;
-  padding: 80px 0;
-  z-index: 1;
-}
-.faq-wrap { max-width: 880px; }
-.faq-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-.faq-item {
-  background: #ffffff;
-  border: 1px solid #ece6da;
-  border-radius: 14px;
-  padding: 4px 4px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.faq-item[open] { border-color: #d9cfbb; box-shadow: 0 18px 40px -28px rgba(20,23,24,0.18); }
-.faq-item summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 18px 22px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #131718;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  letter-spacing: -0.01em;
-}
-.faq-item summary::-webkit-details-marker { display: none; }
-.faq-plus {
-  position: relative;
-  width: 16px; height: 16px;
-  flex-shrink: 0;
-}
-.faq-plus::before, .faq-plus::after {
-  content: '';
-  position: absolute;
-  background: var(--brand-accent);
-  border-radius: 1px;
-  transition: transform 0.25s ease;
-}
-.faq-plus::before { left: 0; right: 0; top: 7px; height: 2px; }
-.faq-plus::after  { top: 0; bottom: 0; left: 7px; width: 2px; }
-.faq-item[open] .faq-plus::after { transform: scaleY(0); }
-.faq-a {
-  padding: 0 22px 20px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: #4a5560;
-}
-
-/* ── Final CTA with video background ── */
-.final-cta { position: relative; overflow: hidden; isolation: isolate; }
-.final-cta-video {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
-}
-.final-cta-overlay {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.72) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(var(--brand-accent-rgb), 0.25) 0%, transparent 60%);
-  z-index: 1;
-  pointer-events: none;
-}
-.final-cta-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, rgba(var(--brand-accent-rgb), 0.18) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 2;
-}
-.final-cta .cta-inner { position: relative; z-index: 3; }
-.final-cta h2 { font-size: 56px; color: #fff; }
-.final-cta p { color: rgba(255, 255, 255, 0.85); }
-
-/* ── Sticky CTA pill ── */
-.sticky-cta {
-  position: fixed;
-  bottom: 22px;
-  right: 22px;
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: #131718;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  text-decoration: none;
-  box-shadow: 0 16px 40px -12px rgba(20,23,24,0.42), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-}
-.sticky-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 24px 50px -14px rgba(20,23,24,0.5);
-}
-.sticky-cta-enter-from, .sticky-cta-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-.sticky-cta-enter-active, .sticky-cta-leave-active {
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .count-up-grid { grid-template-columns: 1fr; }
-  .stats-card { min-height: 0; border-radius: 20px; }
-  .stats-card-content { padding: 44px 28px 36px; }
-  .stats-card-bottom { grid-template-columns: 1fr; gap: 36px; margin-top: 56px; }
-  .stats-card-num { font-size: 60px; }
-  .stats-card-prefix, .stats-card-suffix { font-size: 34px; }
-  .feature-row { grid-template-columns: 1fr; gap: 40px; padding: 50px 0; min-height: 0; }
-  .feature-visual { padding: 28px; min-height: 340px; border-radius: 22px; }
-  .feature-row.is-reverse .feature-copy { order: 1; }
-  .feature-row.is-reverse .feature-visual { order: 2; }
-  .feature-h { font-size: 30px; }
-  .pq-text { font-size: 24px; }
-  .loop-arrow { display: none; }
-  .final-cta h2 { font-size: 40px; }
-}
+  /* The cream has to reach the overscroll area, not stop at .lp's box. */
+  background: #fff9f0;
+}
+/* No scroll-behavior here: base.css already sets it on html globally,
+   along with its prefers-reduced-motion override. */
 </style>

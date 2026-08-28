@@ -80,9 +80,9 @@
           </svg>
         </div>
         <h3 class="empty-title">Install the tracking pixel</h3>
-        <p class="empty-desc">Add the FetchBot tracking snippet to your website to start collecting real visitor data.</p>
+        <p class="empty-desc">Add the Cansee tracking snippet to your website to start collecting real visitor data.</p>
         <div class="empty-snippet">
-          <code>&lt;script src="/fetchbot-pixel.js" data-site="YOUR_PIXEL_KEY" async&gt;&lt;/script&gt;</code>
+          <code>&lt;script src="/cansee-pixel.js" data-site="YOUR_PIXEL_KEY" async&gt;&lt;/script&gt;</code>
         </div>
         <p class="empty-hint">Go to <strong>Projects → Settings</strong> to copy your personalized snippet.</p>
       </div>
@@ -119,7 +119,7 @@
 
             <!-- Traffic Overview -->
             <div v-if="cid === 'traffic'" class="ret-dyn-card ret-full">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
+              <CardDismiss floating @dismiss="removeOverviewCard(cid)" />
               <TrafficOverviewCard
                 class="mb-6"
                 :chart-data="chartData"
@@ -129,9 +129,8 @@
 
             <!-- Top Sources -->
             <div v-if="cid === 'sources'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Top Sources</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Top Sources</CardTitle><CardDismiss label="Top Sources" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                   <div class="chart-container" style="height:200px;position:relative" v-if="sources.length">
                     <Bar :data="sourcesChartData" :options="sourcesChartOptions" />
@@ -143,9 +142,8 @@
 
             <!-- Top Pages -->
             <div v-if="cid === 'pages'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Top Pages</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Top Pages</CardTitle><CardDismiss label="Top Pages" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader><TableRow><TableHead>Page</TableHead><TableHead class="text-right">Views</TableHead></TableRow></TableHeader>
@@ -163,11 +161,13 @@
 
             <!-- Live Activity -->
             <div v-if="cid === 'live'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader class="flex-row items-start justify-between space-y-0">
+                <CardHeader class="card-head">
                   <div><CardTitle>Live Activity</CardTitle><CardDescription>Real-time events</CardDescription></div>
-                  <span class="live-badge"><span class="live-pulse"></span>LIVE</span>
+                  <div class="flex items-center gap-2">
+                    <span class="live-badge"><span class="live-pulse"></span>LIVE</span>
+                    <CardDismiss label="Live Activity" @dismiss="removeOverviewCard(cid)" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div class="live-feed" v-if="liveEvents.length">
@@ -186,9 +186,8 @@
 
             <!-- Engagement Score -->
             <div v-if="cid === 'engagement'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Engagement Score</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Engagement Score</CardTitle><CardDismiss label="Engagement Score" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                   <div class="chart-container" style="height:220px;position:relative">
                     <Radar :data="radarChartData" :options="radarChartOptions" />
@@ -199,9 +198,8 @@
 
             <!-- Source Distribution -->
             <div v-if="cid === 'source_polar'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Source Distribution</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Source Distribution</CardTitle><CardDismiss label="Source Distribution" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                   <div class="chart-container" style="height:220px;position:relative" v-if="sources.length">
                     <PolarArea :data="polarChartData" :options="polarChartOptions" />
@@ -213,9 +211,8 @@
 
             <!-- Device Types -->
             <div v-if="cid === 'devices'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Device Types</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Device Types</CardTitle><CardDismiss label="Device Types" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                   <div class="chart-container" style="height:180px;position:relative" v-if="devices.length">
                     <Doughnut :data="devicesChartData" :options="devicesChartOptions" />
@@ -227,9 +224,8 @@
 
             <!-- Browsers -->
             <div v-if="cid === 'browsers'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Browsers</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Browsers</CardTitle><CardDismiss label="Browsers" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                 <div v-if="browserData.length" class="browser-list">
                   <div v-for="(b, i) in browserData" :key="i" class="browser-item">
@@ -248,9 +244,8 @@
 
             <!-- Operating Systems -->
             <div v-if="cid === 'os'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Operating Systems</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Operating Systems</CardTitle><CardDismiss label="Operating Systems" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                 <div v-if="operatingSystems.length" class="browser-list">
                   <div v-for="(os, i) in operatingSystems" :key="i" class="browser-item">
@@ -269,9 +264,8 @@
 
             <!-- Countries -->
             <div v-if="cid === 'countries'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Top Countries</CardTitle></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Top Countries</CardTitle><CardDismiss label="Top Countries" @dismiss="removeOverviewCard(cid)" /></CardHeader>
                 <CardContent>
                 <div class="country-list" v-if="countries.length">
                   <div v-for="(c, i) in countries" :key="i" class="country-item">
@@ -290,11 +284,13 @@
 
             <!-- Flagged Paths (security signals from the edge) -->
             <div v-if="cid === 'security'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeOverviewCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader class="flex-row items-center justify-between space-y-0">
+                <CardHeader class="card-head">
                   <CardTitle>Flagged Paths</CardTitle>
-                  <Badge v-if="security?.threats" variant="warning">{{ security.threats.toLocaleString() }} threats blocked</Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge v-if="security?.threats" variant="warning">{{ security.threats.toLocaleString() }} threats blocked</Badge>
+                    <CardDismiss label="Flagged Paths" @dismiss="removeOverviewCard(cid)" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <template v-if="security?.flagged?.length">
@@ -382,9 +378,8 @@
 
             <!-- Engagement Score -->
             <div v-if="cid === 'engagement_score'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
               <Card class="engagement-score-card">
-                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Engagement Score</CardTitle><span class="text-xs text-muted">Composite health metric</span></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Engagement Score</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Composite health metric</span><CardDismiss label="Engagement Score" @dismiss="removeRetCard(cid)" /></div></CardHeader>
                 <CardContent>
                 <div class="engagement-ring-wrap">
                   <svg class="engagement-ring" viewBox="0 0 120 120">
@@ -404,9 +399,8 @@
 
             <!-- New vs Returning -->
             <div v-if="cid === 'new_vs_returning'" class="ret-dyn-card ret-half">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>New vs Returning</CardTitle><span class="text-xs text-muted">{{ engagementData.total_visitors || 0 }} total</span></CardHeader>
+                <CardHeader class="card-head"><CardTitle>New vs Returning</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">{{ engagementData.total_visitors || 0 }} total</span><CardDismiss label="New vs Returning" @dismiss="removeRetCard(cid)" /></div></CardHeader>
                 <CardContent>
                 <div class="donut-wrap">
                   <svg class="donut-chart" viewBox="0 0 120 120">
@@ -425,7 +419,7 @@
 
             <!-- Bounce Rate -->
             <div v-if="cid === 'bounce_rate'" class="ret-dyn-card ret-quarter">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
+              <CardDismiss floating @dismiss="removeRetCard(cid)" />
               <div class="ret-stat-card" :class="{ 'stat-danger': (engagementData.bounce_rate || 0) > 60 }">
                 <div class="ret-stat-icon"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12l4-8 4 8"/><line x1="5.5" y1="9" x2="10.5" y2="9"/></svg></div>
                 <div class="ret-stat-value">{{ engagementData.bounce_rate || 0 }}%</div>
@@ -436,7 +430,7 @@
 
             <!-- Pages / Session -->
             <div v-if="cid === 'pages_session'" class="ret-dyn-card ret-quarter">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
+              <CardDismiss floating @dismiss="removeRetCard(cid)" />
               <div class="ret-stat-card">
                 <div class="ret-stat-icon"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 8h4M5 10h5"/></svg></div>
                 <div class="ret-stat-value">{{ engagementData.avg_pages_per_session || 0 }}</div>
@@ -447,7 +441,7 @@
 
             <!-- Avg Duration -->
             <div v-if="cid === 'avg_duration'" class="ret-dyn-card ret-quarter">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
+              <CardDismiss floating @dismiss="removeRetCard(cid)" />
               <div class="ret-stat-card">
                 <div class="ret-stat-icon"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg></div>
                 <div class="ret-stat-value">{{ formatDuration(engagementData.avg_session_duration_secs || 0) }}</div>
@@ -458,7 +452,7 @@
 
             <!-- Total Sessions -->
             <div v-if="cid === 'total_sessions'" class="ret-dyn-card ret-quarter">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
+              <CardDismiss floating @dismiss="removeRetCard(cid)" />
               <div class="ret-stat-card">
                 <div class="ret-stat-icon"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V4a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M5 8h6M8 5v6"/></svg></div>
                 <div class="ret-stat-value">{{ engagementData.total_sessions || 0 }}</div>
@@ -469,9 +463,8 @@
 
             <!-- Top Returning Visitors -->
             <div v-if="cid === 'top_returners'" class="ret-dyn-card ret-full">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Top Returning Visitors</CardTitle><span class="text-xs text-muted">Most loyal by visit count</span></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Top Returning Visitors</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Most loyal by visit count</span><CardDismiss label="Top Returning Visitors" @dismiss="removeRetCard(cid)" /></div></CardHeader>
                 <CardContent>
                 <Table v-if="engagementData.top_returners && engagementData.top_returners.length">
                   <TableHeader><TableRow><TableHead>Visitor</TableHead><TableHead>Visits</TableHead><TableHead>Avg Pages</TableHead><TableHead>Device</TableHead><TableHead>Country</TableHead><TableHead>Last Seen</TableHead></TableRow></TableHeader>
@@ -491,9 +484,8 @@
 
             <!-- Cohort Matrix -->
             <div v-if="cid === 'cohort_matrix'" class="ret-dyn-card ret-full">
-              <button class="ret-card-close" @click="removeRetCard(cid)" title="Remove">&times;</button>
               <Card>
-                <CardHeader><CardTitle>Cohort Retention</CardTitle><CardDescription>How many visitors return over time</CardDescription></CardHeader>
+                <CardHeader class="card-head"><CardTitle>Cohort Retention</CardTitle><div class="flex items-center gap-2"><CardDescription>How many visitors return over time</CardDescription><CardDismiss label="Cohort Retention" @dismiss="removeRetCard(cid)" /></div></CardHeader>
                 <CardContent>
                 <div v-if="retentionData.rows && retentionData.rows.length" class="retention-matrix">
                   <table class="data-table retention-table">
@@ -593,9 +585,8 @@
 
               <!-- Common Flow Patterns -->
               <div v-if="cid === 'flow_patterns'" class="ret-dyn-card ret-half">
-                <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Common Flow Patterns</CardTitle><span class="text-xs text-muted">Page-to-page transitions</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Common Flow Patterns</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Page-to-page transitions</span><CardDismiss label="Common Flow Patterns" @dismiss="removeFlowCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="flowData.links && flowData.links.length" class="flow-list">
                     <div v-for="(link, i) in flowData.links.slice(0, 12)" :key="i" class="flow-item-enhanced">
@@ -615,9 +606,8 @@
 
               <!-- Entry & Exit Pages -->
               <div v-if="cid === 'entry_exit'" class="ret-dyn-card ret-half">
-                <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Entry & Exit Pages</CardTitle><span class="text-xs text-muted">Where sessions start and end</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Entry & Exit Pages</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Where sessions start and end</span><CardDismiss label="Entry & Exit Pages" @dismiss="removeFlowCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="entryExitData.entry_pages && entryExitData.entry_pages.length">
                     <h4 class="text-sm font-semibold" style="margin-bottom:8px;color:var(--chart-2)">Entry Pages</h4>
@@ -643,11 +633,13 @@
 
               <!-- Visitor Journeys -->
               <div v-if="cid === 'visitor_journeys'" class="ret-dyn-card ret-full">
-                <button class="ret-card-close" @click="removeFlowCard(cid)" title="Remove">&times;</button>
                 <Card v-if="filteredJourneys.length">
-                  <CardHeader class="flex-row items-center justify-between space-y-0">
+                  <CardHeader class="card-head">
                     <CardTitle>Visitor Journeys</CardTitle>
-                    <span class="text-xs text-muted">{{ filteredJourneys.length }} of {{ journeys.length }} sessions{{ activeFlowFilterCount ? ` (${activeFlowFilterCount} filter${activeFlowFilterCount > 1 ? 's' : ''})` : '' }}</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-muted">{{ filteredJourneys.length }} of {{ journeys.length }} sessions{{ activeFlowFilterCount ? ` (${activeFlowFilterCount} filter${activeFlowFilterCount > 1 ? 's' : ''})` : '' }}</span>
+                      <CardDismiss label="Visitor Journeys" @dismiss="removeFlowCard(cid)" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                   <div class="journey-list">
@@ -773,9 +765,8 @@
 
               <!-- Growth Actions -->
               <div v-if="cid === 'growth_actions'" class="ret-dyn-card ret-full">
-                <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Growth Actions</CardTitle><span class="text-xs text-muted">Prioritized by impact</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Growth Actions</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Prioritized by impact</span><CardDismiss label="Growth Actions" @dismiss="removeInsightCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="insightsData.actions && insightsData.actions.length">
                     <div v-for="(a, i) in insightsData.actions" :key="i" class="growth-action-item">
@@ -794,9 +785,8 @@
 
               <!-- Anomalies -->
               <div v-if="cid === 'anomalies'" class="ret-dyn-card ret-half">
-                <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Anomaly Detection</CardTitle><span class="text-xs text-muted">Unusual patterns</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Anomaly Detection</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Unusual patterns</span><CardDismiss label="Anomaly Detection" @dismiss="removeInsightCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="anomalyInsights.length">
                     <div v-for="(ins, i) in anomalyInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
@@ -815,9 +805,8 @@
 
               <!-- Content Performance -->
               <div v-if="cid === 'content_perf'" class="ret-dyn-card ret-half">
-                <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Content Performance</CardTitle><span class="text-xs text-muted">Top & underperforming pages</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Content Performance</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Top & underperforming pages</span><CardDismiss label="Content Performance" @dismiss="removeInsightCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="contentInsights.length">
                     <div v-for="(ins, i) in contentInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
@@ -836,9 +825,8 @@
 
               <!-- Engagement Health -->
               <div v-if="cid === 'engagement_health'" class="ret-dyn-card ret-full">
-                <button class="ret-card-close" @click="removeInsightCard(cid)">&times;</button>
                 <Card>
-                  <CardHeader class="flex-row items-center justify-between space-y-0"><CardTitle>Engagement Health</CardTitle><span class="text-xs text-muted">Behavioral patterns & improvement areas</span></CardHeader>
+                  <CardHeader class="card-head"><CardTitle>Engagement Health</CardTitle><div class="flex items-center gap-2"><span class="text-xs text-muted">Behavioral patterns & improvement areas</span><CardDismiss label="Engagement Health" @dismiss="removeInsightCard(cid)" /></div></CardHeader>
                   <CardContent>
                   <div v-if="engagementInsights.length">
                     <div v-for="(ins, i) in engagementInsights" :key="i" class="insight-compact-item" :class="'ic-' + ins.type">
@@ -1014,7 +1002,7 @@
       <!-- Footer disclaimer (non-pixel sources only) -->
       <p v-if="dataSourceLabel" class="mt-10 mb-2 text-center text-[11.5px] leading-relaxed text-muted-foreground">
         Data on this page is read from {{ dataSourceLabel }} and may be sampled or estimated.
-        Installing the GrowthPilot pixel unlocks the full view — sessions, retention, flows, and AI-assistant attribution.
+        Installing the Cansee pixel unlocks the full view — sessions, retention, flows, and AI-assistant attribution.
       </p>
     </template>
   </div>
@@ -1030,6 +1018,7 @@ import dashboardApi from '@/api/dashboard'
 import { Bar, Doughnut, Radar, PolarArea } from 'vue-chartjs'
 import { CHART_COLORS, SERIES, withAlpha } from '@/lib/chartTheme'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import CardDismiss from '@/components/ui/CardDismiss.vue'
 import TrafficOverviewCard from '@/components/analytics/TrafficOverviewCard.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1118,7 +1107,7 @@ const TRAFFIC_QUALITY = {
   cloudflare: {
     excluded: false,
     label: 'Includes bot traffic',
-    title: 'Edge analytics counts every request that reaches Cloudflare, including crawlers and scanners — see the Flagged Paths card. Install the GrowthPilot pixel for humans-only numbers.',
+    title: 'Edge analytics counts every request that reaches Cloudflare, including crawlers and scanners — see the Flagged Paths card. Install the Cansee pixel for humans-only numbers.',
   },
 }
 const trafficQuality = computed(
@@ -1174,8 +1163,8 @@ const {
   add: addOverviewCard,
   remove: removeOverviewCard,
 } = useCardPicker({
-  storageKey: computed(() => `ftb_ov_cards_${store.activeWebsiteId}`),
-  versionKey: computed(() => `ftb_ov_ver_${store.activeWebsiteId}`),
+  storageKey: computed(() => `cs_ov_cards_${store.activeWebsiteId}`),
+  versionKey: computed(() => `cs_ov_ver_${store.activeWebsiteId}`),
   availableCards: overviewAvailableCards,
   defaults: ['traffic', 'sources', 'pages', 'countries', 'security'],
   version: 3,  // bump to reset all users to defaults
@@ -1250,7 +1239,7 @@ const {
   add: addRetCard,
   remove: removeRetCard,
 } = useCardPicker({
-  storageKey: computed(() => `ftb_ret_cards_${store.activeWebsiteId}`),
+  storageKey: computed(() => `cs_ret_cards_${store.activeWebsiteId}`),
   availableCards: retAvailableCards,
 })
 
@@ -1267,7 +1256,7 @@ const {
   add: addFlowCard,
   remove: removeFlowCard,
 } = useCardPicker({
-  storageKey: computed(() => `ftb_flow_cards_${store.activeWebsiteId}`),
+  storageKey: computed(() => `cs_flow_cards_${store.activeWebsiteId}`),
   availableCards: flowAvailableCards,
 })
 const expandedJourneys = ref(new Set())
@@ -1286,7 +1275,7 @@ const {
   add: addInsightCard,
   remove: removeInsightCard,
 } = useCardPicker({
-  storageKey: computed(() => `ftb_insight_cards_${store.activeWebsiteId}`),
+  storageKey: computed(() => `cs_insight_cards_${store.activeWebsiteId}`),
   availableCards: insightAvailableCards,
 })
 
@@ -2035,13 +2024,18 @@ onBeforeUnmount(() => {
 .ret-card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 768px) { .ret-card-grid { grid-template-columns: repeat(2, 1fr); } }
 .ret-dyn-card { position: relative; animation: cardSlideIn 0.25s ease; }
+/* Card header as a row, so the dismiss control shares the title's baseline.
+   Written out rather than composed from Tailwind utilities: CardHeader ships
+   space-y-1.5, and space-y-0 is emitted EARLIER in Tailwind's output, so it
+   loses the cascade and leaves a 6px drop on every child after the title. */
+.card-head { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.card-head > * + * { margin-top: 0; }
 @keyframes cardSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 .ret-half { grid-column: span 2; }
 .ret-quarter { grid-column: span 1; }
 .ret-full { grid-column: 1 / -1; }
-.ret-card-close { position: absolute; top: 8px; right: 8px; z-index: 5; width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--muted); color: var(--muted-foreground); font-size: 16px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
-.ret-dyn-card:hover .ret-card-close { opacity: 1; }
-.ret-card-close:hover { background: var(--destructive); color: white; }
+/* Dismiss control lives in components/ui/CardDismiss.vue — inside the
+   card header, so it stays on the title's baseline. */
 
 /* ── Add Widget Inline ── */
 .ret-add-inline { display: flex; align-items: center; justify-content: flex-end; position: relative; min-height: auto; border: none; border-radius: 0; grid-column: 1 / -1; padding: 0; margin: -8px 0 8px; order: -1; }

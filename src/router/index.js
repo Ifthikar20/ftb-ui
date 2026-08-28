@@ -215,7 +215,17 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes,
-    scrollBehavior() {
+    scrollBehavior(to) {
+        // A hash means an in-page anchor (the landing page's #features,
+        // #how and #faq). The blanket top: 0 below swallowed every one of
+        // them. vue-router ignores scroll-margin-top, so read it off the
+        // target and pass it as the offset — that keeps the clearance
+        // owned by the page's CSS rather than hard-coded here.
+        const target = to.hash && document.querySelector(to.hash)
+        if (target) {
+            const offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0
+            return { el: to.hash, top: offset, behavior: 'smooth' }
+        }
         return { top: 0 }
     }
 })
@@ -248,14 +258,14 @@ router.beforeEach(async (to, from, next) => {
     // answer (success, or confirmed 401/403). Transient failures
     // leave it false so the next nav retries.
     if (!sessionRestored && !auth.isAuthenticated) {
-        const hadSession = localStorage.getItem('fb-session')
+        const hadSession = localStorage.getItem('cs-session')
         if (hadSession) {
             try {
                 await auth.refreshToken()
                 if (auth.accessToken) {
                     await auth.fetchSession()
                     sessionRestored = true
-                } else if (!localStorage.getItem('fb-session')) {
+                } else if (!localStorage.getItem('cs-session')) {
                     sessionRestored = true
                 }
             } catch {

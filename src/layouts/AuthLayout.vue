@@ -11,47 +11,48 @@
         <div class="auth-video-content">
           <div class="auth-video-top">
             <h1 class="auth-headline">
-              <strong>MARKETING</strong><br/>
+              <strong>BRAND</strong><br/>
               INTELLIGENCE FOR<br/>
               <strong>AI SEARCH</strong>
             </h1>
             <p class="auth-tagline">
-              FetchBot is how modern brands measure and shape their presence inside ChatGPT, Claude, Gemini, and Perplexity.
+              Cansee is how modern brands measure and shape their presence inside ChatGPT, Claude, Gemini, Perplexity, and Grok.
             </p>
             <span class="auth-version">v2.1</span>
           </div>
 
           <div class="auth-video-bottom">
+            <!-- Jobs, not internal feature names. Each one is backed by a
+                 capability that ships and is reachable in the UI. -->
             <ul class="auth-features">
               <li class="auth-feature">
                 <span class="auth-feature-icon">
-                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 13V9M6 13V5M10 13V7M14 13V3"/></svg>
                 </span>
-                Prompt library
+                Where AI ranks you
               </li>
               <li class="auth-feature">
                 <span class="auth-feature-icon">
-                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="5" height="5" rx="1"/><rect x="9" y="3" width="5" height="5" rx="1"/><rect x="2" y="10" width="5" height="3" rx="1"/><rect x="9" y="10" width="5" height="3" rx="1"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><path d="M1.5 13.5c0-2.2 2-3.6 4.5-3.6s4.5 1.4 4.5 3.6"/><path d="M11 4.2a2.3 2.3 0 0 1 0 4.1M13 13.5c0-1.5-.5-2.6-1.5-3.3"/></svg>
                 </span>
-                Multi-LLM probing
+                Who it recommends instead
               </li>
               <li class="auth-feature">
                 <span class="auth-feature-icon">
-                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12" stroke-linecap="round"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.75 3 3.5v4.2c0 2.9 2 5.3 5 6.55 3-1.25 5-3.65 5-6.55V3.5z"/><path d="M8 5.5v3M8 10.8v.2"/></svg>
                 </span>
-                Source influence
+                Catch bad AI answers
               </li>
               <li class="auth-feature">
                 <span class="auth-feature-icon">
-                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3M6 9h4M6 11h4" stroke-linecap="round"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8.6A5.4 5.4 0 0 1 8.6 14H3a1 1 0 0 1-1-1V7.4A5.4 5.4 0 0 1 7.4 2h1.2A5.4 5.4 0 0 1 14 7.4z"/><path d="M5.5 8l1.8 1.8L10.8 6.3"/></svg>
                 </span>
-                Content studio
+                Is AI on message?
               </li>
             </ul>
 
             <div class="auth-brand">
-              <img src="/images/fb-logo.png" alt="FetchBot" class="auth-brand-mark" />
-              <span class="brand-name">FetchBot</span>
+              <img src="/images/cansee-logo.png" alt="Cansee" class="auth-brand-mark" />
             </div>
           </div>
         </div>
@@ -68,7 +69,7 @@
         <slot />
       </div>
       <p class="auth-footer">
-        © 2026 FetchBot ·
+        © 2026 Cansee ·
         <router-link class="auth-footer-link" to="/support">Support</router-link> ·
         <router-link class="auth-footer-link" to="/privacy">Privacy</router-link> ·
         <router-link class="auth-footer-link" to="/terms">Terms</router-link>
@@ -331,8 +332,9 @@ onUnmounted(() => {
 }
 
 .auth-brand-mark {
-  width: 28px;
-  height: 28px;
+  /* 4.83:1 wordmark: size by height, never a square box. */
+  width: auto;
+  height: 20px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }

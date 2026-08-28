@@ -1,8 +1,8 @@
 <template>
-  <InfoPage title="Contact us" eyebrow="Talk to FetchBot" intro="FetchBot is a small, invite-only team. A public contact form is on the way — until then, requests come through the channels below.">
+  <InfoPage title="Contact us" eyebrow="Talk to Cansee" intro="Cansee is a small, invite-only team. A public contact form is on the way — until then, requests come through the channels below.">
     <h2>Request access</h2>
     <p>
-      Access to FetchBot is currently invite-only. If you'd like an account, a working
+      Access to Cansee is currently invite-only. If you'd like an account, a working
       integration, or a private beta invite, hold tight — we'll open a request form on this
       page soon.
     </p>
@@ -21,7 +21,7 @@
 
     <h2>Company</h2>
     <p>
-      FetchBot is operated by Alicorr LLC. Mailing address available on request once the
+      Cansee is operated by Alicorr LLC. Mailing address available on request once the
       contact form is live.
     </p>
   </InfoPage>

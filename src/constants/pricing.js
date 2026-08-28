@@ -52,7 +52,7 @@ export const TIERS = [
         ],
         cta: 'Contact sales',
         planCode: 'business',
-        contactTarget: 'mailto:sales@fetchbot.ai?subject=Business plan inquiry',
+        contactTarget: 'mailto:sales@cansee.ai?subject=Business plan inquiry',
         highlight: false,
     },
 ]

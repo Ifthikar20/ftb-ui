@@ -86,7 +86,7 @@
             </div>
             <h3 class="ip-empty-title">Map a search conversation</h3>
             <p class="ip-empty-text">
-              Enter a query your customers would search. FetchBot reads the top
+              Enter a query your customers would search. Cansee reads the top
               sources (Reddit threads, reviews, articles), extracts the brands
               and complaints inside, and draws the pathway.
             </p>

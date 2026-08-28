@@ -7,7 +7,7 @@ import api from './client'
 //             consent happens via full-page redirect to authorize_url;
 //             Google redirects back through the backend callback, which
 //             lands on /websites/:id?ga4=...
-//   - hosted: a FetchBot-owned GA4 property behind our Google tag —
+//   - hosted: a Cansee-owned GA4 property behind our Google tag —
 //             the client just pastes a gtag snippet.
 //   - cloudflare: tenant-supplied zone API token (Zone→Analytics→Read).
 // Polling reads are _silentError: a 409 simply means "not connected yet"

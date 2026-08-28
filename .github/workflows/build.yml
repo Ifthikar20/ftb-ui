@@ -17,7 +17,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/ftb-ui
+  IMAGE_NAME: ${{ github.repository_owner }}/cansee-ui
 
 jobs:
   lint:
@@ -92,22 +92,22 @@ jobs:
             exit 1
           fi
           mkdir -p ~/.ssh
-          printf '%s' "$EC2_SSH_KEY" > ~/.ssh/fynda-deploy.pem
-          chmod 600 ~/.ssh/fynda-deploy.pem
+          printf '%s' "$EC2_SSH_KEY" > ~/.ssh/cansee-deploy.pem
+          chmod 600 ~/.ssh/cansee-deploy.pem
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Pull fresh image and refresh the frontend bundle on EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER || 'ubuntu' }}
-          REMOTE_DIR: ${{ secrets.REMOTE_DIR || '/opt/fetchbot/ftb-api-26' }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR || '/opt/cansee/ftb-api-26' }}
         # The prod compose lives in the API repo on EC2. The frontend
         # service is a one-shot that copies the freshly pulled image's
         # /build into the shared frontend_dist volume nginx reads from.
         # Restarting nginx is cosmetic — the volume is already updated —
         # but it forces any in-flight workers to re-stat the new index.
         run: |
-          ssh -i ~/.ssh/fynda-deploy.pem \
+          ssh -i ~/.ssh/cansee-deploy.pem \
               -o StrictHostKeyChecking=accept-new \
               -o LogLevel=ERROR \
               "$EC2_USER@$EC2_HOST" \
@@ -124,7 +124,7 @@ jobs:
       - name: Smoke test
         run: |
           for i in 1 2 3 4 5; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" https://fetchbot.ai/ || echo "000")
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://cansee.ai/ || echo "000")
             echo "attempt $i: $code"
             if [[ "$code" == "200" ]]; then exit 0; fi
             sleep 6

@@ -8,7 +8,7 @@
         v-if="store.isOpen"
         class="ask-panel"
         role="dialog"
-        aria-label="Ask FetchBot"
+        aria-label="Ask Cansee"
         @keydown.esc="store.close()"
       >
         <!-- Header -->
@@ -18,7 +18,7 @@
               <Sparkles :size="16" :stroke-width="2" />
             </span>
             <div class="ask-brand-text">
-              <span class="ask-title">Ask FetchBot</span>
+              <span class="ask-title">Ask Cansee</span>
               <span class="ask-sub">{{ websiteName || 'Your workspace' }}</span>
             </div>
           </div>
@@ -45,7 +45,7 @@
             </span>
             <h3 class="ask-empty-title">Temporarily unavailable</h3>
             <p class="ask-empty-sub">
-              {{ store.maintenanceMessage || 'Ask FetchBot is offline for maintenance. It will be back shortly.' }}
+              {{ store.maintenanceMessage || 'Ask Cansee is offline for maintenance. It will be back shortly.' }}
             </p>
           </div>
 
@@ -100,7 +100,7 @@
             <span class="msg-avatar" aria-hidden="true">
               <Sparkles :size="13" :stroke-width="2" />
             </span>
-            <div class="bubble typing" aria-label="FetchBot is typing">
+            <div class="bubble typing" aria-label="Cansee is typing">
               <span></span><span></span><span></span>
             </div>
           </div>
@@ -113,7 +113,7 @@
               ref="inputEl"
               v-model="draft"
               class="composer-input"
-              :placeholder="canAsk ? 'Ask FetchBot about your data…' : 'Select a website to begin'"
+              :placeholder="canAsk ? 'Ask Cansee about your data…' : 'Select a website to begin'"
               rows="1"
               :disabled="!canAsk || pending"
               @input="autoGrow"
@@ -129,7 +129,7 @@
               <ArrowUp :size="17" :stroke-width="2.2" />
             </button>
           </div>
-          <p class="composer-hint">FetchBot can be wrong — check important numbers.</p>
+          <p class="composer-hint">Cansee can be wrong — check important numbers.</p>
         </div>
       </aside>
     </Transition>
@@ -217,7 +217,7 @@ function friendlyError(e) {
     // Feature switched off server-side mid-session: flip the UI to
     // maintenance so the composer disappears too.
     const msg = e?.response?.data?.error?.message
-      || 'Ask FetchBot is temporarily unavailable.'
+      || 'Ask Cansee is temporarily unavailable.'
     store.markDisabled(msg)
     return msg
   }

@@ -4,8 +4,7 @@
 
     <header class="sp-top">
       <div class="sp-brand">
-        <img src="/images/fb-logo.png" alt="" class="sp-brand-mark" />
-        <span>FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" class="sp-brand-mark" />
       </div>
       <button type="button" class="sp-back" @click="goBack">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,7 +63,7 @@
     </main>
 
     <footer class="sp-footer">
-      <span>© 2026 FetchBot</span>
+      <span>© 2026 Cansee</span>
       <nav class="sp-footer-links" aria-label="Legal">
         <a href="/terms" target="_blank" rel="noopener">Terms</a>
         <a href="/privacy" target="_blank" rel="noopener">Privacy</a>
@@ -134,8 +133,8 @@ function goBack() {
   letter-spacing: -0.01em;
 }
 .sp-brand-mark {
-  width: 24px;
-  height: 24px;
+  width: auto;
+  height: 17px;
   object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);

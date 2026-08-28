@@ -1,0 +1,31 @@
+# Keep the build context small and, more importantly, CORRECT.
+#
+# The Dockerfile installs dependencies for linux/amd64 (`npm install`) and
+# then does `COPY . .`. Without this file the host's node_modules is copied
+# straight over the freshly installed ones -- on a Windows or macOS host that
+# means @esbuild/win32-x64 and @rollup/rollup-win32-* land in a Linux image
+# and the Vite build fails or silently uses the wrong binary. Excluding
+# node_modules is a correctness requirement here, not an optimisation.
+#
+# It also takes the context from ~304 MB to a few MB.
+
+node_modules
+dist
+.git
+.github
+.gitignore
+
+# Secrets never belong in a build context. VITE_* values that the bundle
+# genuinely needs are passed explicitly as --build-arg by the CI workflow.
+.env
+.env.*
+
+# Local tooling and editor state
+.vscode
+.idea
+*.log
+.DS_Store
+.eslintcache
+
+# Docs do not affect the bundle
+*.md

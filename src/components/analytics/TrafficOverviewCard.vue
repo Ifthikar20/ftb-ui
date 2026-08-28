@@ -209,7 +209,7 @@ const chartOptions = computed(() => {
             Traffic Overview
             <span
               class="inline-flex"
-              title="Visitors and pageviews recorded by the FetchBot pixel for the selected time range. The delta is the average of the last three buckets vs the prior three buckets."
+              title="Visitors and pageviews recorded by the Cansee pixel for the selected time range. The delta is the average of the last three buckets vs the prior three buckets."
             >
               <Info class="size-4 text-muted-foreground" />
             </span>
