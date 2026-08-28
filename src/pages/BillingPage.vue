@@ -418,7 +418,7 @@ async function changePlan(tier) {
 }
 
 function contactEnterprise() {
-  window.location.href = enterpriseTier.value?.contactTarget || 'mailto:sales@fetchbot.ai'
+  window.location.href = enterpriseTier.value?.contactTarget || 'mailto:sales@cansee.ai'
 }
 
 async function openPortal() {

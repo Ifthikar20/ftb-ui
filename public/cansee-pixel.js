@@ -1,7 +1,7 @@
 /**
- * FetchBot Tracking Pixel v1.0
+ * Cansee Tracking Pixel v1.0
  * Lightweight analytics & heatmap data collector.
- * Embed: <script src="https://YOUR_HOST/fetchbot-pixel.js" data-site="YOUR_PIXEL_KEY"></script>
+ * Embed: <script src="https://YOUR_HOST/cansee-pixel.js" data-site="YOUR_PIXEL_KEY"></script>
  */
 (function () {
     "use strict";
@@ -9,7 +9,7 @@
     var script = document.currentScript;
     var pixelKey = script && script.getAttribute("data-site");
     if (!pixelKey) {
-        console.warn("[FetchBot] Missing data-site attribute on pixel script.");
+        console.warn("[Cansee] Missing data-site attribute on pixel script.");
         return;
     }
 
@@ -35,7 +35,7 @@
         for (var i = 0; i < raw.length; i++) {
             hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
         }
-        return "fb_" + Math.abs(hash).toString(36);
+        return "cs_" + Math.abs(hash).toString(36);
     }
 
     var fp = fingerprint();
@@ -209,7 +209,7 @@
     );
 
     // Expose for manual custom events
-    window.fetchbot = {
+    window.cansee = {
         track: function (name, props) {
             send("custom", { event_name: name, ...(props || {}) });
         },

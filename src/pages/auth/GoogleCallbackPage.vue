@@ -7,9 +7,9 @@
         <p class="text-base text-muted-foreground">Signing you in with Google...</p>
       </template>
 
-      <!-- Closed signup: Google account has no FetchBot account -->
+      <!-- Closed signup: Google account has no Cansee account -->
       <template v-else-if="state === 'account_required'">
-        <h2 class="text-xl font-semibold text-foreground">You need a FetchBot account first</h2>
+        <h2 class="text-xl font-semibold text-foreground">You need a Cansee account first</h2>
         <p class="max-w-md text-base text-muted-foreground">{{ message }}</p>
         <p class="max-w-md text-sm text-muted-foreground">
           Account creation is currently invite-only. Reach out through the contact page
@@ -84,7 +84,7 @@ onMounted(async () => {
     if (e?.response?.status === 403) {
       // Closed signup: the backend rejected a Google email with no account.
       state.value = 'account_required'
-      message.value = backendMessage || 'No FetchBot account exists for this Google email.'
+      message.value = backendMessage || 'No Cansee account exists for this Google email.'
     } else {
       fail(backendMessage || 'Google sign-in failed. Please try again.')
     }

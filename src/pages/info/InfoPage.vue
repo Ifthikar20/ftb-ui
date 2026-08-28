@@ -2,8 +2,7 @@
   <div class="info-page">
     <header class="info-header">
       <router-link to="/" class="info-logo">
-        <img src="/images/fb-logo.png" alt="FetchBot" width="28" height="28" />
-        <span>FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" style="height:22px;width:auto" />
       </router-link>
       <div class="info-nav">
         <router-link to="/">Home</router-link>
@@ -22,11 +21,11 @@
     </main>
 
     <footer class="info-footer">
-      <span>© 2026 FetchBot, Inc.</span>
+      <span>© 2026 Cansee, Inc.</span>
       <div class="info-footer-links">
         <router-link to="/terms">Terms</router-link>
         <router-link to="/privacy">Privacy</router-link>
-        <a href="mailto:hello@fetchbot.ai">hello@fetchbot.ai</a>
+        <a href="mailto:hello@cansee.ai">hello@cansee.ai</a>
       </div>
     </footer>
   </div>

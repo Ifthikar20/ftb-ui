@@ -4,8 +4,7 @@
 
     <header class="sp-top">
       <div class="sp-brand">
-        <img src="/images/fb-logo.png" alt="" class="sp-brand-mark" />
-        <span>FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" class="sp-brand-mark" />
       </div>
       <button type="button" class="sp-back" @click="goBack">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -26,12 +25,12 @@
             usually within one business day.
           </p>
 
-          <a class="sp-cta" href="mailto:support@fetchbot.ai">
+          <a class="sp-cta" :href="`mailto:${SUPPORT_EMAIL}`">
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
               <rect x="1.5" y="3" width="13" height="10" rx="1.8"/>
               <path d="M2 4l6 5 6-5"/>
             </svg>
-            <span>support@fetchbot.ai</span>
+            <span>{{ SUPPORT_EMAIL }}</span>
           </a>
 
           <dl class="sp-faq">
@@ -64,7 +63,7 @@
     </main>
 
     <footer class="sp-footer">
-      <span>© 2026 FetchBot</span>
+      <span>© 2026 Cansee</span>
       <nav class="sp-footer-links" aria-label="Legal">
         <a href="/terms" target="_blank" rel="noopener">Terms</a>
         <a href="/privacy" target="_blank" rel="noopener">Privacy</a>
@@ -75,6 +74,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+import { SUPPORT_EMAIL } from '@/constants/support'
 
 import WatercolorBackdrop from '@/components/onboarding/WatercolorBackdrop.vue'
 
@@ -133,8 +133,8 @@ function goBack() {
   letter-spacing: -0.01em;
 }
 .sp-brand-mark {
-  width: 24px;
-  height: 24px;
+  width: auto;
+  height: 17px;
   object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);

@@ -4,17 +4,19 @@
       <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
           <SidebarMenu>
-            <!-- FetchBot brand mark. Placed in the sidebar header (not the page)
+            <!-- Cansee brand mark. Placed in the sidebar header (not the page)
                  so it collapses to the logo icon when the sidebar is collapsed
                  and shows the wordmark when expanded. Links home. -->
             <SidebarMenuItem>
-              <SidebarMenuButton as-child size="lg" tooltip="FetchBot">
+              <SidebarMenuButton as-child size="lg" tooltip="Cansee">
                 <router-link to="/dashboard">
                   <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <img src="/images/fb-logo.png" alt="FetchBot" class="size-5 object-contain" />
+                    <!-- Square "C" mark, not the wordmark: this slot is what
+                         remains visible when the sidebar collapses. -->
+                    <img src="/images/cansee-mark.png" alt="Cansee" class="size-5 object-contain cansee-mark" />
                   </div>
                   <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">FetchBot</span>
+                    <span class="truncate font-semibold">Cansee</span>
                     <span class="truncate text-xs text-muted-foreground">AI visibility</span>
                   </div>
                 </router-link>
@@ -76,6 +78,55 @@
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </template>
+            </SidebarMenu>
+          </SidebarGroup>
+
+          <!-- Chat history. Only appears once there is a thread to show, so
+               a new account is not given an empty section to wonder about. -->
+          <SidebarGroup v-if="assistantStore.enabled && assistantStore.conversations.length">
+            <SidebarGroupLabel>Chats</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton as-child tooltip="New chat">
+                  <button type="button" class="w-full" @click="openAsk()">
+                    <SquarePen />
+                    <span>New chat</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem
+                v-for="chat in visibleChats"
+                :key="chat.id"
+                class="group/chat relative"
+              >
+                <SidebarMenuButton
+                  as-child
+                  :is-active="isChatActive(chat)"
+                  :tooltip="chat.title || 'New chat'"
+                >
+                  <router-link :to="{ name: 'ask-cansee', params: { conversationId: chat.id } }">
+                    <MessageSquare />
+                    <span class="truncate">{{ chat.title || 'New chat' }}</span>
+                  </router-link>
+                </SidebarMenuButton>
+                <button
+                  type="button"
+                  class="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-destructive group-hover/chat:block"
+                  :title="`Delete ${chat.title || 'this chat'}`"
+                  @click.prevent.stop="deleteChat(chat)"
+                >
+                  <Trash2 :size="13" />
+                </button>
+              </SidebarMenuItem>
+              <SidebarMenuItem v-if="assistantStore.conversations.length > CHAT_LIMIT">
+                <SidebarMenuButton as-child>
+                  <button type="button" class="w-full" @click="showAllChats = !showAllChats">
+                    <span class="text-muted-foreground">
+                      {{ showAllChats ? 'Show less' : `Show all ${assistantStore.conversations.length}` }}
+                    </span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
@@ -179,8 +230,8 @@
             <button
               v-if="assistantStore.enabled"
               class="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-ring hover:bg-background"
-              title="Ask FetchBot"
-              @click="assistantStore.toggle()"
+              title="Ask Cansee"
+              @click="openAsk()"
             >
               <span class="grid size-5 place-items-center rounded-md text-white" style="background: linear-gradient(135deg, #6d5efc, #9b6bff);">
                 <Sparkles :size="12" :stroke-width="2.2" />
@@ -208,8 +259,6 @@
     <router-view />
   </div>
 
-    <!-- Ask FetchBot assistant (global slide-out panel) -->
-    <AskFetchBotPanel />
     <!-- Toast Notifications (global) -->
     <ToastContainer />
     <!-- Add Project Modal -->
@@ -311,7 +360,6 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
-import AskFetchBotPanel from '@/components/assistant/AskFetchBotPanel.vue'
 import { useAssistantStore } from '@/stores/assistant'
 import { Button } from '@/components/ui/button'
 import {
@@ -332,7 +380,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
   Search, Plus, LogOut, ChevronsUpDown, Home,
-  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Bot, Sparkles,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Sparkles,
+  MessageSquare, SquarePen, Trash2,
   Sun, Moon,
 } from '@lucide/vue'
 
@@ -358,12 +407,31 @@ const searchInputRef = ref(null)
 const isMac = navigator.platform?.toUpperCase().includes('MAC')
 
 const searchPages = [
-  { name: 'dashboard', label: 'Dashboard', description: 'Overview of all your projects', category: 'Navigation', route: '/dashboard', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>' },
-  { name: 'websites', label: 'Projects', description: 'Manage your tracked websites', category: 'Navigation', route: '/websites', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><line x1="1" y1="8" x2="15" y2="8"/><ellipse cx="8" cy="8" rx="3" ry="7"/></svg>' },
-  { name: 'analytics', label: 'SEO Analytics', description: 'Search performance, traffic sources, engagement', category: 'Intelligence', routeFn: () => analyticsRoute.value, icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V6l4-4 4 4 4-4v12"/></svg>' },
-  { name: 'prompt-library', label: 'Prompts', description: 'The questions we ask each AI model', category: 'Intelligence', routeFn: () => promptLibraryRoute.value, icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>' },
-  { name: 'billing', label: 'Billing', description: 'Subscription plans and payment', category: 'Account', route: '/billing', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="1" y1="7" x2="15" y2="7"/></svg>' },
-  { name: 'settings', label: 'Settings', description: 'Account settings and preferences', category: 'Account', route: '/settings', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4"/></svg>' },
+  // ── Navigation ──
+  { name: 'dashboard', label: 'Dashboard', description: 'Overview of all your projects', category: 'Navigation', route: '/dashboard', keywords: 'home overview start', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>' },
+  { name: 'websites', label: 'Projects', description: 'Manage your tracked websites', category: 'Navigation', route: '/websites', keywords: 'sites domains brands add website', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><line x1="1" y1="8" x2="15" y2="8"/><ellipse cx="8" cy="8" rx="3" ry="7"/></svg>' },
+
+  // ── Intelligence ── every destination the sidebar can reach.
+  // These were missing from the palette entirely: the sidebar offered
+  // eleven destinations and search indexed six, so half the app was
+  // unreachable by keyboard.
+  { name: 'analytics', label: 'SEO Analytics', description: 'Search performance, traffic sources, engagement', category: 'Intelligence', routeFn: () => analyticsRoute.value, keywords: 'seo traffic visitors pageviews sessions bounce referrers geo devices', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V6l4-4 4 4 4-4v12"/></svg>' },
+  { name: 'prompt-library', label: 'Prompts', description: 'The questions we ask each AI model', category: 'Intelligence', routeFn: () => promptLibraryRoute.value, keywords: 'prompt library questions queries tracked keywords', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>' },
+  { name: 'sources-urls', label: 'URLs', description: 'Which pages and domains AI cites', category: 'Intelligence', routeFn: () => sourcesUrlsRoute.value, keywords: 'citations sources domains links cited references influence', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 9.5a3 3 0 0 0 4.2 0l2.3-2.3a3 3 0 0 0-4.2-4.2L7.6 4.2"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0L3 8.8a3 3 0 0 0 4.2 4.2l1.2-1.2"/></svg>' },
+  { name: 'brand-research', label: 'Brand Research', description: 'Who owns the conversation, and where you can join it', category: 'Intelligence', routeFn: () => brandResearchRoute.value, keywords: 'search insights opportunities reddit forums quora threads sentiment competitors chatgpt gaps content ideas', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5 14 14"/></svg>' },
+  { name: 'brand-security', label: 'Brand Security', description: 'Catch wrong or hostile AI answers', category: 'Intelligence', routeFn: () => brandSecurityRoute.value, keywords: 'alerts findings sentiment risk reputation detectors negative misrepresentation', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 2.5 3.8v4c0 3.2 2.3 6 5.5 6.7 3.2-.7 5.5-3.5 5.5-6.7v-4z"/></svg>' },
+  { name: 'brand-input', label: 'Brand Input', description: 'Teach the models what is true about you', category: 'Intelligence', routeFn: () => brandInputRoute.value, keywords: 'knowledge facts sources ingest rag context vault alignment', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2H8v12H3.5A1.5 1.5 0 0 1 2 12.5z"/><path d="M14 3.5A1.5 1.5 0 0 0 12.5 2H8v12h4.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>' },
+  { name: 'integrations', label: 'Integrations', description: 'Connect Slack, Discord, Analytics and more', category: 'Intelligence', route: '/app/integrations', keywords: 'slack discord ga4 google cloudflare search console webhooks connect', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v4M10 1v4"/><path d="M4 5h8v3a4 4 0 0 1-8 0z"/><path d="M8 12v3"/></svg>' },
+
+  // ── Account ──
+  { name: 'billing', label: 'Billing', description: 'Subscription plans and payment', category: 'Account', route: '/billing', keywords: 'plan upgrade invoice subscription payment card pro usage', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="1" y1="7" x2="15" y2="7"/></svg>' },
+  { name: 'settings', label: 'Settings', description: 'Account settings and preferences', category: 'Account', route: '/settings', keywords: 'profile password email name company theme dark mode notifications', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4"/></svg>' },
+
+  // ── Help ── indexed so 'privacy' or 'what do you track' resolves
+  // to the page that answers it rather than returning nothing.
+  { name: 'what-we-track', label: 'What We Track', description: 'Exactly what data we collect and for how long', category: 'Help', route: '/what-we-track', keywords: 'privacy data retention cookies gdpr tracking pixel consent', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="2"/></svg>' },
+  { name: 'support', label: 'Support', description: 'Get help or contact us', category: 'Help', route: '/support', keywords: 'help contact email question problem bug', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.5"/><path d="M3.8 3.8 6.2 6.2M9.8 9.8l2.4 2.4M12.2 3.8 9.8 6.2M6.2 9.8l-2.4 2.4"/></svg>' },
+  { name: 'status', label: 'Status', description: 'Live service status', category: 'Help', route: '/status', keywords: 'uptime incident outage health', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.5"/><path d="M3.8 3.8 6.2 6.2M9.8 9.8l2.4 2.4M12.2 3.8 9.8 6.2M6.2 9.8l-2.4 2.4"/></svg>' },
 ]
 
 // ── Specific search ──
@@ -403,11 +471,16 @@ function _parseSearchQuery(raw) {
 }
 
 function _matchPage(page, parsed) {
+  // keywords is searched but never displayed: it carries the words people
+  // actually type that do not appear in the label. Nobody searching for
+  // "gdpr", "invoice" or "slack" would otherwise find What We Track,
+  // Billing or Integrations, because none of those pages say the word.
   const haystack = [
     page.label,
     page.description,
     page.category,
     page.name || '',
+    page.keywords || '',
   ].join(' ').toLowerCase()
 
   if (parsed.kind === 'regex') {
@@ -505,8 +578,43 @@ const analyticsRoute = computed(() => websiteId.value ? `/analytics/${websiteId.
 const promptLibraryRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/prompts` : '/websites')
 const sourcesUrlsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/urls` : '/websites')
 const brandSecurityRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-security` : '/websites')
-const searchInsightsRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/search-insights` : '/websites')
+const brandResearchRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-research` : '/websites')
 const brandInputRoute = computed(() => websiteId.value ? `/llm-ranking/${websiteId.value}/brand-input` : '/websites')
+
+/* ── Ask Cansee chat list ──
+ * The list is rendered on every route, so it is capped by default: a heavy
+ * user with 60 threads should not push Billing and Settings off-screen.
+ */
+const CHAT_LIMIT = 6
+const showAllChats = ref(false)
+const visibleChats = computed(() =>
+  showAllChats.value
+    ? assistantStore.conversations
+    : assistantStore.conversations.slice(0, CHAT_LIMIT))
+
+function isChatActive(chat) {
+  return route.name === 'ask-cansee' && route.params.conversationId === chat.id
+}
+
+function openAsk() {
+  assistantStore.startNewChat()
+  router.push({ name: 'ask-cansee', params: {} })
+}
+
+async function deleteChat(chat) {
+  const wasOpen = isChatActive(chat)
+  try {
+    await assistantStore.removeConversation(websiteId.value, chat.id)
+  } catch (_) {
+    return  // interceptor toasts the failure
+  }
+  // Deleting the thread you are reading would otherwise leave the page
+  // pointed at a row that no longer exists.
+  if (wasOpen) router.replace({ name: 'ask-cansee', params: {} })
+}
+
+// Threads are per-project, so switching projects swaps the whole list.
+watch(websiteId, (id) => { assistantStore.loadConversations(id) })
 
 const navMain = computed(() => [
   {
@@ -528,12 +636,11 @@ const navMain = computed(() => [
         children: [
           { title: 'URLs', to: sourcesUrlsRoute.value, match: '/urls' },
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
-          { title: 'Search Insights', to: searchInsightsRoute.value, match: '/search-insights' },
+          { title: 'Brand Research', to: brandResearchRoute.value, match: '/brand-research' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
           { title: 'Brand Input', to: brandInputRoute.value, match: '/brand-input' },
         ],
       },
-      { title: 'Agents', to: '/agents', icon: Bot, match: '/agents' },
       { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
     ],
   },
@@ -631,6 +738,7 @@ onMounted(async () => {
   // Assistant entitlement / maintenance switch — decides whether the
   // header trigger renders at all. Fire and forget.
   assistantStore.loadStatus()
+  assistantStore.loadConversations(websiteId.value)
   try {
     const { data } = await websitesApi.list({ _silentError: true })
     appStore.setWebsites(data || [])
@@ -671,6 +779,12 @@ onUnmounted(() => {
 
 <!-- Command palette styles (unscoped for Teleport) -->
 <style>
+/* The brand mark sits on bg-sidebar-primary, which inverts between
+   themes (#1e1e1e light / #ffffff dark). The artwork is a single navy,
+   so flip it with a filter instead of shipping two files. */
+.cansee-mark { filter: brightness(0) invert(1); }
+[data-theme='dark'] .cansee-mark { filter: brightness(0); }
+
 .cmd-backdrop {
   position: fixed;
   inset: 0;

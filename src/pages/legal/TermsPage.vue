@@ -2,8 +2,7 @@
   <div class="legal-page min-h-screen bg-background text-foreground">
     <header class="sticky top-0 z-[100] flex items-center justify-between border-b border-border bg-card px-10 py-4 backdrop-blur-md">
       <router-link to="/" class="flex items-center gap-2.5 text-[1.1rem] font-bold text-foreground no-underline">
-        <img src="/images/fb-logo.png" alt="FetchBot" width="28" height="28" />
-        <span>FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" style="height:22px;width:auto" />
       </router-link>
       <div class="flex items-center gap-5">
         <router-link to="/privacy" class="text-sm font-medium text-muted-foreground no-underline hover:text-foreground">Privacy Policy</router-link>
@@ -19,9 +18,9 @@
 
       <h1>Terms of Service</h1>
       <p class="legal-intro">
-        Welcome to FetchBot. These Terms of Service ("Terms") govern your use of the FetchBot
+        Welcome to Cansee. These Terms of Service ("Terms") govern your use of the Cansee
         platform, website, APIs, and related services (collectively, the "Service") operated by
-        Alicorr LLC ("Company", "we", "us", or "our"), operator of the FetchBot service.
+        Alicorr LLC ("Company", "we", "us", or "our"), operator of the Cansee service.
       </p>
       <p class="legal-intro">
         By accessing or using the Service, you agree to be bound by these Terms. If you do not
@@ -60,7 +59,7 @@
           <li><strong>"Content"</strong> refers to all data, text, analytics, reports, and materials generated through the Service.</li>
           <li><strong>"Your Data"</strong> means data you provide to us or that we collect on your behalf, including website analytics, lead information, and campaign data.</li>
           <li><strong>"AI Credits"</strong> refers to the consumable units used to access AI-powered features such as keyword analysis and competitive intelligence.</li>
-          <li><strong>"Workspace"</strong> means a project environment within FetchBot tied to a specific website or domain.</li>
+          <li><strong>"Workspace"</strong> means a project environment within Cansee tied to a specific website or domain.</li>
         </ul>
       </section>
 
@@ -83,7 +82,7 @@
       <!-- ── 3. Description of Service ── -->
       <section id="service">
         <h2>3. Description of Service</h2>
-        <p>FetchBot is a marketing intelligence platform that provides:</p>
+        <p>Cansee is a marketing intelligence platform that provides:</p>
         <ul>
           <li><strong>Website Analytics</strong> — Real-time visitor tracking, session recording, and behavioral analysis.</li>
           <li><strong>Lead Scoring & Management</strong> — Automated identification, scoring, and pipeline management of potential customers.</li>
@@ -104,7 +103,7 @@
         <p>The Individual Plan is billed monthly at $14 USD. It includes up to 3 projects, 50,000 pageviews/month, 100 AI credits/month, and 2 platform integrations. All payments are processed through Stripe. By subscribing, you authorize us to charge your payment method on a recurring monthly basis.</p>
 
         <h3>4.2 Enterprise Plan (Custom Pricing)</h3>
-        <p>Enterprise plans are custom-quoted based on team size, usage requirements, and feature needs. Enterprise pricing is agreed upon via a separate order form or service agreement. Contact <a href="mailto:sales@fetchbot.ai">sales@fetchbot.ai</a> for details.</p>
+        <p>Enterprise plans are custom-quoted based on team size, usage requirements, and feature needs. Enterprise pricing is agreed upon via a separate order form or service agreement. Contact <a href="mailto:sales@cansee.ai">sales@cansee.ai</a> for details.</p>
 
         <h3>4.3 Payment Processing</h3>
         <p>All payments are processed securely by Stripe, Inc. We never store, access, or handle your credit card numbers directly. Your payment information is subject to Stripe's <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="https://stripe.com/legal" target="_blank" rel="noopener">Terms of Service</a>.</p>
@@ -167,7 +166,7 @@
       <section id="ai">
         <h2>8. AI-Generated Content</h2>
         <h3>8.1 Nature of AI Output</h3>
-        <p>FetchBot uses artificial intelligence to provide trend analysis, keyword suggestions, and other marketing insights. AI-generated content is provided as informational guidance and should not be treated as professional advice.</p>
+        <p>Cansee uses artificial intelligence to provide trend analysis, keyword suggestions, and other marketing insights. AI-generated content is provided as informational guidance and should not be treated as professional advice.</p>
 
         <h3>8.2 Accuracy</h3>
         <p>While we strive for accuracy, AI-generated content may contain errors, outdated information, or biases. You are responsible for independently verifying any AI-generated content before making business decisions based on it.</p>
@@ -227,7 +226,7 @@
       <!-- ── 12. Limitation of Liability ── -->
       <section id="liability">
         <h2>12. Limitation of Liability</h2>
-        <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, FETCHBOT INC. SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, BUSINESS OPPORTUNITIES, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE.</p>
+        <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, CANSEE INC. SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, BUSINESS OPPORTUNITIES, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE.</p>
         <p>OUR TOTAL LIABILITY UNDER THESE TERMS SHALL NOT EXCEED THE AMOUNT PAID BY YOU TO US IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM.</p>
       </section>
 
@@ -267,10 +266,10 @@
         <h2>16. Contact Information</h2>
         <p>If you have any questions about these Terms, you can reach us at:</p>
         <div class="contact-card mt-3 rounded-xl bg-muted px-6 py-5">
-          <p><strong>Alicorr LLC</strong> (operator of FetchBot)</p>
-          <p>Email: <a href="mailto:legal@fetchbot.ai">legal@fetchbot.ai</a></p>
-          <p>Support: <a href="mailto:support@fetchbot.ai">support@fetchbot.ai</a></p>
-          <p>Website: <a href="https://fetchbot.ai" target="_blank" rel="noopener">https://fetchbot.ai</a></p>
+          <p><strong>Alicorr LLC</strong> (operator of Cansee)</p>
+          <p>Email: <a href="mailto:legal@cansee.ai">legal@cansee.ai</a></p>
+          <p>Support: <a href="mailto:support@cansee.ai">support@cansee.ai</a></p>
+          <p>Website: <a href="https://cansee.ai" target="_blank" rel="noopener">https://cansee.ai</a></p>
         </div>
       </section>
     </main>
@@ -280,7 +279,7 @@
       <div class="flex gap-5">
         <router-link to="/terms" class="font-medium text-muted-foreground no-underline hover:text-foreground">Terms of Service</router-link>
         <router-link to="/privacy" class="font-medium text-muted-foreground no-underline hover:text-foreground">Privacy Policy</router-link>
-        <a href="mailto:support@fetchbot.ai" class="font-medium text-muted-foreground no-underline hover:text-foreground">Contact</a>
+        <a href="mailto:support@cansee.ai" class="font-medium text-muted-foreground no-underline hover:text-foreground">Contact</a>
       </div>
     </footer>
   </div>
@@ -292,7 +291,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 onMounted(() => {
-  document.title = 'Terms of Service — FetchBot'
+  document.title = 'Terms of Service — Cansee'
 })
 </script>
 

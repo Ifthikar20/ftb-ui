@@ -2,7 +2,7 @@
   <section class="ob-step ob-step--welcome">
     <div class="ob-stagger">
       <span class="ob-eyebrow">Step 1 of 4</span>
-      <h1 class="ob-title" tabindex="-1">Let&rsquo;s set up your FetchBot.</h1>
+      <h1 class="ob-title" tabindex="-1">Let&rsquo;s set up your Cansee.</h1>
       <p class="ob-sub">
         We'll scan your website, draft how AI should describe you, and
         pick the competitors you're measured against. About two minutes —

@@ -32,8 +32,10 @@ const tabs = [
 const POINTS = 12
 const LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-const BRAND_COLOR = '#FF385C'
-const COMP_COLOR = '#00A699'
+// House chart palette (src/lib/chartTheme.js): brand line in dark blue,
+// competitor average in orange.
+const BRAND_COLOR = '#1d4ed8'
+const COMP_COLOR = '#f97316'
 
 function withAlpha(hex, alpha) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex
@@ -167,7 +169,7 @@ const baseDataset = {
 // Distinct colors for per-competitor lines on the "Competitors" tab.
 // Brand + competitor-avg already use the two strong tones above; these are
 // muted enough that the avg line still reads as the primary.
-const COMPETITOR_PALETTE = ['#FC642D', '#5B8DEF', '#A36BE5', '#0F8F76', '#D03A6B']
+const COMPETITOR_PALETTE = ['#0ea5e9', '#c2410c', '#1e3a8a', '#64748b', '#7c3aed']
 const competitorList = computed(() => overview.value?.competitors || [])
 
 const chartData = computed(() => {

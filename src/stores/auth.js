@@ -9,7 +9,7 @@ import { describeSubscription } from '@/lib/plan'
 // The token is short-lived JWT — leaking it from localStorage is
 // no worse than what every "remember me" app does. The refresh
 // cookie remains the source of truth for long-term re-auth.
-const ACCESS_TOKEN_KEY = 'fb-access'
+const ACCESS_TOKEN_KEY = 'cs-access'
 
 export const useAuthStore = defineStore('auth', () => {
     // Hydrate the access token from localStorage on store init so the
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
             const { data: result } = await api.post('/auth/login/', { email, password })
             accessToken.value = result.access
             user.value = result.user
-            localStorage.setItem('fb-session', '1')
+            localStorage.setItem('cs-session', '1')
             return result
         } finally {
             loading.value = false
@@ -59,7 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
             const { data: result } = await api.post('/auth/google/', { code, redirect_uri: redirectUri })
             accessToken.value = result.access
             user.value = result.user
-            localStorage.setItem('fb-session', '1')
+            localStorage.setItem('cs-session', '1')
             return result
         } finally {
             loading.value = false
@@ -81,7 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
             await api.post('/auth/logout/')
         } catch { /* ignore */ }
         clearAuth()
-        localStorage.removeItem('fb-session')
+        localStorage.removeItem('cs-session')
     }
 
     async function fetchMe() {
@@ -117,21 +117,21 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             const { data: result } = await api.post('/auth/refresh/', {}, { _silentError: true })
             accessToken.value = result.access
-            localStorage.setItem('fb-session', '1')
+            localStorage.setItem('cs-session', '1')
             return result.access
         } catch (err) {
             // Only clear auth when the server actively says the
             // refresh cookie is no longer valid (401 / 403). Network
             // hiccups, 5xx blips, browser delays — none of those mean
-            // the user is signed out, and clearing fb-session here
+            // the user is signed out, and clearing cs-session here
             // makes every subsequent page load skip the refresh attempt
             // entirely. Stay logged-in until the server says otherwise.
             const status = err?.response?.status
             if (status === 401 || status === 403) {
                 clearAuth()
-                localStorage.removeItem('fb-session')
+                localStorage.removeItem('cs-session')
             }
-            // For anything else, leave fb-session alone so the next
+            // For anything else, leave cs-session alone so the next
             // navigation can retry the refresh.
             return null
         }
@@ -141,7 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = null  // watcher above clears the localStorage copy
         user.value = null
         session.value = null
-        localStorage.removeItem('fb-session')
+        localStorage.removeItem('cs-session')
         localStorage.removeItem(ACCESS_TOKEN_KEY)
     }
 

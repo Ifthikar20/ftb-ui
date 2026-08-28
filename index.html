@@ -3,22 +3,22 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/images/fb-logo.png" />
+  <link rel="icon" type="image/png" href="/images/cansee-mark.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="FetchBot — AI-powered marketing intelligence platform" />
+  <meta name="description" content="Cansee — brand intelligence for AI search. Measure and shape how ChatGPT, Claude, Gemini, and Perplexity talk about your brand." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Geist:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Geist:wght@400;500;600&display=swap"
     rel="stylesheet" />
-  <title>FetchBot — Marketing Intelligence</title>
+  <title>Cansee — Brand Intelligence</title>
 
   <!-- Theme bootstrap: runs before any CSS paints so a reload in dark
        mode never flashes white. Mirrors stores/app.js (same key/values). -->
   <script>
     (function () {
       try {
-        var pref = localStorage.getItem('fb-theme');
+        var pref = localStorage.getItem('cs-theme');
         var dark = pref === 'dark' || (pref === 'system' &&
           window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         var mode = dark ? 'dark' : 'light';
@@ -36,7 +36,27 @@
        If analytics come back, they must (1) load behind a consent
        gate, (2) be excluded from /billing, /paywall, and the
        onboarding funnel, and (3) never on a page whose URL can carry
-       tokens. -->
+       tokens.
+
+       ONE exception below: Cookiebot (Usercentrics), which IS the
+       consent gate condition (1) requires. It sets only its own
+       consent-state cookie, auto-blocks any future tracking scripts
+       until the visitor consents, and is still skipped on the
+       token-carrying routes per condition (3). -->
+  <script>
+    (function () {
+      var cbid = '%VITE_COOKIEBOT_CBID%';
+      if (!cbid || cbid.indexOf('%') !== -1) return; // no domain ID configured
+      var path = window.location.pathname;
+      if (path.indexOf('/billing') === 0 || path.indexOf('/paywall') === 0) return;
+      var s = document.createElement('script');
+      s.id = 'Cookiebot';
+      s.src = 'https://consent.cookiebot.com/uc.js';
+      s.setAttribute('data-cbid', cbid);
+      s.setAttribute('data-blockingmode', 'auto');
+      document.head.appendChild(s);
+    })();
+  </script>
 
 </head>
 

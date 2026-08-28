@@ -4,8 +4,7 @@
 
     <header class="pw-top">
       <div class="pw-brand">
-        <img src="/images/fb-logo.png" alt="" class="pw-brand-mark" />
-        <span>FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" class="pw-brand-mark" />
       </div>
       <div class="pw-top-right">
         <span v-if="email" class="pw-top-email">{{ email }}</span>
@@ -129,7 +128,7 @@
     </main>
 
     <footer class="pw-footer">
-      <span>© 2026 FetchBot</span>
+      <span>© 2026 Cansee</span>
       <nav class="pw-footer-links" aria-label="Legal and support">
         <a href="/support" target="_blank" rel="noopener">Support</a>
         <a href="/terms" target="_blank" rel="noopener">Terms</a>
@@ -180,7 +179,7 @@ const trialEndDate = computed(() =>
 // place so a paywall refresh keeps the line. Falls back to generic copy.
 const onbSummary = (() => {
   try {
-    const raw = sessionStorage.getItem('fb-onb-summary')
+    const raw = sessionStorage.getItem('cs-onb-summary')
     if (!raw) return null
     const p = JSON.parse(raw)
     if (!p || typeof p !== 'object') return null
@@ -247,7 +246,7 @@ async function continueFree() {
 
 function contactSales() {
   const t = enterpriseTier.value
-  window.location.href = t?.contactTarget || 'mailto:sales@fetchbot.ai'
+  window.location.href = t?.contactTarget || 'mailto:sales@cansee.ai'
 }
 
 async function signOut() {
@@ -311,8 +310,8 @@ onMounted(() => {
   letter-spacing: -0.01em;
 }
 .pw-brand-mark {
-  width: 24px;
-  height: 24px;
+  width: auto;
+  height: 17px;
   object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);

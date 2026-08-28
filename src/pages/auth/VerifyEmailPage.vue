@@ -1,7 +1,11 @@
 <template>
   <AuthLayout title="Verify your email" :subtitle="`Enter the 6-digit code sent to ${email}`">
     <form @submit.prevent="handleVerify" class="flex flex-col gap-[18px]">
-      <div v-if="error" class="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{{ error }}</div>
+      <Alert v-if="error" variant="destructive">
+        <CircleX />
+        <AlertTitle>Verification failed</AlertTitle>
+        <AlertDescription>{{ error }}</AlertDescription>
+      </Alert>
 
       <div>
         <label class="mb-1.5 block text-sm font-medium text-foreground">Verification Code</label>
@@ -28,6 +32,8 @@ import { useRouter, useRoute } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import authApi from '@/api/auth'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { CircleX } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()

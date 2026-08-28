@@ -3,13 +3,12 @@
        AppLayout renders a bare router-view, so this is the only content
        on screen. Escape intentionally does nothing — the escape hatch
        is the always-visible Sign out. -->
-  <main class="ob-root" aria-label="Set up your FetchBot">
+  <main class="ob-root" aria-label="Set up your Cansee">
     <WatercolorBackdrop />
 
     <header class="ob-topbar">
       <div class="ob-topbar-left">
-        <img src="/images/fb-logo.png" alt="" class="ob-brand-mark" />
-        <span class="ob-brand-name">FetchBot</span>
+        <img src="/images/cansee-logo.png" alt="Cansee" class="ob-brand-mark" />
         <span class="ob-topbar-divider" aria-hidden="true"></span>
         <span v-if="email" class="ob-topbar-email">{{ email }}</span>
         <button type="button" class="ob-signout" @click="signOut">Sign out</button>
@@ -57,7 +56,7 @@
     </div>
 
     <footer class="ob-footer">
-      <span>© 2026 FetchBot</span>
+      <span>© 2026 Cansee</span>
       <nav class="ob-footer-links" aria-label="Legal and support">
         <!-- New tab on purpose: an in-flow navigation would throw away
              the wizard state. -->
@@ -195,7 +194,7 @@ onBeforeUnmount(() => {
 }
 .ob-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .ob-brand-mark {
-  width: 24px; height: 24px; object-fit: contain; flex-shrink: 0;
+  width: auto; height: 17px; object-fit: contain; flex-shrink: 0;
   filter: brightness(0) invert(1);
 }
 .ob-brand-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }

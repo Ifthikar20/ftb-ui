@@ -1,5 +1,5 @@
 <template>
-  <InfoPage title="Responsible AI Use" eyebrow="Policy" intro="FetchBot uses large language models throughout its product. This policy explains how we use them, what we won't do with them, and the controls customers can rely on." updated="May 19, 2026">
+  <InfoPage title="Responsible AI Use" eyebrow="Policy" intro="Cansee uses large language models throughout its product. This policy explains how we use them, what we won't do with them, and the controls customers can rely on." updated="May 19, 2026">
     <h2>How we use AI</h2>
     <ul>
       <li><strong>Probing.</strong> We send customer-defined prompts to multiple LLM providers and capture the answers and citations.</li>
@@ -36,7 +36,7 @@
     <h2>Contact</h2>
     <p>
       Report a concern, abuse, or model failure to
-      <a href="mailto:ai-safety@fetchbot.ai">ai-safety@fetchbot.ai</a>.
+      <a href="mailto:ai-safety@cansee.ai">ai-safety@cansee.ai</a>.
     </p>
   </InfoPage>
 </template>

@@ -107,7 +107,7 @@ function isCurrentPage(page) {
 }
 
 function resetOnboarding() {
-  localStorage.removeItem('fb_onboarding_done')
+  localStorage.removeItem('cs_onboarding_done')
   open.value = false
   window.location.reload()
 }

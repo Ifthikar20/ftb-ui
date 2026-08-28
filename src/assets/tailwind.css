@@ -16,7 +16,7 @@
   }
 }
 
-/* shadcn-vue design tokens, mapped to the FetchBot brand palette.
+/* shadcn-vue design tokens, mapped to the Cansee brand palette.
    Design language: warm off-white surfaces, near-black ink, a single
    purple accent used sparingly. Dark pill buttons, hairline borders,
    almost no shadows. */
@@ -142,7 +142,7 @@
 }
 
 /*
- * FetchBot Design Tokens — Tailwind v4 @theme
+ * Cansee Design Tokens — Tailwind v4 @theme
  * These extend Tailwind's default theme with our brand tokens.
  * Runtime light/dark switching still uses CSS custom properties (in theme.css).
  */

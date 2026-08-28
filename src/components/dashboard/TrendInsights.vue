@@ -19,7 +19,7 @@ const props = defineProps({
     type: Array,
     default: () => ([
       { type: 'slack', name: 'Slack', desc: 'Daily reports and brand-security alerts in your channels' },
-      { type: 'discord', name: 'Discord', desc: 'Daily reports and /fetchbot commands in your server' },
+      { type: 'discord', name: 'Discord', desc: 'Daily reports and /cansee commands in your server' },
     ]),
   },
 })
@@ -44,7 +44,7 @@ const rows = computed(() => props.trends || [])
     </CardHeader>
     <CardContent class="pt-0">
       <p class="mb-4 text-xs leading-relaxed text-muted-foreground">
-        FetchBot analyzes trending topics and keywords to find growth opportunities for your business.
+        Cansee analyzes trending topics and keywords to find growth opportunities for your business.
       </p>
 
       <EmptyState

@@ -20,8 +20,9 @@ import {
 } from 'chart.js'
 import {
   Search, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown,
-  Check, ChevronDown, Loader2,
+  Check, ChevronDown, CircleX, Loader2,
 } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 import { useAppStore } from '@/stores/app'
 import citationsApi from '@/api/citations'
@@ -455,9 +456,11 @@ const headerFacts = computed(() => {
       </div>
     </div>
 
-    <div v-if="error" class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-      {{ error }}
-    </div>
+    <Alert v-if="error" variant="destructive">
+      <CircleX />
+      <AlertTitle>Could not load sources</AlertTitle>
+      <AlertDescription>{{ error }}</AlertDescription>
+    </Alert>
     <div v-if="loading" class="flex items-center gap-2 text-sm text-muted-foreground">
       <Loader2 class="size-4 animate-spin" /> Loading URL analytics…
     </div>

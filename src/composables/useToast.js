@@ -15,17 +15,17 @@ const toasts = ref([])
 let _id = 0
 
 const TOAST_TYPES = {
-    success: { icon: '✓', duration: 4000 },
-    error: { icon: '!', duration: 6000 },
-    warning: { icon: '⚠', duration: 5000 },
-    info: { icon: 'ℹ', duration: 4000 },
+    success: { duration: 4000 },
+    error: { duration: 6000 },
+    warning: { duration: 5000 },
+    info: { duration: 4000 },
 }
 
-function addToast(type, message) {
+function addToast(type, message, description = '') {
     const id = ++_id
     const config = TOAST_TYPES[type] || TOAST_TYPES.info
 
-    toasts.value.push({ id, type, message, icon: config.icon, leaving: false })
+    toasts.value.push({ id, type, message, description, leaving: false })
 
     // Auto-remove after duration
     setTimeout(() => {
@@ -51,10 +51,10 @@ function removeToast(id) {
 export function useToast() {
     return {
         toasts,
-        success: (msg) => addToast('success', msg),
-        error: (msg) => addToast('error', msg || 'Something went wrong. Please try again.'),
-        warning: (msg) => addToast('warning', msg),
-        info: (msg) => addToast('info', msg),
+        success: (msg, desc) => addToast('success', msg, desc),
+        error: (msg, desc) => addToast('error', msg || 'Something went wrong. Please try again.', desc),
+        warning: (msg, desc) => addToast('warning', msg, desc),
+        info: (msg, desc) => addToast('info', msg, desc),
         remove: removeToast,
     }
 }

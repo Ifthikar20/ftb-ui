@@ -33,8 +33,11 @@ const showVisitors = computed(() => view.value === 'both' || view.value === 'vis
 const showPageviews = computed(() => view.value === 'both' || view.value === 'pageviews')
 
 // ── colors (Airbnb-style) ──────────────────────────────────────────────────
-const VISITORS_COLOR = '#FF385C'
-const PAGEVIEWS_COLOR = '#00A699'
+// House chart palette: visitors lead in dark blue, pageviews overlay in
+// orange (see src/lib/chartTheme.js).
+import { CHART_COLORS } from '@/lib/chartTheme'
+const VISITORS_COLOR = CHART_COLORS.blue
+const PAGEVIEWS_COLOR = CHART_COLORS.orange
 
 function withAlpha(hex, alpha) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex
@@ -206,7 +209,7 @@ const chartOptions = computed(() => {
             Traffic Overview
             <span
               class="inline-flex"
-              title="Visitors and pageviews recorded by the FetchBot pixel for the selected time range. The delta is the average of the last three buckets vs the prior three buckets."
+              title="Visitors and pageviews recorded by the Cansee pixel for the selected time range. The delta is the average of the last three buckets vs the prior three buckets."
             >
               <Info class="size-4 text-muted-foreground" />
             </span>

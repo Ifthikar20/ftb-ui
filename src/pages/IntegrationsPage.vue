@@ -102,7 +102,7 @@
             <div class="step-content">
               <h4>Channel name</h4>
               <p>The channel the webhook posts to, so you can tell connections apart.</p>
-              <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#fetchbot-updates" />
+              <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#cansee-updates" />
             </div>
           </div>
         </template>
@@ -112,12 +112,12 @@
       <div class="bot-link">
         <h4 class="prefs-title">In-channel bot (optional)</h4>
         <template v-if="activeIntegration?.id === 'slack'">
-          <p class="bot-link-desc">Add your Slack Team ID to link @FetchBot mentions and the /fetchbot command in your workspace to this FetchBot account.</p>
+          <p class="bot-link-desc">Add your Slack Team ID to link @Cansee mentions and the /cansee command in your workspace to this Cansee account.</p>
           <input v-model="externalTeamId" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Team ID, e.g. T0123ABCD" />
           <p class="bot-link-hint">Your Team ID starts with T. Find it in your workspace settings, or in the browser address bar when you open Slack on the web.</p>
         </template>
         <template v-else-if="activeIntegration?.id === 'discord'">
-          <p class="bot-link-desc">Add your Discord Server ID to link the /fetchbot command (report, security, ask, scan) in your server to this FetchBot account.</p>
+          <p class="bot-link-desc">Add your Discord Server ID to link the /cansee command (report, security, ask, scan) in your server to this Cansee account.</p>
           <input v-model="externalTeamId" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Server ID, e.g. 123456789012345678" />
           <p class="bot-link-hint">The Server ID is numeric. Enable Developer Mode under App Settings &gt; Advanced, then right-click your server name and choose Copy Server ID.</p>
         </template>
@@ -199,7 +199,7 @@ const integrations = reactive([
   {
     id: 'slack',
     name: 'Slack',
-    description: 'Deliver the daily report and brand-security alerts to a Slack channel, and bring FetchBot into the conversation with @FetchBot mentions and the /fetchbot command.',
+    description: 'Deliver the daily report and brand-security alerts to a Slack channel, and bring Cansee into the conversation with @Cansee mentions and the /cansee command.',
     bgColor: 'linear-gradient(135deg, #4A154B15, #E01E5A08)',
     connected: false,
     connectionId: null,
@@ -213,7 +213,7 @@ const integrations = reactive([
   {
     id: 'discord',
     name: 'Discord',
-    description: 'Deliver the daily report and brand-security alerts to a Discord channel, and work with FetchBot from your server through the /fetchbot command.',
+    description: 'Deliver the daily report and brand-security alerts to a Discord channel, and work with Cansee from your server through the /cansee command.',
     bgColor: 'linear-gradient(135deg, #5865F215, #5865F208)',
     connected: false,
     connectionId: null,

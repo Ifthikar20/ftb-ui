@@ -250,7 +250,7 @@ export function provideOnboardingFlow({ onComplete } = {}) {
       // domains, and /paywall renders outside the app store's website
       // loading, so a same-tab handoff is the cheapest exact source.
       try {
-        sessionStorage.setItem('fb-onb-summary', JSON.stringify({
+        sessionStorage.setItem('cs-onb-summary', JSON.stringify({
           domain: urlHostname.value,
           competitors: form.value.competitors.filter(c => c.selected).length,
           topics: form.value.keywords.length,

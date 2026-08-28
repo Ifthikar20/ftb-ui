@@ -40,6 +40,59 @@
             <option value="status">By status</option>
           </select>
         </label>
+        <!-- Column visibility. Click-outside closes it; the backdrop sits
+             behind the panel so it cannot swallow the checkbox clicks. -->
+        <div class="spd-colmenu-wrap">
+          <button
+            type="button"
+            class="spd-icon-btn"
+            :class="{ 'is-on': showColumnMenu }"
+            aria-label="Choose columns"
+            title="Choose columns"
+            @click="showColumnMenu = !showColumnMenu"
+          >
+            <Columns3 :size="15" :stroke-width="2" />
+          </button>
+          <template v-if="showColumnMenu">
+            <div class="spd-colmenu-backdrop" @click="showColumnMenu = false"></div>
+            <div class="spd-colmenu">
+              <p class="spd-colmenu-head">Fixed</p>
+              <label v-for="col in fixedColumns" :key="col.key" class="spd-colmenu-row is-fixed">
+                <input type="checkbox" checked disabled />
+                <span>{{ col.label }}</span>
+              </label>
+
+              <p class="spd-colmenu-head">Visible</p>
+              <label v-for="col in shownColumns" :key="col.key" class="spd-colmenu-row">
+                <input type="checkbox" checked @change="toggleColumn(col.key)" />
+                <span>{{ col.label }}</span>
+              </label>
+
+              <template v-if="hiddenColumns.length">
+                <p class="spd-colmenu-head">Hidden</p>
+                <label v-for="col in hiddenColumns" :key="col.key" class="spd-colmenu-row">
+                  <input type="checkbox" @change="toggleColumn(col.key)" />
+                  <span>{{ col.label }}</span>
+                </label>
+              </template>
+
+              <div class="spd-colmenu-foot">
+                <button type="button" class="spd-colmenu-reset" @click="resetColumns">Reset</button>
+                <button type="button" class="spd-btn spd-btn-primary" @click="showColumnMenu = false">Done</button>
+              </div>
+            </div>
+          </template>
+        </div>
+        <button
+          type="button"
+          class="spd-icon-btn"
+          :disabled="!sorted.length"
+          aria-label="Export as CSV"
+          :title="`Export ${sorted.length} rows as CSV`"
+          @click="exportCsv"
+        >
+          <Download :size="15" :stroke-width="2" />
+        </button>
         <button type="button" class="spd-btn" @click="showHelpCreate = true">
           <Sparkles :size="14" :stroke-width="2" />
           Help me create prompts
@@ -65,6 +118,37 @@
       <button v-if="selectedTags.size" type="button" class="spd-tag-clear" @click="clearTagFilter">
         <X :size="12" :stroke-width="2.2" /> Clear
       </button>
+    </div>
+
+    <!-- Portfolio KPIs. The endpoint has always returned these; the table
+         just never read them. Averages are across every saved prompt, so
+         they stay put while you filter -- a fixed reference to compare the
+         rows below against. -->
+    <div v-if="!loading && kpi && rows.length" class="spd-kpis">
+      <div class="spd-kpi">
+        <span class="spd-kpi-label">Avg visibility</span>
+        <span class="spd-kpi-val">{{ kpi.visibility_pct ?? 0 }}%</span>
+      </div>
+      <div class="spd-kpi">
+        <span class="spd-kpi-label">Avg sentiment</span>
+        <span class="spd-kpi-val">
+          <template v-if="kpi.sentiment_score != null">
+            <span class="spd-sent-dot" :class="sentimentClass(kpi.sentiment_score)"></span>{{ kpi.sentiment_score }}
+          </template>
+          <span v-else class="spd-mute">—</span>
+        </span>
+      </div>
+      <div class="spd-kpi">
+        <span class="spd-kpi-label">Avg position</span>
+        <span class="spd-kpi-val">
+          <template v-if="kpi.avg_position != null">#{{ kpi.avg_position }}</template>
+          <span v-else class="spd-mute">—</span>
+        </span>
+      </div>
+      <div class="spd-kpi">
+        <span class="spd-kpi-label">Never run</span>
+        <span class="spd-kpi-val">{{ neverRunCount }}</span>
+      </div>
     </div>
 
     <!-- Prompt count -->
@@ -113,30 +197,28 @@
             <TableHead class="spd-th-check">
               <input type="checkbox" :checked="allSelected" @change="toggleAll" />
             </TableHead>
-            <TableHead class="spd-th-prompt">Prompt</TableHead>
-            <TableHead class="num spd-th-sort" @click="setSort('visibility')">
-              <span class="spd-th-with-icon">Visibility<component :is="sortIcon('visibility')" :size="12" :stroke-width="2" /></span>
+            <TableHead
+              v-for="col in visibleColumns"
+              :key="col.key"
+              :class="[
+                col.num ? 'num' : '',
+                col.sort ? 'spd-th-sort' : '',
+                col.key === 'prompt' ? 'spd-th-prompt' : '',
+                sortKey === col.key ? 'is-sorted' : '',
+              ]"
+              @click="setSort(col.key)"
+            >
+              <span class="spd-th-with-icon">
+                {{ col.label }}
+                <component v-if="col.sort" :is="sortIcon(col.key)" :size="12" :stroke-width="2" />
+              </span>
             </TableHead>
-            <TableHead class="num spd-th-sort" @click="setSort('sentiment')">
-              <span class="spd-th-with-icon">Sentiment<component :is="sortIcon('sentiment')" :size="12" :stroke-width="2" /></span>
-            </TableHead>
-            <TableHead class="num spd-th-sort" @click="setSort('position')">
-              <span class="spd-th-with-icon">Position<component :is="sortIcon('position')" :size="12" :stroke-width="2" /></span>
-            </TableHead>
-            <TableHead>Mentions</TableHead>
-            <TableHead class="spd-th-sort" @click="setSort('volume')">
-              <span class="spd-th-with-icon">Volume<component :is="sortIcon('volume')" :size="12" :stroke-width="2" /></span>
-            </TableHead>
-            <TableHead>Tags</TableHead>
-            <TableHead class="num">Origin</TableHead>
-            <TableHead>Last run</TableHead>
-            <TableHead>Next run</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <template v-for="group in groups" :key="group.key">
             <TableRow v-if="groupBy !== 'none'" class="spd-group-row">
-              <TableCell :colspan="11" class="spd-group-head">
+              <TableCell :colspan="colspan" class="spd-group-head">
                 {{ group.label }} <span class="spd-group-count">{{ group.rows.length }}</span>
               </TableCell>
             </TableRow>
@@ -144,73 +226,186 @@
               <TableCell @click.stop>
                 <input type="checkbox" :checked="selectedIds.has(row.brand_prompt_id)" @change="toggleRow(row)" />
               </TableCell>
-              <TableCell class="spd-td-prompt">{{ row.text }}</TableCell>
-              <TableCell class="num"><span class="spd-vis">{{ row.visibility_pct }}%</span></TableCell>
-              <TableCell class="num">
-                <template v-if="row.sentiment_score != null">
-                  <span class="spd-sent-dot" :class="sentimentClass(row.sentiment_score)"></span>
-                  {{ row.sentiment_score }}
+              <!-- One loop over the same registry the header uses, so column
+                   order can never drift between the two. -->
+              <TableCell
+                v-for="col in visibleColumns"
+                :key="col.key"
+                :class="[
+                  col.num ? 'num' : '',
+                  col.key === 'prompt' ? 'spd-td-prompt' : '',
+                  col.key === 'origin' ? 'spd-loc' : '',
+                  col.key === 'last_run' || col.key === 'next_run' ? 'spd-runcell' : '',
+                ]"
+                @click="col.key === 'tags' ? $event.stopPropagation() : null"
+              >
+                <template v-if="col.key === 'prompt'">{{ row.text }}</template>
+
+                <!-- Visibility reads as a share, so it gets a bar behind the
+                     number rather than a bare percentage. -->
+                <template v-else-if="col.key === 'visibility'">
+                  <span class="spd-vis-wrap" :title="`${row.total_mentions} of ${row.responses_seen} responses`">
+                    <span class="spd-vis">{{ row.visibility_pct }}%</span>
+                    <span class="spd-vis-track">
+                      <span class="spd-vis-fill" :style="{ width: Math.min(100, row.visibility_pct) + '%' }"></span>
+                    </span>
+                  </span>
                 </template>
-                <span v-else class="spd-mute">—</span>
-              </TableCell>
-              <TableCell class="num">
-                <span v-if="row.avg_position != null" class="spd-pos"># {{ row.avg_position }}</span>
-                <span v-else class="spd-mute">—</span>
-              </TableCell>
-              <TableCell>
-                <div class="spd-mentions">
-                  <span
-                    v-for="(p, i) in row.models_mentioned.slice(0, 3)"
-                    :key="p"
-                    class="spd-mention-dot"
-                    :class="`is-${p}`"
-                    :title="p"
-                    :style="{ zIndex: 5 - i }"
-                  ></span>
-                  <span v-if="row.models_mentioned.length > 3" class="spd-mention-more">+{{ row.models_mentioned.length - 3 }}</span>
-                  <span v-if="!row.models_mentioned.length" class="spd-mute"><CloudOff :size="14" :stroke-width="1.8" /></span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span class="spd-volume" :title="`Demand ${row.demand_score}`">
-                  <span v-for="i in 4" :key="i" class="spd-vol-bar" :class="{ 'is-on': demandBars(row.demand_score) >= i }"></span>
-                </span>
-              </TableCell>
-              <TableCell @click.stop>
-                <template v-if="(row.tags || []).length">
-                  <button
-                    v-for="t in row.tags"
-                    :key="t"
-                    type="button"
-                    class="spd-tag spd-tag-btn"
-                    :class="[`is-${tagClass(t)}`, { 'is-selected': selectedTags.has(t) }]"
-                    :title="`Filter by ${t}`"
-                    @click="toggleTagFilter(t)"
-                  >{{ t }}</button>
+
+                <template v-else-if="col.key === 'mentions'">
+                  <span v-if="row.responses_seen" class="spd-frac">
+                    {{ row.total_mentions }}<span class="spd-frac-sep">/</span><span class="spd-frac-den">{{ row.responses_seen }}</span>
+                  </span>
+                  <span v-else class="spd-mute">—</span>
                 </template>
-                <span v-else class="spd-mute">—</span>
-              </TableCell>
-              <TableCell class="num spd-loc">
-                <template v-if="row.location">
-                  <span aria-hidden="true">{{ flag(row.location) }}</span> {{ countryName(row.location) }}
+
+                <template v-else-if="col.key === 'sentiment'">
+                  <span v-if="row.sentiment_score != null" :title="sentimentTitle(row)">
+                    <span class="spd-sent-dot" :class="sentimentClass(row.sentiment_score)"></span>
+                    {{ row.sentiment_score }}
+                  </span>
+                  <span v-else class="spd-mute">—</span>
                 </template>
-                <span v-else class="spd-mute">🌐 Global</span>
-              </TableCell>
-              <TableCell class="spd-runcell">
-                <span v-if="row.last_run_at" :title="fullDate(row.last_run_at)">{{ shortDate(row.last_run_at) }}</span>
-                <span v-else class="spd-mute">Never</span>
-              </TableCell>
-              <TableCell class="spd-runcell">
-                <template v-if="row.next_run_at">
-                  <span class="spd-next" :title="fullDate(row.next_run_at)">{{ shortDate(row.next_run_at) }}</span>
-                  <span v-if="row.schedule_frequency" class="spd-freq">{{ row.schedule_frequency }}</span>
+
+                <template v-else-if="col.key === 'position'">
+                  <span v-if="row.avg_position != null" class="spd-pos"># {{ row.avg_position }}</span>
+                  <span v-else class="spd-mute">—</span>
                 </template>
-                <span v-else class="spd-mute">Not scheduled</span>
+
+                <template v-else-if="col.key === 'engines'">
+                  <div class="spd-mentions">
+                    <span
+                      v-for="(p, i) in (row.models_mentioned || []).slice(0, 3)"
+                      :key="p"
+                      class="spd-mention-dot"
+                      :class="`is-${p}`"
+                      :title="engineTitle(row, p)"
+                      :style="{ zIndex: 5 - i }"
+                    ></span>
+                    <span v-if="(row.models_mentioned || []).length > 3" class="spd-mention-more">+{{ row.models_mentioned.length - 3 }}</span>
+                    <span v-if="!(row.models_mentioned || []).length" class="spd-mute"><CloudOff :size="14" :stroke-width="1.8" /></span>
+                  </div>
+                </template>
+
+                <!-- Who else the models name here. The top two by name, then
+                     an overflow count -- enough to recognise the shape of the
+                     competition without the cell becoming a paragraph. -->
+                <template v-else-if="col.key === 'competitors'">
+                  <div v-if="(row.top_competitors || []).length" class="spd-comps" :title="competitorTitle(row)">
+                    <span
+                      v-for="c in row.top_competitors.slice(0, 2)"
+                      :key="c.name"
+                      class="spd-comp"
+                    >{{ c.name }}</span>
+                    <span v-if="row.competitors_count > 2" class="spd-comp-more">+{{ row.competitors_count - 2 }}</span>
+                  </div>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'citations'">
+                  <span v-if="row.citations_count" :title="domainTitle(row)">{{ row.citations_count }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'volume'">
+                  <span class="spd-volume" :title="`Demand ${row.demand_score}`">
+                    <span v-for="i in 4" :key="i" class="spd-vol-bar" :class="{ 'is-on': demandBars(row.demand_score) >= i }"></span>
+                  </span>
+                </template>
+
+                <template v-else-if="col.key === 'tags'">
+                  <template v-if="(row.tags || []).length">
+                    <button
+                      v-for="t in row.tags"
+                      :key="t"
+                      type="button"
+                      class="spd-tag spd-tag-btn"
+                      :class="[`is-${tagClass(t)}`, { 'is-selected': selectedTags.has(t) }]"
+                      :title="`Filter by ${t}`"
+                      @click="toggleTagFilter(t)"
+                    >{{ t }}</button>
+                  </template>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'origin'">
+                  <template v-if="row.location">
+                    <span aria-hidden="true">{{ flag(row.location) }}</span> {{ countryName(row.location) }}
+                  </template>
+                  <span v-else class="spd-mute">🌐 Global</span>
+                </template>
+
+                <template v-else-if="col.key === 'last_run'">
+                  <span v-if="row.last_run_at" :title="fullDate(row.last_run_at)">{{ shortDate(row.last_run_at) }}</span>
+                  <span v-else class="spd-mute">Never</span>
+                </template>
+
+                <template v-else-if="col.key === 'next_run'">
+                  <template v-if="row.next_run_at">
+                    <span class="spd-next" :title="fullDate(row.next_run_at)">{{ shortDate(row.next_run_at) }}</span>
+                    <span v-if="row.schedule_frequency" class="spd-freq">{{ row.schedule_frequency }}</span>
+                  </template>
+                  <span v-else class="spd-mute">Not scheduled</span>
+                </template>
+
+                <template v-else-if="col.key === 'intent'">
+                  <span v-if="row.intent_bucket" class="spd-pill">{{ row.intent_bucket }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'topic'">
+                  <span v-if="row.topic">{{ row.topic }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'effectiveness'">
+                  <span v-if="row.effectiveness_score != null">{{ Math.round(row.effectiveness_score * 100) }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'runs'">
+                  <span v-if="row.runs_count">{{ row.runs_count }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
+
+                <template v-else-if="col.key === 'top_domain'">
+                  <span v-if="(row.top_domains || []).length" :title="domainTitle(row)">{{ row.top_domains[0].domain }}</span>
+                  <span v-else class="spd-mute">—</span>
+                </template>
               </TableCell>
             </TableRow>
           </template>
         </TableBody>
       </Table>
+
+      <div v-if="sorted.length" class="spd-pager">
+        <span class="spd-pager-range">
+          Viewing {{ rangeStart }}-{{ rangeEnd }} of {{ sorted.length }}
+        </span>
+        <div class="spd-pager-controls">
+          <label class="spd-field spd-pager-size">
+            <select v-model.number="pageSize" class="spd-select" aria-label="Rows per page">
+              <option v-for="n in PAGE_SIZES" :key="n" :value="n">{{ n }} / page</option>
+              <option :value="0">All</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="spd-pager-btn"
+            :disabled="page <= 1"
+            aria-label="Previous page"
+            @click="goPage(page - 1)"
+          ><ChevronLeft :size="15" :stroke-width="2" /></button>
+          <span class="spd-pager-page">{{ page }} / {{ pageCount }}</span>
+          <button
+            type="button"
+            class="spd-pager-btn"
+            :disabled="page >= pageCount"
+            aria-label="Next page"
+            @click="goPage(page + 1)"
+          ><ChevronRight :size="15" :stroke-width="2" /></button>
+        </div>
+      </div>
     </div>
 
     <!-- Add prompt / bulk upload modal -->
@@ -234,6 +429,15 @@
             :class="addTab === 'bulk' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
             @click="addTab = 'bulk'"
           >Bulk Upload</button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors"
+            :class="addTab === 'models' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="addTab = 'models'"
+          >
+            Models
+            <span class="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">{{ addModels.length }}</span>
+          </button>
         </div>
 
         <!-- ADD PROMPT -->
@@ -297,6 +501,56 @@
           </div>
         </template>
 
+        <!-- MODELS -->
+        <template v-else-if="addTab === 'models'">
+          <h3 class="text-base font-semibold text-foreground">Models to test</h3>
+          <p class="mb-4 text-sm text-muted-foreground">
+            Pick the exact models these prompts are measured against — several
+            versions of the same provider is fine. Applies to every prompt
+            added in this dialog.
+          </p>
+
+          <div class="max-h-[46vh] space-y-4 overflow-y-auto pr-1">
+            <div v-for="group in variantGroups" :key="group.provider">
+              <div class="mb-1.5 flex items-baseline justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ group.label }}</span>
+                <span v-if="!group.configured" class="text-[10px] text-muted-foreground">API key not configured</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="v in group.variants"
+                  :key="v.id"
+                  type="button"
+                  :disabled="!v.configured"
+                  :title="v.model_id + (v.configured ? '' : ' — API key not configured')"
+                  class="rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  :class="addModels.includes(v.id)
+                    ? 'border-ring bg-secondary text-foreground'
+                    : 'border-border text-muted-foreground hover:border-ring'"
+                  @click="toggleModel(v.id)"
+                >
+                  {{ v.label }}<span v-if="v.is_default" class="ml-1 text-[10px] text-muted-foreground">default</span>
+                </button>
+              </div>
+            </div>
+            <p v-if="!variantGroups.length" class="text-sm text-muted-foreground">Loading model catalog…</p>
+          </div>
+
+          <p class="mt-3 text-xs text-muted-foreground">
+            {{ addModels.length }} selected · each model answers every prompt on each scan.
+          </p>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary" @click="addTab = 'add'">Back</button>
+            <button
+              type="button"
+              class="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              :disabled="addPending"
+              @click="submitAdd"
+            >{{ addPending ? 'Adding…' : 'Add Prompt' }}</button>
+          </div>
+        </template>
+
         <!-- BULK UPLOAD -->
         <template v-else>
           <p class="mb-3 text-center text-sm text-muted-foreground">
@@ -344,14 +598,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import llmRankingApi from '@/api/llm_ranking'
 import promptLibrary from '@/api/promptLibrary'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import {
-  Archive, ArchiveRestore, ChevronDown, ChevronsUpDown, ChevronUp, CloudOff,
-  Folder, Inbox, Layers, Plus, Search, Sparkles, Tag, Trash2, X,
+  Archive, ArchiveRestore, ChevronDown, ChevronLeft, ChevronRight,
+  ChevronsUpDown, ChevronUp, CloudOff, Columns3, Download, Folder, Inbox,
+  Layers, Plus, Search, Sparkles, Tag, Trash2, X,
 } from '@lucide/vue'
 import { useToast } from '@/composables/useToast'
 
@@ -367,6 +623,7 @@ const websiteId = route.params.websiteId
 const rows = ref([])
 const topics = ref([])
 const allTags = ref([])
+const kpi = ref(null)
 const loading = ref(true)
 
 async function load() {
@@ -376,6 +633,7 @@ async function load() {
     const body = data || {}
     rows.value = body.rows || []
     topics.value = body.topics || []
+    kpi.value = body.kpi || null
     // Prefer the server's distinct tag list; fall back to deriving from rows.
     // The agg endpoint returns all_tags as {name, count} objects, while
     // row.tags are plain strings — normalize to strings so filtering matches.
@@ -387,11 +645,12 @@ async function load() {
     rows.value = []
     topics.value = []
     allTags.value = []
+    kpi.value = null
   } finally {
     loading.value = false
   }
 }
-onMounted(() => { load(); loadRegions() })
+onMounted(() => { load(); loadRegions(); loadModelVariants() })
 defineExpose({ load, get count() { return rows.value.length } })
 
 /* ── Filters / sort / group state ── */
@@ -431,35 +690,147 @@ const filtered = computed(() => {
   return list
 })
 
-/* Sorting. Nulls always sort to the bottom regardless of direction. */
-const SORT_ACCESSORS = {
-  visibility: (r) => r.visibility_pct,
-  sentiment: (r) => r.sentiment_score,
-  position: (r) => r.avg_position,
-  volume: (r) => r.demand_score,
+/* ── Columns ──
+ * One registry drives the header, the body cells, the visibility menu and
+ * the CSV export, so those four can never drift out of sync.
+ *
+ *   sort   accessor for sorting; omit to make the column unsortable
+ *   asc    true when a LOWER value is better, so the first click sorts up
+ *   csv    value for the export; falls back to `sort`
+ *   num    right-aligned + tabular figures
+ *   on     shown by default; the rest start in the "hidden" group.
+ *          Order here is display order, so an off-by-default column is
+ *          declared next to the one it relates to, not appended.
+ */
+const COLUMNS = [
+  { key: 'prompt', label: 'Prompt', on: true, fixed: true,
+    csv: (r) => r.text },
+  { key: 'intent', label: 'Intent',
+    sort: (r) => r.intent_bucket || '',
+    csv: (r) => r.intent_bucket || '' },
+  { key: 'topic', label: 'Group',
+    sort: (r) => r.topic || '',
+    csv: (r) => r.topic || '' },
+  { key: 'visibility', label: 'Visibility', on: true, num: true,
+    sort: (r) => r.visibility_pct },
+  { key: 'mentions', label: 'Mentions', on: true, num: true,
+    sort: (r) => r.total_mentions,
+    csv: (r) => `${r.total_mentions}/${r.responses_seen}` },
+  { key: 'sentiment', label: 'Sentiment', on: true, num: true,
+    sort: (r) => r.sentiment_score },
+  { key: 'position', label: 'Position', on: true, num: true, asc: true,
+    sort: (r) => r.avg_position },
+  { key: 'engines', label: 'Engines', on: true,
+    sort: (r) => (r.models_mentioned || []).length,
+    csv: (r) => (r.models_mentioned || []).join(' ') },
+  { key: 'competitors', label: 'Competitors', on: true,
+    sort: (r) => r.competitors_count,
+    csv: (r) => (r.top_competitors || []).map((c) => c.name).join(' ') },
+  { key: 'citations', label: 'Citations', on: true, num: true,
+    sort: (r) => r.citations_count,
+    csv: (r) => r.citations_count },
+  { key: 'top_domain', label: 'Top source',
+    sort: (r) => (r.top_domains || [])[0]?.domain || '',
+    csv: (r) => (r.top_domains || [])[0]?.domain || '' },
+  { key: 'volume', label: 'Volume', on: true,
+    sort: (r) => r.demand_score },
+  { key: 'effectiveness', label: 'Effectiveness', num: true,
+    sort: (r) => r.effectiveness_score },
+  { key: 'runs', label: 'Runs', num: true,
+    sort: (r) => r.runs_count },
+  { key: 'tags', label: 'Tags', on: true,
+    csv: (r) => (r.tags || []).join(' ') },
+  { key: 'origin', label: 'Origin', on: true, num: true,
+    sort: (r) => r.location || '',
+    csv: (r) => r.location || '' },
+  { key: 'last_run', label: 'Last run', on: true,
+    sort: (r) => (r.last_run_at ? Date.parse(r.last_run_at) : null),
+    csv: (r) => r.last_run_at || '' },
+  { key: 'next_run', label: 'Next run', on: true,
+    sort: (r) => (r.next_run_at ? Date.parse(r.next_run_at) : null),
+    csv: (r) => r.next_run_at || '' },
+]
+
+const COLUMN_BY_KEY = Object.fromEntries(COLUMNS.map((c) => [c.key, c]))
+const DEFAULT_VISIBLE = COLUMNS.filter((c) => c.on).map((c) => c.key)
+const COLUMN_STORE_KEY = 'cs_prompt_table_columns'
+
+function loadColumnPrefs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COLUMN_STORE_KEY) || 'null')
+    if (!Array.isArray(raw)) return DEFAULT_VISIBLE
+    // Drop keys that no longer exist so a renamed column cannot strand a
+    // saved preference, and never let the set go fully empty.
+    const known = raw.filter((k) => COLUMN_BY_KEY[k] && !COLUMN_BY_KEY[k].fixed)
+    return known.length ? known : DEFAULT_VISIBLE
+  } catch {
+    return DEFAULT_VISIBLE
+  }
 }
+
+const visibleKeys = ref(new Set(loadColumnPrefs()))
+const showColumnMenu = ref(false)
+
+function persistColumns() {
+  try {
+    localStorage.setItem(COLUMN_STORE_KEY, JSON.stringify([...visibleKeys.value]))
+  } catch {
+    // Private mode / blocked storage: the choice just won't survive reload.
+  }
+}
+function isVisible(key) {
+  return COLUMN_BY_KEY[key]?.fixed || visibleKeys.value.has(key)
+}
+function toggleColumn(key) {
+  if (COLUMN_BY_KEY[key]?.fixed) return
+  const next = new Set(visibleKeys.value)
+  if (next.has(key)) next.delete(key); else next.add(key)
+  visibleKeys.value = next
+  persistColumns()
+}
+function resetColumns() {
+  visibleKeys.value = new Set(DEFAULT_VISIBLE)
+  persistColumns()
+}
+
+// Registry order wins, not click order, so toggling a column back on puts
+// it where the user expects rather than at the end.
+const visibleColumns = computed(() => COLUMNS.filter((c) => isVisible(c.key)))
+const fixedColumns = computed(() => COLUMNS.filter((c) => c.fixed))
+const shownColumns = computed(() => COLUMNS.filter((c) => !c.fixed && visibleKeys.value.has(c.key)))
+const hiddenColumns = computed(() => COLUMNS.filter((c) => !c.fixed && !visibleKeys.value.has(c.key)))
+// +1 for the checkbox column, which lives outside the registry.
+const colspan = computed(() => visibleColumns.value.length + 1)
+
+/* Sorting. Nulls always sort to the bottom regardless of direction, so a
+ * never-run prompt never outranks one with real numbers. */
 const sorted = computed(() => {
-  const key = sortKey.value
-  const accessor = SORT_ACCESSORS[key]
-  if (!accessor) return filtered.value
+  const col = COLUMN_BY_KEY[sortKey.value]
+  if (!col?.sort) return filtered.value
   const dir = sortDir.value === 'asc' ? 1 : -1
   return [...filtered.value].sort((a, b) => {
-    const av = accessor(a); const bv = accessor(b)
-    const an = av == null; const bn = bv == null
+    const av = col.sort(a); const bv = col.sort(b)
+    const an = av == null || av === ''; const bn = bv == null || bv === ''
     if (an && bn) return 0
     if (an) return 1
     if (bn) return -1
+    if (typeof av === 'string' || typeof bv === 'string') {
+      return String(av).localeCompare(String(bv)) * dir
+    }
     return (av - bv) * dir
   })
 })
 
 function setSort(key) {
+  if (!COLUMN_BY_KEY[key]?.sort) return
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortKey.value = key
-    // Position is "lower is better", so default it ascending; others descending.
-    sortDir.value = key === 'position' ? 'asc' : 'desc'
+    // Position is "lower is better", so it opens ascending; so does any
+    // text column, where A-Z is the natural first read.
+    const col = COLUMN_BY_KEY[key]
+    sortDir.value = col.asc || !col.num ? 'asc' : 'desc'
   }
 }
 function sortIcon(key) {
@@ -467,9 +838,62 @@ function sortIcon(key) {
   return sortDir.value === 'asc' ? ChevronUp : ChevronDown
 }
 
+/* ── Pagination ──
+ * Everything is already in memory, so this is purely about not rendering
+ * 300 rows at once. Paginate the flat sorted list and group only the
+ * current page -- grouping a page is predictable; paginating within groups
+ * is not.
+ */
+const PAGE_SIZES = [25, 50, 100]
+const pageSize = ref(25)
+const page = ref(1)
+
+const pageCount = computed(() =>
+  pageSize.value === 0 ? 1 : Math.max(1, Math.ceil(sorted.value.length / pageSize.value)))
+
+// Any filter/sort change can shrink the list under the current page.
+watch([filtered, sortKey, sortDir, pageSize], () => { page.value = 1 })
+
+const paged = computed(() => {
+  if (pageSize.value === 0) return sorted.value
+  const start = (page.value - 1) * pageSize.value
+  return sorted.value.slice(start, start + pageSize.value)
+})
+
+const rangeStart = computed(() => (sorted.value.length ? (page.value - 1) * (pageSize.value || sorted.value.length) + 1 : 0))
+const rangeEnd = computed(() => Math.min(rangeStart.value + paged.value.length - 1, sorted.value.length))
+
+function goPage(n) {
+  page.value = Math.min(Math.max(1, n), pageCount.value)
+}
+
+/* ── CSV export ──
+ * Exports what you are looking at: current filters, current sort, current
+ * columns. Exporting the raw unfiltered set would ignore the work the user
+ * just did narrowing it down.
+ */
+function csvCell(value) {
+  const text = value == null ? '' : String(value)
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+function exportCsv() {
+  const cols = visibleColumns.value
+  const lines = [cols.map((c) => csvCell(c.label)).join(',')]
+  for (const row of sorted.value) {
+    lines.push(cols.map((c) => csvCell((c.csv || c.sort || (() => ''))(row))).join(','))
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `prompts-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 /* Grouping. Returns [{ key, label, rows }]. A single "All" group when off. */
 const groups = computed(() => {
-  const list = sorted.value
+  const list = paged.value
   if (groupBy.value === 'none') return [{ key: '__all__', label: '', rows: list }]
 
   const buckets = new Map()
@@ -490,11 +914,56 @@ const groups = computed(() => {
   return [...buckets.values()].sort((a, b) => a.label.localeCompare(b.label))
 })
 
+/* ── Cell helpers ──
+ * Tooltips carry the detail that will not fit in a dense cell. Each one
+ * degrades to '' so the title attribute simply disappears rather than
+ * rendering the word "undefined".
+ */
+const neverRunCount = computed(() => rows.value.filter((r) => !r.responses_seen).length)
+
+const ENGINE_LABELS = {
+  claude: 'Claude', gpt4: 'ChatGPT', gemini: 'Gemini',
+  perplexity: 'Perplexity', grok: 'Grok', deepseek: 'DeepSeek',
+}
+function engineName(provider) {
+  return ENGINE_LABELS[provider] || provider
+}
+
+function engineTitle(row, provider) {
+  const stat = (row.by_engine || []).find((e) => e.provider === provider)
+  if (!stat) return engineName(provider)
+  return `${engineName(provider)} — mentioned in ${stat.mentioned} of ${stat.responses} (${stat.visibility_pct}%)`
+}
+
+function competitorTitle(row) {
+  const list = row.top_competitors || []
+  if (!list.length) return ''
+  const lines = list.map((c) => `${c.name} — named ${c.count}×`)
+  const rest = row.competitors_count - list.length
+  if (rest > 0) lines.push(`+${rest} more`)
+  return lines.join('\n')
+}
+
+function domainTitle(row) {
+  const list = row.top_domains || []
+  if (!list.length) return ''
+  return `${row.citations_count} citations\n` + list.map((d) => `${d.domain} — ${d.count}×`).join('\n')
+}
+
+function sentimentTitle(row) {
+  const d = row.sentiment_dist || {}
+  const total = (d.positive || 0) + (d.neutral || 0) + (d.negative || 0)
+  if (!total) return ''
+  return `${d.positive || 0} positive · ${d.neutral || 0} neutral · ${d.negative || 0} negative`
+}
+
 /* ── Selection + bulk actions ── */
 const selectedIds = ref(new Set())
 const bulkPending = ref(false)
+// Scoped to the current page: a header checkbox that silently selects
+// rows on pages you cannot see is a nasty surprise before a bulk delete.
 const allSelected = computed(() =>
-  sorted.value.length > 0 && sorted.value.every((r) => selectedIds.value.has(r.brand_prompt_id)))
+  paged.value.length > 0 && paged.value.every((r) => selectedIds.value.has(r.brand_prompt_id)))
 function toggleRow(row) {
   const next = new Set(selectedIds.value)
   if (next.has(row.brand_prompt_id)) next.delete(row.brand_prompt_id)
@@ -502,9 +971,13 @@ function toggleRow(row) {
   selectedIds.value = next
 }
 function toggleAll() {
-  selectedIds.value = allSelected.value
-    ? new Set()
-    : new Set(sorted.value.map((r) => r.brand_prompt_id))
+  const next = new Set(selectedIds.value)
+  if (allSelected.value) {
+    for (const r of paged.value) next.delete(r.brand_prompt_id)
+  } else {
+    for (const r of paged.value) next.add(r.brand_prompt_id)
+  }
+  selectedIds.value = next
 }
 function selectedRows() {
   return rows.value.filter((r) => selectedIds.value.has(r.brand_prompt_id))
@@ -618,6 +1091,59 @@ async function loadRegions() {
     if (list.length) LOCATIONS.value = list
   } catch (_) { /* keep the default */ }
 }
+
+/* ── Model selection (Models tab) ── */
+const PROVIDER_LABELS = {
+  claude: 'Claude', gpt4: 'ChatGPT (OpenAI)', gemini: 'Gemini',
+  perplexity: 'Perplexity', grok: 'Grok', deepseek: 'DeepSeek',
+}
+const variantsCatalog = ref([])
+const addModels = ref([])
+
+async function loadModelVariants() {
+  try {
+    const { data } = await llmRankingApi.modelVariants(websiteId)
+    variantsCatalog.value = (data || {}).variants || []
+    // First open before the user touches anything: defaults pre-checked.
+    if (!addModels.value.length) addModels.value = defaultModelIds()
+  } catch (_) { /* tab shows a loading line; selection stays optional */ }
+}
+function defaultModelIds() {
+  return variantsCatalog.value
+    .filter((v) => v.configured && v.is_default)
+    .map((v) => v.id)
+}
+const variantGroups = computed(() => {
+  const order = []
+  const byProvider = new Map()
+  for (const v of variantsCatalog.value) {
+    if (!byProvider.has(v.provider)) {
+      byProvider.set(v.provider, {
+        provider: v.provider,
+        label: PROVIDER_LABELS[v.provider] || v.provider,
+        configured: false,
+        variants: [],
+      })
+      order.push(v.provider)
+    }
+    const g = byProvider.get(v.provider)
+    g.variants.push(v)
+    g.configured = g.configured || !!v.configured
+  }
+  return order.map((p) => byProvider.get(p))
+})
+function toggleModel(id) {
+  const i = addModels.value.indexOf(id)
+  if (i >= 0) {
+    if (addModels.value.length === 1) {
+      toast.error('Keep at least one model selected.')
+      return
+    }
+    addModels.value.splice(i, 1)
+  } else {
+    addModels.value.push(id)
+  }
+}
 const promptCount = computed(() =>
   addText.value.split('\n').map((l) => l.trim()).filter(Boolean).length)
 
@@ -626,6 +1152,7 @@ function resetAddForm() {
   addTags.value = []
   addLocation.value = 'US'
   addTab.value = 'add'
+  addModels.value = defaultModelIds()
 }
 function openAddPrompt() {
   resetAddForm()
@@ -642,6 +1169,13 @@ async function submitAdd() {
   if (!text) { toast.error('Enter at least one prompt.'); return }
   addPending.value = true
   try {
+    // Send the model selection only when it differs from the default set:
+    // an untouched selection keeps the classic "every provider's default
+    // model" scan path.
+    const defaults = new Set(defaultModelIds())
+    const isDefaultSet =
+      addModels.value.length === defaults.size &&
+      addModels.value.every((id) => defaults.has(id))
     const res = await promptLibrary.createWebsitePrompt(websiteId, {
       text,
       topic: addTopic.value.trim(),
@@ -649,6 +1183,7 @@ async function submitAdd() {
       tags: addTags.value,
       intent_bucket: 'category',
       style: 'question',
+      models: isDefaultSet ? [] : addModels.value,
     })
     const body = res?.data || {}
     const n = body.created_count || promptCount.value
@@ -696,6 +1231,219 @@ void appStore
 </script>
 
 <style scoped>
+/* ── Column menu ── */
+.spd-colmenu-wrap { position: relative; display: inline-flex; }
+.spd-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.spd-icon-btn:hover:not(:disabled) { color: var(--foreground); border-color: var(--ring); }
+.spd-icon-btn.is-on {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+.spd-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Backdrop closes the menu on any outside click. It sits below the panel
+   so it never intercepts the checkbox clicks inside it. */
+.spd-colmenu-backdrop { position: fixed; inset: 0; z-index: 40; }
+.spd-colmenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 41;
+  width: 220px;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+.spd-colmenu-head {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  padding: 8px 6px 4px;
+}
+.spd-colmenu-head:first-child { padding-top: 2px; }
+.spd-colmenu-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.spd-colmenu-row:hover { background: var(--muted); }
+.spd-colmenu-row.is-fixed { opacity: 0.55; cursor: default; }
+.spd-colmenu-row.is-fixed:hover { background: transparent; }
+.spd-colmenu-row input { cursor: inherit; }
+.spd-colmenu-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+.spd-colmenu-reset {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  transition: color 0.15s;
+}
+.spd-colmenu-reset:hover { color: var(--foreground); }
+
+/* ── KPI strip ── */
+.spd-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.spd-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 106px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+}
+.spd-kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.spd-kpi-val {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Sorted-column emphasis ── */
+.spd-table th.is-sorted { color: var(--foreground); }
+
+/* ── Visibility bar ── */
+.spd-vis-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 52px;
+}
+.spd-vis-track {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+.spd-vis-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.25s ease;
+}
+
+/* ── Mentions fraction ── */
+.spd-frac { font-variant-numeric: tabular-nums; font-weight: 600; }
+.spd-frac-sep { color: var(--muted-foreground); margin: 0 1px; }
+.spd-frac-den { color: var(--muted-foreground); font-weight: 500; }
+
+/* ── Competitors ── */
+.spd-comps { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.spd-comp {
+  max-width: 92px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spd-comp-more {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+/* ── Intent pill ── */
+.spd-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: capitalize;
+}
+
+/* ── Pager ── */
+.spd-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 11px 14px;
+  border-top: 1px solid var(--border);
+}
+.spd-pager-range { font-size: 12px; color: var(--muted-foreground); }
+.spd-pager-controls { display: flex; align-items: center; gap: 8px; }
+.spd-pager-size { flex-shrink: 0; }
+.spd-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted-foreground);
+  transition: color 0.15s, border-color 0.15s;
+}
+.spd-pager-btn:hover:not(:disabled) { color: var(--foreground); border-color: var(--ring); }
+.spd-pager-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.spd-pager-page {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: center;
+}
+
 .spd { display: flex; flex-direction: column; gap: 14px; }
 
 /* ── Toolbar ── */

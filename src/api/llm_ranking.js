@@ -12,6 +12,10 @@ export default {
     deleteSchedule: (wid) => api.delete(`/llm-ranking/${wid}/schedule/`),
     scheduleETA: (wid) => api.get(`/llm-ranking/${wid}/schedule/eta/`),
     runScheduleNow: (wid) => api.post(`/llm-ranking/${wid}/schedule/run-now/`),
+    // Selectable model variants (provider + submodel) for the Add Prompt
+    // "Models" tab. Each entry: {id, provider, model_id, label, is_default,
+    // configured}.
+    modelVariants: (wid) => api.get(`/llm-ranking/${wid}/model-variants/`),
     // Model Test + GEO endpoints removed 2026-07 — the multi-provider
     // probe use case moves under the Prompts page auto-measurement flow.
     // 12-month visibility series + headline values for the dashboard
