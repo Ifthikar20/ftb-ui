@@ -759,8 +759,14 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-/* Page transition — smooth slide-up + fade (Framer-like) */
+<!-- Page transition. Deliberately UNSCOPED: <transition> applies these
+     classes to the routed child page's root element, which belongs to a
+     different component and so carries a different data-v- hash. Scoped,
+     the compiled selectors became .page-fade-leave-active[data-v-<layout>]
+     and matched nothing -- so with mode="out-in" the leave never produced a
+     transitionend, the enter never ran, and every in-app navigation
+     rendered the PREVIOUS page until the next navigation flushed it. -->
+<style>
 .page-fade-leave-active {
   transition: opacity 120ms ease, transform 120ms ease;
 }
