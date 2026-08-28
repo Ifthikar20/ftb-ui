@@ -4,11 +4,11 @@
     <div class="ip-header">
       <div>
         <h1 class="text-xl font-semibold ip-heading">
-          Search Insights
+          Brand Research
           <span
             class="ip-info"
             tabindex="0"
-            aria-label="What is Search Insights"
+            aria-label="What is Brand Research"
             :data-tip="tooltip"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -19,8 +19,9 @@
           </span>
         </h1>
         <p class="text-sm text-muted-foreground">
-          Trace a search from the sources that answer it to the brands they
-          recommend, the issues people raise, and where you can chip in.
+          Trace a search across web results, community threads and AI engines
+          to the brands they recommend, the sentiment people carry, and where
+          you can join the conversation.
         </p>
       </div>
     </div>
@@ -84,11 +85,12 @@
               <span class="ip-empty-line"></span>
               <span class="ip-empty-node b"></span>
             </div>
-            <h3 class="ip-empty-title">Map a search conversation</h3>
+            <h3 class="ip-empty-title">Research a conversation</h3>
             <p class="ip-empty-text">
-              Enter a query your customers would search. Cansee reads the top
-              sources (Reddit threads, reviews, articles), extracts the brands
-              and complaints inside, and draws the pathway.
+              Enter a query your customers would search. Cansee reads the web
+              results, the community threads behind them, and what the AI
+              engines answer — then maps the brands, the sentiment, and the
+              places you can speak up.
             </p>
             <div class="ip-chips">
               <button
@@ -113,23 +115,30 @@
 
           <!-- Graph -->
           <div v-else class="ip-graph-wrap">
-            <div v-if="scanRunning" class="ip-progress">
-              <span class="ip-progress-spinner"></span>
-              Reading sources… {{ analyzedCount }}/{{ activeScan.results_count || '?' }} analyzed
-            </div>
+            <StageStrip
+              :stages="activeScan.stages"
+              :scan-status="activeScan.status"
+              class="ip-stages"
+            />
             <div class="ip-canvas-row">
               <InsightFlowCanvas
                 :nodes="styledGraph.nodes"
                 :edges="styledGraph.edges"
                 class="ip-canvas"
-                @node-click="selectedNode = $event"
+                @node-click="onNodeClick"
                 @pane-click="selectedNode = null"
               />
+              <!-- Always mounted. With nothing selected it shows the
+                   ranked chip-in list, so the page never dead-ends on an
+                   empty rail and always closes on something actionable. -->
               <NodeDetailPanel
-                v-if="selectedNode"
                 :node="selectedNode"
                 :max-score="maxBrandScore"
                 :scan-rows="activeScan?.rows || []"
+                :engines="activeScan?.engines || []"
+                :opportunities="activeScan?.opportunities || []"
+                :serp-features="activeScan?.serp_features || {}"
+                :stages="activeScan?.stages || {}"
                 class="ip-detail"
                 @close="selectedNode = null"
               />
@@ -148,9 +157,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/composables/useToast'
 import citationsApi from '@/api/citations'
-import InsightFlowCanvas from '@/components/search_insights/InsightFlowCanvas.vue'
-import NodeDetailPanel from '@/components/search_insights/NodeDetailPanel.vue'
-import { buildGraph } from '@/components/search_insights/buildGraph'
+import InsightFlowCanvas from '@/components/brand_research/InsightFlowCanvas.vue'
+import NodeDetailPanel from '@/components/brand_research/NodeDetailPanel.vue'
+import StageStrip from '@/components/brand_research/StageStrip.vue'
+import { buildGraph } from '@/components/brand_research/buildGraph'
 
 const route = useRoute()
 const toast = useToast()
@@ -191,15 +201,13 @@ const exampleQueries = [
 ]
 
 const tooltip =
-  'Maps a customer search query to the sources that answer it, the ' +
-  'brands those sources recommend, and the sentiment they carry — so ' +
-  'you can see who owns the conversation and where you can chip in.'
+  'Maps a customer search query across three channels — web results, ' +
+  'community threads, and what the AI engines themselves recommend — to ' +
+  'the brands each one points at and the sentiment real people carry, so ' +
+  'you can see who owns the conversation and where you can join it.'
 
 const scanRunning = computed(() =>
   ['pending', 'running'].includes(activeScan.value?.status),
-)
-const analyzedCount = computed(
-  () => (activeScan.value?.rows || []).filter((r) => (r.brands || []).length).length,
 )
 const graph = computed(() => buildGraph(activeScan.value))
 const maxBrandScore = computed(() =>
@@ -311,6 +319,14 @@ async function loadDetail(scanId) {
   return data
 }
 
+// Placeholder nodes carry no data worth a panel. Vue Flow still emits a
+// click for them even with selectable:false, so filter here.
+const NON_INTERACTIVE = ['skeleton', 'lane']
+function onNodeClick(node) {
+  if (NON_INTERACTIVE.includes(node?.type)) return
+  selectedNode.value = node
+}
+
 async function openScan(scanId) {
   activeScanId.value = scanId
   selectedNode.value = null
@@ -346,28 +362,43 @@ function retryScan() {
   }
 }
 
-// Poll every 2.5s while a scan runs; rows land incrementally so the
-// pathway grows in front of the user. Cap at ~2.5 minutes.
-function startPolling() {
-  stopPolling()
-  pollAttempts = 0
-  pollTimer = setInterval(async () => {
+// Poll while a scan runs; rows land incrementally so the pathway grows in
+// front of the user. Fast at first (the discovery lanes settle in seconds
+// and that is when the graph changes shape), then backs off for the long
+// analysis loop. Four lanes plus per-URL reads no longer fit in the old
+// 2.5-minute ceiling.
+const POLL_FAST_MS = 2500
+const POLL_SLOW_MS = 5000
+const POLL_FAST_ATTEMPTS = 20
+const POLL_MAX_ATTEMPTS = 76 // ~20*2.5s + 56*5s = ~5.7 minutes
+
+function scheduleNextPoll() {
+  const delay = pollAttempts < POLL_FAST_ATTEMPTS ? POLL_FAST_MS : POLL_SLOW_MS
+  pollTimer = setTimeout(async () => {
+    pollTimer = null
     pollAttempts += 1
     try {
       const scan = await loadDetail(activeScanId.value)
-      if (!['pending', 'running'].includes(scan.status) || pollAttempts >= 60) {
-        stopPolling()
+      if (!['pending', 'running'].includes(scan.status) || pollAttempts >= POLL_MAX_ATTEMPTS) {
         await loadScans()
+        return
       }
     } catch {
-      stopPolling()
+      return
     }
-  }, 2500)
+    scheduleNextPoll()
+  }, delay)
+}
+
+function startPolling() {
+  stopPolling()
+  pollAttempts = 0
+  scheduleNextPoll()
 }
 
 function stopPolling() {
   if (pollTimer) {
-    clearInterval(pollTimer)
+    clearTimeout(pollTimer)
     pollTimer = null
   }
 }
@@ -584,24 +615,7 @@ onBeforeUnmount(() => {
 
 /* Graph area */
 .ip-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 10px; }
-.ip-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-.ip-progress-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid color-mix(in srgb, var(--primary) 25%, transparent);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.ip-stages { flex-shrink: 0; }
 .ip-canvas-row { display: flex; gap: 14px; flex: 1; min-height: 0; }
 .ip-canvas { flex: 1; min-width: 0; }
 .ip-detail { width: 400px; flex-shrink: 0; max-height: 100%; }

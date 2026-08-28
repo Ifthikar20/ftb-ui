@@ -170,11 +170,22 @@ const routes = [
     },
     protect('/llm-ranking/:websiteId/urls', 'sources-urls', () => import('@/pages/SourcesUrlsPage.vue'), true),
     protect('/llm-ranking/:websiteId/urls/detail', 'sources-url-detail', () => import('@/pages/SourcesUrlDetailPage.vue'), true),
-    protect('/llm-ranking/:websiteId/search-insights', 'search-insights', () => import('@/pages/SearchInsightsPage.vue'), true),
-    // Old GSC-era path kept as a redirect (bookmarks, stale OAuth returns).
+    protect('/llm-ranking/:websiteId/brand-research', 'brand-research', () => import('@/pages/BrandResearchPage.vue'), true),
+    // Ask Cansee. The conversation id is optional: /ask is a new thread,
+    // /ask/<id> reopens a stored one, so a thread survives reload and is
+    // linkable.
+    protect('/ask/:conversationId?', 'ask-cansee', () => import('@/pages/AskCanseePage.vue'), true),
+    // Two generations of old paths kept as redirects (bookmarks, stale OAuth
+    // returns). search-performance was the GSC-era name, search-insights the
+    // one before the Brand Research rename. Both point at the live path
+    // directly rather than chaining, so neither costs an extra hop.
+    {
+        path: '/llm-ranking/:websiteId/search-insights',
+        redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/brand-research`, query: to.query }),
+    },
     {
         path: '/llm-ranking/:websiteId/search-performance',
-        redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/search-insights`, query: to.query }),
+        redirect: to => ({ path: `/llm-ranking/${to.params.websiteId}/brand-research`, query: to.query }),
     },
     protect('/llm-ranking/:websiteId/brand-security', 'brand-security', () => import('@/pages/BrandSecurityPage.vue'), true),
     // Benchmarks was absorbed into Brand Input (its URL/markdown intake now
@@ -329,7 +340,7 @@ router.beforeEach(async (to, from, next) => {
     // URL instead of bouncing every deep link to /websites. The URL wins
     // over a stale store selection so a link to website B behaves the
     // same whether or not website A was active.
-    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'search-insights', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input']
+    const projectPages = ['analytics', 'llm-ranking', 'website-detail', 'brand-research', 'sources-urls', 'prompt-library', 'brand-security', 'brand-input']
     const needsProject = projectPages.includes(to.name) || !!to.params.websiteId
     if (needsProject && auth.isAuthenticated) {
         const app = useAppStore()

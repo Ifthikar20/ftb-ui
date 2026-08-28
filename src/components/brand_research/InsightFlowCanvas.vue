@@ -29,6 +29,10 @@ import QueryNode from './nodes/QueryNode.vue'
 import SourceNode from './nodes/SourceNode.vue'
 import BrandNode from './nodes/BrandNode.vue'
 import LeafNode from './nodes/LeafNode.vue'
+import SkeletonNode from './nodes/SkeletonNode.vue'
+import EngineNode from './nodes/EngineNode.vue'
+import LaneLabelNode from './nodes/LaneLabelNode.vue'
+import ActionNode from './nodes/ActionNode.vue'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
@@ -45,6 +49,10 @@ const nodeTypes = {
   source: markRaw(SourceNode),
   brand: markRaw(BrandNode),
   leaf: markRaw(LeafNode),
+  skeleton: markRaw(SkeletonNode),
+  engine: markRaw(EngineNode),
+  lane: markRaw(LaneLabelNode),
+  action: markRaw(ActionNode),
 }
 
 const { fitView } = useVueFlow()
