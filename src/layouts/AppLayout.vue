@@ -10,14 +10,19 @@
             <SidebarMenuItem>
               <SidebarMenuButton as-child size="lg" tooltip="Cansee">
                 <router-link to="/dashboard">
-                  <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <!-- Square "C" mark, not the wordmark: this slot is what
-                         remains visible when the sidebar collapses. -->
-                    <img src="/images/cansee-mark.png" alt="Cansee" class="size-5 object-contain cansee-mark" />
+                  <!-- Square "C" mark only while collapsed: the wordmark
+                       cannot fit a 3rem icon rail. -->
+                  <div class="hidden aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:flex">
+                    <img src="/images/cansee-mark.png" alt="" class="size-5 object-contain cansee-mark" />
                   </div>
-                  <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">Cansee</span>
-                    <span class="truncate text-xs text-muted-foreground">AI visibility</span>
+                  <div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                    <!-- The wordmark carries the name, so the old "Cansee"
+                         text label would just repeat it. -->
+                    <img
+                      src="/images/cansee-logo.png"
+                      alt="Cansee"
+                      class="cansee-wordmark h-5 w-auto self-start object-contain"
+                    />
                   </div>
                 </router-link>
               </SidebarMenuButton>
@@ -27,7 +32,11 @@
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <SidebarMenuButton :tooltip="appStore.activeWebsite?.name || 'Select project'" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                  <!-- No :tooltip here — SidebarMenuButton wraps itself in a
+                       Tooltip when one is set, and DropdownMenuTrigger's
+                       as-child props then land on the Tooltip provider
+                       instead of the button, leaving the menu unopenable. -->
+                  <SidebarMenuButton class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                     <div class="flex aspect-square size-6 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-[0.7rem] font-semibold text-sidebar-foreground">
                       {{ (appStore.activeWebsite?.name || 'P').charAt(0).toUpperCase() }}
                     </div>
@@ -38,11 +47,27 @@
                     <ChevronsUpDown class="ml-auto size-4" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="bottom" :side-offset="4" class="min-w-56 rounded-lg">
-                  <DropdownMenuLabel class="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
-                  <DropdownMenuItem v-for="w in appStore.websites" :key="w.id" @select="switchWebsite(w.id)">
-                    <Globe class="size-4" />
-                    <span class="truncate">{{ w.name }}</span>
+                <DropdownMenuContent align="start" side="bottom" :side-offset="4" class="min-w-64 rounded-lg">
+                  <DropdownMenuLabel class="text-xs text-muted-foreground">
+                    Projects · {{ appStore.projectLimitLabel }}
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    v-for="w in appStore.websites"
+                    :key="w.id"
+                    class="gap-2"
+                    @select="switchWebsite(w.id)"
+                  >
+                    <div class="flex aspect-square size-6 flex-shrink-0 items-center justify-center rounded-md border border-border bg-background text-[0.7rem] font-semibold">
+                      {{ (w.name || '?').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="grid min-w-0 flex-1 leading-tight">
+                      <span class="truncate text-sm">{{ w.name }}</span>
+                      <span class="truncate text-xs text-muted-foreground">{{ (w.url || '').replace(/^https?:\/\//, '') }}</span>
+                    </div>
+                    <Check
+                      v-if="appStore.activeWebsite?.id === w.id"
+                      class="ml-auto size-4 flex-shrink-0"
+                    />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem :disabled="!appStore.canCreateProject" @select="showAddProject = true">
@@ -200,13 +225,10 @@
             <Separator orientation="vertical" class="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem class="hidden md:block">
-                  <BreadcrumbLink as="router-link" to="/dashboard" aria-label="Home" class="flex items-center">
-                    <Home class="size-4" />
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
                 <template v-for="(crumb, i) in breadcrumbs" :key="i">
-                  <BreadcrumbSeparator class="hidden md:block" />
+                  <!-- No leading separator on the first crumb now that the
+                       Home icon is gone, or the trail opens with a stray ">". -->
+                  <BreadcrumbSeparator v-if="i > 0" class="hidden md:block" />
                   <BreadcrumbItem>
                     <BreadcrumbPage v-if="i === breadcrumbs.length - 1">{{ crumb.label }}</BreadcrumbPage>
                     <BreadcrumbLink v-else as="router-link" :to="crumb.to">{{ crumb.label }}</BreadcrumbLink>
@@ -233,11 +255,10 @@
               title="Ask Cansee"
               @click="openAsk()"
             >
-              <span class="grid size-5 place-items-center rounded-md text-white" style="background: linear-gradient(135deg, #6d5efc, #9b6bff);">
-                <Sparkles :size="12" :stroke-width="2.2" />
-              </span>
+              <CanseeMark :size="20" />
               <span class="hidden sm:inline">Ask</span>
             </button>
+            <FeedbackWidget />
             <HelpButton />
           </div>
         </header>
@@ -359,8 +380,10 @@ import { useToast } from '@/composables/useToast'
 import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
+import FeedbackWidget from '@/components/feedback/FeedbackWidget.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { useAssistantStore } from '@/stores/assistant'
+import CanseeMark from '@/components/assistant/CanseeMark.vue'
 import { Button } from '@/components/ui/button'
 import {
   SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarRail,
@@ -379,8 +402,8 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
-  Search, Plus, LogOut, ChevronsUpDown, Home,
-  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings, Sparkles,
+  Search, Plus, LogOut, ChevronsUpDown, Check,
+  LayoutGrid, Globe, BarChart3, Brain, Plug, CreditCard, Settings,
   MessageSquare, SquarePen, Trash2,
   Sun, Moon,
 } from '@lucide/vue'
@@ -420,7 +443,7 @@ const searchPages = [
   { name: 'sources-urls', label: 'URLs', description: 'Which pages and domains AI cites', category: 'Intelligence', routeFn: () => sourcesUrlsRoute.value, keywords: 'citations sources domains links cited references influence', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 9.5a3 3 0 0 0 4.2 0l2.3-2.3a3 3 0 0 0-4.2-4.2L7.6 4.2"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0L3 8.8a3 3 0 0 0 4.2 4.2l1.2-1.2"/></svg>' },
   { name: 'brand-research', label: 'Brand Research', description: 'Who owns the conversation, and where you can join it', category: 'Intelligence', routeFn: () => brandResearchRoute.value, keywords: 'search insights opportunities reddit forums quora threads sentiment competitors chatgpt gaps content ideas', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5 14 14"/></svg>' },
   { name: 'brand-security', label: 'Brand Security', description: 'Catch wrong or hostile AI answers', category: 'Intelligence', routeFn: () => brandSecurityRoute.value, keywords: 'alerts findings sentiment risk reputation detectors negative misrepresentation', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 2.5 3.8v4c0 3.2 2.3 6 5.5 6.7 3.2-.7 5.5-3.5 5.5-6.7v-4z"/></svg>' },
-  { name: 'brand-input', label: 'Brand Input', description: 'Teach the models what is true about you', category: 'Intelligence', routeFn: () => brandInputRoute.value, keywords: 'knowledge facts sources ingest rag context vault alignment', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2H8v12H3.5A1.5 1.5 0 0 1 2 12.5z"/><path d="M14 3.5A1.5 1.5 0 0 0 12.5 2H8v12h4.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>' },
+  { name: 'brand-input', label: 'Brand Ingestion', description: 'Teach the models what is true about you', category: 'Intelligence', routeFn: () => brandInputRoute.value, keywords: 'knowledge facts sources ingest rag context vault alignment', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2H8v12H3.5A1.5 1.5 0 0 1 2 12.5z"/><path d="M14 3.5A1.5 1.5 0 0 0 12.5 2H8v12h4.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>' },
   { name: 'integrations', label: 'Integrations', description: 'Connect Slack, Discord, Analytics and more', category: 'Intelligence', route: '/app/integrations', keywords: 'slack discord ga4 google cloudflare search console webhooks connect', icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v4M10 1v4"/><path d="M4 5h8v3a4 4 0 0 1-8 0z"/><path d="M8 12v3"/></svg>' },
 
   // ── Account ──
@@ -638,7 +661,7 @@ const navMain = computed(() => [
           { title: 'Prompts', to: promptLibraryRoute.value, match: '/prompts' },
           { title: 'Brand Research', to: brandResearchRoute.value, match: '/brand-research' },
           { title: 'Brand Security', to: brandSecurityRoute.value, match: '/brand-security' },
-          { title: 'Brand Input', to: brandInputRoute.value, match: '/brand-input' },
+          { title: 'Brand Ingestion', to: brandInputRoute.value, match: '/brand-input' },
         ],
       },
       { title: 'Integrations', to: '/app/integrations', icon: Plug, match: '/app/integrations' },
@@ -693,18 +716,24 @@ function switchWebsite(id) {
   if (!website) return
   appStore.setActiveWebsite(website)
 
-  // Re-route current page to use the new project ID
+  // Keep the user on the SAME section, re-pointed at the new project.
+  // Detail leaves (a specific prompt, a specific source URL) belong to
+  // the old project's records, so they fall back to their section root
+  // rather than 404ing on a foreign id.
   const path = route.path
-  const routeMap = [
-    { prefix: '/analytics/', target: `/analytics/${id}` },
-    { prefix: '/websites/', target: `/websites/${id}` },
-    { prefix: '/llm-ranking/', target: `/llm-ranking/${id}` },
-  ]
-  const match = routeMap.find(r => path.startsWith(r.prefix))
-  if (match) {
-    router.push(match.target)
+  let target = null
+  const section = path.match(/^\/llm-ranking\/[^/]+\/([^/]+)/)
+  if (section) {
+    target = `/llm-ranking/${id}/${section[1]}`
+  } else if (path.startsWith('/analytics/')) {
+    target = `/analytics/${id}`
+  } else if (path.startsWith('/websites/')) {
+    // Project detail (pixel setup, integrations) → same page, new project.
+    target = `/websites/${id}`
   }
-  // Dashboard, billing, settings don't have websiteId — store update is enough
+  // Dashboard, billing, settings carry no websiteId — the store update
+  // alone re-scopes them (the dashboard watches activeWebsite).
+  if (target && target !== path) router.push(target)
 }
 
 async function createProject() {
@@ -743,12 +772,12 @@ onMounted(async () => {
     const { data } = await websitesApi.list({ _silentError: true })
     appStore.setWebsites(data || [])
   } catch {}
-  // Fetch plan info for project limits (plans: free / pro / business)
+  // Fetch plan info for project limits. The backend resolves the
+  // allowance (trial-aware: a live trial keeps the Free 1-project cap);
+  // never re-derive it from the plan name here.
   try {
     const { data } = await billingApi.getCurrent({ _silentError: true })
-    const plan = data?.plan || 'free'
-    const limits = { free: 1, pro: 5, business: -1 }
-    appStore.setPlanInfo(plan, limits[plan] ?? 1)
+    appStore.setPlanInfo(data?.plan || 'free', data?.limits?.projects ?? -1)
   } catch {}
   // Search keyboard shortcut
   document.addEventListener('keydown', handleGlobalKeydown)
@@ -789,6 +818,13 @@ onUnmounted(() => {
    themes (#1e1e1e light / #ffffff dark). The artwork is a single navy,
    so flip it with a filter instead of shipping two files. */
 .cansee-mark { filter: brightness(0) invert(1); }
+/* Wordmark artwork is a single navy: readable on the light sidebar
+   (#f7f7f5), invisible on the dark one (#000). Flip it only there rather
+   than shipping a second file. */
+:root[data-theme='dark'] .cansee-wordmark { filter: brightness(0) invert(1); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .cansee-wordmark { filter: brightness(0) invert(1); }
+}
 [data-theme='dark'] .cansee-mark { filter: brightness(0); }
 
 .cmd-backdrop {

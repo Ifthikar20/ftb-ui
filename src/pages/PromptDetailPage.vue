@@ -502,7 +502,7 @@
             <TableHead>{{ brandLabel }} mentioned</TableHead>
             <TableHead class="num">Position</TableHead>
             <TableHead class="num">
-              <span class="pd-th-help" title="How closely this answer reflects your own brand facts and key messages from Brand Input, 0-100.">Alignment<sup>?</sup></span>
+              <span class="pd-th-help" title="How closely this answer reflects your own brand facts and key messages from Brand Ingestion, 0-100.">Alignment<sup>?</sup></span>
             </TableHead>
             <TableHead>Mentions</TableHead>
             <TableHead>Sources</TableHead>
@@ -585,7 +585,7 @@
         <Target :size="16" :stroke-width="2"/>
         Brand alignment
       </h2>
-      <p class="pd-section-sub">How closely the AI answers to this prompt reflect your own brand facts and key messages from Brand Input.</p>
+      <p class="pd-section-sub">How closely the AI answers to this prompt reflect your own brand facts and key messages from Brand Ingestion.</p>
     </section>
 
     <div class="pd-card" style="padding: 18px 20px">
@@ -626,7 +626,7 @@
       </template>
       <p v-else-if="brandAlignment && brandAlignment.state === 'no_brand_input'" class="pd-mute" style="font-size: 13px; margin: 0">
         Add your pages, pasted copy or quick notes on the
-        <router-link :to="`/llm-ranking/${websiteId}/brand-input`" style="color: var(--foreground); font-weight: 600">Brand Input</router-link>
+        <router-link :to="`/llm-ranking/${websiteId}/brand-input`" style="color: var(--foreground); font-weight: 600">Brand Ingestion</router-link>
         page and every answer here will be benchmarked against what you want to be known for.
       </p>
       <p v-else-if="brandAlignment && brandAlignment.state === 'embeddings_unavailable'" class="pd-mute" style="font-size: 13px; margin: 0">
@@ -1467,10 +1467,10 @@ const TREND_METRICS = {
     format: (v) => `alignment ${v}/100 with your brand material`,
     explainer: (brand) =>
       `How closely AI answers reflect ${brand}'s own facts and key messages `
-      + 'from Brand Input, averaged per run. Higher is better.',
+      + 'from Brand Ingestion, averaged per run. Higher is better.',
     emptyNote: () =>
       'No alignment yet — it appears once answers are benchmarked against '
-      + 'your Brand Input material.',
+      + 'your Brand Ingestion material.',
     yScale: { min: 0, max: 100, ticks: { stepSize: 25 }, grid: { color: cssVar('--border', 'rgba(0,0,0,0.05)') } },
   },
 }

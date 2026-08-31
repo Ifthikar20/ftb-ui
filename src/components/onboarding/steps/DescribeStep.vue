@@ -5,7 +5,7 @@
       <h1 class="ob-title" tabindex="-1">Does this sound right?</h1>
       <p class="ob-sub">
         We pulled this from your homepage. Tweak anything that's off —
-        the more accurate, the better the audit.
+        the more accurate, the better your prompt runs.
       </p>
 
       <div class="ob-card">

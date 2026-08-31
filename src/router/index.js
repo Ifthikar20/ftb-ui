@@ -104,7 +104,7 @@ const routes = [
     {
         path: '/docs',
         name: 'docs',
-        component: () => import('@/pages/info/DocsPage.vue'),
+        component: () => import('@/pages/DocsPage.vue'),
         meta: { public: true }
     },
 
@@ -350,7 +350,10 @@ router.beforeEach(async (to, from, next) => {
                 app.setWebsites(data || [])
             } catch { /* fall through to the empty-store bounce below */ }
         }
+        // website-detail names its param `id`, not `websiteId` — without
+        // this the sidebar switcher never follows /websites/<id> pages.
         const wid = to.params.websiteId
+            || (to.name === 'website-detail' ? to.params.id : null)
         if (wid) {
             const target = app.websites.find(w => String(w.id) === String(wid))
             if (!target) {

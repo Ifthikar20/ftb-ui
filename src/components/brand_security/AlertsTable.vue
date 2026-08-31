@@ -140,7 +140,7 @@ function absolute(v) {
               <span
                 v-else
                 class="inline-flex items-center gap-1 whitespace-nowrap text-severity-medium"
-                title="No brand material was retrieved for this finding. Add reference material on the Brand Input page to improve accuracy."
+                title="No brand material was retrieved for this finding. Add reference material on the Brand Ingestion page to improve accuracy."
               >
                 <ShieldAlert class="size-3" />
                 ungrounded

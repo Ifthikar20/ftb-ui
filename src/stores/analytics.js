@@ -49,10 +49,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     async function fetchOverview(wid, period, { force = false } = {}) {
         wid = wid || activeWebsiteId.value
         period = period || activePeriod.value
-        if (!wid) return
+        if (!wid) return false
 
         if (!force && !isStale('overview', wid) && hasData(wid)) {
-            return // cached and fresh
+            return true // cached and fresh
         }
 
         const isFirst = !hasData(wid)
@@ -70,6 +70,15 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             ])
 
             const c = _key(wid)
+
+            // The overview call is the primary one; the other five decorate
+            // it. If it rejected, everything below would write zeros into
+            // stats that currently hold real numbers -- a dead API would
+            // render as "0 visitors, 0 pageviews", indistinguishable from a
+            // genuine quiet period. Keep what we have and report the failure
+            // so the refresh button can say so.
+            if (overviewRes.status === 'rejected') return false
+
             const unwrap = (r) => r.status === 'fulfilled' ? (r.value?.data ?? {}) : {}
             const unwrapArr = (r) => {
                 const d = unwrap(r)
@@ -117,8 +126,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
             c.noData = !c.chartData.length && !c.topPages.length && !c.sources.length
 
             c._ts.overview = Date.now()
+            return true
         } catch {
             // Keep cached data on error
+            return false
         } finally {
             initialLoading.value = false
             refreshing.value = false
@@ -202,18 +213,24 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         loadTabBackground()
     }
 
+    // Resolves true when the active tab's data actually reloaded. Background
+    // polling ignores the result; an explicit refresh needs it, because a
+    // spinner that always ends in success is worse than no spinner.
     async function loadTabBackground() {
         const tab = activeTab.value
         const wid = activeWebsiteId.value
         const period = activePeriod.value
-        if (!wid) return
+        if (!wid) return false
         try {
-            if (tab === 'overview') await fetchOverview(wid, period)
+            if (tab === 'overview') return await fetchOverview(wid, period) !== false
             else if (tab === 'retention') await fetchRetention(wid, period)
             else if (tab === 'flows') await fetchFlows(wid, period)
             else if (tab === 'insights') await fetchInsights(wid, period)
             else if (tab === 'events') await fetchVisitors(wid, period)
-        } catch { /* silent */ }
+            return true
+        } catch {
+            return false
+        }
     }
 
     function init(wid, period) {
@@ -232,13 +249,16 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
 
     // ── Force refresh: invalidate all caches and re-fetch ──
+    // Returns the in-flight promise so the caller can keep its spinner up for
+    // the real duration. Previously this dropped the promise on the floor,
+    // so the button span 1s and stopped regardless of what the network did.
     function forceRefresh() {
         const wid = activeWebsiteId.value
-        if (!wid) return
+        if (!wid) return Promise.resolve(false)
         const c = _key(wid)
         // Clear ALL timestamps so every fetch runs fresh
         Object.keys(c._ts).forEach(k => { c._ts[k] = 0 })
-        loadTabBackground()
+        return loadTabBackground()
     }
 
     // ── Auto-polling: keep data fresh while page is active ──

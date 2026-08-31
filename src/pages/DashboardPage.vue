@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import dashboardApi from '@/api/dashboard'
@@ -183,6 +183,9 @@ const filterOptions = ref(null)
 
 function buildParams() {
   const params = {}
+  // Scope every dashboard number to the active project — without this
+  // the backend falls back to the user's first website.
+  if (activeWebsiteId.value) params.website = activeWebsiteId.value
   if (filters.value.range) params.range = filters.value.range
   if (filters.value.range === 'custom') {
     if (filters.value.start) params.start = filters.value.start
@@ -226,5 +229,17 @@ async function refetchDashboard() {
   }
 }
 
-onMounted(refetchDashboard)
+// On a cold load the store may not have resolved the active project yet;
+// fetching without it would briefly render whichever project the backend
+// falls back to. Wait for the id — the watch below fires the first fetch
+// as soon as it resolves. (Zero-project accounts never reach here: the
+// onboarding takeover covers the dashboard.)
+onMounted(() => { if (activeWebsiteId.value) refetchDashboard() })
+
+// The dashboard route carries no :websiteId, so the sidebar project
+// switcher only updates the store — refetch when the active project
+// changes or first resolves after mount.
+watch(activeWebsiteId, (next, prev) => {
+  if (next && next !== prev) refetchDashboard()
+})
 </script>

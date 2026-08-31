@@ -195,7 +195,7 @@ function sentimentLabel(s) {
           </div>
         </div>
         <div v-else class="py-8 text-center text-xs text-muted-foreground">
-          No answers benchmarked against your Brand Input yet.
+          No answers benchmarked against your Brand Ingestion material yet.
         </div>
       </CardContent>
     </Card>

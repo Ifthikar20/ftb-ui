@@ -20,8 +20,8 @@
 
           <p v-if="onbSummary" class="pw-sub">
             We found <strong>{{ onbSummary.competitors }} competitors</strong>
-            for <strong>{{ onbSummary.domain }}</strong>. Your first audit is
-            ready to run.
+            for <strong>{{ onbSummary.domain }}</strong>. Your first prompt run is
+            ready to start.
           </p>
           <p v-else class="pw-sub">
             See what every major LLM says about you — and who they

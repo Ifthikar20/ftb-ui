@@ -5,10 +5,16 @@
         <h1 class="text-2xl font-semibold tracking-tight text-foreground">Projects</h1>
         <p class="mt-1 text-sm text-muted-foreground">Manage your projects and tracking pixels.</p>
       </div>
-      <Button @click="openWizard" :disabled="!appStore.canCreateProject">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add Project
-      </Button>
+      <div class="flex flex-col items-end gap-1.5">
+        <Button @click="openWizard" :disabled="!appStore.canCreateProject">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Project
+        </Button>
+        <span v-if="appStore.projectLimit !== -1" class="text-xs text-muted-foreground">
+          {{ appStore.projectLimitLabel }}
+          <RouterLink v-if="!appStore.canCreateProject" to="/billing" class="font-medium text-foreground underline underline-offset-2">Upgrade for more</RouterLink>
+        </span>
+      </div>
     </div>
 
     <div
@@ -95,7 +101,8 @@
             <label class="mb-1.5 block text-sm font-medium text-foreground">Industry <span class="text-muted-foreground">(optional)</span></label>
             <input v-model="newSite.industry" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="SaaS, E-commerce, etc." />
           </div>
-          <Button class="mt-2 w-full" size="lg" :disabled="!newSite.name || !newSite.url" @click="wizardStep = 2">
+          <p v-if="createError" class="wizard-error">{{ createError }}</p>
+          <Button class="mt-2 w-full" size="lg" :disabled="!newSite.name || !newSite.url" @click="createError = ''; wizardStep = 2">
             Continue
           </Button>
         </div>
@@ -114,9 +121,10 @@
               <div class="platform-check" v-if="newSite.platform_type === p.id">✓</div>
             </div>
           </div>
+          <p v-if="createError" class="wizard-error">{{ createError }}</p>
           <div class="mt-2 flex justify-between gap-3">
             <Button variant="secondary" @click="wizardStep = 1">Back</Button>
-            <Button :disabled="!newSite.platform_type" @click="createAndGoToPixel">
+            <Button :disabled="!newSite.platform_type || adding" @click="createAndGoToPixel">
               {{ adding ? 'Creating...' : 'Continue' }}
             </Button>
           </div>
@@ -187,7 +195,7 @@
           <h2 class="text-lg font-semibold text-foreground">Delete Project</h2>
           <Button variant="ghost" size="icon" class="size-8" @click="deleteTarget = null">✕</Button>
         </div>
-        <p class="mb-4 text-sm text-muted-foreground">Are you sure you want to delete <strong>{{ deleteTarget.name }}</strong>? This will remove all tracking data, analytics, keywords, and audit history. This cannot be undone.</p>
+        <p class="mb-4 text-sm text-muted-foreground">Are you sure you want to delete <strong>{{ deleteTarget.name }}</strong>? This will remove all tracking data, analytics, keywords, and prompt-run history. This cannot be undone.</p>
         <div class="flex justify-end gap-2">
           <Button variant="secondary" @click="deleteTarget = null">Cancel</Button>
           <Button variant="destructive" @click="deleteWebsite" :disabled="deleting">{{ deleting ? 'Deleting...' : 'Delete' }}</Button>
@@ -220,6 +228,7 @@ const renaming = ref(false)
 const wizardStep = ref(1)
 const createdSite = ref(null)
 const copied = ref(false)
+const createError = ref('')
 const newSite = reactive({ name: '', url: '', industry: '', platform_type: 'custom' })
 
 const TOTAL_STEPS = 3
@@ -292,17 +301,30 @@ async function deleteWebsite() {
 }
 
 async function createAndGoToPixel() {
+  if (adding.value) return
   adding.value = true
+  createError.value = ''
   try {
-    const { data } = await websitesApi.create(newSite)
-    const site = data
-    createdSite.value = site
-    websites.value.push(site)
+    const url = newSite.url.trim()
+    const { data } = await websitesApi.create({
+      ...newSite,
+      name: newSite.name.trim(),
+      // Users type "example.com"; the API stores full URLs.
+      url: /^https?:\/\//i.test(url) ? url : `https://${url}`,
+    })
+    createdSite.value = data
+    websites.value.push(data)
     appStore.setWebsites(websites.value)
-    appStore.setActiveWebsite(site)
-    showAddModal.value = false
-  } catch (e) { console.error('Create failed', e) }
-  finally { adding.value = false }
+    appStore.setActiveWebsite(data)
+    wizardStep.value = 3
+  } catch (e) {
+    const err = e.response?.data?.error
+    createError.value = err?.message || e.displayMessage || 'Something went wrong. Please try again.'
+    // Field problems (URL, name) are edited on step 1 — send the user back there.
+    if (err?.fields && (err.fields.url || err.fields.name || err.fields.industry)) {
+      wizardStep.value = 1
+    }
+  } finally { adding.value = false }
 }
 
 function copyPixel() {
@@ -315,6 +337,7 @@ function openWizard() {
   wizardStep.value = 1
   createdSite.value = null
   copied.value = false
+  createError.value = ''
   newSite.name = ''
   newSite.url = ''
   newSite.industry = ''
@@ -381,6 +404,16 @@ function openWizard() {
   margin: 0 0 20px;
 }
 .wizard-body { display: flex; flex-direction: column; gap: 14px; }
+.wizard-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--destructive) 35%, transparent);
+  background: color-mix(in srgb, var(--destructive) 8%, transparent);
+  color: var(--destructive);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .wizard-helper {
   text-align: center;
   font-size: 12px;

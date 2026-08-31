@@ -71,6 +71,7 @@ export const useAssistantStore = defineStore('assistant', () => {
         role: m.role,
         content: m.content,
         grounded: m.grounded,
+        model: m.model || '',
       }))
     } catch (_) {
       // A deleted or foreign thread: drop back to a blank composer rather

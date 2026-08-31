@@ -47,7 +47,7 @@
       <SettingsSection
         label="Usage"
         title="AI usage"
-        description="Tokens and requests used by audits and the prompt library in the current billing period."
+        description="Tokens and requests used by prompt runs and the prompt library in the current billing period."
       >
         <div v-if="usageLoading" class="sp-loading">
           <span class="spinner"></span>
@@ -118,7 +118,7 @@
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 6v6l4 2" />
             </svg>
-            <p>No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like audits or the prompt library.</p>
+            <p>No AI usage recorded this billing period. Token tracking starts automatically when you use AI features like prompt runs or the prompt library.</p>
           </div>
 
           <p class="sp-footnote">
@@ -185,8 +185,8 @@
         <p class="sp-contact-hint">
           Write from the email address on your account ({{ authStore.user?.email || 'the one you signed up with' }})
           so we can find your workspace and billing history right away. For refunds, mention the
-          approximate charge date. In-app ticket submission is coming soon — until then, email is
-          the fastest route.
+          approximate charge date. Prefer to stay in the app? Use the Help &amp; feedback button
+          in the top bar — replies land right there.
         </p>
       </SettingsSection>
     </template>
@@ -287,7 +287,7 @@ const NOTIF_OPTIONS = [
   { key: 'hot_lead_email', label: 'Hot lead alerts', desc: 'An email when a high-intent visitor is detected on your site.' },
   { key: 'weekly_report', label: 'Weekly report', desc: 'A weekly summary of your AI visibility and search performance.' },
   { key: 'competitor_changes', label: 'Competitor changes', desc: "When a tracked competitor's position moves." },
-  { key: 'audit_complete', label: 'Audit complete', desc: 'When an AI visibility audit finishes running.' },
+  { key: 'audit_complete', label: 'Prompt run complete', desc: 'When an AI visibility prompt run finishes.' },
 ]
 
 // Deletion is irreversible, so the confirmation is deliberately manual:

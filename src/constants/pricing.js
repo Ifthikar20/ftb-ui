@@ -21,8 +21,8 @@ export const TIERS = [
         features: [
             '7-day free trial',
             'Up to 5 websites',
-            '15 prompts per audit',
-            'Daily audits',
+            '15 prompts per run',
+            'Daily prompt runs',
             '4 LLM providers (Claude, GPT-4, Gemini, Perplexity)',
             'Competitor tracking + RAG knowledge base',
             'Trend intelligence + recommendations',
@@ -43,8 +43,8 @@ export const TIERS = [
         features: [
             'Everything in Pro',
             'Unlimited websites',
-            '50+ prompts per audit',
-            'Unlimited audits',
+            '50+ prompts per run',
+            'Unlimited prompt runs',
             'SSO, SAML, audit logs',
             'Custom prompt packs',
             'API access + white-label',

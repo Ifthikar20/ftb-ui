@@ -2,6 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import router from '@/router'
+import { getClientId, recordFailedRequest } from '@/lib/diagnostics'
 
 const api = axios.create({
     baseURL: '/api/v1',
@@ -40,10 +41,12 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${auth.accessToken}`
     }
 
-    // Add request tracing
+    // Add request tracing: a fresh id per request, plus the stable
+    // per-session client id the backend writes into every log line.
     config.headers['X-Request-ID'] = crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    config.headers['X-Client-Id'] = getClientId()
 
     return config
 })
@@ -144,6 +147,17 @@ api.interceptors.response.use(
                 await new Promise(r => setTimeout(r, delay))
                 return api(originalRequest)
             }
+        }
+
+        // Remember the failure for support diagnostics (attached to
+        // feedback-widget messages). Cancelled requests aren't failures.
+        if (!axios.isCancel(error)) {
+            recordFailedRequest({
+                method: originalRequest?.method,
+                url: originalRequest?.url,
+                status,
+                requestId: originalRequest?.headers?.['X-Request-ID'],
+            })
         }
 
         // ── Extract user-friendly message ──

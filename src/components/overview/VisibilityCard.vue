@@ -257,7 +257,7 @@ const chartOptions = computed(() => {
             {{ showTrend ? 'Visibility Overview' : 'Where you rank right now' }}
             <span
               class="inline-flex"
-              title="Visibility = share of scanned AI answers that mention your brand. Measured across the AI models you have configured, for the prompts in your latest audit."
+              title="Visibility = share of scanned AI answers that mention your brand. Measured across the AI models you have configured, for the prompts in your latest prompt run."
             >
               <Info class="size-4 text-muted-foreground" />
             </span>
@@ -267,7 +267,7 @@ const chartOptions = computed(() => {
               % of scanned AI answers mentioning your brand · last 12 months
             </template>
             <template v-else>
-              % of AI answers mentioning each brand · from your latest audit
+              % of AI answers mentioning each brand · from your latest prompt run
             </template>
           </p>
         </div>
@@ -327,7 +327,7 @@ const chartOptions = computed(() => {
     <EmptyState
       v-if="!hasData"
       title="No visibility measured yet"
-      body="This chart tracks how often AI assistants mention your brand over time. It starts filling in after your first completed audit."
+      body="This chart tracks how often AI assistants mention your brand over time. It starts filling in after your first completed prompt run."
       :cta-label="ctaLabel"
       :cta-to="ctaTo"
     />
@@ -371,7 +371,7 @@ const chartOptions = computed(() => {
 
       <p class="mt-4 border-t border-border pt-3 text-[12px] text-muted-foreground">
         Based on {{ measuredPeriods }} measured period. A month-by-month trend
-        appears here once a second audit completes — until then there is
+        appears here once a second prompt run completes — until then there is
         nothing to chart over time.
       </p>
     </div>

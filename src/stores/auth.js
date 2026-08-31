@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import api from '@/api/client'
 import { describeSubscription } from '@/lib/plan'
+import { useAppStore } from '@/stores/app'
 
 // localStorage key for the access token. We persist it here so a
 // page reload doesn't kick the user out when the refresh cookie is
@@ -106,6 +107,15 @@ export const useAuthStore = defineStore('auth', () => {
             const { data } = await api.get('/auth/session/', { _silentError: true })
             session.value = data
             if (session.value?.user) user.value = session.value.user
+            // Plan limits are resolved server-side (trial-aware); mirror
+            // them into the app store so gates like canCreateProject use
+            // the real allowance instead of a hardcoded default.
+            if (session.value?.limits) {
+                useAppStore().setPlanInfo(
+                    session.value.subscription?.plan || 'free',
+                    session.value.limits.projects ?? -1,
+                )
+            }
             return session.value
         } catch {
             session.value = null

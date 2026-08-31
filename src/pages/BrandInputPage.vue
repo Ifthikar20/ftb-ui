@@ -1,6 +1,6 @@
 <script setup>
 /**
- * Brand Input page.
+ * Brand Ingestion page.
  *
  * The single place to feed the platform's understanding of the brand.
  * URLs, pasted markdown, and quick notes all become chunks in the RAG
@@ -11,7 +11,7 @@
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import {
-  ChevronRight, Link2, FileText, Loader2, RefreshCw, StickyNote,
+  Bot, ChevronRight, Link2, FileText, Loader2, RefreshCw, StickyNote,
   Globe, BookOpen, Package, FileCode, ShieldCheck,
 } from '@lucide/vue'
 
@@ -37,6 +37,47 @@ const INPUT_TABS = [
   { key: 'note',  label: 'Quick note',    icon: StickyNote },
 ]
 const inputTab = ref('url')
+
+// ── Cansee agent crawl consent ─────────────────────────────────────────
+const agentCrawl = ref({ enabled: false, enabled_at: null, last_seeded_at: null })
+const agentCrawlSaving = ref(false)
+
+async function loadAgentCrawl() {
+  if (!websiteId.value) return
+  try {
+    const res = await ragApi.getAgentCrawl(websiteId.value)
+    if (res.data) agentCrawl.value = res.data
+  } catch { /* the section just shows its default off state */ }
+}
+
+async function toggleAgentCrawl() {
+  if (agentCrawlSaving.value || !websiteId.value) return
+  agentCrawlSaving.value = true
+  const next = !agentCrawl.value.enabled
+  try {
+    const res = await ragApi.setAgentCrawl(websiteId.value, next)
+    if (res.data) agentCrawl.value = res.data
+    if (next && res.data?.seeded) {
+      toast.success('Agent enabled — first crawl queued. New sources will appear below as pages are read.')
+      // Give the crawl a moment to create its first pending rows.
+      setTimeout(loadSources, 2000)
+    } else if (next) {
+      toast.success('Agent crawling enabled')
+    } else {
+      toast.success('Agent crawling disabled')
+    }
+  } catch (err) {
+    toast.error(err.displayMessage || 'Could not update the agent setting')
+  } finally {
+    agentCrawlSaving.value = false
+  }
+}
+
+function fmtWhen(d) {
+  return d ? new Date(d).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  }) : ''
+}
 
 // ── Sources list (paginated + filtered server-side) ────────────────────
 const sources = ref([])
@@ -313,11 +354,15 @@ async function submitNote() {
 }
 
 onMounted(async () => {
-  if (websiteId.value) await loadSources()
+  if (websiteId.value) {
+    loadAgentCrawl()
+    await loadSources()
+  }
 })
 watch(websiteId, async (v) => {
   if (v) {
     page.value = 1
+    loadAgentCrawl()
     await loadSources()
   }
 })
@@ -330,7 +375,7 @@ watch(websiteId, async (v) => {
       <div class="flex items-center gap-2 text-sm text-muted-foreground">
         <span class="font-medium text-foreground">AI Visibility</span>
         <ChevronRight class="size-3.5" />
-        <span class="font-semibold text-foreground">Brand Input</span>
+        <span class="font-semibold text-foreground">Brand Ingestion</span>
       </div>
       <Button variant="ghost" @click="loadSources">
         <RefreshCw class="size-3.5" :class="{ 'animate-spin': listLoading }" />
@@ -343,9 +388,47 @@ watch(websiteId, async (v) => {
       <h2 class="text-lg font-bold text-foreground">Teach the platform your brand</h2>
       <p class="text-sm text-muted-foreground">
         URLs, pasted content, and quick notes added here become part of the platform's
-        understanding of your brand — used to ground audits, agents, and Brand Security checks.
+        understanding of your brand — used to ground prompt runs, agents, and Brand Security checks.
       </p>
     </div>
+
+    <!-- ── Cansee AI agent crawl consent ── -->
+    <Card>
+      <CardContent class="pt-6">
+        <div class="flex items-start gap-3">
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="agentCrawl.enabled"
+            :disabled="agentCrawlSaving"
+            class="mt-0.5 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-60"
+            :class="agentCrawl.enabled ? 'bg-[color:var(--chart-2)]' : 'bg-input'"
+            @click="toggleAgentCrawl"
+          >
+            <span
+              class="inline-block size-4 transform rounded-full bg-background shadow-sm transition-transform"
+              :class="agentCrawl.enabled ? 'translate-x-4' : 'translate-x-0.5'"
+            />
+          </button>
+          <div class="flex-1">
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Bot class="size-4" />
+              Allow the Cansee AI agent to crawl your site
+            </div>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              When enabled, the agent may crawl your website to seek knowledge about your brand
+              on its own — pages it reads become sources below, grounding prompt runs, agents,
+              and Brand Security checks. Turning it off stops future agent crawls; nothing
+              already ingested is removed.
+            </p>
+            <p v-if="agentCrawl.enabled && agentCrawl.last_seeded_at" class="mt-1.5 text-xs text-muted-foreground">
+              <span class="font-medium text-foreground">Last agent crawl queued:</span>
+              {{ fmtWhen(agentCrawl.last_seeded_at) }}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- ── Single input card with tabs ── -->
     <Card>

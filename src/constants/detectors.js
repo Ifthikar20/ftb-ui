@@ -45,7 +45,7 @@ export const CATEGORY_PRESENTATION = {
   },
   accuracy: {
     label: 'Accuracy',
-    blurb: 'Factual claims that contradict your Brand Input material',
+    blurb: 'Factual claims that contradict your Brand Ingestion material',
     icon: Scale,
     badgeClass: 'bg-severity-high/10 text-severity-high',
   },

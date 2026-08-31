@@ -106,10 +106,36 @@
             </div>
           </div>
         </template>
+
+        <!-- Microsoft Teams -->
+        <template v-else-if="activeIntegration?.id === 'teams'">
+          <div class="connect-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Create an incoming webhook</h4>
+              <p>In Teams, open the channel's <strong>•••</strong> menu &gt; <strong>Workflows</strong>, choose <strong>Post to a channel when a webhook request is received</strong>, and copy the URL it generates. (The classic <strong>Incoming Webhook</strong> connector works too.)</p>
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Paste the webhook URL</h4>
+              <input v-model="webhookUrl" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://...webhook.office.com/...  or  https://...logic.azure.com/..." />
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Channel name</h4>
+              <p>The channel the webhook posts to, so you can tell connections apart.</p>
+              <input v-model="channelName" class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="#results" />
+            </div>
+          </div>
+        </template>
       </div>
 
-      <!-- In-channel bot -->
-      <div class="bot-link">
+      <!-- In-channel bot (Slack/Discord only; Teams has no two-way bot yet) -->
+      <div v-if="activeIntegration && activeIntegration.id !== 'teams'" class="bot-link">
         <h4 class="prefs-title">In-channel bot (optional)</h4>
         <template v-if="activeIntegration?.id === 'slack'">
           <p class="bot-link-desc">Add your Slack Team ID to link @Cansee mentions and the /cansee command in your workspace to this Cansee account.</p>
@@ -223,6 +249,20 @@ const integrations = reactive([
     scheduleTime: '',
     notifPrefs: null,
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.3 4.1a19.4 19.4 0 0 0-4.8-1.5 14.5 14.5 0 0 0-.6 1.3 18 18 0 0 0-5.4 0c-.2-.5-.4-.9-.6-1.3A19.3 19.3 0 0 0 4 4.1 20 20 0 0 0 .5 17.7a19.5 19.5 0 0 0 6 3 14.6 14.6 0 0 0 1.3-2 12.6 12.6 0 0 1-2-.9l.5-.4c3.8 1.8 8 1.8 11.8 0 .2.1.3.3.5.4-.6.4-1.3.7-2 .9.4.7.8 1.4 1.3 2a19.5 19.5 0 0 0 6-3A20 20 0 0 0 20.3 4.1zM8 14.8c-1.2 0-2.2-1.1-2.2-2.4S6.8 10 8 10s2.2 1.1 2.2 2.4S9.2 14.8 8 14.8zm8 0c-1.2 0-2.2-1.1-2.2-2.4S14.8 10 16 10s2.2 1.1 2.2 2.4S17.2 14.8 16 14.8z"/></svg>',
+  },
+  {
+    id: 'teams',
+    name: 'Microsoft Teams',
+    description: 'Deliver the daily report, brand-security alerts, and hot-lead alerts to a Microsoft Teams channel through an incoming webhook.',
+    bgColor: 'linear-gradient(135deg, #6264A715, #6264A708)',
+    connected: false,
+    connectionId: null,
+    webhookUrl: '',
+    channelName: '',
+    externalTeamId: '',
+    scheduleTime: '',
+    notifPrefs: null,
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="7.5" r="3" fill="#7B83EB"/><rect x="8" y="6" width="13" height="13" rx="2.5" fill="#5B5FC7"/><path d="M11 9.3h7M14.5 9.3V16" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
   },
 ])
 

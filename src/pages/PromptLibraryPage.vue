@@ -508,7 +508,7 @@ const HERO_LINES = [
     sub: "Real buyer-intent prompts, generated from a one-line scenario. Each prompt is benchmarked against the brands an LLM is most likely to mention back.",
   },
   {
-    title: "Audit your visibility in the answer engines.",
+    title: "Measure your visibility in the answer engines.",
     sub: "Google indexes pages. Claude, ChatGPT, and Perplexity recommend brands. Use the library to discover the prompts that put your competitors in front of buyers — and yours.",
   },
   {

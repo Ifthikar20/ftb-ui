@@ -41,7 +41,7 @@ function initials(domain) {
     <EmptyState
       v-if="!rows.length"
       title="No sources retrieved yet"
-      body="These are the sites AI models pull from when answering about your space. They populate after your first audit."
+      body="These are the sites AI models pull from when answering about your space. They populate after your first prompt run."
       :cta-label="ctaLabel"
       :cta-to="ctaTo"
     />

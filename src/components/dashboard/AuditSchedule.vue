@@ -179,7 +179,7 @@ async function save() {
     })
     schedule.value = data?.schedule || null
     showModal.value = false
-    toast.success('Schedule saved. Audits will run automatically.')
+    toast.success('Schedule saved. Prompt runs will start automatically.')
     loadETA()
   } catch (err) {
     error.value = err.displayMessage || 'Failed to save schedule.'
@@ -207,7 +207,7 @@ async function runNow() {
   runError.value = null
   try {
     await llmRankingApi.runScheduleNow(props.websiteId)
-    toast.success('Audit started. Results appear here when it finishes.')
+    toast.success('Prompt run started. Results appear here when it finishes.')
     await loadETA()
     emit('ran')
   } catch (err) {
@@ -215,12 +215,12 @@ async function runNow() {
     if (body.code === 'no_saved_prompts') {
       runError.value = {
         code: body.code,
-        message: 'This website has no saved prompts yet. Audits run exactly '
+        message: 'This website has no saved prompts yet. Prompt runs use exactly '
           + 'the prompts you save on the Prompts page.',
         ctaTo: body.cta_to || `/llm-ranking/${props.websiteId}/prompts`,
       }
     } else {
-      toast.error(err.displayMessage || 'Could not start the audit.')
+      toast.error(err.displayMessage || 'Could not start the prompt run.')
     }
   } finally {
     runBusy.value = false
@@ -252,7 +252,7 @@ onBeforeUnmount(stopETAPolling)
       <CalendarClock class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div class="min-w-0">
         <p class="text-[13px] font-bold text-foreground">
-          {{ schedule ? 'Scheduled audits active' : 'No audit schedule yet' }}
+          {{ schedule ? 'Scheduled prompt runs active' : 'No prompt-run schedule yet' }}
         </p>
         <p class="mt-0.5 text-[11px] text-muted-foreground">
           <template v-if="schedule">
@@ -260,7 +260,7 @@ onBeforeUnmount(stopETAPolling)
             <span v-if="nextRunLabel"> · next run {{ nextRunLabel }}</span>
           </template>
           <template v-else>
-            Audits are what populate this dashboard. Set a cadence, or run one now.
+            Prompt runs are what populate this dashboard. Set a cadence, or start one now.
           </template>
         </p>
       </div>
@@ -278,7 +278,7 @@ onBeforeUnmount(stopETAPolling)
         {{ runBusy ? 'Starting…' : 'Run now' }}
       </Button>
       <Button size="sm" :disabled="!websiteId" @click="showModal = true">
-        {{ schedule ? 'Edit schedule' : 'Set up audits' }}
+        {{ schedule ? 'Edit schedule' : 'Set up prompt runs' }}
       </Button>
     </div>
 
@@ -330,9 +330,9 @@ onBeforeUnmount(stopETAPolling)
       >Add prompts</RouterLink>
     </p>
 
-    <BaseModal v-model="showModal" title="Schedule periodic audits">
+    <BaseModal v-model="showModal" title="Schedule periodic prompt runs">
       <p class="mb-3 text-sm text-muted-foreground">
-        Audits run automatically on this cadence so visibility can be tracked
+        Prompt runs happen automatically on this cadence so visibility can be tracked
         over time. One run queries every selected model with your saved
         prompts from the Prompts page.
       </p>
@@ -415,7 +415,7 @@ onBeforeUnmount(stopETAPolling)
             v-else-if="previewEmpty"
             class="rounded-lg border border-dashed border-[#C02926]/40 dark:border-[#f87171]/40 bg-[#FDECEA]/40 dark:bg-[#f87171]/10 px-3 py-2.5 text-[12px] text-[#C02926] dark:text-[#f87171]"
           >
-            No saved prompts — audits cannot run until you add some.
+            No saved prompts — prompt runs cannot start until you add some.
             <RouterLink
               :to="`/llm-ranking/${websiteId}/prompts`"
               class="font-bold underline underline-offset-2"

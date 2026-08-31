@@ -34,6 +34,15 @@ export default {
     // sources return 400 (user must re-upload to update pasted text).
     api.post(`/rag/${websiteId}/sources/${sourceId}/reingest/`),
 
+  // Consent switch: may the Cansee agent crawl this site for knowledge?
+  // Enabling queues a seed crawl of the site's own domain (the response
+  // carries seeded: true when one was queued).
+  getAgentCrawl: (websiteId) =>
+    api.get(`/rag/${websiteId}/agent-crawl/`),
+
+  setAgentCrawl: (websiteId, enabled) =>
+    api.post(`/rag/${websiteId}/agent-crawl/`, { enabled }),
+
   retrieve: (websiteId, { query, topK = 5, sourceId = null } = {}) => {
     // POST /rag/{websiteId}/retrieve/
     // Optional sourceId narrows the search to one KnowledgeSource, used

@@ -8,9 +8,12 @@ export const useAppStore = defineStore('app', () => {
     const notifications = ref([])
     const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
-    // Plan state
-    const userPlan = ref('starter')
-    const projectLimit = ref(-1) // -1 = unlimited (testing mode)
+    // Plan state — hydrated from the session payload's `limits` block
+    // (auth.fetchSession -> setPlanInfo). -1 means unlimited, and doubles
+    // as "not yet known" before the session loads; the backend enforces
+    // the real cap either way.
+    const userPlan = ref('free')
+    const projectLimit = ref(-1)
 
     const canCreateProject = computed(() => {
         if (projectLimit.value === -1) return true

@@ -83,8 +83,13 @@ const remember = ref(false)
 const loading = ref(false)
 const error = ref('')
 
-// Auto-login from run_dev.sh token
+// Auto-login from the local dev-login script (scripts/login.sh).
+// DEV-ONLY: import.meta.env.DEV is statically false in production builds, so
+// Vite/Rollup tree-shakes this entire block out of the shipped bundle. Never
+// remove the guard — without it, a link like /login?auto_token=<attacker JWT>
+// would silently install an attacker-controlled session in a victim's browser.
 onMounted(async () => {
+  if (!import.meta.env.DEV) return
   const autoToken = route.query.auto_token
   if (autoToken) {
     authStore.accessToken = autoToken

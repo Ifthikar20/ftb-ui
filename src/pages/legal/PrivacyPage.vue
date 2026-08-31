@@ -75,17 +75,17 @@
         <p>
           When you onboard a website, we fetch its publicly accessible pages and supply
           excerpts to the LLM providers listed in Section 4 so we can describe the site,
-          extract competitors, and run audits. We do not log into private areas of your
+          extract competitors, and perform prompt runs. We do not log into private areas of your
           site or bypass authentication. We may periodically refresh this content while
           your subscription is active.
         </p>
 
         <h3>(d) AI-Generated Content</h3>
         <p>
-          When you request AI-assisted features (Content Studio briefs, LLM ranking audits,
+          When you request AI-assisted features (Content Studio briefs, LLM ranking prompt runs,
           competitor extraction, prompt generation), we send the relevant inputs to one or
           more LLM providers and return their outputs to you. Inputs and outputs are stored
-          in your account so you can review historical audits.
+          in your account so you can review historical prompt runs.
         </p>
       </section>
 
@@ -93,7 +93,7 @@
         <h2>2. How We Use Information</h2>
         <ul>
           <li>Operate, secure, and improve the Services.</li>
-          <li>Run LLM-visibility audits on your behalf and surface the results in your dashboard.</li>
+          <li>Perform LLM-visibility prompt runs on your behalf and surface the results in your dashboard.</li>
           <li>Generate content drafts, prompts, and competitor lists at your request.</li>
           <li>Collect website analytics on your behalf through the Cansee pixel (see Section 6).</li>
           <li>Process payments, manage your subscription, and detect fraud.</li>
@@ -114,7 +114,7 @@
           <li><strong>Corporate transactions</strong>: if Cansee is involved in a merger, acquisition, or asset sale, your information may be transferred subject to this Policy.</li>
         </ul>
         <p>
-          We do not share LLM audit data, content briefs, brand vault data, or website
+          We do not share LLM prompt-run data, content briefs, brand vault data, or website
           analytics with advertisers or data brokers.
         </p>
       </section>
@@ -129,7 +129,7 @@
         <ul>
           <li><strong>Hosting and infrastructure</strong>: Amazon Web Services (EC2 compute, S3 object storage), Cloudflare (CDN, DDoS protection, edge TLS).</li>
           <li><strong>Database and queue</strong>: self-managed PostgreSQL and Redis running on AWS.</li>
-          <li><strong>LLM providers</strong>: Anthropic (Claude), OpenAI (GPT), Google (Gemini), Perplexity, Meta (Llama), Mistral AI, Cohere, DeepSeek, xAI (Grok), and Amazon (Nova via Bedrock). Each provider receives only the inputs required for the requested audit or content generation. See Section 5.</li>
+          <li><strong>LLM providers</strong>: Anthropic (Claude), OpenAI (GPT), Google (Gemini), Perplexity, Meta (Llama), Mistral AI, Cohere, DeepSeek, xAI (Grok), and Amazon (Nova via Bedrock). Each provider receives only the inputs required for the requested prompt run or content generation. See Section 5.</li>
           <li><strong>Payments</strong>: Polar (subscription billing and payment method storage). Cansee never stores full card numbers.</li>
           <li><strong>Email delivery</strong>: Amazon Simple Email Service (SES) for transactional and service email.</li>
           <li><strong>Error monitoring</strong>: Sentry, used only when SENTRY_DSN is configured in production, to correlate client and server errors.</li>
@@ -182,7 +182,7 @@
       <section id="retention">
         <h2>7. Data Retention</h2>
         <ul>
-          <li><strong>Active accounts</strong>: we retain account data, audit history, and dashboards for as long as your account is active.</li>
+          <li><strong>Active accounts</strong>: we retain account data, prompt-run history, and dashboards for as long as your account is active.</li>
           <li><strong>Account deletion</strong>: you may delete your account at any time. We remove your personal data from our active systems within 30 days. Some data may be retained longer where required by law (e.g., tax records for billing) or for fraud prevention and dispute resolution.</li>
           <li><strong>Server logs</strong>: typically retained for 90 days.</li>
           <li><strong>Backups</strong>: encrypted database backups roll off on a 30-day cycle.</li>
@@ -217,7 +217,7 @@
         <h3>(a) General Rights</h3>
         <ul>
           <li>Access, edit, or delete your account information from your account settings.</li>
-          <li>Export your audit history and dashboard data on request.</li>
+          <li>Export your prompt-run history and dashboard data on request.</li>
           <li>Opt out of non-essential email at any time using the unsubscribe link in any such message or by emailing <a href="mailto:privacy@cansee.ai">privacy@cansee.ai</a>.</li>
           <li>Delete your account; your personal data is removed from active systems within 30 days.</li>
         </ul>

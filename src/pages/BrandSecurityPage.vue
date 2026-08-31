@@ -334,7 +334,7 @@ function dismissAlert(alert) {
       </div>
       <div class="flex items-center gap-3">
         <span class="text-xs text-muted-foreground">
-          Findings appear automatically as prompt runs and audits complete
+          Findings appear automatically as prompt runs complete
         </span>
       </div>
     </div>
@@ -351,7 +351,7 @@ function dismissAlert(alert) {
               <h2 class="text-base font-bold text-foreground">Start by teaching us your brand</h2>
               <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
                 Before we can tell you what is wrong out there, we need to know what is right.
-                Add your site pages, docs, or paste brand copy on the Brand Input page — that
+                Add your site pages, docs, or paste brand copy on the Brand Ingestion page — that
                 reference content is the benchmark every finding on this page is checked against.
               </p>
             </div>

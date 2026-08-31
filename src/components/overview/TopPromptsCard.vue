@@ -51,7 +51,7 @@ function barColor(v) {
     <EmptyState
       v-if="!rows.length"
       title="No prompts measured yet"
-      body="Once an audit runs, every question we asked appears here with your visibility on it — weakest first, so you can see where you're missing."
+      body="Once a prompt run completes, every question we asked appears here with your visibility on it — weakest first, so you can see where you're missing."
       :cta-label="ctaLabel"
       :cta-to="ctaTo"
     />

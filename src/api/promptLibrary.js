@@ -85,6 +85,11 @@ export default {
     createWebsitePrompt: (websiteId, payload) =>
         api.post(`/prompt-library/websites/${websiteId}/prompts/`, payload),
 
+    // Deterministic starter set: ~10 intent-diverse prompts generated
+    // from the project's name/industry and saved to its list directly.
+    generateSamples: (websiteId, payload) =>
+        api.post(`/prompt-library/websites/${websiteId}/prompts/generate-samples/`, payload || {}),
+
     preview: (promptId, websiteId) =>
         api.get(`/prompt-library/prompts/${promptId}/preview/`, {
             params: websiteId ? { website: websiteId } : {},

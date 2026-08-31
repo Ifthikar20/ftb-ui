@@ -122,20 +122,21 @@ const lastIngestedLabel = computed(
 </script>
 
 <template>
-  <!-- Backdrop -->
+  <!-- Centred modal, matching ChatDetailModal.vue. The backdrop is the
+       positioning context rather than a separate fixed layer, so @click.self
+       closes on the backdrop only and a click inside the panel does not
+       bubble out and dismiss it. -->
   <div
-    class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-    @click="emit('close')"
-  />
-
-  <!-- Drawer -->
-  <aside
-    class="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col border-l border-border bg-background shadow-2xl"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
+    @click.self="emit('close')"
   >
-    <!-- Header -->
-    <header class="flex items-start gap-3 border-b border-border p-4">
+    <div
+      class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+    >
+      <!-- Header -->
+      <header class="flex items-start gap-3 border-b border-border p-4">
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
           <StatusPill :source="source" />
@@ -302,6 +303,7 @@ const lastIngestedLabel = computed(
       >
         <Trash2 class="size-3.5" /> Delete
       </button>
-    </footer>
-  </aside>
+      </footer>
+    </div>
+  </div>
 </template>

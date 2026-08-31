@@ -156,7 +156,7 @@ const rangeLabel = computed(() => ({
         <div v-else class="flex h-full flex-col items-center justify-center text-center">
           <div class="text-sm font-medium text-card-foreground">Nothing to show yet</div>
           <div class="mt-1 max-w-xs text-xs text-muted-foreground">
-            We need at least one completed audit to chart your visibility over time. Run an audit and your share of AI answers will start appearing here.
+            We need at least one completed prompt run to chart your visibility over time. Start a prompt run and your share of AI answers will start appearing here.
           </div>
         </div>
       </div>

@@ -93,7 +93,7 @@
         >
           <Download :size="15" :stroke-width="2" />
         </button>
-        <button type="button" class="spd-btn" @click="showHelpCreate = true">
+        <button type="button" class="spd-btn spd-btn-neon" @click="showHelpCreate = true">
           <Sparkles :size="14" :stroke-width="2" />
           Help me create prompts
         </button>
@@ -184,11 +184,16 @@
         <h3 v-else-if="status === 'archived'">No archived prompts</h3>
         <h3 v-else>No prompts yet</h3>
         <p v-if="hasActiveFilters">Try clearing the topic, tag, or search filters.</p>
-        <p v-else>Add your own prompts, or generate some from a description.</p>
+        <p v-else>Start with 10 ready-made prompts for your domain, or add your own.</p>
         <button v-if="hasActiveFilters" class="spd-btn spd-btn-primary spd-add-empty" @click="resetFilters">Clear filters</button>
-        <button v-else class="spd-btn spd-btn-primary spd-add-empty" @click="openAddPrompt">
-          <Plus :size="14" :stroke-width="2.2" /> Add your first prompt
-        </button>
+        <div v-else class="spd-empty-actions">
+          <button class="spd-btn spd-btn-neon spd-add-empty" @click="showHelpCreate = true">
+            <Sparkles :size="14" :stroke-width="2" /> Generate 10 sample prompts
+          </button>
+          <button class="spd-btn spd-btn-primary spd-add-empty" @click="openAddPrompt">
+            <Plus :size="14" :stroke-width="2.2" /> Add your first prompt
+          </button>
+        </div>
       </div>
 
       <Table v-else class="spd-table">
@@ -573,25 +578,42 @@
       </div>
     </div>
 
-    <!-- Help me create prompts (placeholder — full flow to be designed later) -->
+    <!-- Help me create prompts: seed the list with a diverse starter set -->
     <div
       v-if="showHelpCreate"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      @click.self="showHelpCreate = false"
+      @click.self="!helpGenerating && (showHelpCreate = false)"
     >
       <div class="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-2xl">
         <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-secondary">
           <Sparkles :size="20" :stroke-width="2" class="text-foreground" />
         </div>
         <h3 class="text-base font-semibold text-foreground">Help me create prompts</h3>
-        <p class="mx-auto mb-5 mt-1 max-w-xs text-sm text-muted-foreground">
-          We'll help you draft and pitch prompt ideas for your brand. This flow is coming soon.
+        <p class="mx-auto mb-4 mt-1 max-w-sm text-sm text-muted-foreground">
+          We'll add <strong>10 ready-made prompts</strong> for
+          <strong>{{ appStore.activeWebsite?.name || 'your project' }}</strong> across
+          very different buyer intents — recommendations, comparisons,
+          alternatives, reviews, use cases and more. No tracking pixel or
+          integration needed; you can edit or archive any of them, and your
+          first scan measures how often AI answers mention you.
         </p>
-        <button
-          type="button"
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          @click="showHelpCreate = false"
-        >Got it</button>
+        <p v-if="helpError" class="mx-auto mb-3 max-w-sm rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {{ helpError }}
+        </p>
+        <div class="flex justify-center gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary"
+            :disabled="helpGenerating"
+            @click="showHelpCreate = false"
+          >Cancel</button>
+          <button
+            type="button"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            :disabled="helpGenerating"
+            @click="generateSamples"
+          >{{ helpGenerating ? 'Generating…' : 'Generate 10 prompts' }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1072,6 +1094,32 @@ function countryName(code) {
 
 /* ── Modals ── */
 const showHelpCreate = ref(false)
+const helpGenerating = ref(false)
+const helpError = ref('')
+
+/* Seed the table with a deterministic, intent-diverse starter set. The
+ * backend saves the prompts directly (deduped on text hash), so the only
+ * follow-up is the usual table refetch. */
+async function generateSamples() {
+  if (helpGenerating.value) return
+  helpGenerating.value = true
+  helpError.value = ''
+  try {
+    const { data } = await promptLibrary.generateSamples(websiteId, { count: 10 })
+    const added = data?.created_count ?? 0
+    toast.success(added
+      ? `Added ${added} sample prompt${added === 1 ? '' : 's'}. Run a scan when you're ready.`
+      : 'These sample prompts are already in your list.')
+    showHelpCreate.value = false
+    await load()
+  } catch (e) {
+    helpError.value = e?.response?.data?.error?.message
+      || e.displayMessage
+      || "We couldn't generate prompts. Please try again."
+  } finally {
+    helpGenerating.value = false
+  }
+}
 
 /* ── Add prompt / bulk upload modal ── */
 const showAdd = ref(false)
@@ -1541,6 +1589,41 @@ void appStore
 .spd-btn-primary { background: var(--foreground); color: var(--primary-foreground); border-color: var(--foreground); }
 .spd-btn-primary:hover { opacity: 0.92; background: var(--foreground); }
 .spd-btn-primary svg { color: var(--primary-foreground); }
+
+/* Neon halo for the AI prompt-generation entry point. The glow is a
+   blurred conic gradient on a ::before layered BEHIND the button; the
+   button keeps its solid --card background so the label stays readable
+   in both themes. Hue rotation animates the colors without needing
+   @property support. */
+.spd-btn-neon {
+  position: relative;
+  isolation: isolate;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    linear-gradient(120deg, #6366f1, #ec4899, #f59e0b, #22d3ee) border-box;
+}
+.spd-btn-neon::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: 13px;
+  background: conic-gradient(#6366f1, #ec4899, #f59e0b, #22d3ee, #6366f1);
+  filter: blur(10px);
+  opacity: 0.55;
+  animation: spd-neon-hue 6s linear infinite;
+}
+.spd-btn-neon:hover::before { opacity: 0.85; }
+.spd-btn-neon svg { color: #ec4899; }
+@keyframes spd-neon-hue {
+  to { filter: blur(10px) hue-rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spd-btn-neon::before { animation: none; }
+}
+
+.spd-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 
 /* ── Tag filter row ── */
 .spd-tagfilter { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
