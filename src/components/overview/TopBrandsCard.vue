@@ -15,7 +15,7 @@ const props = defineProps({
   emptyTitle: { type: String, default: 'No brands measured yet' },
   emptyBody: {
     type: String,
-    default: 'Once an audit runs we list every brand the AI models named, ranked by how often they appeared.',
+    default: 'Once a prompt run completes we list every brand the AI models named, ranked by how often they appeared.',
   },
   ctaLabel: { type: String, default: '' },
   ctaTo: { type: String, default: '' },

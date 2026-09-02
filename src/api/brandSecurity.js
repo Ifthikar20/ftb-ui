@@ -39,4 +39,12 @@ export default {
     api.get(`/brand-security/websites/${websiteId}/config/`),
   saveConfig: (websiteId, payload) =>
     api.put(`/brand-security/websites/${websiteId}/config/`, payload),
+
+  // Brand Pulse agent ------------------------------------------------------
+  // Per-website digest agent: {enabled, auto_scan, frequency, last_digest_at,
+  // last_scan_queued_at}. PUT accepts any subset of the writable fields.
+  pulse: (websiteId) =>
+    api.get(`/brand-security/websites/${websiteId}/pulse/`),
+  savePulse: (websiteId, payload) =>
+    api.put(`/brand-security/websites/${websiteId}/pulse/`, payload),
 }

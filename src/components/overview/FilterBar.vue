@@ -117,7 +117,7 @@ const itemBtn = 'flex w-full items-center justify-between rounded-md px-2.5 py-1
       >
         <p v-if="!tagOptions.length" class="px-2.5 py-2 text-xs text-muted-foreground">
           No measured tags yet. Tag prompts on the Prompts page; tags appear
-          here after an audit measures those prompts.
+          here after a prompt run measures those prompts.
         </p>
         <template v-else>
           <button
@@ -155,7 +155,7 @@ const itemBtn = 'flex w-full items-center justify-between rounded-md px-2.5 py-1
         class="absolute left-0 z-20 mt-1 w-48 rounded-lg border border-border bg-popover p-1 shadow-md"
       >
         <p v-if="!modelOptions.length" class="px-2.5 py-2 text-xs text-muted-foreground">
-          Models appear here after your first audit.
+          Models appear here after your first prompt run.
         </p>
         <template v-else>
           <button

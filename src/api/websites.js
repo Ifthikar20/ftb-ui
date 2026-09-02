@@ -11,8 +11,7 @@ export default {
     getHealth: (id) => api.get(`/websites/${id}/health/`),
     getSettings: (id) => api.get(`/websites/${id}/settings/`),
     updateSettings: (id, data) => api.put(`/websites/${id}/settings/`, data),
-    getTeam: (id) => api.get(`/websites/${id}/team/`),
-    inviteTeam: (id, data) => api.post(`/websites/${id}/team/invite/`, data),
+    // Team management lives at the organization level — see api/orgs.js.
     // Onboarding assist (AI-powered)
     onboardingAssist: (id, data) => api.post(`/websites/${id}/onboarding/assist/`, data),
 }

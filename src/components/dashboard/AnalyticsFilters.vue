@@ -131,7 +131,7 @@ function reset() {
             class="mb-2 h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
           />
           <div v-if="!availablePrompts.length" class="px-2 py-6 text-center text-xs text-muted-foreground">
-            No prompts available yet. Run an audit to populate this list.
+            No prompts available yet. Start a prompt run to populate this list.
           </div>
           <div v-else class="max-h-64 overflow-y-auto">
             <label

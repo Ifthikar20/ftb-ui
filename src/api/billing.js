@@ -11,6 +11,11 @@ export default {
     dismissPaywall: () => api.post('/billing/paywall/dismiss/'),
     cancel: () => api.post('/billing/cancel/'),
     resume: () => api.post('/billing/resume/'),
+    // End the free trial immediately: card charged now, Pro unlocked now.
+    // Optional {annual} switches the cadence in the same call.
+    upgradeNow: (data) => api.post('/billing/upgrade-now/', data || {}),
+    // Monthly <-> annual switch; {annual} required.
+    changePlan: (data) => api.post('/billing/change-plan/', data),
     portal: () => api.post('/billing/portal/'),
     invoices: () => api.get('/billing/invoices/'),
     // Window is always the current billing period (server-defined).

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import api from '@/api/client'
 import { describeSubscription } from '@/lib/plan'
+import { useAppStore } from '@/stores/app'
 
 // localStorage key for the access token. We persist it here so a
 // page reload doesn't kick the user out when the refresh cookie is
@@ -30,6 +31,13 @@ export const useAuthStore = defineStore('auth', () => {
     // Derived from the session's subscription block — never from
     // user.plan, which is denormalized and defaults to a paid tier.
     const planState = computed(() => describeSubscription(session.value?.subscription))
+
+    // Organization identity lives on the session payload — single source.
+    // Null for B2C users, so `v-if="authStore.org"` hides all org UI.
+    const org = computed(() => session.value?.org || null)
+    const orgRole = computed(() => org.value?.role || '')
+    const isOrgAdmin = computed(() => ['owner', 'admin'].includes(orgRole.value))
+    const isOrgOwner = computed(() => orgRole.value === 'owner')
     const userInitials = computed(() => {
         if (!user.value?.full_name) return '?'
         return user.value.full_name
@@ -40,27 +48,60 @@ export const useAuthStore = defineStore('auth', () => {
             .slice(0, 2)
     })
 
+    // One code path for every endpoint that answers login-shaped
+    // ({access, user, ...} + refresh cookie): password login, Google,
+    // and invitation register all adopt the session identically.
+    function adoptTokens(result) {
+        accessToken.value = result.access
+        user.value = result.user
+        localStorage.setItem('cs-session', '1')
+        return result
+    }
+
     async function login(email, password) {
         loading.value = true
         try {
-            const { data: result } = await api.post('/auth/login/', { email, password })
-            accessToken.value = result.access
-            user.value = result.user
-            localStorage.setItem('cs-session', '1')
-            return result
+            // _silentError: the login page renders errors inline (incl. the
+            // structured sso_required panel) — a global toast would double up.
+            const { data: result } = await api.post('/auth/login/', { email, password }, { _silentError: true })
+            return adoptTokens(result)
         } finally {
             loading.value = false
         }
     }
 
-    async function googleLogin(code, redirectUri) {
+    async function googleLogin(code, redirectUri, inviteToken = '') {
         loading.value = true
         try {
-            const { data: result } = await api.post('/auth/google/', { code, redirect_uri: redirectUri })
-            accessToken.value = result.access
-            user.value = result.user
-            localStorage.setItem('cs-session', '1')
-            return result
+            const payload = { code, redirect_uri: redirectUri }
+            if (inviteToken) payload.invite_token = inviteToken
+            const { data: result } = await api.post('/auth/google/', payload, { _silentError: true })
+            return adoptTokens(result)
+        } finally {
+            loading.value = false
+        }
+    }
+
+    async function microsoftLogin(code, redirectUri, inviteToken = '') {
+        loading.value = true
+        try {
+            const payload = { code, redirect_uri: redirectUri }
+            if (inviteToken) payload.invite_token = inviteToken
+            const { data: result } = await api.post('/auth/microsoft/', payload, { _silentError: true })
+            return adoptTokens(result)
+        } finally {
+            loading.value = false
+        }
+    }
+
+    // SAML lane: the backend finishes the IdP round trip itself and hands
+    // the browser a one-time code on /auth/sso/complete. Exchanging it
+    // answers login-shaped, so it adopts the session like every other lane.
+    async function exchangeSsoCode(code) {
+        loading.value = true
+        try {
+            const { data: result } = await api.post('/auth/token-exchange/', { code }, { _silentError: true })
+            return adoptTokens(result)
         } finally {
             loading.value = false
         }
@@ -106,6 +147,15 @@ export const useAuthStore = defineStore('auth', () => {
             const { data } = await api.get('/auth/session/', { _silentError: true })
             session.value = data
             if (session.value?.user) user.value = session.value.user
+            // Plan limits are resolved server-side (trial-aware); mirror
+            // them into the app store so gates like canCreateProject use
+            // the real allowance instead of a hardcoded default.
+            if (session.value?.limits) {
+                useAppStore().setPlanInfo(
+                    session.value.subscription?.plan || 'free',
+                    session.value.limits.projects ?? -1,
+                )
+            }
             return session.value
         } catch {
             session.value = null
@@ -153,8 +203,15 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated,
         userInitials,
         planState,
+        org,
+        orgRole,
+        isOrgAdmin,
+        isOrgOwner,
+        adoptTokens,
         login,
         googleLogin,
+        microsoftLogin,
+        exchangeSsoCode,
         register,
         logout,
         fetchMe,

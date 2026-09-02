@@ -38,7 +38,7 @@
         <div class="ask-measure">
           <!-- Empty state doubles as the launcher. -->
           <div v-if="!store.messages.length && !pending" class="ask-intro">
-            <span class="ask-intro-icon"><Sparkles :size="24" :stroke-width="1.7" /></span>
+            <CanseeMark :size="46" class="ask-intro-mark" />
             <h1 class="ask-intro-title">Ask anything about {{ websiteName || 'your project' }}</h1>
             <p class="ask-intro-sub">
               Traffic, AI-search visibility, brand security, saved prompts —
@@ -70,16 +70,25 @@
             </template>
             <template v-else>
               <div class="turn-head">
-                <span class="turn-avatar"><Sparkles :size="13" :stroke-width="2" /></span>
+                <CanseeMark :size="22" />
                 <span class="turn-name">Cansee</span>
                 <span
                   v-if="m.grounded"
                   class="turn-grounded"
-                  title="Answered from your project's own data"
+                  title="Your own account data was loaded into this answer's context — traffic, visibility, prompts, security. It does not mean the numbers have been re-checked."
                 >grounded</span>
+                <span v-if="m.model" class="turn-model" :title="`Answered by ${m.model}`">
+                  {{ modelLabel(m.model) }}
+                </span>
               </div>
               <div class="turn-body md" :class="{ 'is-error': m.error }">
-                <div v-html="render(m.content)"></div>
+                <!-- A chart is a Vue component, so it cannot live inside the
+                     v-html markdown. The answer is split into alternating
+                     prose and chart parts instead. -->
+                <template v-for="(part, pi) in answerParts(m)" :key="pi">
+                  <div v-if="part.kind === 'markdown'" v-html="render(part.text)"></div>
+                  <AnswerChart v-else :spec="part.spec" />
+                </template>
                 <span v-if="m.streaming" class="caret" aria-hidden="true"></span>
               </div>
             </template>
@@ -88,7 +97,7 @@
           <!-- Thinking -->
           <article v-if="pending" class="turn assistant">
             <div class="turn-head">
-              <span class="turn-avatar"><Sparkles :size="13" :stroke-width="2" /></span>
+              <CanseeMark :size="22" />
               <span class="turn-name">Cansee</span>
             </div>
             <div class="turn-body typing" aria-label="Cansee is thinking">
@@ -140,6 +149,9 @@ import { useAppStore } from '@/stores/app'
 import { useAssistantStore } from '@/stores/assistant'
 import assistantApi from '@/api/assistant'
 import { renderMarkdown } from '@/utils/markdown'
+import CanseeMark from '@/components/assistant/CanseeMark.vue'
+import AnswerChart from '@/components/assistant/AnswerChart.vue'
+import { splitAnswer } from '@/utils/answerParts'
 
 const store = useAssistantStore()
 const appStore = useAppStore()
@@ -166,6 +178,32 @@ const SUGGESTIONS = [
 
 function render(text) { return renderMarkdown(text) }
 
+// While a reply is still typing out, a chart fence is usually half-written;
+// parsing it every frame would flash a broken chart in and out. Hold the
+// whole answer as prose until the reveal finishes.
+function answerParts(m) {
+  if (m.streaming) return [{ kind: 'markdown', text: m.content }]
+  return splitAnswer(m.content)
+}
+
+// Model ids are long and versioned ("claude-haiku-4-5"). Show the family,
+// keep the exact id in the tooltip.
+const MODEL_LABELS = [
+  [/haiku/i, 'Claude Haiku'],
+  [/sonnet/i, 'Claude Sonnet'],
+  [/opus/i, 'Claude Opus'],
+  [/^claude/i, 'Claude'],
+  [/^gpt|^o\d/i, 'GPT'],
+  [/gemini/i, 'Gemini'],
+  [/sonar|perplexity/i, 'Perplexity'],
+  [/grok/i, 'Grok'],
+  [/deepseek/i, 'DeepSeek'],
+]
+function modelLabel(id) {
+  const hit = MODEL_LABELS.find(([re]) => re.test(id))
+  return hit ? hit[1] : id
+}
+
 function scrollToBottom() {
   nextTick(() => {
     const el = threadEl.value
@@ -190,6 +228,15 @@ function onKeydown(e) {
 // Typewriter reveal. The answer arrives whole (the backend is not
 // streaming), so this is presentation only — it makes a 2s wait followed
 // by a wall of text feel like a reply rather than a page load.
+//
+// Progress is derived from ELAPSED TIME, not from a tick count. Browsers
+// clamp timers in a background tab to roughly 1s, so a per-tick step meant
+// a reveal that should take a second crawled at ~2 characters per second
+// whenever the user switched tabs — leaving a half-written answer and a
+// stuck caret. Driving it off the clock means a throttled tick simply
+// jumps further ahead, and the reveal still finishes on schedule.
+const REVEAL_MS = 900
+
 function revealAnswer(msg, full) {
   if (reduceMotion || full.length < 40) {
     msg.content = full
@@ -197,17 +244,28 @@ function revealAnswer(msg, full) {
     scrollToBottom()
     return
   }
-  let idx = 0
-  const step = Math.max(2, Math.ceil(full.length / 220))
-  const timer = setInterval(() => {
-    idx = Math.min(full.length, idx + step)
-    msg.content = full.slice(0, idx)
+  const started = performance.now()
+  const finish = () => {
+    msg.content = full
+    msg.streaming = false
     scrollToBottom()
-    if (idx >= full.length) {
+  }
+  const timer = setInterval(() => {
+    // Hidden tab: nothing is being watched, so stop animating and show
+    // the whole answer the moment it comes back.
+    if (document.hidden) {
+      clearInterval(timer)
+      finish()
+      return
+    }
+    const progress = Math.min(1, (performance.now() - started) / REVEAL_MS)
+    msg.content = full.slice(0, Math.ceil(full.length * progress))
+    scrollToBottom()
+    if (progress >= 1) {
       clearInterval(timer)
       msg.streaming = false
     }
-  }, 14)
+  }, 16)
 }
 
 function friendlyError(e) {
@@ -256,6 +314,7 @@ async function send() {
     store.messages.push({
       role: 'assistant', content: '', streaming: true,
       grounded: !!res?.data?.grounded,
+      model: res?.data?.model || '',
     })
     // Re-read the pushed element: mutating the local object is not
     // reactive, since Vue tracks the proxy stored in the array.
@@ -280,6 +339,11 @@ async function syncFromRoute() {
     store.startNewChat()
     return
   }
+  // On a cold load (someone opened /ask/<id> directly, or followed a link
+  // into it) the app store has not resolved the active website yet. Bail
+  // out rather than calling with a null id -- the websiteId watch below
+  // re-runs this the moment the project lands.
+  if (!websiteId.value) return
   if (id === store.activeId && store.messages.length) return
   await store.openConversation(websiteId.value, id)
   scrollToBottom()
@@ -287,15 +351,26 @@ async function syncFromRoute() {
 
 onMounted(async () => {
   await syncFromRoute()
-  store.loadConversations(websiteId.value)
+  if (websiteId.value) store.loadConversations(websiteId.value)
   inputEl.value?.focus()
 })
 
 watch(() => route.params.conversationId, syncFromRoute)
 
-// Switching project changes which data answers are grounded in, so the
-// thread and its list belong to the old project, not this one.
-watch(websiteId, (id) => {
+watch(websiteId, (id, prev) => {
+  // First population is not a project switch. Treating it as one would
+  // discard the very thread the URL asked for, which is what made a
+  // reloaded or shared /ask/<id> link come up empty.
+  if (!prev) {
+    if (id) {
+      store.loadConversations(id)
+      syncFromRoute()
+    }
+    return
+  }
+  if (id === prev) return
+  // A genuine switch: answers are grounded per project, so the open
+  // thread and the list both belong to the project we just left.
   store.startNewChat()
   store.loadConversations(id)
   if (route.params.conversationId) router.replace({ name: 'ask-cansee', params: {} })
@@ -348,17 +423,12 @@ watch(websiteId, (id) => {
 }
 
 .turn-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-.turn-avatar {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
-  color: #fff;
-  background: linear-gradient(135deg, #6d5efc, #9b6bff);
-  flex-shrink: 0;
-}
 .turn-name { font-size: 12.5px; font-weight: 700; color: var(--foreground); }
+.turn-model {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
 .turn-grounded {
   padding: 1px 7px;
   border-radius: 999px;
@@ -472,16 +542,7 @@ watch(websiteId, (id) => {
 
 /* ── Intro / empty ── */
 .ask-intro { padding: 48px 0 28px; text-align: center; }
-.ask-intro-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 16px;
-  border-radius: 14px;
-  color: #fff;
-  background: linear-gradient(135deg, #6d5efc, #9b6bff);
-}
+.ask-intro-mark { margin-bottom: 16px; }
 .ask-intro-title { font-size: 21px; font-weight: 700; color: var(--foreground); }
 .ask-intro-sub {
   margin: 9px auto 0;

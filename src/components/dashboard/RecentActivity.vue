@@ -31,7 +31,7 @@ const props = defineProps({
       <div v-else class="py-8 text-center">
         <div class="text-sm font-medium text-card-foreground">No activity yet</div>
         <div class="mt-1 text-xs text-muted-foreground">
-          Run your first audit and events will land here.
+          Start your first prompt run and events will land here.
         </div>
       </div>
     </CardContent>

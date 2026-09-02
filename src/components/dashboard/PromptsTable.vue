@@ -36,7 +36,7 @@ function changeMeta(change) {
       <EmptyState
         v-if="!rows.length"
         title="No prompts measured yet"
-        body="Tracked prompts and their placements appear here after an audit completes."
+        body="Tracked prompts and their placements appear here after a prompt run completes."
       />
       <Table v-else>
         <TableHeader>

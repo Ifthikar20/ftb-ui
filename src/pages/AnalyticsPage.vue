@@ -7,7 +7,13 @@
         <p class="page-subtitle">Search performance, retention, flows, and AI insights.</p>
       </div>
       <div class="flex gap-2 items-center">
-        <button class="refresh-btn" :class="{ spinning: isRefreshing }" title="Refresh data" @click="handleRefresh">
+        <button
+          class="refresh-btn"
+          :class="{ spinning: isRefreshing, failed: refreshFailed }"
+          :disabled="isRefreshing"
+          :title="refreshFailed ? 'Refresh failed — click to retry' : 'Refresh data'"
+          @click="handleRefresh"
+        >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 1v5h5"/><path d="M15 15v-5h-5"/>
             <path d="M2.4 10a6 6 0 0010.3 1.5L15 10M1 6l2.3-1.5A6 6 0 0113.6 6"/>
@@ -1125,7 +1131,9 @@ const periodLabel = computed(() => PERIOD_LABELS[period.value] || period.value)
 
 onMounted(async () => {
   try {
-    const { data } = await dashboardApi.get()
+    // Scope to THIS page's website — without the param the endpoint
+    // reports whichever project the backend falls back to.
+    const { data } = await dashboardApi.get({ website: websiteId })
     const d = data
     if (d?.integrations) {
       integrationStatus.value.pixel = d.integrations.pixel?.installed || false
@@ -1824,10 +1832,22 @@ watch(() => store.cache, () => {
 // ── Init ──
 const isRefreshing = ref(false)
 
-function handleRefresh() {
+// Spin for as long as the fetch actually takes, then say whether it worked.
+// A fixed 1s timer (what this used to be) reported success even when the
+// request was still in flight or had already failed.
+const refreshFailed = ref(false)
+async function handleRefresh() {
+  if (isRefreshing.value) return
   isRefreshing.value = true
-  store.forceRefresh()
-  setTimeout(() => { isRefreshing.value = false }, 1000)
+  refreshFailed.value = false
+  try {
+    const ok = await store.forceRefresh()
+    refreshFailed.value = !ok
+  } catch {
+    refreshFailed.value = true
+  } finally {
+    isRefreshing.value = false
+  }
 }
 
 onMounted(async () => {
@@ -1857,8 +1877,14 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
-.refresh-btn.spinning svg { animation: spin-refresh 0.8s ease; }
+/* Loops for the duration of the request rather than running once: the
+   button is now driven by the fetch, not by a timer. */
+.refresh-btn.spinning svg { animation: spin-refresh 0.8s linear infinite; }
+.refresh-btn.failed { border-color: var(--destructive); color: var(--destructive); }
 @keyframes spin-refresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn.spinning svg { animation-duration: 2.4s; }
+}
 
 /* ── Tabs ── */
 .analytics-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--card); border: none; border-radius: var(--radius-md); padding: 4px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); }
@@ -1960,31 +1986,39 @@ onBeforeUnmount(() => {
 .period-tabs { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-full); overflow: hidden; }
 .period-tab { padding: 6px 14px; font-size: var(--font-xs); font-weight: 600; color: var(--muted-foreground); background: transparent; border: none; cursor: pointer; transition: all var(--transition-fast); font-family: var(--font-family); }
 .period-tab:hover { color: var(--foreground); }
-.period-tab.active { background: var(--primary); color: #1a1a2e; }
+/* Must be the paired token, not a literal: --primary is #1e1e1e in light
+   and #ffffff in dark, so any fixed text colour is unreadable in one of
+   them. It was #1a1a2e, i.e. navy on near-black. */
+.period-tab.active { background: var(--primary); color: var(--primary-foreground); }
 
 /* Provenance footnotes. Deliberately plain text — the previous pill
    treatment (999px radius + tinted washes) read as buttons people tried
    to click. These are disclaimers, styled like one asterisked line. */
 .analytics-trust {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
-  margin: 10px 0 18px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px;
+  margin: 6px 0 16px;
 }
 .analytics-trust::before {
   content: '*';
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 10.5px;
   line-height: 1;
 }
 .analytics-trust > * + *::before {
   content: '·';
-  margin-right: 8px;
+  margin-right: 6px;
+  font-size: 10.5px;
   color: var(--muted-foreground);
   opacity: 0.55;
 }
 .trust-badge, .retention-note {
   display: inline;
   padding: 0;
-  font-size: 12px;
+  /* Footnote scale: this is a provenance disclaimer, not content. It sat
+     at 12px, the same size as real copy, which gave it more weight than it
+     earns directly under the page title. */
+  font-size: 10.5px;
+  line-height: 1.45;
   font-weight: 400;
   color: var(--muted-foreground);
   background: none;

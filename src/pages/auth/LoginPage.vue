@@ -1,6 +1,24 @@
 <template>
   <AuthLayout title="Welcome back" subtitle="Sign in to your Cansee account.">
-    <form @submit.prevent="handleLogin" class="auth-form flex flex-col gap-6">
+    <!-- SSO-enforced org: the password form is replaced, not decorated —
+         a password cannot work for this account, so don't offer one. -->
+    <div v-if="ssoRequired" class="auth-form flex flex-col gap-6">
+      <Alert v-if="error" variant="destructive">
+        <CircleX />
+        <AlertTitle>Sign in failed</AlertTitle>
+        <AlertDescription>{{ error }}</AlertDescription>
+      </Alert>
+      <SsoRequiredPanel
+        :domain="ssoRequired.domain"
+        :org-name="ssoRequired.org_name"
+        :email="ssoRequired.email"
+        :methods="ssoRequired.methods || ['google']"
+        @continue="handleSsoContinue"
+        @reset="ssoRequired = null; password = ''; error = ''"
+      />
+    </div>
+
+    <form v-else @submit.prevent="handleLogin" class="auth-form flex flex-col gap-6">
       <Alert v-if="error" variant="destructive">
         <CircleX />
         <AlertTitle>Sign in failed</AlertTitle>
@@ -52,9 +70,20 @@
 
       <div class="flex items-center gap-4 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"><span>or</span></div>
 
-      <Button type="button" variant="outline" class="h-14 w-full text-base" @click="handleGoogleLogin">
+      <Button type="button" variant="outline" class="h-14 w-full text-base" @click="handleGoogleLogin()">
         Continue with Google
       </Button>
+
+      <!-- Enterprise users get their own identifier-first flow: type a
+           work email on /sso and get routed to the company IdP. A quiet
+           link, not another provider button — B2C users never need it.
+           Hidden while business features are off (the backend is the real
+           gate; VITE_ORG_FEATURES_ENABLED=false just removes the door). -->
+      <p v-if="orgFeaturesEnabled" class="text-center text-sm">
+        <router-link to="/sso" class="font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground">
+          Enterprise single sign-on
+        </router-link>
+      </p>
 
       <p class="text-center text-base text-muted-foreground">
         <router-link to="/" class="font-medium text-foreground">← Back to Home</router-link>
@@ -68,6 +97,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import SsoRequiredPanel from '@/components/auth/SsoRequiredPanel.vue'
+import { startGoogleSso, startMicrosoftSso, startSamlSso } from '@/composables/useSsoRedirect'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CircleX, Eye, EyeOff } from '@lucide/vue'
@@ -82,9 +113,19 @@ const showPassword = ref(false)
 const remember = ref(false)
 const loading = ref(false)
 const error = ref('')
+// Set when the backend answers 403 sso_required: {org_name, domain, methods, email}
+const ssoRequired = ref(null)
+// Cosmetic mirror of the backend's ORG_FEATURES_ENABLED master switch:
+// on unless the build explicitly says false.
+const orgFeaturesEnabled = import.meta.env.VITE_ORG_FEATURES_ENABLED !== 'false'
 
-// Auto-login from run_dev.sh token
+// Auto-login from the local dev-login script (scripts/login.sh).
+// DEV-ONLY: import.meta.env.DEV is statically false in production builds, so
+// Vite/Rollup tree-shakes this entire block out of the shipped bundle. Never
+// remove the guard — without it, a link like /login?auto_token=<attacker JWT>
+// would silently install an attacker-controlled session in a victim's browser.
 onMounted(async () => {
+  if (!import.meta.env.DEV) return
   const autoToken = route.query.auto_token
   if (autoToken) {
     authStore.accessToken = autoToken
@@ -121,28 +162,45 @@ async function handleLogin() {
       router.push('/dashboard')
     }
   } catch (e) {
-    error.value = e.response?.data?.error?.message || e.message || 'Login failed.'
+    const err = e.response?.data?.error
+    if (err?.code === 'sso_required') {
+      ssoRequired.value = { ...(err.details || {}), email: email.value }
+      return
+    }
+    error.value = err?.message || e.message || 'Login failed.'
   } finally {
     loading.value = false
   }
 }
 
-function handleGoogleLogin() {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-  if (!clientId) {
-    error.value = 'Google sign-in is not configured on this deployment.'
-    return
-  }
-  const state = crypto.randomUUID()
-  sessionStorage.setItem('google-oauth-state', state)
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: `${window.location.origin}/auth/google/callback`,
-    response_type: 'code',
-    scope: 'openid email profile',
-    state,
+function handleGoogleLogin({ loginHint = '', hd = '' } = {}) {
+  const failure = startGoogleSso({
+    loginHint,
+    hd,
+    // Deep links used to die on the IdP round trip — the full-page
+    // redirect loses route.query.redirect. Stash it for the callback.
+    postAuthRedirect: route.query.redirect || '',
   })
-  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+  if (failure) error.value = failure
+}
+
+// The SSO panel emits the method the user picked
+// ('google' | 'microsoft' | 'saml').
+async function handleSsoContinue(method) {
+  if (method === 'saml') {
+    const failure = await startSamlSso(ssoRequired.value?.email, {
+      postAuthRedirect: route.query.redirect || '',
+    })
+    if (failure) error.value = failure
+  } else if (method === 'microsoft') {
+    const failure = startMicrosoftSso({
+      loginHint: ssoRequired.value?.email,
+      postAuthRedirect: route.query.redirect || '',
+    })
+    if (failure) error.value = failure
+  } else {
+    handleGoogleLogin({ loginHint: ssoRequired.value?.email, hd: ssoRequired.value?.domain })
+  }
 }
 </script>
 

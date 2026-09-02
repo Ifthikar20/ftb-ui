@@ -38,7 +38,7 @@ function showChange(tile) {
     <CardContent class="py-10 text-center">
       <div class="text-sm font-medium text-card-foreground">Nothing to show yet</div>
       <div class="mt-1 text-xs text-muted-foreground">
-        Run your first audit to start tracking Visibility, Position, Sentiment, and Alignment.
+        Start your first prompt run to begin tracking Visibility, Position, Sentiment, and Alignment.
       </div>
     </CardContent>
   </Card>

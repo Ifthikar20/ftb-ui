@@ -9,6 +9,43 @@
         </router-link>
 
         <nav class="nav-links" aria-label="Primary">
+          <div class="nav-uc">
+            <a href="#features" class="nav-uc-trigger" aria-haspopup="true">
+              Use Cases
+              <svg class="nav-uc-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </a>
+            <div class="nav-uc-panel" role="menu" aria-label="Use cases">
+              <span class="nav-uc-eyebrow">By use case</span>
+              <div class="nav-uc-grid">
+                <a
+                  v-for="uc in useCases"
+                  :key="uc.key"
+                  :href="uc.anchor"
+                  class="nav-uc-item"
+                  role="menuitem"
+                >
+                  <span class="nav-uc-ic" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path v-for="(d, di) in uc.icon" :key="di" :d="d" />
+                    </svg>
+                  </span>
+                  <span class="nav-uc-txt">
+                    <span class="nav-uc-label">
+                      {{ uc.label }}
+                      <span class="nav-uc-tag">{{ uc.feature }}</span>
+                    </span>
+                    <span class="nav-uc-blurb">{{ uc.blurb }}</span>
+                  </span>
+                </a>
+              </div>
+              <a href="#how" class="nav-uc-foot">
+                <span>Every use case runs on the same five-engine scan.</span>
+                <span class="nav-uc-foot-link">See how it works
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </a>
+            </div>
+          </div>
           <a href="#features">Features</a>
           <a href="#how">How It Works</a>
         </nav>
@@ -43,6 +80,15 @@
         :inert="!navOpen"
         ref="navSheet"
       >
+        <span class="nav-sheet-eyebrow">Use cases</span>
+        <a
+          v-for="uc in useCases"
+          :key="uc.key"
+          :href="uc.anchor"
+          class="nav-sheet-uc"
+          @click="closeNav"
+        >{{ uc.label }}</a>
+        <span class="nav-sheet-eyebrow">More</span>
         <a href="#features" @click="closeNav">Features</a>
         <a href="#how" @click="closeNav">How It Works</a>
         <router-link to="/login" class="nav-sheet-login" @click="closeNav">Log In</router-link>
@@ -57,7 +103,8 @@
           <h1 class="hero-h anim" data-anim="hero">
             BRAND VISIBILITY,<br/>
             MEASURED.<br/>
-            <em>OPTIMIZED.</em>
+            OPTIMIZED.<br/>
+            <em>FOR THE AGENTIC ERA.</em>
           </h1>
           <p class="hero-p anim" data-anim="fade-up" data-delay="60">
             See how often
@@ -67,7 +114,8 @@
               </TransitionGroup>
             </span>
             mentions your brand. Find the prompts you're missing from. Generate the
-            content to close the gap.
+            content to close the gap — and get the answers where you already work,
+            in Slack or Discord.
           </p>
         </div>
 
@@ -249,7 +297,7 @@
             disablepictureinpicture
             aria-hidden="true"
           >
-            <source :src="assetUrl('/videos/watercolor-second.mp4')" type="video/mp4" />
+            <source :src="assetUrl('/images/market-back-ground.mp4')" type="video/mp4" />
           </video>
           <div class="stats-card-tint"></div>
 
@@ -311,6 +359,7 @@
       <div class="wrap">
         <div
           v-for="(f, i) in showcaseFeatures"
+          :id="'uc-' + f.key"
           :key="f.key"
           class="feature-row anim"
           :class="{ 'is-reverse': i % 2 === 1 }"
@@ -636,7 +685,7 @@
       <div class="final-cta-glow" aria-hidden="true"></div>
       <div class="wrap cta-inner">
         <h2>Ready to grow <em>smarter?</em></h2>
-        <p>Start your AI visibility audit in minutes.</p>
+        <p>Start your first AI visibility prompt run in minutes.</p>
         <router-link to="/login" class="btn-primary">Get Started</router-link>
       </div>
     </section>
@@ -648,7 +697,7 @@
         to="/login"
         class="sticky-cta"
       >
-        Run a free audit
+        Start a free prompt run
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
       </router-link>
     </transition>
@@ -708,6 +757,15 @@
             <router-link to="/dpa">Data Processing Agreement</router-link>
             <router-link to="/cookies">Cookie Policy</router-link>
             <router-link to="/ai-policy">Responsible AI Use</router-link>
+            <!-- Reopen the Cookiebot consent dialog. Only shown once a
+                 Cookiebot domain ID is configured, so it never dead-ends
+                 in environments without the consent banner. -->
+            <button
+              v-if="cookiebotConfigured"
+              type="button"
+              class="footer-link-btn"
+              @click="renewCookieConsent"
+            >Cookie settings</button>
           </div>
         </div>
 
@@ -735,6 +793,17 @@ import { assetUrl } from '@/utils/assetUrl'
 const scrolled = ref(false)
 const activeCat = ref(0)
 const activeWhy = ref(0)
+
+/* ── Cookie consent (Cookiebot / Usercentrics) ──
+   The banner itself loads from index.html when VITE_COOKIEBOT_CBID is set.
+   Here we only surface a footer "Cookie settings" link that reopens the
+   consent dialog — shown solely when Cookiebot is configured. */
+const cookiebotConfigured = Boolean(import.meta.env.VITE_COOKIEBOT_CBID)
+function renewCookieConsent() {
+  if (window.Cookiebot && typeof window.Cookiebot.renew === 'function') {
+    window.Cookiebot.renew()
+  }
+}
 
 /* ── Mobile nav sheet ──
    The desktop pill collapses below 1024px, so everything inside it
@@ -931,11 +1000,73 @@ const steps = [
 ]
 
 /* ── Showcase features (alternating rows) ── */
+// The use cases the product actually delivers (each verified against the
+// codebase). `feature` names the surface that powers it; `anchor` jumps to
+// the matching feature row where one exists, else to the features section.
+const useCases = [
+  {
+    key: 'rank',
+    label: 'See where AI ranks you',
+    feature: 'Multi-LLM probing',
+    blurb: 'Your visibility, share of voice, and who AI recommends instead — from the first scan.',
+    anchor: '#uc-probe',
+    icon: ['M12 2v20', 'M2 12h20', 'M12 2a15 15 0 0 1 0 20', 'M12 2a15 15 0 0 0 0 20'],
+  },
+  {
+    key: 'security',
+    label: 'Catch harmful AI answers',
+    feature: 'Brand Security',
+    blurb: 'Negative, false, or unfavourable claims — flagged with the exact sentence.',
+    anchor: '#uc-security',
+    icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M12 8v4', 'M12 16h.01'],
+  },
+  {
+    key: 'align',
+    label: 'Measure if AI gets you right',
+    feature: 'Brand Ingestion',
+    blurb: 'Feed AI your brand facts and see which ones the answers reflect, and which they miss.',
+    anchor: '#features',
+    icon: ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'],
+  },
+  {
+    key: 'markets',
+    label: 'Track every market & model',
+    feature: 'Multi-LLM probing',
+    blurb: 'Dozens of markets across five engines, sliced by topic — in a single run.',
+    anchor: '#uc-probe',
+    icon: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M2 12h20', 'M12 2a15 15 0 0 1 0 20', 'M12 2a15 15 0 0 0 0 20'],
+  },
+  {
+    key: 'sources',
+    label: 'See which sources feed answers',
+    feature: 'Source Influence',
+    blurb: 'The domains AI cites, ranked — and where your visibility can grow.',
+    anchor: '#uc-source',
+    icon: ['M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71', 'M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'],
+  },
+  {
+    key: 'record',
+    label: 'Keep a record of what AI said',
+    feature: 'Answer history',
+    blurb: 'Every answer, verbatim, with its citations and timestamp — never pruned.',
+    anchor: '#features',
+    icon: ['M21 8v13H3V8', 'M1 3h22v5H1z', 'M10 12h4'],
+  },
+  {
+    key: 'research',
+    label: 'Find the conversation forming',
+    feature: 'Brand Research',
+    blurb: 'The live threads shaping the answer, and where you can join in.',
+    anchor: '#features',
+    icon: ['M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z'],
+  },
+]
+
 const showcaseFeatures = [
   {
     key: 'prompt',
     video: 'feature-1.mp4',
-    fallbackVideo: 'watercolor-second.mp4',
+    fallbackVideo: 'market-back-ground.mp4',
     eyebrow: 'PROMPT LIBRARY',
     headline: 'Decide which questions you get measured on.',
     desc: "Large language models don't rank pages — they rank mentions. The Prompt Library is where you curate the questions that matter to your category, tag and group them, and set how often each one gets asked. Every prompt then carries its own result.",
@@ -950,7 +1081,7 @@ const showcaseFeatures = [
     video: 'feature-2.mp4',
     fallbackVideo: 'watercolor-main.mp4',
     eyebrow: 'MULTI-LLM PROBING',
-    headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one audit.',
+    headline: 'Run the same prompts across Claude, GPT-4, Gemini, and Perplexity in one run.',
     desc: "We query every model in parallel, capture the raw responses, and extract every brand mention, citation, and claim. One score, four perspectives.",
     bullets: [
       'Parallel runs across all four target LLMs',
@@ -1451,6 +1582,137 @@ strong { font-weight: 600; }
 .nav-links a { color: var(--ink); text-decoration: none; transition: opacity .2s ease; }
 .nav-links a:hover { opacity: .55; }
 
+/* ── Use Cases mega-menu ── */
+.nav-uc { position: relative; display: flex; align-items: center; }
+.nav-uc-trigger { display: inline-flex; align-items: center; gap: 5px; }
+.nav-uc-caret { opacity: .7; transition: transform .25s var(--ease); }
+.nav-uc:hover .nav-uc-caret,
+.nav-uc:focus-within .nav-uc-caret { transform: rotate(180deg); }
+
+.nav-uc-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 14px;
+  width: 620px;
+  max-width: min(92vw, 620px);
+  background: var(--cream);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .16);
+  padding: 18px;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(8px);
+  pointer-events: none;
+  transition: opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
+  z-index: 100;
+}
+/* Invisible bridge across the gap so the panel doesn't drop mid-reach. */
+.nav-uc-panel::before { content: ''; position: absolute; top: -16px; left: 0; right: 0; height: 16px; }
+.nav-uc:hover .nav-uc-panel,
+.nav-uc:focus-within .nav-uc-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.nav-uc-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  padding: 2px 8px 12px;
+}
+.nav-uc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.nav-links .nav-uc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 10px;
+  border-radius: 12px;
+  transition: background .16s ease;
+}
+.nav-links .nav-uc-item:hover { background: var(--cream-alt); opacity: 1; }
+.nav-uc-ic {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--cream-alt);
+  color: var(--ink);
+  transition: background .16s ease, color .16s ease;
+}
+.nav-uc-item:hover .nav-uc-ic { background: var(--ink); color: var(--on-ink); }
+.nav-uc-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.nav-uc-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.nav-uc-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--hair-soft);
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.nav-uc-blurb { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+.nav-links .nav-uc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 13px 12px 4px;
+  border-top: 1px solid var(--hair);
+  font-size: 13px;
+  color: var(--muted);
+}
+.nav-links .nav-uc-foot:hover { opacity: 1; }
+.nav-uc-foot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.nav-uc-foot:hover .nav-uc-foot-link { text-decoration: underline; }
+
+/* Mobile sheet: a compact use-case list above the big display links. */
+.nav-sheet-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  padding: 12px 4px 2px;
+}
+.nav-sheet .nav-sheet-uc {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 8px 4px;
+  color: var(--ink);
+}
+.nav-sheet { max-height: calc(100vh - 100px); overflow-y: auto; }
+
 .nav-right { display: flex; align-items: center; gap: 16px; margin-left: auto; }
 .nav-link-text { color: var(--ink); text-decoration: none; transition: opacity .2s ease; }
 .nav-link-text:hover { opacity: .55; }
@@ -1584,10 +1846,10 @@ strong { font-weight: 600; }
   min-height: 460px;
   gap: 40px;
 }
-/* 16ch clears the longest line ("BRAND VISIBILITY," needs ~14ch) so the
-   three explicit <br/> breaks are the only breaks. In ch, so it holds
+/* 21ch clears the longest line ("FOR THE AGENTIC ERA." needs ~20ch) so the
+   four explicit <br/> breaks are the only breaks. In ch, so it holds
    as the display size steps down at the breakpoints. */
-.hero-h { max-width: 16ch; }
+.hero-h { max-width: 21ch; }
 .hero-p { max-width: 500px; color: var(--muted); }
 
 .hero-word-cycler {
@@ -1763,6 +2025,10 @@ strong { font-weight: 600; }
   background: var(--ink);
   padding: 48px;
   isolation: isolate;
+  /* Tall enough that the footage is the subject and the type sits on top
+     of it, instead of three dense columns filling the frame. */
+  min-height: 74vh;
+  display: flex;
 }
 .stats-card-bg {
   position: absolute; inset: 0;
@@ -1771,17 +2037,47 @@ strong { font-weight: 600; }
   z-index: -2;
 }
 .stats-card-tint { position: absolute; inset: 0; background: rgba(0, 0, 0, .72); z-index: -1; }
-.stats-card-content { display: flex; flex-direction: column; gap: 56px; }
+/* space-between, not a fixed gap: the empty middle is the point. The
+   heading holds the top, the metrics sit on the floor, and everything
+   between is the video. */
+.stats-card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  gap: 40px;
+  width: 100%;
+}
 .stats-card-top { display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start; }
 .stats-card-h { color: var(--on-ink); }
 .stats-card-sub { color: var(--on-ink-mut); }
-.stats-card-bottom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.stats-card-metric { display: flex; flex-direction: column; gap: 6px; padding-top: 20px; border-top: 1px solid var(--hair-ink); }
-.stats-card-num { font-family: var(--font-display); font-size: 44px; line-height: 1.1; color: var(--on-ink); }
+/* Reference row, deliberately small. The numbers still lead, but the
+   supporting copy is footnote scale so the block reads as a citation
+   strip along the bottom rather than a third column of content. */
+.stats-card-bottom {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  max-width: 780px;
+}
+.stats-card-metric { display: flex; flex-direction: column; gap: 2px; }
+.stats-card-num {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1.05;
+  color: var(--on-ink);
+}
 .stats-card-prefix, .stats-card-suffix { font-family: var(--font-display); }
-.stats-card-label { color: var(--on-ink); }
-.stats-card-note { color: var(--on-ink-mut); }
-.stats-card-cite { margin-top: 6px; color: var(--on-ink-dim); text-decoration: underline; text-underline-offset: 3px; transition: color .2s ease; }
+.stats-card-label { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: var(--on-ink); }
+.stats-card-note { font-size: 10.5px; line-height: 1.4; color: var(--on-ink-mut); }
+.stats-card-cite {
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--on-ink-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .2s ease;
+}
 .stats-card-cite:hover { color: var(--on-ink); }
 
 /* ═══ Feature showcase ══════════════════════════════════════ */
@@ -2128,6 +2424,18 @@ strong { font-weight: 600; }
 .footer-col-title { font-size: 24px; line-height: 1.2; color: var(--on-ink); margin-bottom: 4px; }
 .footer-col a { color: var(--on-ink-mut); text-decoration: none; transition: color .2s ease; }
 .footer-col a:hover { color: var(--on-ink); }
+/* "Cookie settings" reopen — a button, styled to read as a footer link. */
+.footer-link-btn {
+  color: var(--on-ink-mut);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color .2s ease;
+}
+.footer-link-btn:hover { color: var(--on-ink); }
 .footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; }
 .footer-copy { color: var(--on-ink-dim); }
 .footer-meta { display: flex; align-items: center; gap: 10px; color: var(--on-ink-dim); }

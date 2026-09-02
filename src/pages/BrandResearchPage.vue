@@ -1,6 +1,6 @@
 <template>
   <div class="insights-page">
-    <!-- Header + query bar -->
+    <!-- Header -->
     <div class="ip-header">
       <div>
         <h1 class="text-xl font-semibold ip-heading">
@@ -35,6 +35,7 @@
     </Card>
 
     <template v-else>
+      <!-- Query bar: the page's primary action, sitting at the top -->
       <form class="ip-querybar" @submit.prevent="startScan">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ip-query-icon"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
         <input
@@ -49,100 +50,159 @@
         </Button>
       </form>
 
-      <div class="ip-body">
-        <!-- Recent scans rail (collapsed by default, expands on hover
-             with a delay so it doesn't slam shut the moment the cursor
-             brushes past) -->
-        <aside
-          class="ip-rail"
-          :class="{ open: railOpen }"
-          @mouseenter="onRailEnter"
-          @mouseleave="onRailLeave"
-        >
-          <h2 class="ip-rail-title">Recent scans</h2>
-          <p v-if="!scans.length" class="ip-rail-empty">No scans yet.</p>
+      <!-- Recent scans: a horizontal history strip directly under the
+           search, so past queries read left-to-right and the results
+           below get the full width of the page. Hidden until the first
+           scan exists — the empty state is the invitation to start. -->
+      <div v-if="scans.length" class="ip-history">
+        <span class="ip-history-label">Recent</span>
+        <div class="ip-history-track">
           <button
             v-for="scan in scans"
             :key="scan.id"
-            class="ip-scan-item"
+            class="ip-history-card"
             :class="{ active: scan.id === activeScanId }"
             :title="scan.query"
             @click="openScan(scan.id)"
           >
             <span class="ip-scan-dot" :class="scan.status"></span>
-            <span class="ip-scan-query">{{ scan.query }}</span>
+            <span class="ip-history-body">
+              <span class="ip-history-query">{{ scan.query }}</span>
+              <span class="ip-history-meta">{{ scanMeta(scan) }}</span>
+            </span>
           </button>
-        </aside>
+        </div>
+      </div>
 
-        <!-- Main area -->
-        <div class="ip-main">
-          <!-- Empty state -->
-          <div v-if="!activeScan" class="ip-empty">
-            <div class="ip-empty-art">
-              <span class="ip-empty-node q"></span>
-              <span class="ip-empty-line"></span>
-              <span class="ip-empty-node s"></span>
-              <span class="ip-empty-line"></span>
-              <span class="ip-empty-node b"></span>
-            </div>
-            <h3 class="ip-empty-title">Research a conversation</h3>
-            <p class="ip-empty-text">
-              Enter a query your customers would search. Cansee reads the web
-              results, the community threads behind them, and what the AI
-              engines answer — then maps the brands, the sentiment, and the
-              places you can speak up.
-            </p>
-            <div class="ip-chips">
-              <button
-                v-for="example in exampleQueries"
-                :key="example"
-                class="ip-chip"
-                @click="query = example"
-              >
-                {{ example }}
-              </button>
-            </div>
+      <!-- Main results area — now full width -->
+      <div class="ip-main">
+        <!-- Empty state -->
+        <div v-if="!activeScan" class="ip-empty">
+          <div class="ip-empty-art">
+            <span class="ip-empty-node q"></span>
+            <span class="ip-empty-line"></span>
+            <span class="ip-empty-node s"></span>
+            <span class="ip-empty-line"></span>
+            <span class="ip-empty-node b"></span>
           </div>
+          <h3 class="ip-empty-title">Research a conversation</h3>
+          <p class="ip-empty-text">
+            Enter a query your customers would search. Cansee reads the web
+            results, the community threads behind them, and what the AI
+            engines answer — then maps the brands, the sentiment, and the
+            places you can speak up.
+          </p>
+          <div class="ip-chips">
+            <button
+              v-for="example in exampleQueries"
+              :key="example"
+              class="ip-chip"
+              @click="query = example"
+            >
+              {{ example }}
+            </button>
+          </div>
+        </div>
 
-          <!-- Failed -->
-          <Card v-else-if="activeScan.status === 'failed'" class="mx-auto mt-10 max-w-xl">
-            <CardContent class="pt-6 text-center">
-              <p class="text-sm font-medium">This scan failed</p>
-              <p class="mt-2 text-sm text-muted-foreground">{{ activeScan.error }}</p>
-              <Button class="mt-4" size="sm" @click="retryScan">Try again</Button>
-            </CardContent>
-          </Card>
+        <!-- Failed -->
+        <Card v-else-if="activeScan.status === 'failed'" class="mx-auto mt-10 max-w-xl">
+          <CardContent class="pt-6 text-center">
+            <p class="text-sm font-medium">This scan failed</p>
+            <p class="mt-2 text-sm text-muted-foreground">{{ activeScan.error }}</p>
+            <Button class="mt-4" size="sm" @click="retryScan">Try again</Button>
+          </CardContent>
+        </Card>
 
-          <!-- Graph -->
-          <div v-else class="ip-graph-wrap">
+        <!-- Graph -->
+        <div v-else class="ip-graph-wrap">
+          <div class="ip-graph-head">
             <StageStrip
               :stages="activeScan.stages"
               :scan-status="activeScan.status"
               class="ip-stages"
             />
-            <div class="ip-canvas-row">
-              <InsightFlowCanvas
-                :nodes="styledGraph.nodes"
-                :edges="styledGraph.edges"
-                class="ip-canvas"
-                @node-click="onNodeClick"
-                @pane-click="selectedNode = null"
-              />
-              <!-- Always mounted. With nothing selected it shows the
-                   ranked chip-in list, so the page never dead-ends on an
-                   empty rail and always closes on something actionable. -->
-              <NodeDetailPanel
-                :node="selectedNode"
-                :max-score="maxBrandScore"
-                :scan-rows="activeScan?.rows || []"
-                :engines="activeScan?.engines || []"
-                :opportunities="activeScan?.opportunities || []"
-                :serp-features="activeScan?.serp_features || {}"
-                :stages="activeScan?.stages || {}"
-                class="ip-detail"
-                @close="selectedNode = null"
-              />
+            <div class="ip-viewtoggle" role="tablist" aria-label="Result view">
+              <button
+                type="button"
+                class="ip-vt-btn"
+                :class="{ on: viewMode === 'dashboard' }"
+                role="tab"
+                :aria-selected="viewMode === 'dashboard'"
+                @click="setView('dashboard')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg>
+                Dashboard
+              </button>
+              <button
+                type="button"
+                class="ip-vt-btn"
+                :class="{ on: viewMode === 'table' }"
+                role="tab"
+                :aria-selected="viewMode === 'table'"
+                @click="setView('table')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3zM3 10h18M9 10v9" /></svg>
+                Table
+              </button>
+              <button
+                type="button"
+                class="ip-vt-btn"
+                :class="{ on: viewMode === 'graph' }"
+                role="tab"
+                :aria-selected="viewMode === 'graph'"
+                @click="setView('graph')"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2" /><circle cx="5" cy="18" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 6h5a3 3 0 0 1 3 3M7 18h5a3 3 0 0 0 3-3" /></svg>
+                Graph
+              </button>
             </div>
+          </div>
+          <div class="ip-canvas-row">
+            <!-- The research dashboard: the places you can act on, as cards.
+                 Full width — it carries its own detail, so no side panel. -->
+            <ResearchDashboard
+              v-if="viewMode === 'dashboard'"
+              :opportunities="activeScan?.opportunities || []"
+              :rows="activeScan?.rows || []"
+              :brands="activeScan?.brands || []"
+              :serp-features="activeScan?.serp_features || {}"
+              :running="scanRunning"
+              class="ip-canvas"
+              @research-query="onResearchQuery"
+            />
+            <InsightFlowCanvas
+              v-else-if="viewMode === 'graph'"
+              :nodes="styledGraph.nodes"
+              :edges="styledGraph.edges"
+              class="ip-canvas"
+              @node-click="onNodeClick"
+              @pane-click="selectedNode = null"
+            />
+            <ScanTable
+              v-else
+              :brands="activeScan?.brands || []"
+              :engines="activeScan?.engines || []"
+              :max-score="maxBrandScore"
+              :running="scanRunning"
+              :active-name="activeBrandName"
+              class="ip-canvas"
+              @select-brand="selectBrandFromTable"
+            />
+            <!-- Graph and table pair with the detail panel; the dashboard
+                 does not. With nothing selected it shows the ranked chip-in
+                 list, so the page never dead-ends on an empty rail. -->
+            <NodeDetailPanel
+              v-if="viewMode !== 'dashboard'"
+              :node="selectedNode"
+              :max-score="maxBrandScore"
+              :scan-rows="activeScan?.rows || []"
+              :engines="activeScan?.engines || []"
+              :opportunities="activeScan?.opportunities || []"
+              :serp-features="activeScan?.serp_features || {}"
+              :stages="activeScan?.stages || {}"
+              class="ip-detail"
+              @close="selectedNode = null"
+            />
           </div>
         </div>
       </div>
@@ -156,9 +216,12 @@ import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/composables/useToast'
+import { timeAgo } from '@/utils/timeAgo'
 import citationsApi from '@/api/citations'
 import InsightFlowCanvas from '@/components/brand_research/InsightFlowCanvas.vue'
 import NodeDetailPanel from '@/components/brand_research/NodeDetailPanel.vue'
+import ResearchDashboard from '@/components/brand_research/ResearchDashboard.vue'
+import ScanTable from '@/components/brand_research/ScanTable.vue'
 import StageStrip from '@/components/brand_research/StageStrip.vue'
 import { buildGraph } from '@/components/brand_research/buildGraph'
 
@@ -174,24 +237,44 @@ const activeScanId = ref(null)
 const activeScan = ref(null)
 const selectedNode = ref(null)
 
-// Rail hover-expand state. Small close-delay so it doesn't collapse the
-// instant the cursor grazes off during a click; longer than a "sticky
-// hover" (~600ms) so it feels intentional.
-const railOpen = ref(false)
-let railCloseTimer = null
-function onRailEnter() {
-  if (railCloseTimer) {
-    clearTimeout(railCloseTimer)
-    railCloseTimer = null
-  }
-  railOpen.value = true
+// Result view. The dashboard of places-to-act is the default — it is what
+// the page is for — with the graph and table as alternate reads. Remembered
+// per browser so a returning user lands back in their preferred view.
+const VIEW_KEY = 'cs-br-view'
+const VIEWS = ['dashboard', 'table', 'graph']
+const viewMode = ref((() => {
+  try {
+    const v = localStorage.getItem(VIEW_KEY)
+    return VIEWS.includes(v) ? v : 'dashboard'
+  } catch { return 'dashboard' }
+})())
+function setView(mode) {
+  viewMode.value = mode
+  try { localStorage.setItem(VIEW_KEY, mode) } catch { /* private mode — the choice just won't persist */ }
 }
-function onRailLeave() {
-  if (railCloseTimer) clearTimeout(railCloseTimer)
-  railCloseTimer = setTimeout(() => {
-    railOpen.value = false
-    railCloseTimer = null
-  }, 600)
+
+// A related-search card asks to research that query next: drop it into the
+// search box so the user can fire it with one click.
+function onResearchQuery(q) {
+  query.value = q
+}
+
+// Key of the brand the detail panel is showing, so the table can mark the
+// matching row while a brand is selected.
+const activeBrandName = computed(() =>
+  selectedNode.value?.type === 'brand'
+    ? (selectedNode.value.data.brand.name || '').trim().toLowerCase()
+    : '',
+)
+
+// Selecting a brand from the table drives the same detail panel the graph
+// uses, by synthesising the node the panel expects.
+function selectBrandFromTable(brand) {
+  selectedNode.value = {
+    id: `brand-${(brand.name || '').trim().toLowerCase()}`,
+    type: 'brand',
+    data: { brand },
+  }
 }
 
 const exampleQueries = [
@@ -205,6 +288,17 @@ const tooltip =
   'community threads, and what the AI engines themselves recommend — to ' +
   'the brands each one points at and the sentiment real people carry, so ' +
   'you can see who owns the conversation and where you can join it.'
+
+// One-line summary shown under each recent-scan query: status while it
+// runs, otherwise how long ago it ran plus how many brands it surfaced.
+function scanMeta(scan) {
+  if (['pending', 'running'].includes(scan.status)) return 'Scanning…'
+  if (scan.status === 'failed') return 'Failed'
+  const when = timeAgo(scan.created_at)
+  const n = (scan.brands || []).length
+  const brands = n ? `${n} brand${n === 1 ? '' : 's'}` : ''
+  return [when, brands].filter(Boolean).join(' · ')
+}
 
 const scanRunning = computed(() =>
   ['pending', 'running'].includes(activeScan.value?.status),
@@ -419,7 +513,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   stopPolling()
-  if (railCloseTimer) clearTimeout(railCloseTimer)
 })
 </script>
 
@@ -496,63 +589,65 @@ onBeforeUnmount(() => {
   padding: 8px 0;
 }
 
-.ip-body {
+/* Recent scans — horizontal history strip under the search bar */
+.ip-history {
   display: flex;
-  gap: 14px;
-  flex: 1;
-  min-height: 0;
-}
-
-/* Recent scans rail — narrow strip that expands on hover */
-.ip-rail {
-  width: 44px;
+  align-items: center;
+  gap: 12px;
   flex-shrink: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: width 0.18s ease;
-  border-right: 1px solid var(--border);
-  padding-right: 4px;
+  min-width: 0;
 }
-.ip-rail.open { width: 210px; }
-.ip-rail-title {
+.ip-history-label {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--muted-foreground);
-  margin-bottom: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  flex-shrink: 0;
 }
-.ip-rail.open .ip-rail-title { opacity: 1; }
-.ip-rail-empty {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+.ip-history-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
 }
-.ip-rail.open .ip-rail-empty { opacity: 1; }
-.ip-scan-item {
+.ip-history-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: 9px;
+  flex-shrink: 0;
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
   text-align: left;
-  transition: background 0.15s;
-  min-height: 30px;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
 }
-.ip-scan-item:hover { background: var(--muted); }
-.ip-scan-item.active { background: var(--muted); }
-/* Query label hidden when the rail is collapsed; the status dot alone
-   still tells you which scans are running/complete/failed. Title
-   attribute on the button gives you a native tooltip. */
-.ip-rail.open .ip-scan-query { opacity: 1; }
+.ip-history-card:hover { border-color: var(--muted-foreground); transform: translateY(-1px); }
+.ip-history-card.active { border-color: var(--primary); background: var(--muted); }
+.ip-history-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ip-history-query {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-history-meta {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scan status dot (shared by the history cards) */
 .ip-scan-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--border); }
 .ip-scan-dot.complete { background: var(--chart-2); }
 .ip-scan-dot.failed { background: var(--destructive); }
@@ -561,16 +656,6 @@ onBeforeUnmount(() => {
   animation: dot-pulse 1s ease infinite;
 }
 @keyframes dot-pulse { 50% { opacity: 0.35; } }
-.ip-scan-query {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
 
 .ip-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
@@ -616,26 +701,40 @@ onBeforeUnmount(() => {
 /* Graph area */
 .ip-graph-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 10px; }
 .ip-stages { flex-shrink: 0; }
+.ip-graph-head { display: flex; align-items: center; gap: 12px; flex-shrink: 0; flex-wrap: wrap; }
+.ip-graph-head .ip-stages { flex: 0 1 auto; min-width: 0; }
+.ip-viewtoggle {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--muted);
+  border-radius: 9px;
+}
+.ip-vt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  transition: background 0.15s, color 0.15s;
+}
+.ip-vt-btn:hover { color: var(--foreground); }
+.ip-vt-btn.on {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
 .ip-canvas-row { display: flex; gap: 14px; flex: 1; min-height: 0; }
 .ip-canvas { flex: 1; min-width: 0; }
 .ip-detail { width: 400px; flex-shrink: 0; max-height: 100%; }
 
 @media (max-width: 1024px) {
   .insights-page { height: auto; }
-  .ip-body { flex-direction: column; }
-  /* On narrow viewports the rail becomes a horizontal chip strip and
-     is always fully visible — the collapse/expand behaviour only makes
-     sense as a vertical side rail. */
-  .ip-rail, .ip-rail.open {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-    padding-right: 0;
-  }
-  .ip-rail-title, .ip-rail-empty, .ip-scan-query { opacity: 1; }
-  .ip-scan-item { flex-shrink: 0; max-width: 220px; }
   .ip-canvas-row { flex-direction: column; }
   .ip-canvas { height: 460px; }
   .ip-detail { width: 100%; }

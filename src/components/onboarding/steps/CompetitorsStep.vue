@@ -6,7 +6,7 @@
       <p class="ob-sub">
         We found these from your space. Uncheck any that aren't real
         competitors, or add your own below — they shape which brands
-        the audit tracks.
+        your prompt runs track.
       </p>
 
       <div class="ob-card">

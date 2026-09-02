@@ -11,17 +11,24 @@
  * over a flat alert table, and a right-side drawer for one finding.
  * Filter state lives in the URL so a filtered view — or one specific
  * finding via ?alert=BSA-... — is shareable.
+ *
+ * The one control that does live here is the Brand Pulse agent card:
+ * an autonomous per-project monitor that digests what changed (scans,
+ * AI answers, security alerts) to the user's connected Slack/Discord
+ * and can queue research scans on its own.
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronRight, BookOpen, ArrowRight, Search, X } from '@lucide/vue'
+import { ChevronRight, BookOpen, ArrowRight, Search, X, Radar } from '@lucide/vue'
 
 import { useAppStore } from '@/stores/app'
 import { useBrandSecurityStore } from '@/stores/brandSecurity'
 import { useToast } from '@/composables/useToast'
 import brandSecurity from '@/api/brandSecurity'
+import integrationsApi from '@/api/integrations'
 import ragApi from '@/api/rag'
+import { timeAgo } from '@/utils/timeAgo'
 import { SOURCE_LABELS, categoryForAlert } from '@/constants/detectors'
 import { compareSeverity } from '@/constants/severity'
 
@@ -117,6 +124,8 @@ async function initPage() {
     store.loadTaxonomy(),
     loadConfig(),
     loadBrandSourceStats(),
+    loadPulse(),
+    loadChatChannels(),
     store.refreshOverview(websiteId.value),
     loadAlerts(),
   ])
@@ -184,6 +193,68 @@ async function loadBrandSourceStats() {
 }
 
 const isFirstVisit = computed(() => brandSourcesTotal.value === 0)
+
+// ── Brand Pulse agent ───────────────────────────────────────────────────
+
+const pulse = reactive({
+  enabled: false,
+  auto_scan: false,
+  frequency: 'daily',
+  last_digest_at: null,
+  last_scan_queued_at: null,
+})
+// The card renders only once the config has loaded, so a backend without
+// the pulse endpoint (or a failed fetch) leaves the page exactly as it was.
+const pulseLoaded = ref(false)
+const pulseSaving = ref(false)
+
+async function loadPulse() {
+  pulseLoaded.value = false
+  try {
+    const { data } = await brandSecurity.pulse(websiteId.value)
+    Object.assign(pulse, data)
+    pulseLoaded.value = true
+  } catch {
+    /* pulse config unavailable — keep the card hidden */
+  }
+}
+
+// Persist one field per interaction, optimistically (same shape as
+// applyStatus below): flip locally, revert on failure.
+async function savePulseField(patch) {
+  const previous = { ...pulse }
+  Object.assign(pulse, patch)
+  pulseSaving.value = true
+  try {
+    const { data } = await brandSecurity.savePulse(websiteId.value, patch)
+    Object.assign(pulse, data)
+    toast.success('Brand Pulse settings saved')
+  } catch {
+    Object.assign(pulse, previous)
+    toast.error('Could not save Brand Pulse settings')
+  } finally {
+    pulseSaving.value = false
+  }
+}
+
+// Where digests land. null = unknown (listing failed) — fall back to the
+// static explainer; [] = nothing connected — nudge towards Integrations.
+const chatChannels = ref(null)
+
+async function loadChatChannels() {
+  try {
+    const res = await integrationsApi.list()
+    // Notifications endpoints double-wrap: the unwrapped payload is
+    // itself {data: [...]} (see IntegrationsPage).
+    const saved = res.data?.data || []
+    const labels = { slack: 'Slack', discord: 'Discord', teams: 'Microsoft Teams' }
+    chatChannels.value = saved
+      .filter((c) => c.is_active && labels[c.platform])
+      .map((c) => labels[c.platform])
+  } catch {
+    chatChannels.value = null
+  }
+}
 
 // Terms highlighted in evidence panels: the configured brand terms plus
 // the website's own name, so brand mentions light up even before any
@@ -334,7 +405,7 @@ function dismissAlert(alert) {
       </div>
       <div class="flex items-center gap-3">
         <span class="text-xs text-muted-foreground">
-          Findings appear automatically as prompt runs and audits complete
+          Findings appear automatically as prompt runs complete
         </span>
       </div>
     </div>
@@ -351,7 +422,7 @@ function dismissAlert(alert) {
               <h2 class="text-base font-bold text-foreground">Start by teaching us your brand</h2>
               <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
                 Before we can tell you what is wrong out there, we need to know what is right.
-                Add your site pages, docs, or paste brand copy on the Brand Input page — that
+                Add your site pages, docs, or paste brand copy on the Brand Ingestion page — that
                 reference content is the benchmark every finding on this page is checked against.
               </p>
             </div>
@@ -373,6 +444,106 @@ function dismissAlert(alert) {
       :active-severity="filter.severity"
       @filter-severity="toggleSeverity"
     />
+
+    <!-- ── Brand Pulse agent ── -->
+    <Card v-if="pulseLoaded">
+      <CardContent class="pt-6">
+        <div class="flex items-start gap-3">
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="pulse.enabled"
+            :disabled="pulseSaving"
+            class="mt-0.5 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-60"
+            :class="pulse.enabled ? 'bg-[color:var(--chart-2)]' : 'bg-input'"
+            @click="savePulseField({ enabled: !pulse.enabled })"
+          >
+            <span
+              class="inline-block size-4 transform rounded-full bg-background shadow-sm transition-transform"
+              :class="pulse.enabled ? 'translate-x-4' : 'translate-x-0.5'"
+            />
+          </button>
+          <div class="flex-1">
+            <div class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Radar class="size-4" />
+              Brand Pulse agent
+            </div>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              Watches your brand across research scans, AI answers, and security alerts, and
+              posts what changed to your connected Slack or Discord.
+            </p>
+
+            <div v-if="pulse.enabled" class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div class="flex flex-col gap-1">
+                <label
+                  for="bs-pulse-frequency"
+                  class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                >Frequency</label>
+                <select
+                  id="bs-pulse-frequency"
+                  :value="pulse.frequency"
+                  :disabled="pulseSaving"
+                  class="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+                  @change="savePulseField({ frequency: $event.target.value })"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-2 self-end pb-2">
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="pulse.auto_scan"
+                  :disabled="pulseSaving"
+                  class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-60"
+                  :class="pulse.auto_scan ? 'bg-[color:var(--chart-2)]' : 'bg-input'"
+                  @click="savePulseField({ auto_scan: !pulse.auto_scan })"
+                >
+                  <span
+                    class="inline-block size-4 transform rounded-full bg-background shadow-sm transition-transform"
+                    :class="pulse.auto_scan ? 'translate-x-4' : 'translate-x-0.5'"
+                  />
+                </button>
+                <span class="text-xs font-medium text-foreground">Run research scans automatically</span>
+              </div>
+            </div>
+
+            <p v-if="pulse.enabled" class="mt-2.5 text-xs text-muted-foreground">
+              <span class="font-medium text-foreground">Last digest:</span>
+              <template v-if="pulse.last_digest_at">
+                {{ timeAgo(pulse.last_digest_at) }}
+              </template>
+              <template v-else>
+                Never — the first digest goes out at the next scheduled run.
+              </template>
+              <template v-if="pulse.auto_scan && pulse.last_scan_queued_at">
+                · Last scan queued: {{ timeAgo(pulse.last_scan_queued_at) }}
+              </template>
+            </p>
+
+            <p v-if="chatChannels && chatChannels.length" class="mt-1.5 text-xs text-muted-foreground">
+              Delivers to: {{ chatChannels.join(', ') }}
+            </p>
+            <p v-else-if="chatChannels" class="mt-1.5 text-xs text-muted-foreground">
+              No chat connection yet — digests will arrive as in-app notifications.
+              <router-link
+                to="/app/integrations"
+                class="font-medium text-foreground underline underline-offset-2 hover:opacity-80"
+              >Connect one in Integrations</router-link>.
+            </p>
+            <p v-else class="mt-1.5 text-xs text-muted-foreground">
+              Digests go to your connected Slack or Discord — manage connections in
+              <router-link
+                to="/app/integrations"
+                class="font-medium text-foreground underline underline-offset-2 hover:opacity-80"
+              >Integrations</router-link>.
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
 
     <div class="flex flex-col gap-4">
       <CategoryChips

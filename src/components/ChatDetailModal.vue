@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { X, ExternalLink, ArrowLeft, ArrowRight, Loader2 } from '@lucide/vue'
 import citationsApi from '@/api/citations'
 import BrandLogo from '@/components/BrandLogo.vue'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { safeHref } from '@/utils/safeHref'
 
 const props = defineProps({
@@ -65,6 +66,12 @@ const rankedBrands = computed(() => {
   })
 })
 
+// The backend classifies each entity: real brands (companies, branded
+// products, cited domains) vs generic information (equipment, categories,
+// concepts). Rows without a kind (older payloads) count as brands.
+const brandRows = computed(() => rankedBrands.value.filter(b => b.kind !== 'info'))
+const infoRows = computed(() => rankedBrands.value.filter(b => b.kind === 'info'))
+
 /* Highlight brand mentions in any text — the tracked brand in green and
    every competitor in its OWN color, so a mention in the answer and the
    same brand's row in the Details panel read as one thing. Colors are
@@ -93,10 +100,17 @@ const brandClassMap = computed(() => {
     }
   }
   let i = 0
-  for (const b of rankedBrands.value) {
+  for (const b of brandRows.value) {
     const key = (b.name || '').trim().toLowerCase()
     if (!key || map.has(key)) continue
     register(key, key === own ? 'cdm-mark--own' : `cdm-mark--c${i++ % COMPETITOR_CLASS_COUNT}`)
+  }
+  // Informational terms get a neutral dotted style — visible, but never
+  // dressed up as a competitor brand.
+  for (const b of infoRows.value) {
+    const key = (b.name || '').trim().toLowerCase()
+    if (!key || map.has(key)) continue
+    register(key, 'cdm-mark--info')
   }
   // The tracked brand is highlightable even when the detector did not
   // list it among this answer's brands (e.g. it only appears in the
@@ -151,6 +165,9 @@ async function load() {
 }
 
 watch(() => [props.open, props.resultId], load, { immediate: true })
+
+// Scrolling inside the viewer must never scroll the page behind it.
+useBodyScrollLock(computed(() => props.open))
 </script>
 
 <template>
@@ -172,7 +189,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
           <button class="text-muted-foreground hover:text-foreground" @click="emit('close')"><X :size="18" /></button>
         </header>
 
-        <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div class="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
           <div v-if="loading" class="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 class="size-4 animate-spin" /> Loading chat…
           </div>
@@ -210,7 +227,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
       </div>
 
       <!-- Details panel -->
-      <aside class="hidden w-80 shrink-0 overflow-y-auto border-l border-border bg-background px-5 py-4 md:block">
+      <aside class="hidden w-80 shrink-0 overflow-y-auto overscroll-contain border-l border-border bg-background px-5 py-4 md:block">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-foreground">Details</h3>
         </div>
@@ -219,7 +236,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
           <!-- Brands (ordered by the rank the model returned) -->
           <div class="mb-5">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brands</div>
-            <div v-for="(b, i) in rankedBrands" :key="i"
+            <div v-for="(b, i) in brandRows" :key="i"
               class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm"
               :class="b.name === detail.brand ? 'bg-secondary' : ''">
               <span class="flex min-w-0 items-center gap-2">
@@ -234,7 +251,20 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
                 {{ b.position != null ? '#' + b.position : '—' }}
               </span>
             </div>
-            <div v-if="!detail.brands.length" class="text-xs text-muted-foreground">No brands detected.</div>
+            <div v-if="!brandRows.length" class="text-xs text-muted-foreground">No brands detected.</div>
+          </div>
+
+          <!-- Generic terms the answer highlighted: context, not competitors -->
+          <div v-if="infoRows.length" class="mb-5">
+            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Information</div>
+            <div class="flex flex-wrap gap-1.5 px-2">
+              <span v-for="(b, i) in infoRows" :key="i"
+                class="cdm-mark cdm-mark--info text-sm">{{ b.name }}</span>
+            </div>
+            <p class="mt-2 px-2 text-[11px] leading-snug text-muted-foreground">
+              Topics and product terms the answer mentions — not brands, so
+              they don't count toward competitor rankings.
+            </p>
           </div>
 
           <!-- Similar queries (backend name: fanout) -->
@@ -287,7 +317,7 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
               class="text-xs leading-relaxed text-muted-foreground">
               Add brand knowledge on the
               <router-link :to="`/llm-ranking/${websiteId}/brand-input`"
-                class="font-medium text-foreground hover:underline">Brand Input</router-link>
+                class="font-medium text-foreground hover:underline">Brand Ingestion</router-link>
               page to benchmark this answer against your own material.
             </p>
             <p v-else-if="detail.alignment && detail.alignment.status === 'no_brand_claims'"
@@ -326,6 +356,16 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
 .cdm-mark--c5  { --cdm-a: rgba(99, 102, 241, 0.55); background: rgba(99, 102, 241, 0.16); color: #4338ca; }
 .cdm-mark--c6  { --cdm-a: rgba(249, 115, 22, 0.55); background: rgba(249, 115, 22, 0.16); color: #c2410c; }
 .cdm-mark--c7  { --cdm-a: rgba(217, 70, 239, 0.50); background: rgba(217, 70, 239, 0.14); color: #a21caf; }
+/* Informational terms: neutral dotted underline, no colored fill — they
+   must never read as competitor brands. */
+.cdm-mark--info {
+  --cdm-a: rgba(113, 113, 122, 0.6);
+  background: transparent;
+  border-bottom: 1px dotted rgba(113, 113, 122, 0.75);
+  border-radius: 0;
+  color: #52525b;
+  font-weight: 500;
+}
 
 [data-theme='dark'] .cdm-mark--own { background: rgba(34, 197, 94, 0.24);  color: #86efac; }
 [data-theme='dark'] .cdm-mark--c0  { background: rgba(245, 158, 11, 0.24); color: #fcd34d; }
@@ -336,6 +376,11 @@ watch(() => [props.open, props.resultId], load, { immediate: true })
 [data-theme='dark'] .cdm-mark--c5  { background: rgba(99, 102, 241, 0.26); color: #a5b4fc; }
 [data-theme='dark'] .cdm-mark--c6  { background: rgba(249, 115, 22, 0.24); color: #fdba74; }
 [data-theme='dark'] .cdm-mark--c7  { background: rgba(217, 70, 239, 0.24); color: #f0abfc; }
+[data-theme='dark'] .cdm-mark--info {
+  background: transparent;
+  border-bottom-color: rgba(161, 161, 170, 0.6);
+  color: #a1a1aa;
+}
 
 /* Legend swatches: solid version of the same palette. Declared last so
    its background wins over the color classes at equal specificity; the

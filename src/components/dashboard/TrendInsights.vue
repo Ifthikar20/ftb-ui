@@ -50,7 +50,7 @@ const rows = computed(() => props.trends || [])
       <EmptyState
         v-if="!rows.length"
         title="No trends detected yet"
-        body="Trending topics are derived from your prompt results. They appear here once enough audits have run to establish a baseline."
+        body="Trending topics are derived from your prompt results. They appear here once enough prompt runs have completed to establish a baseline."
       />
 
       <div v-else class="flex flex-col gap-2">

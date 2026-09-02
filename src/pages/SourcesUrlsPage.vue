@@ -575,7 +575,7 @@ const headerFacts = computed(() => {
         <EmptyState
           v-else-if="!loading"
           title="No retrievals in this period yet"
-          body="Retrievals appear as your prompt runs and audits complete. Run prompts to give the AI models something to answer."
+          body="Retrievals appear as your prompt runs complete. Run prompts to give the AI models something to answer."
           cta-label="Run prompts"
           :cta-to="websiteId ? `/llm-ranking/${websiteId}/prompts` : ''"
         />
@@ -616,7 +616,7 @@ const headerFacts = computed(() => {
           <EmptyState
             v-if="!loading && !moverRows.length"
             title="No movement yet"
-            body="Movers appear once a few audits or prompt runs have collected sources."
+            body="Movers appear once a few prompt runs have collected sources."
           />
         </CardContent>
       </Card>
@@ -779,7 +779,7 @@ const headerFacts = computed(() => {
                   <EmptyState
                     v-else
                     title="No URLs yet"
-                    body="Pages appear here as your prompt runs and audits collect the sources AI answers rely on."
+                    body="Pages appear here as your prompt runs collect the sources AI answers rely on."
                     cta-label="Run prompts"
                     :cta-to="websiteId ? `/llm-ranking/${websiteId}/prompts` : ''"
                   />

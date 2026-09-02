@@ -1,7 +1,33 @@
 <template>
   <SettingsShell active="subscription">
   <div class="bp bp--embedded">
-    <div v-if="loading" class="bp-loading">Loading…</div>
+    <!-- ── Organization-billed seat: the org (not this user) pays, so
+         every personal checkout / upgrade / portal control is withheld —
+         inviting a seat-holder to start their own subscription would
+         double-bill them. ── -->
+    <template v-if="orgBilled">
+      <p class="set-label">Membership</p>
+      <section class="bp-current">
+        <div class="bp-current-info">
+          <span class="bp-eyebrow">Current plan</span>
+          <h2 class="bp-current-name">
+            {{ authStore.planState.title }}
+            <span class="bp-current-price">· {{ authStore.org?.name || 'Organization' }}</span>
+          </h2>
+          <div class="bp-current-meta">
+            <span class="bp-pill bp-pill--success">Active</span>
+            <span class="bp-current-note">Billing is managed by your organization.</span>
+          </div>
+          <p class="bp-current-note" style="margin-top: 10px;">
+            Plan changes, invoices and payment methods are handled by your
+            organization's admins. Questions about your seat?
+            <a class="bp-link" :href="orgSupportHref">{{ SUPPORT_EMAIL }}</a>
+          </p>
+        </div>
+      </section>
+    </template>
+
+    <div v-else-if="loading" class="bp-loading">Loading…</div>
 
     <!-- ── Overview failed: never guess "Free". The session already knows
          the plan state, so the headline stays truthful, and the plan
@@ -91,6 +117,26 @@
               continues and the first {{ currentPriceLabel }} charge happens. Cancel before
               then and pay nothing.
             </p>
+            <!-- Skip-the-wait upgrade: ends the trial and charges today,
+                 for users who hit a trial limit (e.g. the 1-project cap)
+                 and want the full Pro allowance immediately. -->
+            <div class="bp-upgrade-now">
+              <button
+                class="bp-btn bp-btn--primary"
+                :disabled="upgrading || switchingCycle"
+                @click="confirmUpgradeNow"
+              >{{ upgrading ? 'Starting…' : 'Start Pro now' }}</button>
+              <button
+                class="bp-btn bp-btn--ghost"
+                :disabled="upgrading || switchingCycle"
+                @click="confirmSwitchCycle"
+              >{{ switchingCycle ? 'Switching…' : (isAnnualSub ? 'Switch to monthly billing' : 'Switch to annual billing') }}</button>
+            </div>
+            <p class="bp-current-note" style="margin-top: 6px;">
+              Don't want to wait? Start Pro now ends your trial and charges
+              {{ currentPriceLabel }} today — every Pro allowance (including
+              all five projects) unlocks immediately.
+            </p>
           </template>
           <p v-else-if="subscription?.cancel_at_period_end" class="bp-current-note" style="margin-top: 6px;">
             Access ends {{ formatDate(subscription.current_period_end) }}. No future charges.
@@ -103,6 +149,12 @@
             :disabled="portalLoading"
             @click="openPortal"
           >{{ portalLoading ? 'Opening…' : 'Manage billing' }}</button>
+          <button
+            v-if="hasManagedSub && !isTrialing && subscription?.subscription_status === 'active' && !subscription?.cancel_at_period_end"
+            class="bp-btn bp-btn--ghost"
+            :disabled="switchingCycle"
+            @click="confirmSwitchCycle"
+          >{{ switchingCycle ? 'Switching…' : (isAnnualSub ? 'Switch to monthly billing' : 'Switch to annual billing') }}</button>
           <button
             v-if="subscription?.cancel_at_period_end"
             class="bp-btn bp-btn--primary"
@@ -127,10 +179,10 @@
           <p class="bp-current-note">
             The Free plan doesn't expire — your dashboard and data stay
             yours for as long as you like. It's limited instead: 1 project,
-            5-prompt audits, 2 audits per month, and a small monthly AI
-            allowance. When you hit a limit, audits simply pause until your
+            5 prompts per run, 2 prompt runs per month, and a small monthly AI
+            allowance. When you hit a limit, prompt runs simply pause until your
             monthly reset — there's no hard wall and you're never locked
-            out. Upgrade to Pro any time for daily audits, every AI model,
+            out. Upgrade to Pro any time for daily prompt runs, every AI model,
             and the full allowance.
           </p>
         </div>
@@ -265,6 +317,7 @@ import billingApi from '@/api/billing'
 import SettingsShell from '@/components/settings/SettingsShell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { SUPPORT_EMAIL, SUPPORT_SUBJECT } from '@/constants/support'
 import { TIERS } from '@/constants/pricing'
 import { describeSubscription } from '@/lib/plan'
 import { isPolarUrl } from '@/utils/polarRedirect'
@@ -282,7 +335,21 @@ const annual = ref(false)
 const checkingOut = ref(null)
 const portalLoading = ref(false)
 const cancelling = ref(false)
+const upgrading = ref(false)
+const switchingCycle = ref(false)
 const error = ref('')
+
+// Seat on an org plan: the subscription's source says the organization
+// pays. All personal billing UI (checkout, plan grid, portal, cancel)
+// and the ?checkout= return-leg are gated off this one flag.
+const orgBilled = computed(() => authStore.session?.subscription?.source === 'organization')
+
+const orgSupportHref = computed(() => {
+  const params = new URLSearchParams({ subject: SUPPORT_SUBJECT })
+  const acct = authStore.user?.email
+  if (acct) params.set('body', `Account email: ${acct}\n\n`)
+  return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, '%20')}`
+})
 
 const mainTiers = computed(() => TIERS.filter(t => t.price !== null))
 const enterpriseTier = computed(() => TIERS.find(t => t.price === null))
@@ -323,12 +390,14 @@ const statusClass = computed(() => {
 // — gates the "Manage billing" portal button.
 const hasManagedSub = computed(() => !!subscription.value?.managed)
 
-// Infer whether the active subscription is annual from the period
-// length. Stripe annual subs have a ~365d gap; monthly is ~30d. Used
-// to render the right /year vs /month suffix without forcing the
-// user to toggle the pill first.
+// Which cadence the subscription is on. The backend mirrors Polar's
+// recurring_interval as `interval` ("month" | "year") — the only signal
+// that works while trialing, where the period is the 7-day trial window
+// on both products. The period-length inference stays as a fallback for
+// rows synced before the interval column existed.
 const isAnnualSub = computed(() => {
   const sub = subscription.value
+  if (sub?.interval) return sub.interval === 'year'
   if (!sub?.current_period_start || !sub?.current_period_end) return annual.value
   const ms = new Date(sub.current_period_end) - new Date(sub.current_period_start)
   return ms > 1000 * 60 * 60 * 24 * 60   // > 60 days  →  annual
@@ -436,6 +505,51 @@ async function openPortal() {
   }
 }
 
+async function confirmUpgradeNow() {
+  const charge = isAnnualSub.value
+    ? `${currentPriceLabel.value} for the first year`
+    : `${currentPriceLabel.value} for the first month`
+  if (!window.confirm(
+    `Start Pro now? Your free trial ends immediately and your card is charged ${charge}.`,
+  )) return
+  upgrading.value = true
+  try {
+    await billingApi.upgradeNow({})
+    toast.success('Welcome to Pro — your plan is now active.')
+    // Session first so plan labels and project limits flip everywhere,
+    // then the overview so this page shows the paid state.
+    try { await authStore.fetchSession() } catch (_) { /* refresh below */ }
+    await refresh()
+  } catch (e) {
+    toast.error(e?.response?.data?.error?.message || "We couldn't start your plan. Please try again.")
+  } finally {
+    upgrading.value = false
+  }
+}
+
+async function confirmSwitchCycle() {
+  const toAnnual = !isAnnualSub.value
+  const t = currentTier.value
+  const price = t?.price
+    ? (toAnnual ? `$${t.price * 10}/year` : `${t.priceLabel}/month`)
+    : ''
+  const msg = isTrialing.value
+    ? `Switch to ${toAnnual ? 'annual' : 'monthly'} billing${price ? ` (${price})` : ''}? Nothing is charged until your trial ends.`
+    : `Switch to ${toAnnual ? 'annual' : 'monthly'} billing${price ? ` (${price})` : ''}? The price difference is settled on your card right away.`
+  if (!window.confirm(msg)) return
+  switchingCycle.value = true
+  try {
+    await billingApi.changePlan({ annual: toAnnual })
+    toast.success(`Switched to ${toAnnual ? 'annual' : 'monthly'} billing.`)
+    try { await authStore.fetchSession() } catch (_) { /* refresh below */ }
+    await refresh()
+  } catch (e) {
+    toast.error(e?.response?.data?.error?.message || "We couldn't change your plan. Please try again.")
+  } finally {
+    switchingCycle.value = false
+  }
+}
+
 async function confirmCancel() {
   const end = subscription.value?.current_period_end
   const tail = end ? ` Access continues until ${formatDate(end)}.` : ''
@@ -496,6 +610,13 @@ async function refresh() {
 
 
 onMounted(async () => {
+  // Org-billed seats never ran a personal checkout, and the personal
+  // overview endpoints describe a subscription that isn't theirs to
+  // manage — skip the whole leg (incl. the ?checkout= return handling).
+  if (orgBilled.value) {
+    loading.value = false
+    return
+  }
   const checkoutParam = route.query.checkout
   const checkoutId = route.query.checkout_id ? String(route.query.checkout_id) : ''
   if (checkoutParam) {
@@ -640,6 +761,7 @@ onMounted(async () => {
 }
 .bp-current-info { display: flex; flex-direction: column; min-width: 0; }
 .bp-current-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.bp-upgrade-now { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .bp-current-price {
   font-size: 14px;
   font-weight: 500;
