@@ -43,6 +43,14 @@
           <div class="min-w-0">
             <h3 class="text-base font-semibold text-foreground">{{ site.name }}</h3>
             <p class="max-w-[200px] truncate text-sm text-muted-foreground">{{ site.url }}</p>
+            <!-- Attribution only matters in a shared org workspace, and
+                 only for projects someone ELSE added. -->
+            <p
+              v-if="authStore.org && site.created_by && site.created_by.id !== authStore.user?.id"
+              class="max-w-[200px] truncate text-xs text-muted-foreground"
+            >
+              Added by {{ site.created_by.full_name }}
+            </p>
           </div>
           <Badge class="ml-auto" :variant="site.pixel_verified ? 'success' : 'warning'">
             {{ site.pixel_verified ? 'Pixel Active' : 'Pixel Pending' }}
@@ -208,6 +216,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import websitesApi from '@/api/websites'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -217,6 +226,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 const websites = ref([])
 const showAddModal = ref(false)
 const adding = ref(false)

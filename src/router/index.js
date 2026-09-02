@@ -137,10 +137,52 @@ const routes = [
         meta: { layout: 'auth', guest: true }
     },
     {
+        // Microsoft (Entra ID) OAuth return leg. Same shape as Google:
+        // ?code&state in, POST /auth/microsoft/ to exchange and sign in.
+        path: '/auth/microsoft/callback',
+        name: 'microsoft-callback',
+        component: () => import('@/pages/auth/MicrosoftCallbackPage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
+        // SAML return leg. Unlike the OAuth lanes the backend owns the
+        // IdP round trip and 302s the browser here with ?c=<one-time code>
+        // (or ?err=<code>); the page exchanges c via /auth/token-exchange/.
+        path: '/auth/sso/complete',
+        name: 'sso-complete',
+        component: () => import('@/pages/auth/SsoCompletePage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
         path: '/forgot-password',
         name: 'forgot-password',
         component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
         meta: { layout: 'auth', guest: true }
+    },
+    {
+        // Enterprise identifier-first sign-in: work email in, company
+        // IdP redirect out. The main login page links here.
+        path: '/sso',
+        name: 'enterprise-sso',
+        component: () => import('@/pages/auth/EnterpriseSsoPage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
+        // Reset-with-token landing — the destination of the password
+        // reset email's link (?token=...).
+        path: '/reset-password',
+        name: 'reset-password',
+        component: () => import('@/pages/auth/ResetPasswordPage.vue'),
+        meta: { layout: 'auth', guest: true }
+    },
+    {
+        // Organization invitation landing. `public`, not `guest`: an
+        // already-signed-in invitee must reach it too (public routes
+        // skip both the guest bounce and the onboarding/paywall funnel).
+        path: '/invite/:token',
+        name: 'invite',
+        component: () => import('@/pages/auth/InviteAcceptPage.vue'),
+        meta: { layout: 'auth', public: true }
     },
     {
         path: '/verify-email',

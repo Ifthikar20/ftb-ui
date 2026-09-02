@@ -14,7 +14,7 @@
         <template v-for="group in NAV" :key="group.label">
           <p class="ss-nav-group">{{ group.label }}</p>
           <router-link
-            v-for="item in group.items" :key="item.key"
+            v-for="item in visibleItems(group)" :key="item.key"
             :to="item.to"
             class="ss-nav-item"
             :class="{ 'is-active': active === item.key }"
@@ -51,7 +51,7 @@
             <template v-for="group in NAV" :key="group.label">
               <p class="ss-nav-group">{{ group.label }}</p>
               <router-link
-                v-for="item in group.items" :key="item.key"
+                v-for="item in visibleItems(group)" :key="item.key"
                 :to="item.to"
                 class="ss-nav-item"
                 :class="{ 'is-active': active === item.key }"
@@ -75,11 +75,14 @@
 <script setup>
 import { computed, h, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
-  /** Key of the active nav item: account | subscription | notifications | usage | appearance | contact */
+  /** Key of the active nav item: account | subscription | notifications | usage | appearance | contact | team | domains */
   active: { type: String, required: true },
 })
+
+const authStore = useAuthStore()
 
 /* Tiny functional icon: stroke paths only, inherits currentColor. */
 const NavIcon = (p) =>
@@ -95,7 +98,7 @@ const NavIcon = (p) =>
   )
 NavIcon.props = { paths: Array, size: Number }
 
-const NAV = [
+const NAV_BASE = [
   {
     label: 'General',
     items: [
@@ -155,10 +158,45 @@ const NAV = [
   },
 ]
 
-const FLAT = NAV.flatMap((g) => g.items)
+// Organization sections appear only when the session belongs to an org.
+// The "Domains & SSO" entry stays in the tree for every member (so the
+// breadcrumb resolves on a deep link) but is hidden from the nav lists
+// for non-admins via its `hidden` flag.
+const NAV = computed(() => {
+  if (!authStore.org) return NAV_BASE
+  const orgGroup = {
+    label: 'Organization',
+    items: [
+      {
+        key: 'team', label: 'Team',
+        to: { path: '/settings', query: { section: 'team' } },
+        icon: [
+          'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2',
+          'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+          'M23 21v-2a4 4 0 0 0-3-3.87',
+          'M16 3.13a4 4 0 0 1 0 7.75',
+        ],
+      },
+      {
+        key: 'domains', label: 'Domains & SSO',
+        to: { path: '/settings', query: { section: 'domains' } },
+        hidden: !authStore.isOrgAdmin,
+        icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],
+      },
+    ],
+  }
+  // After General, before Application.
+  return [NAV_BASE[0], orgGroup, ...NAV_BASE.slice(1)]
+})
+
+function visibleItems(group) {
+  return group.items.filter((i) => !i.hidden)
+}
+
+const FLAT = computed(() => NAV.value.flatMap((g) => g.items))
 
 const activeItem = computed(
-  () => FLAT.find((i) => i.key === props.active) || FLAT[0],
+  () => FLAT.value.find((i) => i.key === props.active) || FLAT.value[0],
 )
 const activeLabel = computed(() => activeItem.value.label)
 

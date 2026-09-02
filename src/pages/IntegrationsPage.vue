@@ -29,6 +29,101 @@
         </div>
       </div>
 
+      <!-- Text messages (SMS) — richer state machine than the webhook tiles,
+           so it renders as its own tile rather than joining the v-for. -->
+      <div class="intg-tile" :class="{ connected: smsState === 'verified' }">
+        <div class="intg-tile-main">
+          <div class="intg-icon-wrap" style="background: linear-gradient(135deg, #34C75915, #34C75908)">
+            <span v-html="smsIcon"></span>
+          </div>
+          <div class="intg-tile-identity">
+            <span class="intg-tile-name">Text messages</span>
+            <span class="intg-tile-status" :class="smsState === 'verified' ? 'text-success' : 'text-muted'">
+              {{ smsState === 'verified' ? 'Connected' : 'Not connected' }}
+            </span>
+          </div>
+        </div>
+
+        <p class="intg-tile-desc">Get the Brand Pulse digest and high-severity brand-security alerts as texts, and reply to ask questions &mdash; straight from your phone's Messages app.</p>
+
+        <!-- available=false → muted note, no Connect -->
+        <p v-if="smsState === 'unavailable'" class="sms-unavailable">Not available on this deployment yet.</p>
+
+        <!-- Phone entry (after Connect) -->
+        <div v-else-if="smsState === 'phone'" class="sms-form">
+          <div class="sms-input-row">
+            <input
+              v-model="smsPhone"
+              type="tel"
+              autocomplete="tel"
+              class="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="+1 415 555 0134"
+              @keyup.enter="sendSmsCode"
+            />
+            <Button size="sm" :disabled="!smsPhone.trim() || smsSending" @click="sendSmsCode">
+              <span v-if="smsSending" class="btn-spinner"></span>
+              {{ smsSending ? 'Sending...' : 'Send code' }}
+            </Button>
+          </div>
+          <p v-if="smsError" class="sms-error">{{ smsError }}</p>
+          <button type="button" class="sms-quiet-link" @click="cancelSmsConnect">Cancel</button>
+        </div>
+
+        <!-- Pending: 6-digit code entry -->
+        <div v-else-if="smsState === 'pending'" class="sms-form">
+          <p class="sms-form-hint">We texted a 6-digit code to <strong>{{ smsSub.phone_masked }}</strong>. Enter it to finish connecting.</p>
+          <div class="sms-input-row">
+            <input
+              v-model="smsCode"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              class="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="123456"
+              @keyup.enter="verifySmsCode"
+            />
+            <Button size="sm" :disabled="!smsCode.trim() || smsVerifying" @click="verifySmsCode">
+              <span v-if="smsVerifying" class="btn-spinner"></span>
+              {{ smsVerifying ? 'Verifying...' : 'Verify' }}
+            </Button>
+          </div>
+          <p v-if="smsError" class="sms-error">{{ smsError }}</p>
+          <button type="button" class="sms-quiet-link" :disabled="smsResending" @click="resendSmsCode">
+            {{ smsResending ? 'Resending...' : 'Resend code' }}
+          </button>
+        </div>
+
+        <!-- Connected: phone + notification toggles + quiet Disconnect -->
+        <template v-else-if="smsState === 'verified'">
+          <div class="sms-form">
+            <p class="sms-form-hint">Texting <strong>{{ smsSub.phone_masked }}</strong></p>
+            <label v-for="t in smsToggles" :key="t.key" class="pref-check">
+              <input
+                type="checkbox"
+                class="modern-check"
+                :checked="!!smsSub[t.key]"
+                :disabled="smsToggleBusy === t.key"
+                @change="toggleSmsPref(t.key, $event.target.checked)"
+              />
+              <div>
+                <span class="pref-name">{{ t.label }}</span>
+                <span v-if="t.desc" class="pref-desc">{{ t.desc }}</span>
+              </div>
+            </label>
+          </div>
+          <div class="intg-tile-actions">
+            <Button variant="ghost" size="sm" class="text-muted-foreground hover:text-destructive" :disabled="smsDisconnecting" @click="disconnectSms">Disconnect</Button>
+          </div>
+        </template>
+
+        <!-- No subscription (or opted out): Connect -->
+        <div v-else-if="smsState === 'disconnected'" class="intg-tile-actions">
+          <Button size="sm" class="flex-1" @click="openSmsConnect">Connect</Button>
+        </div>
+
+        <!-- smsState === 'loading' (initial fetch, or a failed GET): no body -->
+      </div>
+
     </div>
 
     <!-- What Gets Sent Section -->
@@ -182,7 +277,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { Button } from '@/components/ui/button'
 import integrationsApi from '@/api/integrations'
@@ -275,6 +370,7 @@ const sentItems = [
   { title: 'Daily Growth Report', desc: 'Visitor count, lead score changes, and conversion trends delivered every morning.' },
   { title: 'Brand-Security Alerts', desc: 'A heads-up when a new brand-security finding is opened, with the recommended fix.' },
   { title: 'Hot Lead Alerts', desc: 'Instant notification when a lead reaches 80+ score or visits your pricing page.' },
+  { title: 'Brand Pulse Digest', desc: 'A daily brand summary: new alerts, sentiment watchouts, and conversations to join.' },
   { title: 'Trend Intelligence', desc: 'Weekly trending keywords and market shifts relevant to your business posture.', soon: true },
   { title: 'Growth Milestones', desc: 'Celebrate when your team hits traffic goals, lead targets, or SEO improvements.', soon: true },
 ]
@@ -314,6 +410,184 @@ async function loadConnections() {
   }
 }
 
+// ── Text messages (SMS) ──
+const smsIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="#34C759"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>'
+
+const smsLoaded = ref(false)      // GET /notifications/sms/ succeeded
+const smsAvailable = ref(false)
+const smsSub = ref(null)          // active subscription row (pending or verified)
+const smsMode = ref('idle')       // 'idle' | 'phone' — inline phone entry open
+const smsPhone = ref('')
+const smsCode = ref('')
+const smsError = ref('')          // inline error under the phone/code input
+const smsSending = ref(false)
+const smsVerifying = ref(false)
+const smsResending = ref(false)
+const smsDisconnecting = ref(false)
+const smsToggleBusy = ref(null)   // key of the preference currently PATCHing
+
+const smsToggles = [
+  { key: 'alert_security', label: 'High-severity security alerts' },
+  { key: 'alert_visibility_drop', label: 'Sharp visibility drops' },
+  { key: 'pulse_digest', label: 'Brand Pulse digest', desc: 'Recurring summary texts — off unless you turn it on.' },
+  { key: 'allow_replies', label: 'Allow replies (ask questions by text)' },
+]
+
+// Card state machine. 'loading' covers both the initial fetch and a failed
+// GET: the tile renders with no body so the webhook tiles are unaffected.
+const smsState = computed(() => {
+  if (!smsLoaded.value) return 'loading'
+  if (!smsAvailable.value) return 'unavailable'
+  if (smsSub.value?.status === 'verified') return 'verified'
+  if (smsSub.value?.status === 'pending') return 'pending'
+  if (smsMode.value === 'phone') return 'phone'
+  return 'disconnected'
+})
+
+// The sibling notifications endpoints double-wrap their payload (see
+// loadConnections); accept either shape so the card survives both.
+function smsPayload(res) {
+  const d = res?.data
+  if (d && (d.available !== undefined || d.subscriptions !== undefined
+    || d.id !== undefined || d.ok !== undefined)) return d
+  return d?.data ?? d
+}
+
+async function loadSms() {
+  try {
+    const res = await integrationsApi.smsList()
+    const payload = smsPayload(res) || {}
+    smsAvailable.value = !!payload.available
+    const subs = payload.subscriptions || []
+    // opted_out rows count as not connected, so the number can be re-added.
+    smsSub.value = subs.find(s => s.status === 'verified')
+      || subs.find(s => s.status === 'pending')
+      || null
+    smsLoaded.value = true
+  } catch (e) {
+    // Leave smsLoaded false — the card body stays hidden and the
+    // Slack/Discord/Teams tiles are unaffected.
+    console.warn('Failed to load SMS status:', e)
+  }
+}
+
+function openSmsConnect() {
+  smsMode.value = 'phone'
+  smsPhone.value = ''
+  smsError.value = ''
+}
+
+function cancelSmsConnect() {
+  smsMode.value = 'idle'
+  smsError.value = ''
+}
+
+async function sendSmsCode() {
+  const phone = smsPhone.value.trim()
+  if (!phone || smsSending.value) return
+  smsSending.value = true
+  smsError.value = ''
+  try {
+    const res = await integrationsApi.smsSubscribe(phone)
+    const row = smsPayload(res)
+    smsSub.value = row || null
+    smsMode.value = 'idle'
+    smsCode.value = ''
+    if (row?.sent === false) {
+      smsError.value = 'We could not send the code just now. Use "Resend code" in a moment.'
+    } else {
+      showToast(`Verification code sent to ${row?.phone_masked || phone}`)
+    }
+  } catch (err) {
+    const backendError = err.response?.data?.error
+    if (backendError?.code === 'sms_unavailable') {
+      // The whole channel is off on this deployment; fall back to the
+      // muted "Not available" body.
+      smsAvailable.value = false
+      smsMode.value = 'idle'
+    }
+    smsError.value = backendError?.message || 'Could not send the code. Check the number and try again.'
+  } finally {
+    smsSending.value = false
+  }
+}
+
+async function verifySmsCode() {
+  const code = smsCode.value.trim()
+  if (!code || smsVerifying.value || !smsSub.value) return
+  smsVerifying.value = true
+  smsError.value = ''
+  try {
+    const res = await integrationsApi.smsVerify(smsSub.value.id, code)
+    smsSub.value = smsPayload(res) || smsSub.value
+    smsCode.value = ''
+    showToast('Text messages connected')
+  } catch (err) {
+    // invalid_code / code_expired — the backend message renders inline.
+    smsError.value = err.response?.data?.error?.message || 'That code did not work. Try again or resend it.'
+  } finally {
+    smsVerifying.value = false
+  }
+}
+
+async function resendSmsCode() {
+  if (smsResending.value || !smsSub.value) return
+  smsResending.value = true
+  smsError.value = ''
+  try {
+    const res = await integrationsApi.smsResend(smsSub.value.id)
+    const payload = smsPayload(res)
+    if (payload?.sent === false) {
+      smsError.value = 'We could not send the code just now. Try again shortly.'
+    } else {
+      showToast(`Code re-sent to ${smsSub.value.phone_masked}`)
+    }
+  } catch (err) {
+    smsError.value = err.response?.data?.error?.message || 'Could not resend the code.'
+  } finally {
+    smsResending.value = false
+  }
+}
+
+async function toggleSmsPref(key, value) {
+  const sub = smsSub.value
+  if (!sub || smsToggleBusy.value) return
+  const previous = sub[key]
+  sub[key] = value // optimistic; reverted on failure
+  smsToggleBusy.value = key
+  try {
+    const res = await integrationsApi.smsUpdate(sub.id, { [key]: value })
+    const row = smsPayload(res)
+    if (row?.id === sub.id) smsSub.value = row
+    showToast('Text message preferences updated')
+  } catch (err) {
+    sub[key] = previous
+    showToast(err.response?.data?.error?.message || 'Could not update that preference.', 'error')
+  } finally {
+    smsToggleBusy.value = null
+  }
+}
+
+async function disconnectSms() {
+  const sub = smsSub.value
+  if (!sub || smsDisconnecting.value) return
+  if (!window.confirm('Disconnect text messages? You will stop receiving texts from Cansee.')) return
+  smsDisconnecting.value = true
+  try {
+    await integrationsApi.smsRemove(sub.id)
+    smsSub.value = null
+    smsMode.value = 'idle'
+    smsPhone.value = ''
+    smsCode.value = ''
+    smsError.value = ''
+    showToast('Text messages disconnected')
+  } catch (err) {
+    showToast(err.response?.data?.error?.message || 'Could not disconnect text messages.', 'error')
+  } finally {
+    smsDisconnecting.value = false
+  }
+}
+
 // ── Scroll-triggered reveal for the "What gets sent" list ──
 const sentSection = ref(null)
 const sentRevealed = ref(false)
@@ -340,6 +614,7 @@ function setupSentReveal() {
 
 onMounted(() => {
   loadConnections()
+  loadSms()
   setupSentReveal()
 })
 
@@ -527,6 +802,55 @@ function showToast(msg, kind = 'success') {
   display: flex;
   gap: 8px;
 }
+
+/* ── Text messages (SMS) tile ── */
+.sms-unavailable {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.sms-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sms-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.sms-form-hint {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.sms-form-hint strong { color: var(--foreground); }
+
+.sms-error {
+  font-size: 12px;
+  color: var(--destructive);
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+
+.sms-quiet-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.sms-quiet-link:hover { color: var(--foreground); }
+.sms-quiet-link:disabled { opacity: 0.6; cursor: default; }
 
 /* .soon-badge is still used by the "What gets sent" list below. */
 .soon-badge {

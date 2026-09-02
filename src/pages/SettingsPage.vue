@@ -191,6 +191,25 @@
       </SettingsSection>
     </template>
 
+    <!-- ── Organization: Team ──────────────────────────────────── -->
+    <template v-else-if="section === 'team'">
+      <OrgMembersSection />
+    </template>
+
+    <!-- ── Organization: Domains & SSO ─────────────────────────── -->
+    <template v-else-if="section === 'domains'">
+      <OrgDomainsSection v-if="authStore.isOrgAdmin" />
+      <!-- Non-admin deep link: no domain management, no scary error. -->
+      <SettingsSection
+        v-else
+        label="Organization"
+        title="Domains &amp; SSO"
+        description="Domain verification and single sign-on for your organization."
+      >
+        <p class="sp-muted">You need admin access to manage domains.</p>
+      </SettingsSection>
+    </template>
+
     <!-- ── Appearance ──────────────────────────────────────────── -->
     <template v-else-if="section === 'appearance'">
       <SettingsSection
@@ -244,6 +263,8 @@ import authApi from '@/api/auth'
 import notificationsApi from '@/api/notifications'
 import SettingsShell from '@/components/settings/SettingsShell.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import OrgMembersSection from '@/components/org/OrgMembersSection.vue'
+import OrgDomainsSection from '@/components/org/OrgDomainsSection.vue'
 import { SUPPORT_EMAIL, SUPPORT_SUBJECT } from '@/constants/support'
 import { Button } from '@/components/ui/button'
 
@@ -257,9 +278,14 @@ const deleting = ref(false)
 
 // The active section comes from the URL (?section=...), so the shell's
 // nav links are ordinary router-links and every section deep-links.
-const SECTIONS = ['account', 'usage', 'notifications', 'appearance', 'contact']
+// Org sections only resolve when the session actually has an org — a
+// B2C deep link to ?section=team just lands on Account.
+const SECTIONS = computed(() => {
+  const base = ['account', 'usage', 'notifications', 'appearance', 'contact']
+  return authStore.org ? [...base, 'team', 'domains'] : base
+})
 const section = computed(() =>
-  SECTIONS.includes(route.query.section) ? route.query.section : 'account',
+  SECTIONS.value.includes(route.query.section) ? route.query.section : 'account',
 )
 
 // mailto with a prefilled subject; the body seeds the account email so

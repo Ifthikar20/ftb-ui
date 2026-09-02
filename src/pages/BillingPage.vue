@@ -1,7 +1,33 @@
 <template>
   <SettingsShell active="subscription">
   <div class="bp bp--embedded">
-    <div v-if="loading" class="bp-loading">Loading…</div>
+    <!-- ── Organization-billed seat: the org (not this user) pays, so
+         every personal checkout / upgrade / portal control is withheld —
+         inviting a seat-holder to start their own subscription would
+         double-bill them. ── -->
+    <template v-if="orgBilled">
+      <p class="set-label">Membership</p>
+      <section class="bp-current">
+        <div class="bp-current-info">
+          <span class="bp-eyebrow">Current plan</span>
+          <h2 class="bp-current-name">
+            {{ authStore.planState.title }}
+            <span class="bp-current-price">· {{ authStore.org?.name || 'Organization' }}</span>
+          </h2>
+          <div class="bp-current-meta">
+            <span class="bp-pill bp-pill--success">Active</span>
+            <span class="bp-current-note">Billing is managed by your organization.</span>
+          </div>
+          <p class="bp-current-note" style="margin-top: 10px;">
+            Plan changes, invoices and payment methods are handled by your
+            organization's admins. Questions about your seat?
+            <a class="bp-link" :href="orgSupportHref">{{ SUPPORT_EMAIL }}</a>
+          </p>
+        </div>
+      </section>
+    </template>
+
+    <div v-else-if="loading" class="bp-loading">Loading…</div>
 
     <!-- ── Overview failed: never guess "Free". The session already knows
          the plan state, so the headline stays truthful, and the plan
@@ -291,6 +317,7 @@ import billingApi from '@/api/billing'
 import SettingsShell from '@/components/settings/SettingsShell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { SUPPORT_EMAIL, SUPPORT_SUBJECT } from '@/constants/support'
 import { TIERS } from '@/constants/pricing'
 import { describeSubscription } from '@/lib/plan'
 import { isPolarUrl } from '@/utils/polarRedirect'
@@ -311,6 +338,18 @@ const cancelling = ref(false)
 const upgrading = ref(false)
 const switchingCycle = ref(false)
 const error = ref('')
+
+// Seat on an org plan: the subscription's source says the organization
+// pays. All personal billing UI (checkout, plan grid, portal, cancel)
+// and the ?checkout= return-leg are gated off this one flag.
+const orgBilled = computed(() => authStore.session?.subscription?.source === 'organization')
+
+const orgSupportHref = computed(() => {
+  const params = new URLSearchParams({ subject: SUPPORT_SUBJECT })
+  const acct = authStore.user?.email
+  if (acct) params.set('body', `Account email: ${acct}\n\n`)
+  return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, '%20')}`
+})
 
 const mainTiers = computed(() => TIERS.filter(t => t.price !== null))
 const enterpriseTier = computed(() => TIERS.find(t => t.price === null))
@@ -571,6 +610,13 @@ async function refresh() {
 
 
 onMounted(async () => {
+  // Org-billed seats never ran a personal checkout, and the personal
+  // overview endpoints describe a subscription that isn't theirs to
+  // manage — skip the whole leg (incl. the ?checkout= return handling).
+  if (orgBilled.value) {
+    loading.value = false
+    return
+  }
   const checkoutParam = route.query.checkout
   const checkoutId = route.query.checkout_id ? String(route.query.checkout_id) : ''
   if (checkoutParam) {

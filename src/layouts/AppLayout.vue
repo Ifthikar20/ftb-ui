@@ -27,6 +27,18 @@
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <!-- Org workspace strip: only renders for org members
+                 (session.org set), so B2C sidebars are untouched. -->
+            <OrgSwitcher />
+            <!-- Eyebrow separating workspace context from the project
+                 control — matters most when org and project share a name.
+                 Org members only; hidden in icon-collapsed mode. -->
+            <div
+              v-if="authStore.org"
+              class="px-2 pb-0.5 pt-1.5 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden"
+            >
+              Project
+            </div>
             <!-- Project switcher. Uses the project's initial as its avatar so it
                  reads as the current project, distinct from the brand above. -->
             <SidebarMenuItem>
@@ -49,7 +61,9 @@
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="bottom" :side-offset="4" class="min-w-64 rounded-lg">
                   <DropdownMenuLabel class="text-xs text-muted-foreground">
-                    Projects · {{ appStore.projectLimitLabel }}
+                    <!-- Org members see whose projects these are; B2C keeps
+                         the plain allowance count. -->
+                    Projects · {{ authStore.org ? authStore.org.name : appStore.projectLimitLabel }}
                   </DropdownMenuLabel>
                   <DropdownMenuItem
                     v-for="w in appStore.websites"
@@ -381,6 +395,7 @@ import websitesApi from '@/api/websites'
 import billingApi from '@/api/billing'
 import HelpButton from '@/components/HelpButton.vue'
 import FeedbackWidget from '@/components/feedback/FeedbackWidget.vue'
+import OrgSwitcher from '@/components/org/OrgSwitcher.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { useAssistantStore } from '@/stores/assistant'
 import CanseeMark from '@/components/assistant/CanseeMark.vue'

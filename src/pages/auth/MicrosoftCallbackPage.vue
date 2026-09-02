@@ -4,7 +4,7 @@
       <!-- In progress -->
       <template v-if="state === 'working'">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground"></div>
-        <p class="text-base text-muted-foreground">Signing you in with Google...</p>
+        <p class="text-base text-muted-foreground">Signing you in with Microsoft...</p>
       </template>
 
       <!-- First-time JIT/invite join: one beat of orientation -->
@@ -39,7 +39,7 @@
         </div>
       </template>
 
-      <!-- Closed signup: Google account has no Cansee account -->
+      <!-- Closed signup: the account has no Cansee account -->
       <template v-else-if="state === 'account_required'">
         <h2 class="text-xl font-semibold text-foreground">You need a Cansee account first</h2>
         <p class="max-w-md text-base text-muted-foreground">{{ message }}</p>
@@ -87,7 +87,7 @@ function fail(text) {
 
 async function routeAfterLogin() {
   const session = await authStore.fetchSession()
-  // A deep link stashed before the full-page Google round trip wins.
+  // A deep link stashed before the full-page Microsoft round trip wins.
   const stashed = sessionStorage.getItem('cs-post-auth-redirect')
   sessionStorage.removeItem('cs-post-auth-redirect')
   if (stashed) {
@@ -110,16 +110,16 @@ onMounted(async () => {
   const { code, state: stateParam, error } = route.query
 
   if (error) {
-    fail('Google sign-in was cancelled.')
+    fail('Microsoft sign-in was cancelled.')
     return
   }
   if (!code) {
-    fail('Google did not return an authorization code. Please try again.')
+    fail('Microsoft did not return an authorization code. Please try again.')
     return
   }
 
-  const expectedState = sessionStorage.getItem('google-oauth-state')
-  sessionStorage.removeItem('google-oauth-state')
+  const expectedState = sessionStorage.getItem('ms-oauth-state')
+  sessionStorage.removeItem('ms-oauth-state')
   if (!expectedState || stateParam !== expectedState) {
     fail('This sign-in link expired. Please try again.')
     return
@@ -131,8 +131,8 @@ onMounted(async () => {
   sessionStorage.removeItem('cs-invite-token')
 
   try {
-    const result = await authStore.googleLogin(
-      code, `${window.location.origin}/auth/google/callback`, inviteToken
+    const result = await authStore.microsoftLogin(
+      code, `${window.location.origin}/auth/microsoft/callback`, inviteToken
     )
     if (result?.joined_org && result?.is_new_user) {
       // Deliberate pause: a first-time team member gets one beat of
@@ -149,11 +149,11 @@ onMounted(async () => {
       domain.value = err.details?.domain || ''
       state.value = 'claim_domain'
     } else if (e?.response?.status === 403) {
-      // Closed signup: the backend rejected a Google email with no account.
+      // Closed signup: the backend rejected an email with no account.
       state.value = 'account_required'
-      message.value = backendMessage || 'No Cansee account exists for this Google email.'
+      message.value = backendMessage || 'No Cansee account exists for this email.'
     } else {
-      fail(backendMessage || 'Google sign-in failed. Please try again.')
+      fail(backendMessage || 'Microsoft sign-in failed. Please try again.')
     }
   }
 })

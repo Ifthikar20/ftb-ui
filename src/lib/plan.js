@@ -61,6 +61,33 @@ export function describeSubscription(sub, now = new Date()) {
   const isPastDue = status === 'past_due'
   const isPaying = typeof s.is_paying === 'boolean' ? s.is_paying : isActive || isTrialing
 
+  // Seat on an organization plan: the org (not this user's card) pays,
+  // so none of the personal trial/past-due arithmetic applies. Personal
+  // subscriptions (source 'user' or absent) fall through untouched.
+  if (s.source === 'organization') {
+    const orgTierName = tierName || 'Business'
+    const orgTitle = `${orgTierName} plan`
+    return {
+      status,
+      tier: tier || 'business',
+      tierName: orgTierName,
+      isPaying: true,
+      isTrialing: false,
+      isActive: true,
+      isPastDue: false,
+      cancelAtPeriodEnd: false,
+      trialEnd: null,
+      periodEnd,
+      daysLeft: null,
+      badge: { text: orgTierName, tone: 'gold' },
+      title: orgTitle,
+      detail: 'Managed by your organization',
+      planLabel: `${orgTitle} · Managed by your organization`,
+      tierLabel: orgTitle,
+      statusLabel: 'Active',
+    }
+  }
+
   const trialEnd = isTrialing ? (toDate(s.trial_end) ?? periodEnd) : null
   const daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd - now) / 86_400_000)) : null
 
